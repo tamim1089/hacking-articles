@@ -1,0 +1,83 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/" rel="category tag">HackTheBox</a></span>            </div>
+            <h1 class="post-title entry-title">Hack the Box: Minion Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/hack-the-box-minion-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2018-08-25T05:22:59+00:00">August 25, 2018</time><time class="updated" datetime="2025-07-05T15:56:19+00:00">July 5, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Hello friends!! Today we are going to solve another CTF challenge “Minion” which is available online for those who want to increase their skill in penetration testing and black box testing. Hack the Box presents Minion, a retired vulnerable lab for making online penetration practices according to your experience level; they offer a collection of vulnerable labs as challenges from beginners to expert level.</span></p>
+<p><span style="color: #000000;"><strong>Level:</strong> Expert</span></p>
+<p><span style="color: #000000;"><strong>Task:</strong> find <strong>user.txt</strong> and <strong>root.txt</strong> file on the victim’s machine.</span></p>
+<p><span style="color: #000000;">Since these labs are online available therefore they have static IP and IP of Minion is <strong>10.10.10.57</strong> so let’s begin with nmap port enumeration.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -sV -p- 10.10.10.57 -–open</pre>
+<p><span style="color: #000000;">From the given below image, you can observe that we find port 62696 is open on the target system.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-GAOFwo4XqFA/W4Dif3V_79I/AAAAAAAAZ4A/kTJjXyRoy-It58VpPHWaWcHGnxdZOeWRwCLcBGAs/s1600/1.png"/></span></p>
+<p><span style="color: #000000;">As port 62696 is running IIS http service, we open the IP address in our browser on port 62696.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-lFoRhiLtid8/W4DijiUQNaI/AAAAAAAAZ5E/dYRME96z6JApBKtMlibl53Kqv-sYLwJSACLcBGAs/s1600/4.png"/></span></p>
+<p><span style="color: #000000;">We don’t find anything on the webpage, so we run dirb to enumerate the directories. As the target machine is running Microsoft IIS server we try to find the .asp file.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">dirb http://10.10.10.57:62696 -X .asp</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-1LIHV62R2LM/W4Dij-Ns7ZI/AAAAAAAAZ5I/WDmNXbrymvI1cJ-cW-hfZVK8AgQKw7cRgCLcBGAs/s1600/5.png"/></span></p>
+<p><span style="color: #000000;">Dirb scan gave us a link to a page <strong>called test.asp</strong>, we open the link and find a page that is asking for u as its parameter.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-EmYCp3fHhKo/W4DikOaWaHI/AAAAAAAAZ5M/oPmCxkiYPy0fWW4bmSUnuB_r6yRLcubRACLcBGAs/s1600/6.png"/></span></p>
+<p><span style="color: #000000;">After enumerating this system, we find that this page is <strong>vulnerable to SSRF</strong>. So when we try to access localhost we find a link called system commands.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-djmtDKD2bb4/W4DikXBprKI/AAAAAAAAZ5Q/duhfwtZO5ZYNCasgn5npmucOtiUU8-3hACLcBGAs/s1600/7.png"/></span></p>
+<p><span style="color: #000000;">As we are not directly accessing the page, we take a look at the source code and find the link to the system command.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-04TEnIAF83s/W4DikdtCG5I/AAAAAAAAZ5U/zIs1o8-1IqUZ_v0Hx0rB-R5RbEmAD9KjQCLcBGAs/s1600/8.png"/></span></p>
+<p><span style="color: #000000;">We open it using SSRF and find a form that can be used to execute our commands.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-BjZORyH7z8Y/W4DiknDbiAI/AAAAAAAAZ5Y/jAzq8TuZdvIxEHOz6okzn4MqJu1e6QBBgCLcBGAs/s1600/9.png"/></span></p>
+<p><span style="color: #000000;">When we try to execute a command we are unable to. So we take a look at the source code of the page and find the parameter that is being used to pass the command we type.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-EONpzlHWsCQ/W4Difxvq_9I/AAAAAAAAZ38/4Rn-NkBdWYwhlCz9cMaz6JPZEiphhOTHACLcBGAs/s1600/10.png"/></span></p>
+<p><span style="color: #000000;">After finding the parameter we use it pass our command. We find that we only get a response in terms of Exit Status. Exit Status = 1 for successful and Exit Status = 0 in case of errors.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-rUG7rD1vraQ/W4DifzX2pOI/AAAAAAAAZ4E/VdGTmH6YvMwPVE-sv0pnF63yHbBtGSdtgCLcBGAs/s1600/11.png"/></span></p>
+<p><span style="color: #000000;">Now when we try to get a reverse shell and fail, something may block TCP and UDP packets. So we use this RCE vulnerability to ping ourselves and check if the ICMP packet is allowed.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-bS1LZ8TR-KA/W4DigfLvSII/AAAAAAAAZ4I/VKiIfxynWkkFPjHdSijcJa6hmxNc_EoCACLcBGAs/s1600/12.png"/></span></p>
+<p><span style="color: #000000;">Firstly, we set up tcpdump to capture the ICMP packets and find that the system allows ICMP packets.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">tcpdump -i tun0 icmp</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Ln6vIH6bsXU/W4Digg6q29I/AAAAAAAAZ4M/bBRtbSmBrlEK7aS5im5V0lv9eFpwwisVQCLcBGAs/s1600/13.png"/></span></p>
+<p><span style="color: #000000;">Then, we create an ICMP reverse shell because the server blacklists few characters.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-gWjh4g5MuIg/W4Dig1Bbe4I/AAAAAAAAZ4Q/JSlDyuU1PEA9_-YwmxTv4KvluVBXH4BywCLcBGAs/s1600/14.png"/></span></p>
+<p><span style="color: #000000;">We run it on the vulnerable page that we found earlier.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-3AfaOpKFozw/W4Dig6gK-VI/AAAAAAAAZ4U/E8w1QU6uFu0U6HvZkrqxEQBnc9Mgy5CMACLcBGAs/s1600/15.png"/></span></p>
+<p><span style="color: #000000;">Finally, we create our custom reverse shell (you can download <span style="color: #0000ff;"><a style="color: #0000ff;" href="https://github.com/Sayantan5/Minion.git">here</a></span>). We run it and after a few moments, we get a reverse shell. There we take a look at the c:\ directory and find a directory called “sysadmscripts”.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-qFo9H6b891U/W4DihbtGrGI/AAAAAAAAZ4Y/5hludbgnSvgAQ-Uh4TFzFlFWJVxJSlZSwCLcBGAs/s1600/25.png"/></span></p>
+<p><span style="color: #000000;">We go to the root directory and find two files called “<strong>c.ps1</strong>” and “<strong>del_logs.bat</strong>”.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-7maSUYFAkLQ/W4Dihjlt8II/AAAAAAAAZ4c/G8gWIBzeYmcH6-nBHBFJhetDz7AB0bfEQCLcBGAs/s1600/26.png"/></span></p>
+<p><span style="color: #000000;">Then, we take a look at the content of the file and see that c.ps1 writes something inside a file that we pass as its argument. In the “del_logs.bat” file, it creates logs inside log.txt in the c:\windows\temp\ directory and we notice that the time changes every 5 minutes.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-hBkf5QcgS98/W4Dih_r4tZI/AAAAAAAAZ4g/n5B-jQ7sNGUs9e51U9UYRxVQddCGFZnZACLcBGAs/s1600/27.png"/></span></p>
+<p><span style="color: #000000;">Now we check the permissions for both of these files with icacls and find that we have full permissions over c.ps1.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">icacls c.ps1</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-mM3XR4QCFdU/W4DiiA7FsjI/AAAAAAAAZ4k/OW29iYSjyz0Y9Gn8zoZCpOiDWkzXS9NwQCLcBGAs/s1600/28.png"/></span></p>
+<p><span style="color: #000000;">Now we change the original c.ps1 with our file so that we can try and get the user.txt and root.txt.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">echo "dir c:\users\administrator\Desktop &gt; c:\temp\output.txt" &gt; c:\temp\test.ps1
+echo "dir c:\users\decoder.MINION\Desktop &gt;&gt; c:\temp\output.txt" &gt;&gt; c:\temp\test.ps1
+echo "copy c:\users\administrator\Desktop\root.txt c:\temp\root.txt" &gt;&gt; c:\temp\test.ps1
+echo "copy c:\users\decoder.MINION\Desktop\* c:\temp\" &gt;&gt; c:\temp\test.ps1
+(Get-Content c:\temp\test.ps1) | ForEach-Object { $_ -replace """", "" } | Set-Content c:\temp\test.ps1
+copy c:\sysadmscripts\c.ps1 c:\temp\c.ps1.bak
+copy c:\temp\test.ps1 c:\sysadmscripts\c.ps1</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-AeHsIggFJsc/W4DiiOCkDtI/AAAAAAAAZ4o/NvFclEgh0yY-ShoNovOvVZd0lEB44DPvACLcBGAs/s1600/29.png"/></span></p>
+<p><span style="color: #000000;">We wait for a few minutes for the PowerShell script to execute and find that we successfully extracted “user.txt”. Then, we open the file and find the first flag. We also zip file called “backup.zip”. Before looking in the zip backup file, we take a look at the content of “output.txt” and find that the file was in “c:\users\decoder.MINION\Desktop” directory.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-1Be-r8zeR6M/W4DiimfeicI/AAAAAAAAZ4s/Ul8-E03OjjEXuiwBF71epWQ2eLhO9cMjwCLcBGAs/s1600/30.png"/></span></p>
+<p><span style="color: #000000;">Enumerating further backup.zip file we extract PASS from alternate data stream files.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">get-content c:\temp\backup.zip -str pass</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-6afcwY1jpOo/W4Diisb41OI/AAAAAAAAZ4w/0tVSWO79dmUc1-99l_JvVgISxAnIkJ3FwCLcBGAs/s1600/31.png"/></span></p>
+<p><span style="color: #000000;">We decode the NTLM hash using hashkiller.co.uk and find the password to be 1234test.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-UXdd9jz3aII/W4Dii1Tt8NI/AAAAAAAAZ40/s74VJAzhoSMzATap0QcKw2_LjUrTRxLewCLcBGAs/s1600/32.png"/></span></p>
+<p><span style="color: #000000;">We mount the C$-Share using the credentials we found by cracking the hash.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">net use * \\minion\c$ /user:minion\administrator 1234test</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-AZXhEhNnpsE/W4DijO_bhjI/AAAAAAAAZ44/EMyzy8qFn-40BVn9LXmY7kKbAkVlhcHOACLcBGAs/s1600/33.png"/></span></p>
+<p><span style="color: #000000;">As we can see the hard disk got mounted as “Drive Z:”. We go to Z: drive and inside “z:\User\Administrator\Desktop”. There, we find two files called root.txt and root.exe when taking a look at the content of “root.txt” it tells us to run “root.exe”. So, we try to run root.exe but are unable to get a flag because we are not Administrator yet.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-HN54SkiO-0s/W4DijZHxoRI/AAAAAAAAZ48/ESDOq3P3qgw1ifXQOBptEp2ByFsX08DGgCLcBGAs/s1600/34.png"/></span></p>
+<p><span style="color: #000000;">Let’s set users as administrator using <strong>$user</strong> and giving the password using <strong>$pass.</strong> Then convert the string using <strong>convert-to-securestring-asplaintext-force </strong>using the PSCredetail. We created the new object that further will help us to create a new session which will run the commands as administrator. Lastly, we will run the root.exe using the <strong>invoke-command. </strong>And as you can see in the given screenshot we have decoded successfully the <strong>securestring.</strong></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">$user = "minion\administrator"
+$pass = "1234test” | convert to-securestring – asplaintext –force
+$cred = new-object –typename System.Managemet.Automation.PSCredential –argumentlist $user, $pass
+$session = new-pssession minion –Credential $cred
+invoke-command –Session $session {cd C:\users\administrator\desktop; .\root.exe}</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-YqZXo47vyKs/W4DijtUhEtI/AAAAAAAAZ5A/08Ln0usL1tU3C3VlnABea4TToL2ers3AQCLcBGAs/s1600/35.png"/></span></p>
+<p><span style="color: #000000;">Thank you for giving your precious time to read this walkthrough. If you want to read more HTB Write-ups. Follow this</span> <strong><a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/">Link.</a></strong> <span style="color: #000000;">Happy Hacking!</span></p>
+<p><span style="color: #000000;"><strong>Author</strong>: Sayantan Bera is a technical writer at hacking articles and cybersecurity enthusiast. Contact <a style="color: #000000;" href="https://www.linkedin.com/in/sayantan-bera-2098a613b/"><strong>Here</strong></a></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

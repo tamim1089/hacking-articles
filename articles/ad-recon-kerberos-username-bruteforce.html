@@ -1,0 +1,119 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/red-teaming/domain-enumeration/" rel="category tag">Domain Enumeration</a>, <a href="https://www.hackingarticles.in/category/red-teaming/" rel="category tag">Red Teaming</a></span>            </div>
+            <h1 class="post-title entry-title">AD Recon: Kerberos Username Bruteforce</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/ad-recon-kerberos-username-bruteforce/" rel="bookmark"><time class="entry-date published" datetime="2025-01-30T10:48:37+00:00">January 30, 2025</time><time class="updated" datetime="2025-05-23T16:33:41+00:00">May 23, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">In this post, we explore the exploitation technique known as the <strong data-start="250" data-end="282">Kerberos Username Bruteforce</strong> or <strong data-start="286" data-end="336">Kerberos pre-authentication brute-force attack</strong>. This attack takes advantage of Kerberos authentication responses to determine valid usernames and perform password bruteforcing.</span></p>
+<p><span style="color: #000000;">The post outlines exploitation methods, and mitigation techniques, mapped to the MITRE ATT&amp;CK framework for clarity. Detection mechanisms and actionable recommendations are also provided to help security professionals identify and defend against this prevalent threat.</span></p>
+<h3><span style="color: #800000;">Table of Contents</span></h3>
+<ul>
+<li><span style="color: #000000;">Kerberos Authentication</span></li>
+<li><span style="color: #000000;">Pre-auth Bruteforce</span></li>
+<li><span style="color: #000000;">Metasploit</span></li>
+<li><span style="color: #000000;">Nmap</span></li>
+<li><span style="color: #000000;">Kerbrute</span></li>
+<li><span style="color: #000000;">Rubeus</span></li>
+</ul>
+<p><span style="color: #000000;">Detection &amp; Mitigation</span></p>
+<h3><span style="color: #800000;">Kerberos Authentication</span></h3>
+<p><span style="color: #000000;">Kerberos is a widely used authentication protocol in Active Directory (AD) environments. It enables secure authentication using tickets instead of transmitting passwords in plaintext. The protocol consists of three key components:</span></p>
+<p><span style="color: #000000;"><strong>Key Distribution Center (KDC)</strong> – Located on the Domain Controller (DC), responsible for issuing tickets.</span></p>
+<p><span style="color: #000000;"><strong>Authentication Server (AS)</strong> – Handles initial authentication requests.</span></p>
+<p><span style="color: #000000;"><strong>Ticket Granting Server (TGS)</strong> – Issues service tickets for access to specific resources.</span></p>
+<p><span style="color: #000000;">The authentication process follows these steps:</span></p>
+<ol>
+<li><span style="color: #000000;">A user requests authentication from the AS by sending an encrypted timestamp with their password.</span></li>
+<li><span style="color: #000000;">If valid, the AS returns a <strong>Ticket Granting Ticket (TGT)</strong>.</span></li>
+<li><span style="color: #000000;">The user presents the TGT to the TGS when accessing resources.</span></li>
+<li><span style="color: #000000;">The TGS issues a <strong>Service Ticket</strong>, allowing access to the requested service.</span></li>
+</ol>
+<p><span style="color: #000000;">Despite its security features, Kerberos can be exploited using brute-force techniques to obtain credentials and access sensitive information.</span></p>
+<h3><span style="color: #800000;">Pre-auth Bruteforce</span></h3>
+<p><span style="color: #000000;">Brute-forcing Kerberos is possible due to distinct server responses during authentication attempts. Attackers exploit these responses to enumerate valid usernames and crack passwords. Since Kerberos operates on <strong>port 88</strong>, attackers specifically target this port when performing brute-force attacks.</span></p>
+<p><span style="color: #000000;"><strong>Username Enumeration via AS-REQ Responses</strong></span></p>
+<p><span style="color: #000000;">When a TGT request is made via an <strong>AS-REQ message</strong>, the Kerberos server responds in different ways:</span></p>
+<ul>
+<li><span style="color: #000000;"><strong>Invalid Username:</strong> The server returns <strong>KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN</strong>, indicating that the username does not exist.</span></li>
+<li><span style="color: #000000;"><strong>Valid Username without Pre-Authentication:</strong> The server may issue a TGT immediately in a AS-REP response, leading to <span style="color: #0000ff;"><a style="color: #0000ff;" href="https://www.hackingarticles.in/as-rep-roasting/">AS-REP Roasting</a></span></span></li>
+<li><span style="color: #000000;"><strong>Valid Username with Pre-Authentication Required:</strong> The server returns <strong>KRB5KDC_ERR_PREAUTH_REQUIRED</strong>, indicating that the client must provide additional authentication data.</span></li>
+</ul>
+<p><span style="color: #000000;">Brute-force techniques like <strong data-start="344" data-end="376">Kerberos Username Bruteforce</strong> are especially dangerous in environments with misconfigured or weak security settings, enabling attackers to systematically identify valid usernames and gain unauthorized access.</span></p>
+<h3><span style="color: #800000;">Metasploit</span></h3>
+<p><span style="color: #000000;">The auxiliary/scanner/kerberos/kerberos_login module can verify Kerberos credentials against a range of machines and report successful logins.</span></p>
+<p><span style="color: #000000;">This module can identify the following information from the KDC:</span></p>
+<ul>
+<li><span style="color: #000000;">Valid/Invalid accounts</span></li>
+<li><span style="color: #000000;">Locked/Disabled accounts</span></li>
+<li><span style="color: #000000;">Accounts with expired passwords, when the password matches</span></li>
+<li><span style="color: #000000;">AS-REP Roastable accounts</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>USER_FILE</strong> option is used to specify the file containing a list of user names to query the Domain Controller to identify if they exist in the target domain or not.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">use auxiliary/scanner/kerberos/kerberos_login
+set rhosts 192.168.1.48
+set domain ignite.local
+set user_file users.txt
+run</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjOLsYcrIfjx573KqKwXwqF-QALQz_367Sxj_5iNIw_dBmQKFCnp_zkXQrN4RoiDvDI-ALW0AlS2BonP58f3oyLmz_ACI5eC3gYVmER-RvSkNyHjjWDXh2zv9tXQOgXIzN30StSXTe6Nc91OyzRSKZWm-D6MtIcd3x7LD-JYvcLSSLJBIyeHAPkzTRdxEXo/s16000/1.png"/></span></p>
+<p><span style="color: #000000;">The <strong>gather/kerberos_enumusers</strong> module uses a custom wordlist to query a single Domain Controller and identify valid domain user accounts.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">use auxiliary/gather/kerberos_enumusers
+set rhosts 192.168.1.48
+set domain ignite.local
+set user_file users.txt
+run</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgbZkKlwWazt1E9sJo8aLEaNmk-B5pdXjrL-V0ymEcuUW6XmkJYf_xsIiPu-kVyFTD3KvWsTYXANGfiozbfasEqvCfNfQy69dKLOGPfux9y_K065zkNpwtk0GD41q9QAz3_rrajJDUja0qhrYQ8rJKcas8Yhx9XD8m2b5yQKLASEtjaRJfICOYRhSyH7bh6/s16000/2.png"/></span></p>
+<h3><span style="color: #800000;">Nmap</span></h3>
+<p><span style="color: #000000;">Nmap krb5-enum-users script Discovers valid usernames by brute force querying likely usernames against a Kerberos service.</span></p>
+<p><span style="color: #000000;"><strong>krb5-enum-users.realm: </strong>this argument is required as it supplies the script with the Kerberos REALM against which to guess the user names.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -p 88 --script krb5-enum-users --script-args krb5-enum-users.realm='ignite.local',userdb=users.txt 192.168.1.48</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj5H6QBCdQfI-370APMWrFNf9ulvVZDXiLQt9btdqy2z64s3T8Bsn9Sm64jWNtDAqY8ax8AtDvgq3X7_tiry2vRbohBOKXblU4TSDBqK4l2WgMmSJdEiC3-1oOx11bb7vSf2p1ArQD-F7WIlTsFDbBm3v5v5kC2dXVEn-ndshsQw9jH3Z4j6c5NPqjUUTO3/s16000/3.png"/></strong></span></p>
+<h3><span style="color: #800000;">Kerbrute</span></h3>
+<p><span style="color: #000000;"><strong><span style="color: #0000ff;"><a style="color: #0000ff;" href="https://www.hackingarticles.in/a-detailed-guide-on-kerbrute/">Kerbrute</a> </span></strong>is a tool used to enumerate valid Active directory user accounts that use Kerberos pre-authentication.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">./kerbrute_linux_amd64 userenum --dc 192.168.1.48 -d ignite.local users.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgFtpsu3lGixUubhr26w_2EhyaLYTqUMPj5xsIrITkASQiZZJ8O_kmr4j5SQBBPOunUmyCyyc-fwqkjyxvVn7aj8hz8s2feTgb54o7aA4a-TkJdSlHc7CO-ABoCoydE-h8G42YJ2NV8Us4DrpLX5XR4EOcdq1JOKSmbkMFUnEN9_VkR7HqDfCDM8pzr1CLs/s16000/4.png"/></span></p>
+<h3><span style="color: #800000;">Impacket</span></h3>
+<p><span style="color: #000000;">Impacket’s GetNPUsers script helps enumerate valid usernames and extract AS-REP hashes for offline cracking.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">impacket-GetNPUsers -dc-ip 192.168.1.48 ignite.local/ -usersfile users.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgvsmsGqvGYmDECuyDdhQDl-HegsmV8ossLWqwHjtQgNsu3SCgCFv88PSHf-WFQuw2o4WrmPjSVvUao4y0-RwK3lqTdDFJV2KuS-T7M3zgaE91dh9yXpiiaiXG-eIpTxL4O3lfMRl-q0tisyjifZc0vcqSdjjS6wRw4LJIihjcbJRFWLPI6k6ntxVFFG3_s/s16000/5.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Windows</strong></span></h3>
+<h3><span style="color: #800000;">Rubeus</span></h3>
+<p><span style="color: #000000;">Attackers use the brute option in <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://github.com/GhostPack/Rubeus">Rubeus</a> </strong></span>to perform password bruteforce attacks against all existing user accounts in Active Directory. In many real-life enterprise environments, multiple accounts often share the same password, making these attacks more effective. So, brute option can generate multiple TGTs in those accounts having the same password.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">.\Rubeus.exe brute /passwords:password.txt /dc.ignite.local /outfile:ignite.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgM4RaUpWBQs5rtIE_K97QW_WmQa4C_P14YmGxaPx0uoAI1xq5t9w96aZmWHlPAfmtSD9QGpJ7RihgWzn6ADU1uFqml2AgAO_UQ1EfFnx68d2v6K90iZczBkL8b8si4daLeyBfn48hAf4iVrPNlUF2RwYkrhqGd9pNgaDpkoB1I91bxzFoknlSKku6RnBFT/s16000/6.png"/></span></p>
+<p><span style="color: #000000;">above command will produce the output in ignite.txt file.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">type .\ignite.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjadYci8-WComGE2t0O5_zaeIf__AbIAw0cvGjPWq3eB3mccG_fG4UUb0LIfwOP4j2OgvH22le0yHJALQpFJl2ok8t9kemFUUrXwJpvChbHUTFgLEeiy-GynYs5hqZ_aRTMm2iFzqj6UvgNJfQoqpg2zkMx9GmWfNZOjtn7RxJ9kn0qFphIW7etqJx6unn_/s16000/7.png"/></span></p>
+<p><span style="color: #000000;">Attackers can exploit Kerberos, a powerful authentication protocol, if administrators misconfigure it. By understanding the different brute-force techniques and using tools like Kerbrute, Impacket, Rubeus, and Metasploit, attackers can attempt to extract credentials. However, organizations can protect themselves by enforcing security best practices, monitoring logs, and implementing strict access controls.<br/>
+To stay ahead of threats like <strong data-start="634" data-end="666">Kerberos Username Bruteforce</strong>, organizations must combine technical controls with continuous monitoring, logging, and awareness of known attack vectors.<br/>
+</span></p>
+<h3><span style="color: #800000;">Detection &amp; Mitigation</span></h3>
+<p><span style="color: #000000;"><strong>Detection Techniques:</strong></span></p>
+<ol>
+<li><span style="color: #000000;"><strong>Monitor Event Logs:</strong></span>
+<ul>
+<li><span style="color: #000000;">Event ID 4768 (TGT requests)</span></li>
+<li><span style="color: #000000;">Event ID 4769 (TGS requests)</span></li>
+<li><span style="color: #000000;">Event ID 4771 (Failed Kerberos login)</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Look for High-Frequency Requests:</strong></span>
+<ul>
+<li><span style="color: #000000;">Multiple failed login attempts from the same IP.</span></li>
+<li><span style="color: #000000;">Multiple service ticket requests within a short period.</span></li>
+</ul>
+</li>
+</ol>
+<p><span style="color: #000000;"><strong>Mitigation Strategies:</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Enforce Pre-Authentication: Prevent AS-REP attacks by requiring all users to authenticate before receiving a TGT.</span></li>
+<li><span style="color: #000000;">Enforce Strong Password Policies: Use complex passwords to resist brute-force attempts.</span></li>
+<li><span style="color: #000000;">Monitor for Anomalous Behavior: Detect brute-force attempts using SIEM tools.</span></li>
+<li><span style="color: #000000;">Use Account Lockout Policies: Limit failed login attempts to prevent password spraying.</span></li>
+<li><span style="color: #000000;">Limit Service Accounts with SPNs: Reduce exposure to Kerberoasting by restricting unnecessary SPN assignments.</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Author</strong>: Komal Singh is a Cyber Security Researcher and Technical Content Writer, she is a completely enthusiastic pentester and Security Analyst at Ignite Technologies. Contact</span> <span style="color: #0000ff;"><a style="color: #0000ff;" href="https://www.linkedin.com/in/komal--rajput/"><strong>Here</strong></a></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

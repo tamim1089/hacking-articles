@@ -1,0 +1,178 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/android-penetration-testing/" rel="category tag">Android Penetration Testing</a></span>            </div>
+            <h1 class="post-title entry-title">Android Application Framework: Beginner’s Guide</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/android-application-framework-beginners-guide/" rel="bookmark"><time class="entry-date published" datetime="2020-12-02T09:38:39+00:00">December 2, 2020</time><time class="updated" datetime="2025-05-11T19:12:26+00:00">May 11, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Android is a mobile operating system based on a modified version of the Linux kernel and other open-source software, designed primarily for touchscreen mobile devices such as smartphones and tablets. A consortium of developers known as the Open Handset Alliance develops Android and Google commercially sponsors it. In this article series, we’ll demonstrate various tools to conduct pentests on Android APK, manual analysis of the application, as well as the major vulnerabilities, how to detect and fix them. But before we begin that, it is important to understand the architecture of an Android device, how an application compiles, and most importantly, the composition of an Android application.</span></p>
+<h3><span style="color: #800000;">Table of Content</span></h3>
+<ol>
+<li><span style="color: #000000;">Android OS</span></li>
+<li><span style="color: #000000;">Android Architecture</span></li>
+<li><span style="color: #000000;">APK compilation and decompilation</span></li>
+<li><span style="color: #000000;">Components of an APK</span></li>
+<li><span style="color: #000000;">Conclusion</span></li>
+<li><span style="color: #000000;">References</span></li>
+</ol>
+<h3><span style="color: #800000;">Android OS</span></h3>
+<h5><span style="color: #000000;"><strong>1.1 Brief history</strong></span></h5>
+<p><span style="color: #000000;">Android Inc. was founded in Palo Alto, California, in October 2003 by Andy Rubin, Rich Miner, Nick Sears, and Chris White.</span></p>
+<p><span style="color: #000000;">In July 2005, Google acquired Android Inc. for at least $50 million. Its key employees, including Rubin, Miner and White, joined Google as part of the acquisition. At Google, the team led by Rubin developed a mobile device platform powered by the Linux kernel. Google marketed the platform to handset makers and carriers on the promise of providing a flexible, upgradeable system.</span></p>
+<p><span style="color: #000000;">The first commercially available smartphone running Android was the HTC Dream, also known as T-Mobile G1, announced on September 23, 2008.</span></p>
+<h5><span style="color: #000000;"><strong>1.2 Hardware</strong></span></h5>
+<p><span style="color: #000000;">Android’s main hardware platform for Android is ARM with x86 and x86-64 architectures also supported in the later releases. Since Android 5.0 Lollipop, 64-bit variants of all platforms are supported in addition to 32-bit variant.</span></p>
+<h5><span style="color: #000000;"><strong>1.3 Kernel</strong></span></h5>
+<p><span style="color: #000000;">As of 2020, Android uses versions 4.4, 4.9 or 4.14 of Linux Kernel. Android Kernel is based on Linux Kernel’s Long Term Support (LTS) branch.</span></p>
+<h5><span style="color: #000000;">1.4 File System</span></h5>
+<p><span style="color: #000000;">Ever since the release of Android, it has made use of the YAFFS2. After Android 2.3 it used EXT4 file system, although many OEMs have experimented with F2FS. The following directories are there by default in any installation of Android:</span></p>
+<ul>
+<li><span style="color: #000000;">Boot: The partition contains the kernel, ramdisk etc. which is required for the phone to boot when powered on.</span></li>
+<li><span style="color: #000000;">System: Contains OS files which include Android UI and pre-installed apps</span></li>
+<li><span style="color: #000000;">Recovery: Alternative option to booting into OS, allows recovery and backup of partitions.</span></li>
+<li><span style="color: #000000;">Data: Saves user data, apps data, messaging, music etc. Can be traversed through the file browser. This is wiped when the factory reset is pressed. Sub-folders are:</span>
+<ul>
+<li><span style="color: #000000;">Android – Default for app cache and saved data.</span></li>
+<li><span style="color: #000000;">Alarms – Custom audio files for alarms.</span></li>
+<li><span style="color: #000000;">Cardboard – Contains data for VR files.</span></li>
+<li><span style="color: #000000;">DCIM – Stores pictures and videos were taken by Camera app.</span></li>
+<li><span style="color: #000000;">Downloads – Stores downloaded files from the internet.</span></li>
+<li><span style="color: #000000;">Notifications – Custom tones for notifications of some apps.</span></li>
+<li><span style="color: #000000;">Music, Movies – Default folders to store songs and videos from third-party apps.</span></li>
+<li><span style="color: #000000;">Pictures – Default folder to store pictures taken by third-party apps.</span></li>
+<li><span style="color: #000000;">Podcasts – Stores podcasts files when you use a podcast app.</span></li>
+<li><span style="color: #000000;">Videos – Stores downloaded videos from third-party apps.</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;">Cache: Storage of frequently used data and app components.</span></li>
+<li><span style="color: #000000;">Misc: Contains other important system setting information. Like USB config, carrier ID.</span></li>
+</ul>
+<h3><span style="color: #800000;"> Android Architecture</span></h3>
+<p><span style="color: #000000;"><strong> <img fetchpriority="high" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-06nrzPr8phE/X8deJnAojII/AAAAAAAArRk/oQY6vkYg568iMch1dysRyS65OLmU9zvkgCLcBGAsYHQ/s16000/0.png" alt="Android Application Framework" width="1384" height="2038"/></strong></span></p>
+<p><span style="color: #000000;">(Source: android.com)</span></p>
+<h5><span style="color: #000000;"><strong>2.1 Kernel</strong></span></h5>
+<p><span style="color: #000000;">The kernel is the most important part of the Android OS that provides an interface for the user to communicate with the hardware. It contains the essential drivers that are used by programs to instruct a hardware component a perform a specific function. These drivers are audio, display, Bluetooth etc.</span></p>
+<h5><span style="color: #000000;"><strong>2.2 Hardware Abstraction Layer (HAL)</strong></span></h5>
+<p><span style="color: #000000;">A <strong>hardware abstraction layer</strong> (<strong>HAL</strong>) is a logical division of code that serves as an abstraction layer between a computer’s physical hardware and its software. It provides a device driver interface allowing a program to communicate with the hardware.</span></p>
+<h5><span style="color: #000000;"><strong>2.3 Libraries</strong></span></h5>
+<p><span style="color: #000000;">Sitting on the top of the kernel, libraries provide developer support to develop applications, resource file and even manifest. There are some native libraries like SSL, SQLite, Libc etc that are required by native codes to effectively perform a task.</span></p>
+<h5><span style="color: #000000;"><strong>2.4 Android Runtime</strong></span></h5>
+<p><span style="color: #000000;">Android Runtime (ART) is an application runtime environment used by the Android OS. <strong><em>A runtime environment is a state in which program can send instructions to the computer’s processor and access the computer’s RAM. Android apps programmed in (let’s say) Java, will be first converted to byte code during compilation packaged as an APK and run-on runtime.</em></strong></span></p>
+<p><span style="color: #000000;">Android uses a Virtual Machine to execute any application so as to isolate the execution of the program from OS and protecting malicious code from the affecting system.</span></p>
+<p><span style="color: #000000;"><em>Before Android 4.4, that runtime used to be DVM (Dalvik Virtual Machine) which has since been replaced by Android Runtime (ART).</em></span></p>
+<p><span style="color: #000000;">DVM used JIT (Just in time) compilation which worked by taking application code, analyzing it and actively translating it during runtime. ART uses AOT (ahead of time) compilation that compiles *.dex files (Dalvik Bytecode) before they are even needed. Usually, it is done during installation and stored in phone storage.</span></p>
+<p><span style="color: #000000;">To be noted: After Android N, JIT compilation was reintroduced along with AOT and an interpreter in ARt making it hybrid to tackle against problems like installation time and memory.</span></p>
+<h5><span style="color: #000000;"><strong>2.5 Application Framework</strong></span></h5>
+<p><span style="color: #000000;">The entire feature-set of the Android OS is available to the developer through APIs written in the Java language. These APIs make the most important components that are needed to create Android apps. These are:</span></p>
+<ul>
+<li><span style="color: #000000;"><strong>View System:</strong> Used to build an app’s UI, including lists, text boxes, buttons etc.</span></li>
+<li><span style="color: #000000;"><strong>Resource Manager: </strong>Provides access to non-code resources like layout files, graphics etc.</span></li>
+<li><span style="color: #000000;"><strong>Notification manager: </strong>Allows the app to display custom alerts in the status bar.</span></li>
+<li><span style="color: #000000;"><strong>Activity Manager:</strong> Manages the lifecycle of apps and provides a common navigation back stack.</span></li>
+<li><span style="color: #000000;"><strong>Content Providers:</strong> Enables apps to access data from other apps like WhatsApp access data from the Contacts app.</span></li>
+</ul>
+<h5><span style="color: #000000;"><strong>2.6 System Applications</strong></span></h5>
+<p><span style="color: #000000;">The pre-installed set of core applications used for basic functions like SMS, calendars, internet browsing, contacts etc.</span></p>
+<h3><span style="color: #800000;"> APK Compilation and De-compilation</span></h3>
+<h5><span style="color: #000000;"><strong>3.1 Compilation</strong></span></h5>
+<p><span style="color: #000000;">Android compilation process could be understood better when comparing to the java compilation process. To compile a java code the following steps are performed:</span></p>
+<ul>
+<li><span style="color: #000000;">A code written in main.java is compiled by javac (Java compiler).</span></li>
+<li><span style="color: #000000;">Javac compiles main.java into java byte code (main.class)</span></li>
+<li><span style="color: #000000;">A Java Virtual Machine (JVM) understands and converts Java byte code file (main.class) into machine code using JIT (Just-in-time) compiler.</span></li>
+<li><span style="color: #000000;">The machine code is then run by CPU.</span></li>
+</ul>
+<p><span style="color: #000000;">It can be demonstrated in the following diagram:</span></p>
+<p><span style="color: #000000;"><img decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-khew-H0jRNQ/X8deSZnvIXI/AAAAAAAArRo/nruWGaIBBKUrkaQc3bRepMUBY3p1szXWACLcBGAsYHQ/s16000/1.png" alt="Android Application Framework" width="283" height="595"/></span></p>
+<p><span style="color: #000000;">Now, the main difference between Java and Android compilation process is that Android doesn’t work with JVM because a JVM doesn’t enable a variety of services with a limited processor speed and RAM. So, Android introduced a Dalvik Virtual Machine (DVM). However, in the latest Android releases ART is being used. The process is now as follows:</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-db0381B6NSE/X8deXSTU2HI/AAAAAAAArRs/7cnpQjZ84SUNxKRJHEMH4AJIGmmtXdkIgCLcBGAsYHQ/s16000/2.png"/></span></p>
+<p><span style="color: #000000;">Even though the system replaced Dalvik as the default runtime, developers still use the Dalvik bytecode format (.dex).</span></p>
+<h5><span style="color: #000000;"><strong>3.2 Decompiling APK</strong></span></h5>
+<p><span style="color: #000000;">While conducting reverse engineering, we perform APK decompilation and recompilation. We will ensure that future articles properly recompilate and reverse engineer; let’s examine decompilation to understand how an APK essentially structures when packed in the format.</span></p>
+<p><span style="color: #000000;"><strong>One should note that an APK file is just a ZIP archive that contains XML files, dex code, resource files, and other files</strong>.</span></p>
+<p><span style="color: #000000;">So, to decompile it, we can either:</span></p>
+<p><span style="color: #000000;"><strong>Unzip &lt;name&gt;.apk</strong></span></p>
+<p><span style="color: #000000;">Or we can take aid of a great tool called apktool. So, we’ll run the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">apktool –d –rs diva-beta.apk
+ls
+cd diva-beta/ &amp;&amp; ls</pre>
+<p><span style="color: #000000;"><img decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-C56vUR-kpsk/X8deb_OaKVI/AAAAAAAArR0/5V7UH1GsjW0om_ls4Ney1_LA7W8M8T1rACLcBGAsYHQ/s16000/3.png" alt="Android Application Framework" width="681" height="269"/></span></p>
+<p><span style="color: #000000;">Here, we see that someone has created a folder that essentially packs the Manifest file, yml file, resources, and a file named classes.dex.</span></p>
+<p><span style="color: #000000;">This dex file contains the dalvik byte code and we’ll further disassemble this file into standard class files using the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">d2j-dex2jar classes.dex</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-H607EJU9DHA/X8defTemC6I/AAAAAAAArR4/TKQHcodSC4w1K7l7pXpp-e2hOzaMMOXJACLcBGAsYHQ/s16000/4.png"/></span></p>
+<p><span style="color: #000000;">This command further creates a .jar code structure. We will use a Java decompiler to inspect the source code:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Jd-gui classes-dex2jar.jar</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-PODw129ge6M/X8dejqx4NSI/AAAAAAAArSA/dIkR4Ijk0eYMyTpHVG62DAv2hQBL9zTPACLcBGAsYHQ/s16000/5.png" alt="Android Application Framework" width="716" height="675"/></span></p>
+<p><span style="color: #000000;">You should note that the readability of this code entirely depends on whether or not an obfuscator (like ProGuard) applied while creating an APK file.</span></p>
+<h3><span style="color: #800000;"> Composition of an APK</span></h3>
+<p><span style="color: #000000;">Any android application consists of 6 essential elements, and the application manifest file binds these elements and describes how they interact with each other. Out of these activities, UI and intents are a must have in any app, while services, content providers and broadcast receivers can be present depending on needs. The components are:</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-2DgcqtQhWZc/X8deo3ww4oI/AAAAAAAArSE/8NNotqh63iAXm80VV4f_EdiwK_bA5AweACLcBGAsYHQ/s16000/Screenshot_1.png"/></span></p>
+<h5><span style="color: #000000;"><strong>Activities</strong>: </span></h5>
+<p><span style="color: #000000;">Activity is a class in Android which, when implemented, represents a single screen with a user interface just like a window or a frame in Java. Every application includes a MainActivity (Java if code is in Java) that automatically runs by default the first time the application runs. All actions that users perform in Activity pages use callbacks. There are 7 callbacks:</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-_CuOmgWJWOY/X8des4q8kaI/AAAAAAAArSI/0vMDFnIZwkED_0zWTeoj5NV2mpM2pkIwQCLcBGAsYHQ/s16000/Screenshot_2.png"/></span></p>
+<h5><span style="color: #000000;"><strong>Services</strong>: </span></h5>
+<p><span style="color: #000000;">A <strong>service</strong> functions as a component that runs in the background to perform long-running operations without requiring user interaction, and it continues to operate even if the application is destroyed. A service can essentially take two:</span></p>
+<ol>
+<li><span style="color: #000000;"><strong>Started</strong>: An application component, such as an activity, starts a service by calling <em>startService().</em> Once started, a service can run in the background indefinitely, even if the component that started it is destroyed.</span></li>
+<li><span style="color: #000000;"><strong>Bound:</strong> An application component binds to a service by calling <em>bindService().</em> A bound service offers a client-server interface that allows components to interact with the service, send requests, get results, and even do so across processes with interprocess communication (IPC).</span></li>
+</ol>
+<p><span style="color: #000000;">The <strong>Service</strong> base class defines various callback methods and the most important are given below:</span></p>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-z5OyvXSyEXs/X8dewwERAFI/AAAAAAAArSQ/TN-c6CisLxMLbw9aqIn8i-LOPuGdaCzEwCLcBGAsYHQ/s16000/Screenshot_3.png" alt="Android Application Framework" width="612" height="345"/></span></p>
+<h5><span style="color: #000000;"><strong>Content Providers</strong>: </span></h5>
+<p><span style="color: #000000;">Content providers provide the content/data to Android applications from an Android system or other Android applications. To create a service, you create a Java class that extends the Service base class or one of its existing subclasses. Content providers provide the following four basic operations. These are also known as <strong>CRUD operations</strong>, where:</span></p>
+<p><span style="color: #000000;"><strong>C – Create: </strong>It is used for the creation of data in content providers.</span><br/>
+<span style="color: #000000;"><strong>R – Read: </strong>It reads the data stored in the content provider.</span><br/>
+<span style="color: #000000;"><strong>U – Update: </strong>It lets the editing in existing data in content providers.</span><br/>
+<span style="color: #000000;"><strong>D – Delete: </strong>It deletes the existing data stored in its Storage.</span></p>
+<p><span style="color: #000000;">To implement content providers, we’d use the following callbacks in Java:</span></p>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-iZ807gt88P0/X8de04_NedI/AAAAAAAArSY/VU8-6XHJu1Uf8aynuxy08Ugbc6EsY6wzwCLcBGAsYHQ/s16000/Screenshot_4.png" alt="Android Application Framework" width="604" height="317"/></span></p>
+<h5><span style="color: #000000;"><strong>Broadcast Receivers</strong>: </span></h5>
+<ul>
+<li><span style="color: #000000;">Broadcast Receivers simply respond to broadcast messages from other applications or from the system itself. Developers sometimes call these messages events or intents. For example, applications can also broadcast to inform other applications that they have downloaded some data to the device and made it available for them to use, so a broadcast receiver will intercept this communication and initiate the appropriate action. Some of the broadcast receivers are:</span>
+<ul>
+<li><span style="color: #000000;"><strong>intent.action.REBOOT</strong></span></li>
+<li><span style="color: #000000;"><strong>intent.action.DATE_CHANGED</strong></span></li>
+<li><span style="color: #000000;"><strong>intent.action.BOOT_COMPLETED</strong></span></li>
+</ul>
+</li>
+</ul>
+<h5><span style="color: #000000;"><strong>Intents</strong>: </span></h5>
+<ul>
+<li><span style="color: #000000;">Developers use an Android Intent to abstractly describe an operation they will perform. They can use it with startActivity to launch an Activity, broadcastIntent to send it to any interested BroadcastReceiver components, and startService(Intent) or bindService(Intent, ServiceConnection, int) to communicate with a background Service.</span></li>
+</ul>
+<h5><span style="color: #000000;"><strong>Views: </strong></span></h5>
+<ul>
+<li><span style="color: #000000;">All the interaction of a user with the Android application is through the user interface(UI). <strong>View</strong> is the basic building block of UI (User Interface) in Android. View refers to the android.view.View class, which is the <strong>super class</strong> for all the GUI components like TextView, ImageView, Button etc</span></li>
+</ul>
+<h3><span style="color: #800000;"> Conclusion</span></h3>
+<p><span style="color: #000000;">In this article, we saw basics of android and development necessary to know before beginning android pen-testing. In the next few articles in the series, we’ll be learning complete Android Penetration Testing that will cover both aspects static and dynamic analysis, especially covering the Mobile OWASP Top 10 and completing challenges in DIVA application.</span></p>
+<ul>
+<li><span style="color: #0000ff;">developer.android.com</span></li>
+<li><span style="color: #0000ff;">wikipedia.com</span></li>
+<li><span style="color: #0000ff;">tutorialpoint.com/android/index.htm</span></li>
+</ul>
+<p><span style="color: #000000;">To learn more about Android Penetration Testing. Follow this <strong><a href="https://www.hackingarticles.in/category/android-penetration-testing/">Link.</a></strong></span></p>
+<p><span style="color: #000000;"><strong>Author: Harshit Rajpal </strong>is an InfoSec researcher and left and right brain thinker. Contact<strong> <span style="color: #0000ff;"><a class="broken_link" style="color: #0000ff;" href="https://in.linkedin.com/in/harshit-rajpal-79bb43103">here</a></span></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">
+<!-- YARPP Thumbnails -->
+<h3>Related posts:</h3>
+<div class="yarpp-thumbnails-horizontal">
+<a class="yarpp-thumbnail" rel="norewrite" href="https://www.hackingarticles.in/windows-privilege-escalation-insecure-gui-application/" title="Windows Privilege Escalation: Insecure GUI Application">
+<span class="yarpp-thumbnail-default"><img src="https://www.hackingarticles.in/wp-content/plugins/yet-another-related-posts-plugin/images/default.png" alt="Default Thumbnail" data-pin-nopin="true"/></span><span class="yarpp-thumbnail-title">Windows Privilege Escalation: Insecure GUI Application</span></a>
+<a class="yarpp-thumbnail" rel="norewrite" href="https://www.hackingarticles.in/a-detailed-guide-on-httpx/" title="A Detailed Guide on httpx">
+<span class="yarpp-thumbnail-default"><img src="https://www.hackingarticles.in/wp-content/plugins/yet-another-related-posts-plugin/images/default.png" alt="Default Thumbnail" data-pin-nopin="true"/></span><span class="yarpp-thumbnail-title">A Detailed Guide on httpx</span></a>
+</div>
+</div>
+            </div><!-- .entry-content -->
+            <footer class="post-footer entry-footer">
+                                                
+            </footer><!-- .entry-footer -->
+            
+	<nav class="navigation post-navigation" aria-label="Posts">
+		<h2 class="screen-reader-text">Post navigation</h2>
+		<div class="nav-links"><div class="nav-previous"><a href="https://www.hackingarticles.in/implementation-of-firewall-policies-fortigate-part-2/" rel="prev">Implementation of Firewall Policies :FortiGate (Part 2)</a></div><div class="nav-next"><a href="https://www.hackingarticles.in/cybox-1-vulnhub-walkthrough/" rel="next">Cybox: 1  VulnHub Walkthrough</a></div></div>
+	</nav>        </div>

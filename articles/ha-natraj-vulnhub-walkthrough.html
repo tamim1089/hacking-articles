@@ -1,0 +1,102 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">HA: Natraj Vulnhub Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/ha-natraj-vulnhub-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2020-06-11T06:23:04+00:00">June 11, 2020</time><time class="updated" datetime="2025-06-10T20:10:28+00:00">June 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today we’re going to solve another boot2root challenge called “Natraj”. It’s available at Vulnhub for penetration testing practice. This lab is not difficult if we have the right basic knowledge to break the labs and are attentive to all the details we find during the reconnaissance. The credit for making this lab goes to <strong><a style="color: #000000;" href="https://www.hackingarticles.in/">Hacking Articles</a></strong>. Let’s get started and learn how to break it down successfully.</span></p>
+<p><span style="color: #000000;">Level: Not defined</span></p>
+<p><span style="color: #000000;">Since these labs are available on the Vulnhub website. Let’s download the lab file from <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.vulnhub.com/entry/ha-natraj,489/">here</a></strong></span>.</span></p>
+<h3><span style="color: #800000;"><strong>Penetration Testing Methodology</strong></span></h3>
+<p><span style="color: #000000;"><strong>Reconnaissance</strong></span></p>
+<ul>
+<li><span style="color: #000000;"><strong>Netdiscover</strong></span></li>
+<li><span style="color: #000000;"><strong>Nmap</strong></span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Enumeration</strong></span></p>
+<ul>
+<li><span style="color: #000000;"><strong>Dirb</strong></span></li>
+<li><span style="color: #000000;"><strong>LinEnum</strong></span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Exploitation</strong></span></p>
+<ul>
+<li><span style="color: #000000;"><strong>RCE with LFI and SSH Log Poisoning</strong></span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Privilege Escalation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Abuse of Apache configuration file permissions</span></li>
+<li><span style="color: #000000;">Abusing SUDO</span></li>
+<li><span style="color: #000000;"><strong>Capture the flag</strong></span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Walkthrough</strong></span></p>
+<p><span style="color: #000000;"><strong>Reconnaissance</strong></span></p>
+<p><span style="color: #000000;">Like always we will identify the host’s IP with the “Netdiscover” tool.</span></p>
+<pre class="lang:default decode:true">netdiscover</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-EnhbLVbCvW4/XuHJ0GqR0fI/AAAAAAAAkno/XPmKy6anuQYY3MPVyNQWjw15w24RT32GgCLcBGAsYHQ/s1600/1.png"/></span></p>
+<p><span style="color: #000000;">So, let’s start by listing all the TCP ports with nmap.</span></p>
+<pre class="lang:default decode:true"> nmap -sV -sC -p- 192.168.10.156</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-pKkoZVGBRhA/XuHJ3iadXCI/AAAAAAAAkoQ/rxulp2jRhkkThpfCCPKboKNby_oIEqlOwCLcBGAsYHQ/s1600/2.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Enumeration</strong></span></h3>
+<p><span style="color: #000000;">We started by visiting the web service (port 80), where we have found several pictures and information about the Natraj, we will check the source code and robots.txt, it seems that there is nothing useful. (or at least, for the moment). So let’s proceed further.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-prOENRuuM-c/XuHJ6tO751I/AAAAAAAAko4/hvqCnHL9bEMbxZ31MD-sXajAPT58Sx06wCLcBGAsYHQ/s1600/3.png"/></span></p>
+<p><span style="color: #000000;">With the help of Dirb and it’s default dictionary, we have found a directory called “<strong>console</strong>“.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-5Yy1mUi3OD0/XuHJ6o1kBTI/AAAAAAAAko0/dvpcUp8oqZsT5C2ERFNUjFn6lmzjveHgwCLcBGAsYHQ/s1600/4-a.png"/></span></p>
+<p><span style="color: #000000;">We go in and list a file called “<strong>file.php</strong>“:</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-bIuFdOsLhsI/XuHJ650ZDzI/AAAAAAAAko8/7mjR6oZ3GNUiEWVtmb4u3aB_imS52clpQCLcBGAsYHQ/s1600/4.png"/></span></p>
+<p><span style="color: #000000;">If we execute it, we see that it does nothing. We probably need to add something else 😉</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-iKNYbdY06DE/XuHJ7sNcvII/AAAAAAAAkpA/luQZ-0LEVsI67pVeQs1pU5HPq-UvDzGXACLcBGAsYHQ/s1600/5.png"/></span></p>
+<p><span style="color: #000000;">Now I decided to use the same file name as the “GET” variable and try to do a proof of concept (POC) to check if the site was vulnerable to <strong>Local File Inclusion</strong> (LFI).</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-YSjXFN9gsZU/XuHJ8B1VWpI/AAAAAAAAkpE/GVRa65xumNsbqwa0jZFZIJV4up2fQxT6gCLcBGAsYHQ/s1600/6.png"/></span></p>
+<h3><span style="color: #800000;">Exploiting</span></h3>
+<p><span style="color: #000000;">After examining I found that it was vulnerable and that the site was using an Apache server, I tried to perform an <strong>RCE</strong> (Remote Command Execution) by poisoning the Apache log, but I was not successful.</span></p>
+<p><span style="color: #000000;">After further testing of other options, I saw that I do have the Access to the “auth.log” file, where SSH service logs appear.</span></p>
+<p><span style="color: #000000;"><strong><u>Malicious sending</u></strong>:</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-ev72F3Ndw5g/XuHJ8quuLCI/AAAAAAAAkpI/56PS84YQRiEMvFnILNbImITxUsPEAZ5zwCLcBGAsYHQ/s1600/7.png"/></span></p>
+<p><span style="color: #000000;"><strong><u>Response from the server:</u></strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-cm4IJ-_-YxY/XuHJ9HrDEGI/AAAAAAAAkpQ/rifA0n3_-2kZg_iZJHgE82GuX5quaOkXwCLcBGAsYHQ/s1600/8.png"/></span></p>
+<p><span style="color: #000000;">After this, we can try writing PHP code inside the SSH command for the connection:</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-j_d7CTC5RI4/XuHJ9bbWSDI/AAAAAAAAkpU/CuO-4cjEYYwKONK9dWICjoRhzYTQgDL9ACLcBGAsYHQ/s1600/9.png"/></span></p>
+<p><span style="color: #000000;">We make another request, this time we indicate in the variable a “id” and check that it is indeed vulnerable.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-6706vFZRGRU/XuHJ0OsRzvI/AAAAAAAAknk/jcyni0cbuYke569xgK4ALW8dk4iCDeiRACLcBGAsYHQ/s1600/10.png"/></span></p>
+<p><span style="color: #000000;">Great! now, we’ll put a listening netcat on port 1234 and run the command to get the reverse Shell.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-k6ThgEhdWC4/XuHJ0Fh5y5I/AAAAAAAAkng/-Cj7vpDe_dIbRlMSqKWEjUZy-3lM7YqbwCLcBGAsYHQ/s1600/11.png"/></span></p>
+<p><span style="color: #000000;">We will pass this line to URL-Encode:</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-M2t-sR1PN-w/XuHJ1OBhmjI/AAAAAAAAkns/Rrbwq2TBMWI8eeg5tp7y3q1tqjTI6iz2QCLcBGAsYHQ/s1600/12.png"/></span></p>
+<p><span style="color: #000000;">And we will send the request as shows in image below:</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-wWeSHPuAZzI/XuHJ1E1pghI/AAAAAAAAknw/0_m2IdzCbWEloRrUdHR9qrpz8YeNdn-VACLcBGAsYHQ/s1600/13.png"/></span></p>
+<p><span style="color: #000000;">If everything went well, we will have a reverse shell with the user “www-data”:</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-XRVJ09zMx3c/XuHJ1os_1_I/AAAAAAAAkn0/Mpp0-iSEEfYQMej6FcPxNm_HSu40Dj_mQCLcBGAsYHQ/s1600/14.png"/></span></p>
+<p><span style="color: #000000;">We execute the following commands to get an interactive shell.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-u0FTis7ZAGY/XuHJ1o-qmVI/AAAAAAAAkn4/gTWWAxBgxAcZkiC0qlxIH82dpaU0UrKJACLcBGAsYHQ/s1600/15.png"/></span></p>
+<p><span style="color: #000000;">We use the tool “LinEnum” and see that we have to write permissions in the file “/etc/apache2/apache2.conf”.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-WvBspt3EVQM/XuHJ1yCWDvI/AAAAAAAAkn8/zLZVHIcsfAs1A4QoJhA9h7vZf62HEbMaQCLcBGAsYHQ/s1600/16.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Privilege Escalation (user)</strong></span></h3>
+<p><span style="color: #000000;">I downloaded the file in my machine and edited these lines, specifying the username “mahakal”.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-G17lKhSWLbU/XuHJ2pGIY8I/AAAAAAAAkoA/OHCokB5u8i0UZ7AR1ANPTf7IKcdRHX4kQCLcBGAsYHQ/s1600/17.png"/></span></p>
+<p><span style="color: #000000;">We set up an HTTP server with Python, Download the file to the machine and replace the original.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-lrlKzeYibuc/XuHJ20a2sqI/AAAAAAAAkoE/XApo4_f2VnUZQUv2Tw1_67dbaBDEOOhmwCLcBGAsYHQ/s1600/18.png"/></span></p>
+<p><span style="color: #000000;">Now, we’ll have to create a reverse Shell in PHP so that when we will run it, we take control of it as the user “mahakal”.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Vwl0LfgorA8/XuHJ3a3jjwI/AAAAAAAAkoM/d0FRibJUGlQC7R9FblLMQlkpl2H8A2w-gCLcBGAsYHQ/s1600/19.png"/></span></p>
+<p><span style="color: #000000;">This web Shell will be hosted in the directory “<strong>/var/www/html</strong>“.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-yOcXuz_y4LY/XuHJ39TxIzI/AAAAAAAAkoU/dCcvGPQk9e4DnZ7CrdrH8swMEEZlrO7oACLcBGAsYHQ/s1600/20.png"/></span></p>
+<p><span style="color: #000000;">Now we’ll put a Netcat to listen on port 5555.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-ZFXl9FKA8JQ/XuHJ4SLzgXI/AAAAAAAAkoY/sYE0f1t5TcwmGx0lrcF_ZspPxSCzCQeLwCLcBGAsYHQ/s1600/21.png"/></span></p>
+<p><span style="color: #000000;">We’ll reboot the machine and run the “<strong>shell.php</strong>” file:</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-iCKis4sEkLI/XuHJ4qhsWLI/AAAAAAAAkoc/bfnk0U4_Lr8TQP0VFNgU2yONImQjEbPNACLcBGAsYHQ/s1600/22.png"/></span></p>
+<p><span style="color: #000000;">We go back to our shell with Netcat and check that we are already inside the machine with the user account “mahakal”.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-6qVGa9qwNCU/XuHJ49QwAnI/AAAAAAAAkog/aTui9OJ9WkMLX2jOptxTVjoQOQg5-PcpQCLcBGAsYHQ/s1600/23.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Privilege Escalation (root)</strong></span></h3>
+<p><span style="color: #000000;">We do a “sudo -l” and see that we have permission to run the nmap binary as root and without a password.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-69dDZ2OKU38/XuHJ40ceq_I/AAAAAAAAkok/V7nVFcfuq5ghIGwFuBTPzi_RJY28xjJHgCLcBGAsYHQ/s1600/24.png"/></span></p>
+<p><span style="color: #000000;">We return to execute the necessary commands to get an interactive shell.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-a_JaqWQYAWE/XuHJ5ni2uHI/AAAAAAAAkoo/OJ2L8NKDWpQrXME2jY0eyKLPlY-GK0VcwCLcBGAsYHQ/s1600/25.png"/></span></p>
+<p><span style="color: #000000;">The idea is to raise a shell as root, for this we will put the command in a variable and then we will call it with nmap emulating a script, we can do it in the following way.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-4ROOFVsXKPA/XuHJ53YdbdI/AAAAAAAAkos/-Qc6Woz29wA1-fonhB8kNciqna7MwStsQCLcBGAsYHQ/s1600/26.png"/></span></p>
+<p><span style="color: #000000;">And having already hijacked the root account, we only have to read the flag and complete this great machine.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Lgo0Pxn0NlY/XuHJ6MuznaI/AAAAAAAAkow/7zd9mhzKSR0W_ICNkClhIcPyccuFx_diACLcBGAsYHQ/s1600/27.png"/></span></p>
+<p><span style="color: #000000;"><strong>Author</strong>: <strong>David Utón</strong> is Penetration Tester and security auditor for Web applications, perimeter networks, internal and industrial corporate infrastructures, and wireless networks </span><span style="color: #000000;">Contact on <span style="color: #0000ff;"><strong>LinkedIn</strong></span>.</span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

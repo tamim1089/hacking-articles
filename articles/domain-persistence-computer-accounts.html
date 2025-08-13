@@ -1,0 +1,108 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/persistence/" rel="category tag">Persistence</a></span>            </div>
+            <h1 class="post-title entry-title">Domain Persistence: Computer Accounts</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/domain-persistence-computer-accounts/" rel="bookmark"><time class="entry-date published" datetime="2022-02-05T18:05:24+00:00">February 5, 2022</time><time class="updated" datetime="2025-05-11T20:40:14+00:00">May 11, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Typically, while configuring <strong data-start="211" data-end="233">Active Directories</strong>, system admins overlook the harm caused by allowing a <strong data-start="288" data-end="319">local administrator account</strong> on a system assigned to a specific user. Consequently, companies label this setup as a “necessary evil,” arguing that enabling users to handle tasks like new tool installations in large enterprises reduces pressure on the <strong data-start="542" data-end="553">IT team</strong>, even if it introduces risk. In this article, we will demonstrate how an attacker who compromises a system with an active local administrator account and a <strong data-start="710" data-end="730">computer account</strong> in the <strong data-start="738" data-end="755">domain admins</strong> group can dump hashes in the domain. Furthermore, we will explain how attackers use <strong data-start="840" data-end="860">machine accounts</strong> to maintain <strong data-start="873" data-end="895">domain persistence</strong>.</span></p>
+<h3><span style="color: #800000;">Table of content</span></h3>
+<ul>
+<li><span style="color: #000000;">Attack Methodology</span></li>
+<li><span style="color: #000000;">Computer Accounts vs User Accounts</span></li>
+<li><span style="color: #000000;">Domain Escalation using Mimikatz</span></li>
+<li><span style="color: #000000;">Domain Persistence using powermad</span>
+<ul>
+<li><span style="color: #000000;">userAccountControl attribute</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;">Conclusion</span></li>
+</ul>
+<h3><span style="color: #800000;">Attack Methodology</span></h3>
+<p class="" data-start="973" data-end="1026"><span style="color: #000000;">The methodology proceeds through the following steps:</span></p>
+<ul>
+<li><span style="color: #000000;">First, the attacker compromises a user account with local admin access.</span></li>
+<li><span style="color: #000000;">Then, the attacker uses Mimikatz to dump the NTLM hash of an account named “Harshit,” which belongs to the domain admins group.</span></li>
+<li><span style="color: #000000;">Next, the attacker executes a PTH attack to browse files on the domain controller.</span></li>
+<li><span style="color: #000000;">After that, the attacker adds a new machine account using admin privileges.</span></li>
+<li><span style="color: #000000;">Subsequently, the attacker modifies the userAccountControl parameter to promote this machine account to Domain Controller.</span></li>
+<li><span style="color: #000000;">Finally, the attacker achieves persistence in the domain.</span></li>
+</ul>
+<p><span style="color: #000000;">To clarify, the victim we compromised possesses an associated <strong data-start="1724" data-end="1744">computer account</strong> named “Harshit” (a <strong data-start="1764" data-end="1783">machine account</strong>), which belongs to the <strong data-start="1807" data-end="1824">domain admins</strong> group. Moreover, the victim maintains an active <strong data-start="1873" data-end="1904">local administrator account</strong> that we have already accessed.</span></p>
+<h3><span style="color: #800000;">Computer Accounts vs User Accounts</span></h3>
+<p><span style="color: #000000;">For a detailed guide on users and computer accounts please refer to Microsoft’s docs <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://docs.microsoft.com/en-us/windows/security/identity-protection/access-control/active-directory-accounts#default-local-accounts-in-active-directory">here</a> </strong></span>and <strong><span style="color: #0000ff;"><a style="color: #0000ff;" href="https://docs.microsoft.com/en-us/previous-versions/windows/it-pro/windows-server-2003/cc759279(v=ws.10)?redirectedfrom=MSDN">here</a></span></strong>.</span></p>
+<p><span style="color: #000000;">Machine Accounts aka Computer Accounts are similar to User Accounts from the AD’s point of view. Major difference is as follows:</span></p>
+<ul>
+<li><span style="color: #000000;">The system randomly generates and resets a <strong data-start="2416" data-end="2436">computer account</strong> password every 30 days.</span></li>
+<li><span style="color: #000000;">Creating a <strong data-start="2476" data-end="2492">user account</strong> also generates an associated <strong data-start="2522" data-end="2542">computer account</strong></span>.</li>
+<li><span style="color: #000000;">A user, if granted rights, can create multiple computer accounts. Default value is 10.</span></li>
+</ul>
+<p><span style="color: #000000;">System admins widely use <strong data-start="2703" data-end="2724">computer accounts</strong> to categorize and manage <strong data-start="2750" data-end="2778">Active Directory forests</strong> efficiently. For instance, the most common use is organizing <strong data-start="2840" data-end="2859">security groups</strong> using these accounts. Nevertheless, that topic falls outside the scope of this article.</span></p>
+<p><span style="color: #000000;">You can easily identify <strong data-start="3004" data-end="3024">machine accounts</strong> or <strong data-start="3028" data-end="3049">computer accounts</strong> by checking for the “$” symbol at the end of the account name.</span></p>
+<h3><span style="color: #800000;">Domain Escalation using Mimikatz</span></h3>
+<p><span style="color: #000000;">At this point, the attacker has successfully compromised an account with <strong data-start="261" data-end="291">local administrator access</strong>. Upon further investigation, we discovered that a <strong data-start="342" data-end="362">computer account</strong>—also known as a <strong data-start="379" data-end="398">machine account</strong>—had been created and added to the <strong data-start="433" data-end="450">Domain Admins</strong> group.</span></p>
+<p><span style="color: #000000;">To enumerate all the <strong data-start="511" data-end="528">domain admins</strong> present in the <strong data-start="544" data-end="564">Active Directory</strong>, one can use the command net group “domain admins” /domain. Likewise, in PowerShell, running net localgroup administrators /domain reveals the same information. In this case, we identified that the account <strong data-start="775" data-end="788">“Harshit”</strong> was part of the <strong data-start="805" data-end="822">domain admins</strong> group. To confirm this, we used the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">net user Harshit</pre>
+<p><span style="color: #000000;">As expected, the <strong data-start="926" data-end="946">computer account</strong> “Harshit” was indeed listed under <strong data-start="981" data-end="998">domain admins</strong>.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgNnJFPusemhQW3Y40zXeeT_ZyX8MjmJfnxT0D2J-fcYQrY34Y2oHHU3uu_xU4RVky3E2oaoRWnCgU1QMeQ5s44RgQtooi-TAzamR2r162oUF27W7iAof-OSgIYUwwC8YkmNLhkLNBaetGINSI6hE1RWt5S-BVy6-bl5rolqzXrFde5by0j1F9m-aN_LA=s16000"/></span></p>
+<p><span style="color: #000000;">An attacker can leverage the availability of local administrator access to run mimikatz and dump the NTLM hash of the computer account “Harshit”</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">privilege::debug
+sekurlsa::logonPasswords</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjyrQJ-6H1ra6RVy8rqhpPeqKChrul_iQgWRgiUDwYov2rQmhOq9zYRW6QEYQl7ZM4GNbegK3LsDimmKCBbA6uQDfBm-BBOMRs-9DOl4lErB6RXpB0Fm5tI0AZ_0tc1sSXOXoBfEmXC7YXtK-Y_ol8zkdaeOAeJf2EpEOC0ehzkFEMaSKpxvYkSpizn6A=s16000"/></span></p>
+<p><span style="color: #000000;">As you can see, we have obtained an NTLM hash for the computer account Harshit.</span></p>
+<p><span style="color: #000000;">An attacker can use this NTLM hash to conduct a PassTheHash attack to escalate privileges to Domain Admin.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">sekurlsa::pth /user:harshit /domain:ignite.local /ntlm:64fbae31cc352fc26af97cbdef151e03</pre>
+<p><span style="color: #000000;">This new command prompt window which opens can now be used to access Domain Controller’s file system like so</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">dir \\dc1.ignite.local\c$\Users\Administrator</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgdZrBKVIeLM8_24OzQJjkHaZjO_nJDQv6So8HY2OvmhZguQfme7rP0fSk3o3OV2QG3V4X3OnkpppY0wmuazq4SJW54Le52ejx7jkdjHQdLavW4wP-_bs5JqQacUyJ5-s2-QAv6wf-1mFSnB4mbmODqTBYvisbU-y7aS6zu7agILSRVTfZd4OH9xhNg6A=s16000"/></span></p>
+<p><span style="color: #000000;">There are a number of ways to fully compromise the DC now. An attacker can upload an exe here and gain a reverse shell or simply dump the SAM file. We won’t cover that now. Let’s put our focus on how we can maintain persistence on this domain using a computer account now.</span></p>
+<h3><span style="color: #800000;"><strong>Domain Persistence using powermad</strong></span></h3>
+<p><span style="color: #000000;">The aim is to utilize this newly obtained administrator command prompt to add a new computer account and make it a domain controller so that we can maintain persistence on the domain now.</span></p>
+<p><span style="color: #000000;">Upon a little googling, I found a great powershell script that would allow us to add a computer/machine account called <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://github.com/Kevin-Robertson/Powermad">powermad</a></strong></span>. You can use powershell and IWR to bring this into the system and utilize using the Admin prompt we have opened.</span></p>
+<p><span style="color: #000000;">A user can create computer accounts. Default value is 10. A system admin can modify this to restrict a user from being able to create computer accounts.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Win+r -&gt; adsiedit.msc</pre>
+<p> </p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEj7M2vWarTtHg98OeRz7QzFnd5U_aUOcNJTVlmGTpJED2BbUvuH8fzPyfh5k4atMuYlnvTDZs_Z-YiK5j19LiPH1O_QBsCwKmFumYdQezXsxdlLQKDIxnHUzR5JNA17uYXVaeu5leXhJUrlsnf9tHYG9nGN-j_n5o5ibpVco050r1cdghFXQX57eN3HEQ=s16000"/></span></p>
+<p><span style="color: #000000;">This opens up AD service interface editor. You can select the forest and go to its properties.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgoZXwBOkJ7NZtqB3XYtF6jC1sMnZS0KReIz8HnVBX1-Ny_ooYVJRoddpc9pTfA1c93XFL6jDT5WvKxUscxpdBnpFYcv4cff5kTwYL7bvhKJVcn1NDnHSTrOGHy_dWPOKGOPnva503Me_tcP5oBRiOLAYzHOpMawMZQ52cG3IB1pPYt676DbCZfYCAOgg=s16000"/></span></p>
+<p><span style="color: #000000;">You can view the attribute editor (which is a collection of objects editable through powershell and manually through GUI) and see the attribute “ms-DS-MachineAccountQuota.” As you can see, the value is set at 10, so my user can create 10 machine accounts without a problem.</span></p>
+<p><span style="color: #000000;">This can be checked using powermad too. Now, we would import powermad psm1 module and create a new machine account called “noob”</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">powershell -ep bypass
+Import-Module .\Powermad.psm1
+New-MachineAccount -MachineAccount noob -Domain ignite.local -DomainController dc1.ignite.local</pre>
+<p><span style="color: #000000;">As simple as that!  A new machine account has been added now</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhUcr2dvOlOkDn7A7Okd70xeLDc1XQlMrEsdhK6FL9cuBR3bXb5pStWNioV-Qw1KHBNwp19coONOyOSB_kl4y4y_5ormimz_9jSFyJuRwyfHuxgU0TrU4utUH9P-cfJiGfklyM59UjFrQ1jb5Nq_YENGCIYCEluoEq3JAW3KwgzyqrSx_77ZW8Gzh3pJQ=s16000"/></span></p>
+<p><span style="color: #000000;">This can be verified on the AD by running the get-ADComputer command and * as a filter.</span></p>
+<p><span style="color: #000000;">As you can see noob has been added (Note SamAccountName noob$ indicating this is a computer/machine account)</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhXQikx51cYfHcUk1dH2zL3pFKJ4E3VDKUHLhFaVvk6O92uINZY-RzsyDirUIrUiBMYbOb-bCyUinUycuQZoM5kFVXUjvZRYT8uT-C6ZpsXKmCymP2lHhY88wCYvPtDDGnqdVUzvohyhcM-CmvMz7gWEdsKwdmxYznTfAiWtpVwuF2yA-VqUUnojBZ3xw=s16000"/></span></p>
+<p><span style="color: #000000;">Under the AD, we can now see that noob has been added in the “Domain Computers” group.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgKvgi8eZVb6AKW7Kkp-ywhroy_UR6TS5Ti7Nw0miwqzjTpa7QzBGkAymVvMpvWIlx_2GhN08Acw_b3LEF4dFwvQ1n2mR_tvE9bH_I7oyzT82HAGE2VtQKQ-ACziwVUBg9Cc00CF9oaQXY4sqgTHJg3OKgPJt0iYq2LLSfoGVZ6UbaR0O9_JVWkwvBW1Q=s16000"/></span></p>
+<h3><span style="color: #800000;"><strong>userAccountControl attribute</strong></span></h3>
+<p><span style="color: #000000;">Just like we have the MachineAccountQuota attribute, we have another attribute called userAccountControl which can be viewed from the AD <strong>server manager-&gt;tools-&gt;AD users and groups-&gt;computers-&gt;noob</strong></span></p>
+<p><span style="color: #000000;">You need to select view-&gt;<strong>advanced features first</strong></span></p>
+<p><span style="color: #000000;">And then you would be able to see attribute editor. Under this large list, we can see the userAccountControl parameter set to 4096.</span></p>
+<p><span style="color: #000000;">This value 4096 is the ASCII equivalent of the hex value 0x1000 which categorizes this machine/computer account as a workstation trust account.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEimbaQpBfC2jd0VwTCuAfQIvbN9_eCc2cBnBAQaOoQ4bqgvImleGSr4D0Rv_0Y9q0sVExdjSn391cF2ykejgde2PCjISfRibH-c1Zs0eHdcSRDo85HtQmh2pW7czdmHiWy14VmWiOec7Tq9x352pxdvJo9qUOZm7BrfjOrUDW5DKN0IAp6RNeqoBkJk7g=s16000"/></span></p>
+<p><span style="color: #000000;">To make this newly added computer/machine account noob as the domain admin, we need to change this attribute to 8096 (0x2000 in hex).</span></p>
+<p><span style="color: #000000;">This can be done using our escalated Powershell prompt.</span></p>
+<p><span style="color: #000000;">To view this attribute with the help of powershell we can do this:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Get-ADComputer noob -pro name,primarygroupid, useraccountcontrol</pre>
+<p><span style="color: #000000;">This tells us the value 4096 is set currently.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEghMWTFXhpuG7Rbpsajja4ry-c6pINKa1diqDWwr3jdcNlIpB4pMklpDaNLjLCUiXF62W5z7Z-I3PbPDQNtfpbqVTpnjmXP-oDuaSRE2eTdBZ4Fif_3PRk7c8wRlhcPIJskKre7ZigmK1bVoC3teTrEcMQocoCBz4LFxnPtx-VxeQ_HE0w9Aej0D3RtEQ=s16000"/></span></p>
+<p><span style="color: #000000;">We can change this value with the Set-ADComputer command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Set-ADComputer noob -replace @{“useraccountcontrol” = 8192}
+Get-ADComputer noob -pro name, primarygroupid, useraccountcontrol</pre>
+<p><span style="color: #000000;">You can now see that this computer account has been added to Domain Controller’s group and the value changed to 8192</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEh4c0d7_VZwhxdv2L5CtObXmVdRMj-nEMqQpNK1aAYw2BGn0XxZFSe4vpBDK1jzHuSdSIeXcyAx28m-RlmSZGRWVTNiRPGwqGueU-J1RKG90M5BggLZSSJIUgkNkjS55sJhk7dO8g9kRd_GA1LX0qOB2XyULUyNE09wldrOWRPKL1c4d7tCr6ytG9Tw8A=s16000"/></span></p>
+<p><span style="color: #000000;">This can be observed via AD too. Note that 0x2000 (hex of 8192) has made it from a WORKSTATION_TRUST_ACCOUNT to SERVER_TRUST_ACCOUNT.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEg2c54DY92F-_M8ZTAYE8Z0xkco_868MhzWHottEv-DuehCbaCYgmsUAPwLhiBSYoRCYqT00Ag4cCbm2BJIAX5ZRENF56sJkS7hSRKHdtn-_03ze5GoKYGB4h-Skt5MDPrBYXp8cRX6EqhgEDYCz8CK1flRaLsSJpOGIfXBGYGksV0ktzRL8QwVUxCFSA=s16000"/></span></p>
+<p><span style="color: #000000;">We can confirm that noob has become a domain controller now by going to a member of tab</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEi-oDLLGcrsEeV7AJnnJzBg8fj4T8KMSdx3thE4cHZ3GRvuDyVn5PocXt_DhCIxV36Ep_ZQZOw3XrwWhm6zWH2cf3kgC3PNBZhMyagia3KUdX5kh_K7zH6Vl4nSLKgonj5zD673rxenETeqqlFJcpAROfuRYqAOeSvcfotX08ZELyN6cupSV3vETNLJiw=s16000"/></span></p>
+<p><span style="color: #000000;">Additionally, an attacker can perform a number of attacks now that this account has become a Domain Controller. Furthermore, the attacker has established persistence. He can dump this new account’s hash (DCSync attack) and conduct PTH attacks or generate a golden ticket now.</span></p>
+<h3><span style="color: #800000;">Conclusion</span></h3>
+<p><span style="color: #000000;">Machine or computer accounts have existed for decades, perhaps even longer. However, organizations have not widely discussed their security implications. Through this article, we have tried to spread the word about one such method through which an attacker can conduct domain escalation and then persistence by using machine accounts. System admins should not let any user create machine accounts to avoid such threats. Thanks for reading. Hope you liked the article.</span></p>
+<p><span style="color: #000000;"><strong>Author: Harshit Rajpal </strong>is an InfoSec researcher and a left and right brain thinker. Contact</span><strong> <span style="color: #0000ff;"><a class="broken_link" style="color: #0000ff;" href="https://in.linkedin.com/in/harshit-rajpal-79bb43103">here</a></span></strong></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

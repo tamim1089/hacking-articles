@@ -1,0 +1,146 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/website-hacking/" rel="category tag">Website Hacking</a></span>            </div>
+            <h1 class="post-title entry-title">Comprehensive Guide on Path Traversal</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/comprehensive-guide-on-path-traversal/" rel="bookmark"><time class="entry-date published updated" datetime="2020-07-18T09:31:49+00:00">July 18, 2020</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">In our previous post, we’ve explained the <strong>Local File Inclusion attack</strong> in detail, which you can read from <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.hackingarticles.in/comprehensive-guide-to-local-file-inclusion/">here</a></strong></span><strong>. </strong>I recommend, then, to revisit our previous article for better understanding, before going deeper with the<strong> path traversal vulnerability</strong> implemented in this section.</span></p>
+<p><span style="color: #000000;">Today, in this article we will explore one of the most critical vulnerabilities, that arises when the developer does not validate the inclusion functions in the web-applications, which thus allows the attacker to read and access any sensitive file from the server.</span></p>
+<h3><span style="color: #800000;"><strong>Table of Content</strong></span></h3>
+<p><strong><span style="color: #000000;">Introduction</span></strong></p>
+<p><strong><span style="color: #000000;">Linux Server Path_Traversal Exploitation</span></strong></p>
+<ul>
+<li><span style="color: #000000;">Basic Path Traversal</span></li>
+<li><span style="color: #000000;">Blocked Traversal Sequence</span></li>
+<li><span style="color: #000000;">Validated Path Traversal</span></li>
+<li><span style="color: #000000;">Path Disclosure in URL</span></li>
+<li><span style="color: #000000;">Null Byte Bypass</span></li>
+</ul>
+<p><strong><span style="color: #000000;">Windows Server Path_Traversal Exploitation</span></strong></p>
+<ul>
+<li><span style="color: #000000;">Basic Path Traversal</span></li>
+<li><span style="color: #000000;">Double dots with Forward-Backward Slashes</span></li>
+<li><span style="color: #000000;">Blocked Traversal Sequences</span></li>
+</ul>
+<p><strong><span style="color: #000000;">Mitigation Steps</span></strong></p>
+<h3><span style="color: #800000;"><strong>Introduction</strong></span></h3>
+<p><span style="color: #000000;"><strong>Path Traversal</strong> sometimes also termed as <strong>“Directory Traversal” </strong>is an HTTP vulnerability which allows an attacker to trick and manipulate the web application’s URL to access the files or directories that resides outside the application’s root folder. This vulnerability carries when a developer fails to establish or manage the input validations while including the files such as images, static texts, codes, etc. in their web applications.</span></p>
+<p><span style="color: #000000;">However, in such attacks, the attacker manipulates the web application input fields by entering <strong>the dot-dot-slash (</strong><strong>../</strong><strong>)</strong> sequences or some similar variations, to bypass the web page and access the desired system file.</span></p>
+<p><span style="color: #000000;">Thus this vulnerability has been reported as <strong>“High </strong>with a <strong>CVSS score of 7.3”</strong> under :</span></p>
+<ol>
+<li><span style="color: #000000;"><strong>CWE-22:</strong> “Improper Limitation of a Pathname to a Restricted Directory (‘Path Traversal’)”</span></li>
+<li><span style="color: #000000;"><strong>CWE-35:</strong> “Path Traversal: ‘…/…//’ “</span></li>
+<li><span style="color: #000000;"><strong>CWE 73:</strong> “Directory Traversal”</span></li>
+<li><span style="color: #000000;"><strong>CWE-200: </strong>“Exposure of Sensitive Information to an Unauthorized Actor”</span></li>
+</ol>
+<p><span style="color: #000000;">Let’s check out this scenario and learn how an attacker defaces the web-application by grabbing the server’s sensitive files.</span></p>
+<p><em><span style="color: #000000;">Here, the user calls up a file – <strong>index.php </strong>through the web application’s URL i.e. <strong>http://abc.com/file=index.php. </strong>Thus the application process the URL and calls up the <strong>index.php</strong> that was present locally into the server folder <strong>“RAJ” </strong>as “<strong>/var/www/html/RAJ”.</strong></span></em></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-5U72yelG_aA/XxIokhGFrOI/AAAAAAAAl9o/l26wU8cKyeIii14g3pAAW_hjkLQd-tFBgCLcBGAsYHQ/s1600/1.png"/></span></p>
+<p><em><span style="color: #000000;">The developer uses the “include” functionality as <strong>“file=” </strong>with a simple intention to manage the user’s selected input files, such that the application can directly call it from the local server. </span></em><em><span style="color: #000000;">Now the attacker tries to manipulate the URL using the dot-dot-slash sequence as <strong>http://abc.com/file=../../../../etc/passwd, </strong>to retrieve the contents of the server’s password file.</span></em></p>
+<p><em><span style="color: #000000;">Thus again the application will process it and reads up the file at <strong>/var/www/html/RAJ/../../../../etc/passwd</strong><strong>. </strong>Every <strong>“../” </strong>represents – back to parent directory, thus if we call up “../” for four times, it will put us in the <strong>“root” </strong>directory, from there we can simply access the password file as <strong>etc/passwd</strong>.</span></em></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-ZppdtF_CDOM/XxIoq9FHL9I/AAAAAAAAl9s/UnmqgFoccsYDXagEHcOJ_IE17WipVVOZACLcBGAsYHQ/s1600/2.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Linux Server Path_Traversal Exploitation</strong></span></h3>
+<p><span style="color: #000000;">Let’s now try to implement this in some real scenarios and check the different attacking sequences rather than the dot-dot-slash only.</span></p>
+<p><span style="color: #000000;">For all this, I’ll be using two different platforms <a style="color: #000000;" href="https://portswigger.net/web-security"><span style="color: #0000ff;"><strong>The Portswigger Academy</strong></span></a> and <strong>DVWA</strong> which contains the path traversal vulnerability.</span></p>
+<h3><span style="text-decoration: underline;"><span style="color: #000000;"><strong>Basic Path Traversal</strong></span></span></h3>
+<p><span style="color: #000000;">Login into the <strong>PortSwigger academy</strong> and drop down till <strong>Directory Traversal</strong> to get into its labs, choose the first lab as “<strong>File path traversal, the simple case” </strong>and hit the <strong>“Access the lab”</strong> button.</span></p>
+<p><span style="color: #000000;">Here you’ll now be redirected to an e-commerce website, which is having several products in its catalogue and is suffering from path traversal vulnerability.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-lpjzr8GVBvo/XxIouwn3oxI/AAAAAAAAl9w/AGKSan_v6rsCNc43yjOzz0YeLxVY-OwFQCLcBGAsYHQ/s1600/3.png"/></span></p>
+<p><span style="color: #000000;">As to further, I’ve opened a product and checked out its display image with a simple right-click as <strong>view image.</strong></span></p>
+<p><span style="color: #000000;">Now its time to check what we could manipulate.</span></p>
+<p><span style="color: #000000;">Tune in your burp suite in order to capture the ongoing <strong>HTTP Request </strong>and share it all with the <strong>Repeater</strong>.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-wuaqh2cyNuo/XxIoyoiJWoI/AAAAAAAAl90/VToyUdzelz0r6M-IXrmjKiGF2zKDAsbQwCLcBGAsYHQ/s1600/4.png"/></span></p>
+<p><span style="color: #000000;">As in the GET request, above in the image, you can notice that the <strong>filename=67.jpg</strong>, let’s try to change this filename with</span></p>
+<pre class="lang:default decode:true">filename=../../../etc/passwd</pre>
+<p><span style="color: #000000;">Great!! From the below image, you can see that we’ve successfully grabbed the <strong>passwd</strong> file.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-KODPwkps0FE/XxIo2XyvSUI/AAAAAAAAl94/dAfOUZDETNo6v7-eeyUzdwQ6_bMyJp5NgCLcBGAsYHQ/s1600/5.png"/></span></p>
+<h3><span style="text-decoration: underline; color: #000000;"><strong>Blocked Traversal Sequence</strong></span></h3>
+<p><span style="color: #000000;">There are situations when the developers end up the traversal process, i.e. the dot-dot-slash or any subsequent sequence will not work in such case.</span></p>
+<p><span style="color: #000000;">While getting to the second lab, I got the same issue i.e. the “<strong>../</strong>” sequence didn’t work and I fail to capture the password file. So let’s try to capture this request again in our burpsuite monitor.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-KNgEe1htJT8/XxIo6FQvjPI/AAAAAAAAl98/PvPHQ_tWPe8kbldwgYp5zJ0PgDfcISKMwCLcBGAsYHQ/s1600/6.png"/></span></p>
+<p><span style="color: #000000;">From the below image, you can see that I’ve grabbed up the request with <strong>filename=66.jpg, </strong>and now will shift this all to the <strong>Repeater</strong>.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-6efP1RSiVsA/XxIo9jcRZ9I/AAAAAAAAl-E/3kbhuJIDPNMxVS03VxfS85V4uzEUJaCEACLcBGAsYHQ/s1600/7.png"/></span></p>
+<p><span style="color: #000000;">As we’re blocked with the “../” sequence. Let’s try to enter <strong>/etc/passwd</strong> without any preceding values.</span></p>
+<p><span style="color: #000000;">Cool!! This worked, we got the <strong>password</strong> file with the direct call.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-voOAc0ju840/XxIpBooFFFI/AAAAAAAAl-M/t47n4rF4AMkine3n7qGFebuShTo4SxO-gCLcBGAsYHQ/s1600/8.png"/></span></p>
+<h3><span style="text-decoration: underline; color: #000000;"><strong>Validated Path Traversal</strong></span></h3>
+<p><span style="color: #000000;">Many developers validate their web-applications, that if the <strong>“../”</strong> comes into the URL, it gets rejected out. Thus when we tried both the above procedures in our next lab, we got rejected out and didn’t grab anything.</span></p>
+<p><span style="color: #000000;">Therefore we capture the <strong>HTTP request</strong> in our burpsuite and traverse it to the <strong>Repeater</strong>.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-BiBYJK5ljME/XxIpGIuOLOI/AAAAAAAAl-U/lWx4MKd_P6YTY21kf-orLVnnY-wt7_oHwCLcBGAsYHQ/s1600/9.png"/></span></p>
+<p><span style="color: #000000;">This time we manipulate the URL filename parameter with <strong>“double dots followed by double slashes” </strong>i.e. “<strong>….//….//….//etc/passwd”</strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-NcB4dz6KJHQ/XxIpK2IoetI/AAAAAAAAl-c/xBYTnSGPJiIDpQTIXkOQlzD6-9uf-ZuNwCLcBGAsYHQ/s1600/10.png"/></span></p>
+<p><span style="color: #000000;"><strong>Great!! </strong>From the above image, you can see that we’ve again captured the password file with this unusual technique.</span></p>
+<p><span style="color: #000000;">As we jumped over the <strong>4<sup>th</sup> lab,</strong> we got this, the developers had made a validation which blocks up the input which contains the path traversal sequence.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-KnlCqZrbLOI/XxIpOqX04BI/AAAAAAAAl-g/DjKqs-_HONgleCk52XRlg-9FPa-w9_dbACLcBGAsYHQ/s1600/11.png"/></span></p>
+<p><span style="color: #000000;">Therefore to bypass this validation, I’ve again captured the request and send it to the repeater, to make some manipulations.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-g8MZPu2nKRE/XxIpSQ3qpUI/AAAAAAAAl-o/GBKvijbdG682eG0X22I2WVG2Yamf013AwCLcBGAsYHQ/s1600/12.png"/></span></p>
+<p><span style="color: #000000;">From the below image, you can see that, I’ve manipulated the URL filename parameter using Double U</span><span style="color: #000000;">RL encoding method in order to convert “../” into “..%252f” with the help of  ASCII to URL encoder converter and have successfully accessed the password file with</span></p>
+<pre class="lang:default decode:true">filename=..%252f..%252f..%252fetc/passwd</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/--DuqN3Zmg_o/XxIpWZvRy-I/AAAAAAAAl-s/uQmXX81ccDIQn-6l6tRYBSaVcMzguPYGwCLcBGAsYHQ/s1600/13.png"/></span></p>
+<h3><span style="text-decoration: underline; color: #000000;"><strong>Path Disclosure in URL</strong></span></h3>
+<p><span style="color: #000000;"><em>Isn’t it great if you get the number of back steps you need to perform in order to capture your desired file?</em></span></p>
+<p><span style="color: #000000;">Path disclosure is that vulnerability, where the URL offers the complete path of the file it is containing, which thus allows the attacker to simply manipulate the URL and with no efforts he can access the system files.</span></p>
+<p><span style="color: #000000;">As we moved further to lab <strong>5, </strong>we were encountered with an application that was offering us the <strong>complete path of the file</strong>.</span></p>
+<p><span style="color: #000000;">We simply just captured that request and send it to the <strong>repeater</strong>. From the below image, you can see that the filename parameter is having the value as <strong>“/var/www/images/21.jpg”. </strong>Which means that the file “21.jpg” is inside the <strong>images</strong> directory and the <strong>root directory</strong> is just <strong>3 steps</strong> away from us.</span></p>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://1.bp.blogspot.com/-RVLgE4CuYcY/XxIpacPkeaI/AAAAAAAAl-0/zX8uwKlHh7ogoGUk1a2fNv2wBkLW32WrQCLcBGAsYHQ/s1600/14.png"/></strong></span></p>
+<p><span style="color: #000000;">So we are now aware of the number of back steps we need to make to get into the password file, therefore we’ll do that as</span></p>
+<pre class="lang:default decode:true">filename-/var/www/images/../../../etc/passwd</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-oa2C9Al0nZM/XxIpgQ_B5GI/AAAAAAAAl_A/mRZIwpodLHUV9FaHBcaZZ3yuWRV2HT-gwCLcBGAsYHQ/s1600/15.png"/></span></p>
+<h3><span style="text-decoration: underline;"><span style="color: #000000; text-decoration: underline;">Null Byte Bypass</span></span></h3>
+<p><span style="color: #000000;">Many developers add up a <strong>‘.php’ </strong>extension into their codes at the end of the required variable before it gets included.</span></p>
+<p><span style="color: #000000;">Therefore the webserver interprets the <strong>/etc/passwd</strong> as <strong>/etc/passwd.php</strong>, thus we could not access the file. In order to get rid of this “.php” we try to terminate the variable using the <strong>null byte character (%00),</strong> that will force the php server to ignore everything after that, as soon as it is interpreted.</span></p>
+<p><span style="color: #000000;">As soon as we share the captured request to the repeater we’ll try to eliminate this null byte character as discussed above.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-vAqph-ntBM4/XxIpj4KXGyI/AAAAAAAAl_E/rn6NtVv00FcFn4P4yG39tzvImbEBBUkMQCLcBGAsYHQ/s1600/16.png"/></span></p>
+<p><span style="color: #000000;">So from the below image, you can see that we’ve again captured the password file by adding up (%00) in the URL as :</span></p>
+<pre class="lang:default decode:true">filename=../../../etc/passwd%00.jpg</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://1.bp.blogspot.com/-ypEmIHy1F7E/XxIpn97HLTI/AAAAAAAAl_I/CRw4FuhN_rkU6KJ0oC7rENfRZ7bo_t0WgCLcBGAsYHQ/s1600/17.png"/></strong></span></p>
+<h3><span style="color: #800000;"><strong>Windows Server Path_Traversal Exploitation</strong></span></h3>
+<p><span style="color: #000000;">It’s not necessary that every time we encounter with an application which is running over a Linux server, thus there are chances that our luck doesn’t work and we got stuck with a window’s server. </span><span style="color: #000000;">Let’s learn the different sequences and the method that can be used during such situations.</span></p>
+<h3><span style="text-decoration: underline; color: #000000;"><strong>Basic Path Traversal</strong></span></h3>
+<p><span style="color: #000000;">I’m having <strong>DVWA</strong> setup over my <strong>window’s machine</strong>. You can learn this all from <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.hackingarticles.in/web-application-lab-setup-on-windows/">here</a></strong></span>.</span></p>
+<p><span style="color: #000000;">Let’s boot inside the DVWA application as <strong>“admin: password” </strong>with the security level as <strong>“low”. </strong>Further, choose the vulnerability as <strong>File Inclusion </strong>from the left-hand panel.</span></p>
+<p><span style="color: #000000;">As soon as we choose this, we’ll be redirected to the webpage which is suffering from <strong>path_traversal vulnerability.</strong></span></p>
+<p><span style="color: #000000;">Let’s capture this request through burpsuite and see what we can get through it.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-WplxoBiwHR4/XxIprsrq0nI/AAAAAAAAl_M/BCi2yFfW1UcEjV6uxY8mTo80KaUoBEcMACLcBGAsYHQ/s1600/18.png"/></span></p>
+<p><span style="color: #000000;">From the above image, you can see that <strong>file.php </strong>is included in the <strong>page</strong> <strong>parameter. </strong>Let’s share this all to the repeater and try to play with this input field.</span></p>
+<p><span style="color: #000000;">In order to call up the <strong>windows file </strong>on the web-applications screen, manipulate the page parameter with the following input.</span></p>
+<pre class="lang:default decode:true">page=C:/Windows/win.ini</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/--VuW9XJqsFM/XxIpvFHRNFI/AAAAAAAAl_Q/r3r9y4VKS7Mgf6pvoU1WmQqAZA75eEtZQCLcBGAsYHQ/s1600/19.png"/></span></p>
+<p><span style="color: #000000;">From the above image, you can see that we’ve successfully called up the file in the response tab. Now <strong>forward </strong>this request and check the result over the application’s screen.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-GQBjOuFWm9w/XxIpyx6En7I/AAAAAAAAl_Y/VPu83o27SMEDO3_DSJiAyj6lUFgk8nQqwCLcBGAsYHQ/s1600/20.png"/></span></p>
+<p> </p>
+<h3><span style="text-decoration: underline; color: #000000;"><strong>Double dots with Forward-Backward Slashes </strong></span></h3>
+<p><span style="color: #000000;">Whether the application is hosted over a Linux server or a windows one, the developers always validate their web-applications. </span><span style="color: #000000;">Here, in order to keep the application secure with the path traversal attacks. the developers block up some sequences such as <strong>“../”</strong>, which thus gets rejects out automatically if entered in the URL.</span></p>
+<p><span style="color: #000000;">Increase up the DVWA’s security level and set it to <strong>“medium”. </strong>Capture the request at burpsuite and send everything directly to the repeater.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-XNJeXTRQ2E0/XxIp3KWECZI/AAAAAAAAl_c/-7j9Md2gVzkOSg4eAoWiNttvcrnvDKnFwCLcBGAsYHQ/s1600/21.png"/></span></p>
+<p><span style="color: #000000;">Form the below image, you can see that we’ve successfully bypassed this validation by <strong>the double dots </strong>followed by<strong> forward-backwards slashes </strong>and have again grabbed the <strong>“win.ini</strong>” file by :</span></p>
+<pre class="lang:default decode:true">page=…./\..../\..../\..../\..../\Windows/win.ini</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://1.bp.blogspot.com/-kx2Rczs64aw/XxIp7Vw_b0I/AAAAAAAAl_g/AF43I4shm-4vXDV0PovXmsv8eF4ZowgYgCLcBGAsYHQ/s1600/22.png"/></strong></span></p>
+<p><span style="color: #000000;">Using a similar sequence you can even capture other files present in the windows system. From the below image you can see that I’ve grabbed up a flag i.e. <strong>fi.php </strong>which resides in the hackable folder by simply manipulating up the URL parameter as :</span></p>
+<pre class="lang:default decode:true">page=…./\..../\hackable/flags/fi.php</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-gvv-bARAU_g/XxIp_RUlHbI/AAAAAAAAl_o/HoIuUzVn-EAH_PSPIIJjfaAuGGiZuvSZACLcBGAsYHQ/s1600/23.png"/></span></p>
+<h3><span style="text-decoration: underline; color: #000000;"><strong>Blocked Traversal Sequences</strong></span></h3>
+<p><span style="color: #000000;">There are many situations when such conditions didn’t work, that is the developer validates and blocks every possible sequence he can.</span></p>
+<p><span style="color: #000000;">Let’s find the other possible way to get the <strong>“win.ini”</strong> file without getting involved with the commonly used sequences.</span></p>
+<p><span style="color: #000000;">Again go for the security option and hit it up with the <strong>high security</strong> in your<strong> DVWA </strong>application. Come back to the <strong>File Inclusion </strong>section and capture the request in your burpsuite.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-YgNzb4ZuCNc/XxIqDZJul-I/AAAAAAAAl_w/3Pz-wpIC0NU5qzpPNqOlU2ZkgpKRdmmsACLcBGAsYHQ/s1600/24.png"/></span></p>
+<p><span style="color: #000000;">Share the HTTP request to the repeater tab and manipulate the URL page parameter with :</span></p>
+<pre class="lang:default decode:true">page=file://C:/Windows/win.ini</pre>
+<p><span style="color: #000000;">From the below image you can see that we have captured the <strong>“win.ini” </strong>file by entering the <em>complete path</em> to it in the URL parameter.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-za5HII1tOnc/XxIqGwpX3LI/AAAAAAAAl_0/dZRgY6E6cZAPeLlcA-6bV7rEqe70OhOywCLcBGAsYHQ/s1600/25.png"/></span></p>
+<p><span style="color: #000000;">Let’s now try to capture the <strong>flag</strong> with the same procedure as :</span></p>
+<pre class="lang:default decode:true">page=file://C:/xampp\htdocs\dvwa\hackable\flags\fi.php</pre>
+<p><span style="color: #000000;">Great!! We have grabbed this <strong>hackable flag </strong>too<strong>.</strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-3TKRQzCYKqE/XxIqKrO1H2I/AAAAAAAAl_4/MVopqaIEumcm1Cn_tn_ZSyDl0GffKreawCLcBGAsYHQ/s1600/26.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Mitigation Steps</strong></span></h3>
+<ol>
+<li><span style="color: #000000;">The developer should create a <strong>whitelist </strong>of all the files that he wants to include in order to limit the attacker’s control.</span></li>
+<li><span style="color: #000000;">Develop or run the code in the most recent version of the webserver which is available. The web applications should even be implemented with the least privileges.</span></li>
+<li><span style="color: #000000;">Exclusion of the directory separators <strong>“/”</strong> to prevent the web application from the directory traversal attacks</span></li>
+</ol>
+<p><strong>Author: </strong>Aarti Singh is a Researcher and Technical Writer at Hacking Articles an Information Security Consultant Social Media Lover and Gadgets. Contact<strong><a href="https://www.linkedin.com/in/aarti--singh/"> <span style="color: #0000ff;">here</span></a></strong></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

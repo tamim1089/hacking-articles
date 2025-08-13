@@ -1,0 +1,81 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">digital world.local: FALL Vulnhub Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/digital-world-local-fall-vulnhub-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2021-12-16T21:35:48+00:00">December 16, 2021</time><time class="updated" datetime="2025-07-07T17:33:44+00:00">July 7, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;"><strong><u><a style="color: #000000;" href="https://www.vulnhub.com/entry/digitalworldlocal-fall,726/"><span style="color: #0000ff;">FALL</span> </a></u></strong>(digitalworld.local: FALL) is a medium level machine created by Donavan for Vulnhub. This lab is appropriate for some experienced CTF players who wish to put their skills to the test in these environments. So, let’s get going and figure out where to break things down into manageable pieces.</span></p>
+<h3><span style="color: #800000;"><strong>Pentest Methodology</strong></span></h3>
+<p><span style="color: #000000;"><strong>Network Scanning</strong></span></p>
+<ul>
+<li><span style="color: #000000;">nmap</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Enumeration</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Abusing HTTP</span></li>
+<li><span style="color: #000000;">gobuster</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Exploitation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Fuzzing</span></li>
+<li><span style="color: #000000;">Abusing LFI</span></li>
+<li><span style="color: #000000;">Enumerate id_rsa key</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Privilege Escalation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">SSH</span></li>
+<li><span style="color: #000000;">Root Flag</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Level: Medium</strong></span></p>
+<p><span style="color: #000000;"><strong>Network Scanning</strong></span></p>
+<p><span style="color: #000000;">To begin, netdiscover cannot be used to determine the IP address of a victim PC. When we start the machine on the screen, the machine displays its IP address.</span></p>
+<p><span style="color: #000000;">In our scenario, the IP address of the victim PC is <strong>192.168.1.7</strong>.</span></p>
+<p><span style="color: #000000;">To move forward in this procedure, we are launching Nmap. We ran an aggressive scan (<strong>-A</strong>) for open port enumeration and found the following ports as show in the given image.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -A 192.168.1.7</pre>
+<p><span style="color: #000000;">According to the results of the nmap scan, this machine is running a wide range of services.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEipkFznC8U1tRssFIYcugcKugkNyAyrTmDS9khfDufKglgioFSFc3Pk5jQA3IlN-8th4KPugQzZbQ4BK9GMbd4EsXlLe7OILycdmaFbFEHCTU1kTgkDdcL880Fe41HBYczVLJqtE65tzt5ShQR4AykXlTwvUo-4sZ3rxBrEN_PM-uUnFDfVeHQXDr-OBg=s16000"/></span></p>
+<h3><span style="color: #800000;"><strong>Enumeration</strong></span></h3>
+<p><span style="color: #000000;">First, we’ll attempt to use HTTP. Let’s look at port 80 and see if anything notable comes up. We can instantly verify this in the browser because the Apache Server is listening on port 80. There is nothing special except that we discovered a user name “<strong>qiu</strong>“.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjqh9Fz66HeGVrH_8L6rwgzF8qFkvt8CxhUY_jwNdyZdXfoCLkE4ipFcCZL0Px-kz2U7Ma6LRxOdBuD6_Tc_wQaxZQtrbdaLGG2LeEUSGxG2zrWIhCl3SwhTAfvKqXwrFE1IHfl3AGV6x_Chq1847IJ21dEtcSFHLevrX59UdOOfqpXfyjxgpJ1ynYlZA=s16000"/></span></p>
+<p><span style="color: #000000;">Now, we’re going to try gobuster to see if we can locate something that will allow us to progress forward in this machine. It is a program that is used to brute-force URIs (directories and files) in websites, DNS subdomains (with wildcard support), and Virtual Hostnames on target web servers.</span></p>
+<p><span style="color: #000000;">Read more from <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.hackingarticles.in/comprehensive-guide-on-gobuster-tool/">here</a></strong></span></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">gobuster dir -u http://192.168.1.7 -w /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt -x .html,.php,.txt</pre>
+<p><span style="color: #000000;">Above command will enumerate all file that has .html, .php, .txt extension.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEijDyps6mFeapXtejWawwfjHW1-_-HDqoatljtwOgB74R9qJQmpeVbQMHMcYXc9BERZFhrXCy3hggeRrKA3gy49dF9khs0bUlaMSJYxCjNcaETYqCHKPPJa-rvfAZf73yyHYVAidw5iFFMgYC8v61d5YC1QcwTXRFV0_3c7EHsELeFbpU-DvzPAPY6TWQ=s16000"/></span></p>
+<p><span style="color: #000000;">We discovered a trustworthy directory (test.php). I immediately went to the browser to examine that. As stated, when we access /test.php, and receive an alert. It claims that a GET parameter is missing. As a result, we now have only a few possibilities.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEg2EynQJJYctzTN7YbVgpIOmFC0bO_SWp0fv-6RbagNMuu4v64zeWlr-Q_QkeqAb4hP6elj1B1YZnYphaZ3RQrQtUHhsjwh6xrwLotFTycjNWSjbCv0yDFcJ5aN0nFuMnsI8H6NlosrwFF_egIyTxrSeqcJNdsrTxG68vO-YSHYwVh5gdrcBNCe9fg0cA=s16000"/></span></p>
+<h3><span style="color: #800000;"><strong>Exploitation</strong></span></h3>
+<p><span style="color: #000000;">I was clueless therefore I was doubtful with LFI thus I use FUZZ to identify the existence of LFI by fuzzing for /etc/passwd file. With the help of the following command, I try to fuzz for the missing Get parameter.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ffuf -c -w /usr/share/seclists/Discovery/Web-Content/common.txt -u 'http://192.168.1.7/test.php?FUZZ=/etc/passwd' -fs 80</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjjbVzCEy3LhPWlUmd02PDegybwEcZ2pIi96MkozPrz-iJDAOl726rKRaFKGb5WSe26x317htC0K1SIUKdT7qUfCHVhKc8BOUP5nqgevMdUO7Hmm9cKsKQpV9ns6QGfndx3sxUIRSU3Gfcngv6Ozk4nOGUR2mzNAksijFZefmArKEHU9IAVmNXJH3jYUw=s16000"/></span></p>
+<p><span style="color: #000000;">We got 200 OK for the “file” parameter that could be missing term. We use the curl command to bring up the /etc/passwd file of the remote machine.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">curl http://192.168.1.7/test.php?file=/etc/passwd</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhK1LpNzM58EGdN07wS8rSmvWTJF1fhR-66GY2_IIRc6on_eAdhqaqLJSH4nM6mV3TolI0rmmpOBLmHb5ul5pEOjUy9wfIZVmWaGTSRF68Bk5PBIQiUZ0tk-iFYwBM0kes3XyS9PuIRFY9ZvsxnaqYYZkz3iSqJDfjYB1pty3KVy0aCe1BfuhBcHOzhLg=s16000"/></span></p>
+<p><span style="color: #000000;">Now, we can easily see that the user name “<strong>qiu</strong>” has a user account with higher privileges, and it also has bash authorization.</span></p>
+<p><span style="color: #000000;">It’s time to begin the process of LFI exploitation. After exploring the directory, we enumerated an ssh id_rsa key for user <strong>qiu</strong> with the help of the curl command by exploiting LFI.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">curl http://192.168.1.7/test.php?file=/home/qiu/.ssh/id_rsa</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjiOlXZ5UFjdQMQwatWN5zizbR81VjA02WDypOtuNu9LOntDY0egU-T5M3gdiD9js0HMYnUuFwsKhT-KEGY90V9_xhxu_RBsWUSTRYk3y0wKM_tuzOgIzChwKxSlY2P8hC00dOZJ805Tt0Zyg4_8kJfZYeZQK_UxMkdq1HslB6hUO7Q4SE345SC4c9sCA=s16000"/></span></p>
+<p><span style="color: #000000;">Let’s try the SSH connection but first, we must save this key on our machine while granting the necessary permissions. So, let us begin the SSH login…</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nano sshkey
+chmod 600 sshkey
+ssh -i sshkey qiu@192.168.1.7</pre>
+<p><span style="color: #000000;">After successfully logging in to SSH, we began privilege escalation.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhQIVAYZb_mHf54HsQiVFCQgXFLmrtBp2Anpi1RKehQEOZZwoNaattf1aYwscBpNav33slkaAgsPuE1fHm0_ZLfBwsBvyu2AJlsjgx4VL87Seh-kCLfP1NcEsOh2eUIda8Uzv4BKR3E-MCzJAs50FHr8RMsG21VITE3BUryFlYjeeixN61Vi_U--3Os8g=s16000"/></span></p>
+<h3><span style="color: #800000;"><strong>Privilege Escalation</strong></span></h3>
+<p><span style="color: #000000;">All we have to do now is examine bash history and find some valuable information.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cat .bash_history</pre>
+<p><span style="color: #000000;">We obtained the user “<strong>qiu</strong>” password “<strong>remarkablyawesome</strong>,” and we ran a sudo command to check this user’s permissions.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">sudo -l</pre>
+<p><span style="color: #000000;">The user “qiu” was granted all of the necessary permissions to become root. We simply switch the user account and submit the password enumerated above.</span></p>
+<p><span style="color: #000000;">Hooray!! Now that we have the root, we must navigate to the root directory in order to obtain the root flag.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">sudo su
+cat proof.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEj3gnCxBxyEsrvnNd6ZH6xb380yXdHRt7TZcH1atV6eOn-ltIyirjMiT68bFLz1xVGJK7xnZQTDBt6KnnJbY0kY5cjnC0isWqFbELDKwRpLuDgEVCCLxzS01IdoGavL4AgcW9ARWcTUnxmTHZYAkKkXNqVvTOB-g0Xyr-gkyp-WIBmDrPHYage1p_Q2Cg=s16000"/></span></p>
+<p><span style="color: #000000;">This is how we can get to the heart of the machine. It was a fantastic exercise, and it was a lot of fun to root for. It is necessary to try one in order to comprehend various scenarios.</span></p>
+<p><span style="color: #000000;">Thank you for giving your precious time to read this walkthrough. If you want to read more VulnHub Write-ups. Follow this</span> <strong><a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/">Link.</a></strong> <span style="color: #000000;">Happy Hacking!</span></p>
+<p><span style="color: #000000;"><strong>Author</strong>: Shubham Sharma is a passionate Cybersecurity Researcher, contact <span style="color: #0000ff;"><strong><u><a style="color: #0000ff;" href="https://www.linkedin.com/in/shubham-sharma-626964153/">LinkedIn</a></u></strong> </span>and <span style="color: #0000ff;"><strong><u><a style="color: #0000ff;" href="https://twitter.com/Shubham_pen">Twitter</a></u></strong></span>.</span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

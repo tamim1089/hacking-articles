@@ -1,0 +1,105 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">DC-4 Vulnhub Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/dc-4-vulnhub-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2019-05-17T07:50:05+00:00">May 17, 2019</time><time class="updated" datetime="2025-06-10T20:11:43+00:00">June 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today we are going to take another boot2root challenge known as “DC-4”. The credit for making this VM machine goes to “DCAU” and it is another boot2root challenge in which our goal is to get root access to complete the challenge. You can download it from <span style="color: #0000ff;"><a style="color: #0000ff;" href=" https://www.vulnhub.com/entry/dc-4,313/">here</a></span></span></p>
+<p><span style="color: #000000;"><strong>Security Level</strong>: Beginner</span></p>
+<h3><span style="color: #800000;"><strong>P</strong><strong>enetrating Methodology</strong></span></h3>
+<p><span style="color: #000000;"><strong>Scanning</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Discovering Targets IP</span></li>
+<li><span style="color: #000000;">Network scanning (Nmap)</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Exploiting </strong></span></p>
+<ul>
+<li><span style="color: #000000;">Surfing HTTP service port</span></li>
+<li><span style="color: #000000;">HTTP Login credential Bruteforce (Burpsuite)</span></li>
+<li><span style="color: #000000;">Command Injection</span></li>
+<li><span style="color: #000000;">SSH Login Credentials Bruteforce (Hydra)</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Lateral Movement </strong></span></p>
+<ul>
+<li><span style="color: #000000;">Logging into SSH and Enumerating Directories</span></li>
+<li><span style="color: #000000;">Obtain credentials in /var/mail directory</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Privilege Escalation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Check Sudo rights</span></li>
+<li><span style="color: #000000;">Adding new user /etc/passwd with sudo</span></li>
+<li><span style="color: #000000;">Access root directory</span></li>
+<li><span style="color: #000000;">Capture the flag</span></li>
+</ul>
+<h3><span style="color: #800000;"><strong>Walkthrough</strong></span></h3>
+<h3><span style="color: #800000;"><strong>Scanning </strong></span></h3>
+<p><span style="color: #000000;">Let’s start off with scanning the network to find our target.</span></p>
+<pre class="lang:default decode:true">netdiscover</pre>
+<p><span style="color: #000000;"><img decoding="async" src="//4.bp.blogspot.com/-LoHUWR1BSdE/XN5ieaYGhCI/AAAAAAAAeXc/dV-clT_ySLgq5CJY6rMRNYop81AoGbTMACLcBGAs/s1600/1.png"/></span></p>
+<p><span style="color: #000000;">We found our Targets IP Address 192.168.1.101. Our next step is to scan our targets IP Address with nmap.</span></p>
+<pre class="lang:default decode:true">nmap -A 192.168.1.101</pre>
+<p><span style="color: #000000;"><img decoding="async" src="//2.bp.blogspot.com/-gNyCcfmaeE0/XN5igRjfYMI/AAAAAAAAeYA/7AA4FqG5P3YSedrcfpPe3a5ZcQJaCVR3ACLcBGAs/s1600/2.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Exploiting</strong></span></h3>
+<p><span style="color: #000000;">From nmap result we found HTTP service is running on port 80. So, we browsed the Targets IP Address in the browser and found an Admin Information Security Login page. We clearly need to find credentials for it.  Let’s work on that.</span></p>
+<p><span style="color: #000000;">We found that the HTTP service runs on port 80, from nmap results. So, we browse the IP address of Targets in the browser and found the Admin Information Security Login page. Now credentials need to be found for login, Let’s work on this.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="//3.bp.blogspot.com/-lqbsg0YuAAo/XN5igxJMt1I/AAAAAAAAeYE/7NftDRbY5Ks-GSEZZAAaRdwcUy34j0k8QCLcBGAs/s1600/3.png"/></span></p>
+<p><span style="color: #000000;">We Fired UP!! burpsuite using rockyou.txt to get valid login.</span></p>
+<p><span style="color: #000000;"><strong>Username- admin</strong></span></p>
+<p><span style="color: #000000;">After bruteforcing, we have found the password for <strong>Admin</strong> i.e</span></p>
+<p><span style="color: #000000;"><strong>Password- happy</strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="//4.bp.blogspot.com/-XK1QQ20u5cE/XN5ihHqsHrI/AAAAAAAAeYI/RdO5w68kNbYA7rRDINxL_r4E8Y0gtLuxACLcBGAs/s1600/4.png"/></span></p>
+<p><span style="color: #000000;">We have successfully logged in as Admin. Under system tools, the hyperlink command looks suspicious here. So, let’s check it out.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="//3.bp.blogspot.com/-rz_Qm0eG3TM/XN5ihKwHPvI/AAAAAAAAeYM/uiU-t0QbgyYGvG57ZQPtOiii0YUyX4u0QCLcBGAs/s1600/6.png"/></span></p>
+<p><span style="color: #000000;">Command option looks useful as It displayed some options to Run Command. Here we used <strong>list file option</strong> which displayed files of the database. We also got a hint from the ls command which executes ls-l, we might make some changes in it.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="//2.bp.blogspot.com/-ApY3sAJEkyw/XN5ihZ-KBpI/AAAAAAAAeYQ/qQ1eOblPdFU3YEA4XLqMoolvf2H61ocfwCLcBGAs/s1600/7.png"/></span></p>
+<p><span style="color: #000000;">So, we captured the Webpage request using Burpsuite and Send the request to the repeater. Here we can make the desired changes to the request and check out its response.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="//3.bp.blogspot.com/-39fdhvYiusM/XN5ih8FLWHI/AAAAAAAAeYU/7Z_5mYOrj_k_f0EksXk6b-svVsOYbwiVwCLcBGAs/s1600/8.png"/></span></p>
+<p><span style="color: #000000;">Let’s check out subdirectories in the /home directory. We have found 3 users i.e Charles, Jim and Sam.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="//3.bp.blogspot.com/-BEkACP2ojZo/XN5iiAcsEZI/AAAAAAAAeYY/jPffOIbqyOUqXddo_WjaWgt91j5d8cBcgCLcBGAs/s1600/9.png"/></span></p>
+<p><span style="color: #000000;">Exploring the home directory for user Jim, after that, we checked out the backups folder.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="//3.bp.blogspot.com/-UVOGMCPHa7s/XN5ieS4DUDI/AAAAAAAAeXg/O6-S7GvQJs05NWVX-KrIwWZbb9-17YH6ACLcBGAs/s1600/10.png"/></span></p>
+<p><span style="color: #000000;">We have found a <strong>old-passwords.bak</strong> file is a backup password file.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="//3.bp.blogspot.com/-VHcW-u3uFko/XN5ieaewrcI/AAAAAAAAeXk/51qxohEaZsccBUKhzugoTkr2QAiHL6EGwCLcBGAs/s1600/11.png"/></span></p>
+<p><span style="color: #000000;">Exploring the contents of the file, we found a list of passwords. They might come in handy later.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="//2.bp.blogspot.com/-UcvbjqEOd38/XN5ifMhLTwI/AAAAAAAAeXo/IMNbA6nCKVAu6XKQgQSgpK8h4C9-Ki6xwCLcBGAs/s1600/12.png"/></span></p>
+<p><span style="color: #000000;">We thought of checking <strong>/etc/passwd </strong>is readable or not and found some useful usernames.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="//2.bp.blogspot.com/-Q-xBo2hotx4/XN5ifYLIggI/AAAAAAAAeXs/otkdce6IokMFs2QTCvn8ED8E6U6NEiOcACLcBGAs/s1600/15.png"/></span></p>
+<p><span style="color: #000000;">We have created a dictionary for users and passwords with the previously discovered credentials. Let’s bruteforce for ssh login using hydra.</span></p>
+<pre class="lang:default decode:true">hydra -L users -P passwords 192.168.1.101 ssh</pre>
+<p><span style="color: #000000;">So, the credentials found:</span></p>
+<p><span style="color: #000000;"><strong>Login- jim</strong></span></p>
+<p><span style="color: #000000;"><strong>Password- jibril04</strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="//2.bp.blogspot.com/-MTHk9r6ecKY/XN5iffh5B_I/AAAAAAAAeXw/ikIQFFcKEEkxBi40dk-B-ubrXOro34mlwCLcBGAs/s1600/16.png"/></span></p>
+<p><span style="color: #800000;"><strong>Lateral Moment </strong></span></p>
+<p><span style="color: #000000;">Logging into ssh using the credentials.</span></p>
+<pre class="lang:default decode:true">Username- jim
+Password- jibril04
+ssh jim@192.168.1.101</pre>
+<p><span style="color: #000000;">While enumeration, we found two files and read their contents. But they didn’t give direct clue to move ahead.</span></p>
+<pre class="lang:default decode:true">ls
+cat test.sh
+cat mbox</pre>
+<p><span style="color: #000000;">when I open mbox, I saw a test mail in this, send by root to jim.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="//3.bp.blogspot.com/--KTAEe8FybM/XN5if5d-JuI/AAAAAAAAeX0/ol4bDyVrdE03aoBGwaBL1abyldZXacisACLcBGAs/s1600/17.png"/></span></p>
+<p><span style="color: #000000;">After some time thinking, it suddenly strikes us to check the /var/mail folder. Maybe it might contain something, and our instinct was right. We have found some credentials.</span></p>
+<pre class="lang:default decode:true">Username- Charles
+Password- ^xHhA&amp;hvim0y</pre>
+<p><span style="color: #000000;"><img decoding="async" src="//1.bp.blogspot.com/-oyhnVVrBVL0/XN5igO5ae1I/AAAAAAAAeX4/oBivN_7jabsHD4GIaLdH5Ggc6SFuLXpHQCLcBGAs/s1600/18.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Privilege Escalation </strong></span></h3>
+<p><span style="color: #000000;">Let’s login into <strong>charles</strong> with password <strong>^xHhA&amp;hvim0y.</strong></span></p>
+<pre class="lang:default decode:true">su charles</pre>
+<p><span style="color: #000000;">After enumeration, we check sudo right for Charles and found that he run the editor teehee as root with no password. After that, we have added raaj in the etc/passwd using echo and teehee as shown.</span></p>
+<pre class="lang:default decode:true ">sudo -l
+echo "raaj::0:0:::/bin/bash" | sudo teehee -a /etc/passwd</pre>
+<p><span style="color: #000000;">Logging into raaj as root user and inside the root directory, we have found our FINAL FLAG.</span></p>
+<pre class="lang:default decode:true">su raaj
+cd /root
+ls
+cat flag.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="//4.bp.blogspot.com/-aCj-orKARQc/XN5igGJ9mfI/AAAAAAAAeX8/LPVct6TuKlcXVow6xbsZL62LqABYgNmygCLcBGAs/s1600/19.png"/></span></p>
+<p><span style="color: #000000;"><strong>Author:</strong> Ashray Gupta is a Security Researcher and Technical Writer at Hacking Articles. Contributing his 3 years in the field of security as a Penetration Tester and Forensic Computer Analyst. Contact <a style="color: #000000;" href=" https://www.linkedin.com/in/ashray-gupta-b77221b6/"><strong>Here</strong></a></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

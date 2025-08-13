@@ -1,0 +1,121 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">DC: 9: Vulnhub Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/dc-9-vulnhub-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2020-01-11T05:22:57+00:00">January 11, 2020</time><time class="updated" datetime="2025-06-10T20:10:49+00:00">June 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">In this article, we are going to crack the DC: 9 Boot to Root Challenge and present a detailed walkthrough. The machine depicted in this Walkthrough is hosted on Vulnhub. Credit for making this machine goes to <a style="color: #000000;" href="https://twitter.com/DCAU7">DCAU</a>. Download this lab by clicking <strong><a style="color: #000000;" href="https://www.vulnhub.com/entry/dc-9,412/">here</a></strong>.</span></p>
+<h3><span style="color: #800000;"><strong>Penetration Testing Methodology</strong></span></h3>
+<ul>
+<li><span style="color: #000000;"><strong>Network Scanning</strong></span>
+<ul>
+<li><span style="color: #000000;">Netdiscover Scan</span></li>
+<li><span style="color: #000000;">Nmap Scan</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Enumeration</strong></span>
+<ul>
+<li><span style="color: #000000;">Browsing HTTP Service</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Exploitation</strong></span>
+<ul>
+<li><span style="color: #000000;">Connection via SSH</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Post Exploitation</strong></span>
+<ul>
+<li><span style="color: #000000;">Enumeration for Sudo Permissions</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Reading Root Flag</strong></span></li>
+</ul>
+<h3><span style="color: #000000;"><strong>Walkthrough</strong></span></h3>
+<h3><span style="color: #800000;"><strong>Network Scanning</strong></span></h3>
+<p><span style="color: #000000;">We downloaded, imported and ran the virtual machine (.ova file) on the VMWare Workstation, the machine will automatically be assigned an IP address from the network DHCP. To begin we will find the IP address of our target machine, for that use the following command as it helps to see all the IP’s in an internal network:</span></p>
+<pre class="lang:default decode:true">netdiscover</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-tVYIfgbBPao/XhlYGboGfII/AAAAAAAAiKc/qUWWQxhQUo8J0_A0TjszOIzGK7qOe1P1QCLcBGAsYHQ/s1600/1.png"/></p>
+<p><span style="color: #000000;">We found the target’s IP Address 192.168.1.8. The next step is to scan the target machine by using the Nmap tool. This is to find the open ports and services on the target machine and will help us to proceed further.</span></p>
+<pre class="lang:default decode:true ">nmap -A 192.168.1.8</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-xcsaHROdUHQ/XhlYKbdHQEI/AAAAAAAAiLE/RZPibl4Kpn43xDnKcupY6VmWC2Nz61gUACLcBGAsYHQ/s1600/2.png"/></p>
+<p><span style="color: #000000;">Here, we performed an Aggressive Port Scan because we wanted to grab all the information. After the scan, we saw that port 22 was detected but filtered, this says that we do have the SSH service but something is blocking it from the inside. We have the port 80 with the Apache httpd service. This was the lay of the land. Now let’s get to enumeration.</span></p>
+<h3><span style="color: #800000;"><strong>Enumeration </strong></span></h3>
+<p><span style="color: #000000;">We started from port 80 and tried to browse the webpage on our browser. With the history of the series of DC Machines, the Drupal CMS is used. But this was not Drupal. I must say there was some work done here to make the webpage look like one provided by the Drupal. Smart Move. We have the Home page depicted in the image given below. We also have the “Display All Records” tab, which consists record of some users. We have the Manage tab, but it requires some credentials to manage users.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-ipKb33l-jec/XhlYLv_W7II/AAAAAAAAiLU/3J4s5f157sQw7-G48I0jBChZGOWGaEu2ACLcBGAsYHQ/s1600/3.png"/></p>
+<p><span style="color: #000000;">During our Enumeration, we didn’t find anything much to move ahead. We had a Form in the Search Tab. Forms are susceptible to Injection Attacks. To test for the SQL Injection on this search attack, we will search for some text inside the search form and capture the request by clicking on Search Button. We will capture the request using the BurpSuite Tool.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-tCwwxrUOv98/XhlYMEnEHfI/AAAAAAAAiLY/pjgiNHhbQqIcM8Y9zOXiqswpZH3HPfCVACLcBGAsYHQ/s1600/4.png"/></p>
+<p><span style="color: #000000;">We copied the captured request and pasted in inside a text file and named it raj.txt. We did so to use the captured request with the sqlmap. Now we will start the sqlmap to check if the search form is vulnerable to SQL Injection or not. If it is vulnerable, this will enumerate some databases form this machine.</span></p>
+<pre class="lang:default decode:true ">sqlmap -r raj.txt --dbs --batch</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-v0I8AF0hOFQ/XhlYMPrqsFI/AAAAAAAAiLc/1VQHJZgqMkAU4gD1NbsU7i9iq_657PfGQCLcBGAsYHQ/s1600/5.png"/></p>
+<p><span style="color: #000000;">After working for some time, sqlmap told us that the search form is vulnerable. We see that the back-end DBMS configured is MySQL 5.0.12. We also see that some databases that are extracted by sqlmap. We have the <strong>“information_schema”</strong>, <strong>“Staff”</strong> and <strong>“user”</strong> named databases.  Now let’s enumerate these databases, as sqlmap doesn’t allow multiple databases at the same time. We will enumerate the Staff Database first.</span></p>
+<pre class="lang:default decode:true ">sqlmap -r raj.txt -D Staff --dump-all --batch</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-E4dqtGt6x98/XhlYMseEGNI/AAAAAAAAiLg/lgaBh5Ri8ps3LIVHbDcg7YSkBpuzqS8vACLcBGAsYHQ/s1600/6.png"/></p>
+<p><span style="color: #000000;">The Staff Database contains 2 tables. First Table consists of email ids, phone numbers, First Name, Last Name and Positions of users and the Second Table consist of a username and a password hash. The username is “<strong>admin</strong>”. So, it hints at us that this might be an important account.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-fO_pFyYQCTw/XhlYMwsXt3I/AAAAAAAAiLo/NFbBKm9gNwwUhrnlhbkbc-Zl5Aw4EIeiQCLcBGAsYHQ/s1600/7.png"/></p>
+<p><span style="color: #000000;">Before moving on with the hash cracking, let’s enumerate another database as well. The database named is users. We will again use the sqlmap in a similar way that we did earlier but change the database name against the -D parameter as depicted below.</span></p>
+<pre class="lang:default decode:true">sqlmap -r raj.txt -D users --dump-all --batch</pre>
+<p><span style="color: #000000;">After working on the enumeration, the sqlmap extracts a table named UserDetails from the user database. We have ids, First Names, Last Names, usernames, and passwords. This is important data that could be used further down the road. But let’s get back to our hash.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-KX_nLsZ9XNU/XhlYMwmS-RI/AAAAAAAAiLk/wy3lCY1jbuwdBAUHvELfWqjEIGikQOXlwCLcBGAsYHQ/s1600/8.png"/></p>
+<p><span style="color: #000000;">We went on our favorite hash cracker website, “Hashkiller”. We entered the hash and it told us that the hash is MD5 in nature. The cracked password is “<strong>transorbital1</strong>”.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-xy6kcbbCTpQ/XhlYNQFfV1I/AAAAAAAAiLs/9k3mw8FQofgd8qee0bDYcaaRHQGEyhsfwCLcBGAsYHQ/s1600/9.png"/></p>
+<p><span style="color: #000000;">Now that we have the admin credentials, let’s look back at the Web Application that we were presented by the Machine. We had a Manage Tab which contains a login authentication page. We enter the credentials that we just cracked. We see that we have some additional features unlocked now like manage and Add Record. But what struck our eye was the footer. It now says that “File does not exist”. This means there must be a file that was being included to the footer which is now missing or misplaced. We know that where we have the include function, we have a probability of finding an LFI Vulnerability.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-m9H0KT_OEws/XhlYGi_0CTI/AAAAAAAAiKg/PrQ--6dQ-Mk4uLT1vH3i4tQtnV_RnbwKgCLcBGAsYHQ/s1600/10.png"/></p>
+<p><span style="color: #000000;">We try to test it using the most common LFI testing URL parameter. We insert the testing parameter in the URL followed by the welcome.php file. We do add “?file=” so that it can be pointed to a Local File on the Server. We try to look for the /etc/passwd file. We see that it is accessible. This proves that we do have the LFI Vulnerability.</span></p>
+<pre class="lang:default decode:true ">http://192.168.1.8/welcome.php?file=../../../../../../../etc/passwd</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-kd-8Iuwsu0Y/XhlYGWdKhjI/AAAAAAAAiKY/Nex3jPdFGVs0Z3pazyCSoe5nsO53uPQuACLcBGAsYHQ/s1600/11.png"/></p>
+<p><span style="color: #000000;">We started to enumerate different files on the Target Machine. This is when we stumbled upon the knockd.conf. This means that the is Port Knocking Involved. We see that we have the openSSH configured here with a sequence. We note this sequence and knock the SSH Port In this sequence to get it up and running.</span></p>
+<pre class="lang:default decode:true ">http://192.168.1.8/welcome.php?file=../../../../../../../etc/knockd.conf</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-PgLIxZYDEZY/XhlYHMxX8CI/AAAAAAAAiKk/cM3sPKl_zAYwxG1kEVU0v-DOtWdv9vHZACLcBGAsYHQ/s1600/12.png"/></p>
+<h3><span style="color: #800000;"><strong>Exploitation</strong></span></h3>
+<p><span style="color: #000000;">We use the knock command for the Port Knocking. This can be done by a bunch of different methods. After Knocking the ports in the sequence, we ran the NMAP scan again to ensure that our knocking worked and SSH Port should be open now. We have the SSH port open. This is our way in.</span></p>
+<pre class="lang:default decode:true ">knock 192.168.1.8 7469 8475 9842
+nmap -p22 192.168.1.8</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-TDNnposNewA/XhlYHS9429I/AAAAAAAAiKo/-EqXU6O88XIA3vT83xECTVYGblCR2aH9wCLcBGAsYHQ/s1600/13.png"/></p>
+<p><span style="color: #000000;">Now that we have the SSH service, we need login credentials to get inside. We tried the same credentials that we used on WebApp but it was a no go. We went back to the user database that we enumerated earlier and made 2 dictionaries for the bruteforce of the SSH Service. We used the usernames and passwords columns form that table for this procedure.</span></p>
+<p><span style="color: #000000;">After creating the user.txt and pass.txt dictionaries, we used the hydra tool for the bruteforce against the SSH service on the Target Machine. After some tries, we see that the user janitor is the user with the SSH Access. We now have the proper credentials to login via SSH.</span></p>
+<pre class="lang:default decode:true ">hydra -L user.txt -P pass.txt 192.168.1.8 ssh</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-jCR6eAQiiTo/XhlYHip9HxI/AAAAAAAAiKs/bno5ajOTja4NoJgR8npzFA-svW2OEMmJACLcBGAsYHQ/s1600/14.png"/></p>
+<p><span style="color: #000000;">We logged in using the following credentials.</span></p>
+<p><span style="color: #000000;"><strong>Username: janitor</strong></span></p>
+<p><span style="color: #000000;"><strong>Password: Ilovepeepee</strong></span></p>
+<p><span style="color: #000000;">After logging in we being our Enumeration of the Machine for steps through which we can elevate our access on the machine. In the process of Enumeration, we ran the Directory Listing command, and we see that we have a hidden directory labeled “<strong>secrets-for-putin</strong>”.</span></p>
+<pre class="lang:default decode:true ">ssh janitor@192.168.1.8
+Ilovepeepee
+ls -al</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-VLajXmhhIAE/XhlYIB997EI/AAAAAAAAiKw/aORP1tjq714WC9hYdU3WJ8ryQg4B2X-ZQCLcBGAsYHQ/s1600/15.png"/></p>
+<p><span style="color: #000000;">We traversed inside the newly found hidden directory using the cd command. We again list all the contents inside this directory to find a text file named “<strong>passwords-found-on-post-it-notes.txt</strong>”. More Passwords, Cool! We read this text file using the cat command.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-zeVN-soVuvM/XhlYINEMuqI/AAAAAAAAiK0/NX72-ssft1Un0lc2LdTmSBv6dfx_jaXpwCLcBGAsYHQ/s1600/16.png"/></p>
+<p><span style="color: #000000;">We went back to our native terminal and edited the pass.txt file and appended it with this newly found passwords. Now with recent developments, we ran the hydra bruteforce again. This time we see that we have some additional valid login credentials.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-_arTU43UnNI/XhlYIS1J4-I/AAAAAAAAiK4/ryPQVjMh7gcut90wzpB2AEnqefQ3ox9pwCLcBGAsYHQ/s1600/17.png"/></p>
+<h3><span style="color: #800000;"><strong>Post Exploitation </strong></span></h3>
+<p><span style="color: #000000;">Let’s login using the first credential we found. It was the user fredf. We used the su command on the previous SSH session we had using the following credentials.</span></p>
+<p><span style="color: #000000;"><strong>Username: fredf</strong></span></p>
+<p><span style="color: #000000;"><strong>Password: B4-Tru3-001</strong></span></p>
+<p><span style="color: #000000;">After logging in as the user fredf, we check if what kind of sudo rights does this fredf user have? We see that it can run a program called <strong>test </strong>as a root user without entering any password. We ran the test program but nothing happened.</span></p>
+<pre class="lang:default decode:true ">su fredf
+B4-Tru3-001
+sudo -l</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-EADCMVSgQ4Q/XhlYJcWEOhI/AAAAAAAAiK8/OeynUEBw-0493qwLIceU6scNeOjXZ_OXQCLcBGAsYHQ/s1600/18.png"/></p>
+<p><span style="color: #000000;">To inspect what went wrong, we went to the location where we see that the test is saved. We found the test.py. On taking a closer look we see that it is a simple data append program. It will take 2 files as parameters and then append the contents of the first file inside the second file.</span></p>
+<pre class="lang:default decode:true ">cd /opt/devstuff/
+ls -al
+cat test.py</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-f9bN0NOAwKI/XhlYJ4obpgI/AAAAAAAAiLA/j_cgEpe8qSg1o7CFXdRmDWqlb87u1DQ1ACLcBGAsYHQ/s1600/19.png"/></p>
+<h3><span style="color: #800000;"><strong>Privilege Escalation</strong></span></h3>
+<p><span style="color: #000000;">Now to escalate privileges, we thought that we will create a new user with root access and make the entry of the user inside the /etc/passwd file using the test file. Let’s create a user and its password hash. We accomplish this task using openssl. Here we created a user named pavan with the password 123456. We get our hash, let’s move on to the target machine.</span></p>
+<pre class="lang:default decode:true ">openssl passwd -1 -salt pavan 123456</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-WWplg3-JRc8/XhlYKkJN7oI/AAAAAAAAiLI/jexnrtyJf2oxDWzKsQh3XLfPla31RbN8QCLcBGAsYHQ/s1600/20.png"/></p>
+<p><span style="color: #000000;">We add username, colons (:), and “:0:0::” to make the entry that could act as a root user. After that, we used the echo command to create a file named in the  /tmp directory named raj. Then we used the test program that we found earlier with the raj file and appended that user hash that we just created inside the /etc/passwd file. After this we login in as the user pavan that we created. We enter the password and we have the root access on the machine.</span></p>
+<pre class="lang:default decode:true ">echo 'pavan:$1$pavan$qv9M3fBmtDPrOTBZflNl81:0:0::/root:/bin/bash' &gt;&gt; /tmp/raj
+sudo test /tmp/raj /etc/passwd
+su pavan</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-aC1ztTANi94/XhlYLHQxNPI/AAAAAAAAiLM/dSCvZ491cwIxtfG5mUQnYIIRHIW0IkiHwCLcBGAsYHQ/s1600/21.png"/></p>
+<h3><span style="color: #800000;"><strong>Accessing the Root Flag</strong></span></h3>
+<p><span style="color: #000000;">We moved to the home of the root user and found the final root flag. This was a nice machine. We enjoyed every bit of it. We are sad to see this nice series come to end. But we thank the author for putting so much effort into our learning. </span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-PEjuWwM93mg/XhlYLavwDSI/AAAAAAAAiLQ/VJaoYnXskdY0v6qveM0SR4gtg1_5e1_hwCLcBGAsYHQ/s1600/22.png"/></p>
+<p><strong>Author: Pavandeep Singh</strong> is a Technical Writer, Researcher and Penetration Tester. Can be Contacted on Twitter and <a href="https://www.linkedin.com/in/pavandeep-singh-6b1074132">LinkedIn</a></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

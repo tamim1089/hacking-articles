@@ -1,0 +1,108 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">mhz_cxf: c1f Vulnhub Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/mhz_cxf-c1f-vulnhub-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2020-05-21T19:15:52+00:00">May 21, 2020</time><time class="updated" datetime="2025-06-10T20:10:34+00:00">June 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">CTF’s are a great way to sharpen your axe. As a security enthusiast, this is probably the best way to get some hands-on practice that lends perspective as to how an adversary will exploit a vulnerability and how as an infosec professional we will eliminate that risk or guard against it.</span></p>
+<p><span style="color: #000000;">This is a very engaging CTF, it has some aspects of steganography. It gives you the chance to turn those wheels but not so much so that you get frustrated, think of it as somewhere between easy and intermediate level. You can download it from <strong><span style="color: #0000ff;"><a style="color: #0000ff;" href="https://www.vulnhub.com/entry/mhz_cxf-c1f,471/">here</a></span></strong>.</span></p>
+<p><span style="color: #000000;">Now, let’s dive in.</span></p>
+<h3><span style="color: #800000;"><strong>Penetration Testing Methodology</strong></span></h3>
+<ul>
+<li><strong><span style="color: #000000;">Network Discovery and Scanning</span></strong>
+<ul>
+<li><span style="color: #000000;">Using Netdiscover</span></li>
+<li><span style="color: #000000;">Using Nmap</span></li>
+</ul>
+</li>
+<li><strong><span style="color: #000000;">Enumeration</span></strong>
+<ul>
+<li><span style="color: #000000;">Directory Bruteforce using dirb</span></li>
+</ul>
+</li>
+<li><strong><span style="color: #000000;">System Exploration</span></strong></li>
+<li><strong><span style="color: #000000;">Data Exfiltration</span></strong>
+<ul>
+<li><span style="color: #000000;">Using SCP</span></li>
+</ul>
+</li>
+<li><strong><span style="color: #000000;">Steganography</span></strong>
+<ul>
+<li><span style="color: #000000;">Using Steghide</span></li>
+</ul>
+</li>
+<li><strong><span style="color: #000000;">Privilege Escalation</span></strong></li>
+</ul>
+<h3><span style="color: #800000;"><strong>Network Scanning</strong></span></h3>
+<p><span style="color: #000000;">We begin by scanning our network for the target machine using Netdiscover.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-yoiYa2Lojv0/XsbPKouDspI/AAAAAAAAkPM/6v2IgwvERn8-DBV2es9Nol42tMCmaIOWACLcBGAsYHQ/s1600/1.png"/></p>
+<p><span style="color: #000000;">The target machine is active on 192.168.1.104. Let’s scan it and see which services are running and which ports are open.</span></p>
+<p><span style="color: #000000;">We do an aggressive scan on the target using map.</span></p>
+<pre class="lang:default decode:true">nmap -p- -A 192.168.1.104</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-W82swsnhoMo/XsbPKcm6P5I/AAAAAAAAkPI/Xd6QcA_jyNsbRQJIazTC5Sh4-laenUu_gCLcBGAsYHQ/s1600/2.png"/></p>
+<p><span style="color: #000000;">The scan gives us a lot of good and useful information, but what stands out the most is that port 22 and 80 are open, let’s explore port 80 first and see what we can find there.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-ciYI-jWru14/XsbPLooIPlI/AAAAAAAAkPU/YzY__EvcbHIYzhcMWn0V0j5_EitIB-AIwCLcBGAsYHQ/s1600/3.png"/></p>
+<p><span style="color: #000000;">This does not help much, time to move to the next stage.</span></p>
+<h3><span style="color: #800000;">Enumeration</span></h3>
+<p><span style="color: #000000;">Let’s try to bruteforce the directory using dirb and see what we come across. We are using the -X flag to specify that we are looking for .txt formats only.</span></p>
+<pre class="lang:default decode:true">dirb http://192.168.1.104/ -X .txt</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-83fphgBavl0/XsbPMGDVemI/AAAAAAAAkPY/YOAgK0h7Pg4tID95t_jNYddRyrphpzndgCLcBGAsYHQ/s1600/4.png"/></p>
+<p><span style="color: #000000;">It seems we have found something! Let’s navigate to the link that’s given above in our attacking machines web browser and see what we find.</span></p>
+<pre class="lang:default decode:true ">http://192.168.1.104/notes.txt</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-BHDnvsUa_tg/XsbPMTCudtI/AAAAAAAAkPc/-YB_0PmWtI03vd3iqVfj7C29H_qYE1bGgCLcBGAsYHQ/s1600/5.png"/></p>
+<p><span style="color: #000000;">The maker of this CTF seems to be hinting that remb.txt and or remb2.txt might hold some valuable information. Let’s navigate to them.</span></p>
+<pre class="lang:default decode:true">http://192.168.1.104/remb.txt</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-kJhfk7jyu30/XsbPMs1_rwI/AAAAAAAAkPg/-nDPDTBeNWs1lTnAsqtHLz7BDaoDaGtWACLcBGAsYHQ/s1600/6.png"/></p>
+<p><span style="color: #000000;">This looks like a username and a password; I wonder where we will be able to use it?!</span></p>
+<h3><span style="color: #800000;">System Exploration</span></h3>
+<p><span style="color: #000000;">We did see that the victim machine has port 22 open, let’s try our luck with SSH, maybe these credentials will work.</span></p>
+<pre class="lang:default decode:true">ssh first_stage@192.168.1.104
+ls
+cat user.txt
+cd /home
+ls
+cd mhz_cif
+ls
+cd Paintings
+ls</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-GTzYAHH-aSc/XsbPNgX6BzI/AAAAAAAAkPk/xzO2Nq8Mo6MbSsY3vie8x-5oJEE60wo_ACLcBGAsYHQ/s1600/7.png"/></p>
+<p><span style="color: #000000;">We were successfully able to connect with the victim machine over SSH using “flagitifyoucan1234” as the password.</span></p>
+<p><span style="color: #000000;">Moving around in the directories we find “user.txt” that gives us a clue about the privilege level. Looking further we find a directory named after the CTF machine that holds image files, this is the part where see the potential for steganography.</span></p>
+<p><span style="color: #000000;">The images need to be moved from the victim machine to the attacking machine so that they can be investigated further.</span></p>
+<h3><span style="color: #800000;">Data Exfiltration</span></h3>
+<p><span style="color: #000000;">There are many ways to exfiltrate data from a system but considering that this is a Linux system, the chances of finding SCP installed on it already are very high, so let’s use that instead of un-necessarily trying to install a new application.</span></p>
+<p><span style="color: #000000;">In our attacking machine, we make a directory to call the files to, enter that directory and then start SCP with the credentials that we found earlier. Defining that we want to import all the files in the “Paintings” directory.</span></p>
+<pre class="lang:default decode:true">mkdir raj
+cd raj
+scp first_stage@192.168.1.104:/home/mhz_c1f/Paintaings/* .</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-gfzXHqRvXHA/XsbPNqRypSI/AAAAAAAAkPo/zzLrRDQzfTU2gfTgACSIGOkWPsYq42E5gCLcBGAsYHQ/s1600/8.png"/></p>
+<p><span style="color: #000000;">On checking the contents of the “raj” folder, we see that our operation to exfiltrate data was successful, all the image files in the Paintings directory are now in the attacking machine, ready to be scrutinized.</span></p>
+<h3><span style="color: #800000;">Steganography</span></h3>
+<p><span style="color: #000000;">Steghide is the tool of choice here for obvious reasons. We need to find what information is hidden in these images.</span></p>
+<pre class="lang:default decode:true ">steghide extract -sf spinning/ the/ wool.jpeg
+cat remb2.txt</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-7vYT73y1V0I/XsbPOPrOxmI/AAAAAAAAkPs/S3y57LhcOGANKSMR6btoRopMfayieRHHwCLcBGAsYHQ/s1600/9.png"/></p>
+<p><span style="color: #000000;">On running Steighide, for the image names “spinning the wool.jpeg”, we are prompted for a passphrase, where we use the credentials that we had found earlier. This reveals a text file named “remb2.txt”. If you recall, we have come across this particular file name in our earlier screenshots. </span></p>
+<p><span style="color: #000000;">We open the file to reveal what looks to be more credentials, let’s see where they can be used.</span></p>
+<h3><span style="color: #800000;">Privilege Escalation</span></h3>
+<p><span style="color: #000000;">We go back to the terminal we have open into the victim machine and try to switch users to “mhz_c1f” and use the password that we just found, and it works, we are in!</span></p>
+<pre class="lang:default decode:true">su mhz_cif
+id
+sudo su
+cd /root
+ls
+ls –la
+cat .root.txt</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-piBXLDOy_BY/XsbPKi2UHkI/AAAAAAAAkPQ/coWARf4_EXAvoxRqsYVi-ckf7xo_przPQCLcBGAsYHQ/s1600/10.png"/></p>
+<p><span style="color: #000000;">On checking the privilege level held by this account. This account is part of the sudo group, so let’s try to get a better foothold. We are now in the root directory and on checking it’s contents we find “.root.txt” and on opening it, we get our final flag!!</span></p>
+<p><span style="color: #000000;">This concludes our walkthrough for <a style="color: #000000;" href="https://www.vulnhub.com/entry/mhz_cxf-c1f,471/">mhz_cxf: c1f</a>, we hope you enjoyed it and picked up a few useful pieces of information on the way.</span></p>
+<p><span style="color: #000000;">CTF’s are the best way to wrap your head around the concepts and though flows required to be a penetration tester, it gives you a chance to think critically and apply what you have learnt so far about hacking, in a safe environment.</span></p>
+<p><span style="color: #000000;">As always, we at hacking articles will try to get you latest and greatest in the sphere of infosec.</span></p>
+<p><span style="color: #000000;">Have fun and stay ethical.</span></p>
+<p><span style="color: #000000;"><strong>About The Author</strong></span></p>
+<p><span style="color: #000000;">Abhimanyu Dev is a Certified Ethical Hacker, penetration tester, information security analyst and researcher. Connect with him <a style="color: #000000;" href="https://www.linkedin.com/in/abhimanyudev"><strong>here</strong></a></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

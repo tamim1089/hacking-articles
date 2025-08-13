@@ -1,0 +1,104 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/" rel="category tag">HackTheBox</a></span>            </div>
+            <h1 class="post-title entry-title">HacktheBox Friendzone Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/hack-the-box-friendzone-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2019-07-22T15:22:22+00:00">July 22, 2019</time><time class="updated" datetime="2025-06-27T13:10:57+00:00">June 27, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">FriendZone is a recently retired CTF VM on Hack the Box with the objective – Capture the user and root flag. Hack the Box offers a wide range of VMs for practice from beginner to advanced level and it is great for penetration testers and researchers.</span></p>
+<p><span style="color: #000000;">Level: Intermediate</span></p>
+<p><span style="color: #000000;">Task: To find user.txt and root.txt file</span></p>
+<p><span style="color: #000000;">Note: Since these labs are online available, therefore, they have a static IP. The IP of FriendZone is 10.10.10.123</span></p>
+<h3><span style="color: #993300;"><span style="color: #800000;">Penetration Testing Methodologies</span> </span></h3>
+<p><span style="color: #000000;"><strong>Scanning</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Nmap</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Enumeration </strong></span></p>
+<ul>
+<li><span style="color: #000000;">SMB shared Directory</span></li>
+<li><span style="color: #000000;">DNS Zone Transfer</span></li>
+<li><span style="color: #000000;">MySQL creds</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Exploit</strong></span></p>
+<ul>
+<li><span style="color: #000000;">LFI to RCE</span></li>
+<li><span style="color: #000000;">Capture the user flag</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Privilege Escalation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Abusing Python Library</span></li>
+<li><span style="color: #000000;">Capture the root flag</span></li>
+</ul>
+<h3><span style="color: #800000;">Walkthrough</span></h3>
+<p><span style="color: #000000;">Let’s start off with scanning with the nmap to check open ports.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -sC -sV 10.10.10.123</pre>
+<p><span style="color: #000000;">From nmap scan we found so many ports are opened such as 22,53,80,443, 445 and several services were available and we noted the SSL certificate is registered as friendzone.red.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-oYi5uyJuBq0/XTXMkcc3EKI/AAAAAAAAfYw/c7NYhKTdYEcCekhVwu58-O5sSBqLp5otwCLcBGAs/s1600/0.png"/></p>
+<h3><span style="color: #800000;">Enumeration </span></h3>
+<p><span style="color: #000000;">On exploring, vulnerable machine IP in the web browser, it welcomes us with following web page as shown below.</span></p>
+<p><span style="color: #000000;">Here also I notice <strong><em>friendzone.red</em></strong> and this could be a clue for proceeding further. As per nmap scan result, port 53 is open for TCP which means there may be some possibilities for DNS Zone Transfer.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-XzWH0jRYa1I/XTXMkXlPbmI/AAAAAAAAfY0/1tBm5Q8xShIya61W0ItvKjzY45wN0oHvwCLcBGAs/s1600/1.png"/></p>
+<p><span style="color: #000000;">I didn’t find any other useful information on the home page, so I try to enumerate web directories with the help of DIRB. But this was also not worthwhile for us because the enumerated result was not valuable when further inspected.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-p8KwtmkTCXM/XTXMpp3nsNI/AAAAAAAAfZk/znJWBgxQEHotWTaMPH9zCnOGVuTCYSr9wCLcBGAs/s1600/4.png"/></p>
+<p><span style="color: #000000;">Consequently, I switch to another enumeration service and it was a null session SMB enumeration. So, with the help of SMBmap, which is a Linux utility, we try to enumerate smb shared directories.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">smbmap -H 10.10.10.123</pre>
+<p><span style="color: #000000;">I found two shared directories and among those /general had read-only permissions and /Development has read/write both permissions. so, when we accessed /general directory, we obtained a text file named as “creds”.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">smbmap //10.10.10.123/general
+ls
+get creds.txt</pre>
+<p><span style="color: #000000;">In this file, I found the following credential which could be used later.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">admin:WORKWORKHhallelujah@#</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-qaaRyiz3dfU/XTXMp4xE24I/AAAAAAAAfZo/e4K8RLN1tPY5I6VnT53mEQMTAY2VFjDzwCLcBGAs/s1600/7.1.png"/></p>
+<p><span style="color: #000000;">First, I added friendzone.red inside /etc/hosts file but didn’t found any valuable information, therefore I enumerated sub-domain by executing following command and fetch some sub-domains which could be useful in DNS zone transfer.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">host -l friendzone.red 10.10.10.123</pre>
+<p><span style="color: #000000;">Further, I saved /administrator1.friendzone.red.  in the /etc/hosts file for accessing this domain.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-AR0qk0nT9BA/XTXMqCRHbrI/AAAAAAAAfZs/aCNIXcFGf64cvmd-rROzPoeO-zfuMp52gCLcBGAs/s1600/7.png"/></p>
+<p><span style="color: #000000;">On the exploring administrator1.friendzone.red we got a login portal where I submitted the credential that we have found above.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-Qov8Zrq9n5Q/XTXMqVZ30rI/AAAAAAAAfZw/YRlQiyw4QYkxFUg7-_9JZaopBO4MuNEDACLcBGAs/s1600/8.png"/></p>
+<p><span style="color: #000000;">So, we found another hint “/dashboard.php” which was a web directory.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-soE-E7FPHcM/XTXMqf0kZhI/AAAAAAAAfZ0/BC-O__-BIvoEezrKl9KijVKcOSvul7gBACLcBGAs/s1600/9.png"/></p>
+<p><span style="color: #000000;">On enumerating /dashboard.php we found following web page; here it gave a message “<strong><em>image_name param is missing</em></strong>”.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-Fn02nXuMRBM/XTXMkHOJrKI/AAAAAAAAfYs/GsXlsFUnOFcoLykTnJUhuug090rK4WXyQCLcBGAs/s1600/10.png"/></p>
+<p><span style="color: #000000;">Therefore, we injected “default is image_id=a.jpg&amp;pagename=timestamp” in the URL and obtain following web page where we notice timestamp, and this looked little suspicious towards LFI.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">https://administrator1.friendzone.red/dashboard.php?image_id=b.jpg&amp;pagename=timestamp</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-kb8v0gvxpI4/XTXMlCJg31I/AAAAAAAAfY4/OwwsCn-P6-wdKIWiYHIQAVRW8TIL_TcHQCLcBGAs/s1600/11.png"/></p>
+<h3><span style="color: #993300;"><span style="color: #800000;">Exploiting LFI</span> </span></h3>
+<p><span style="color: #000000;">To ensure that I try to call timestamp.php and by obtaining time stamp on the screen it was confirmed that it is vulnerable to LFI. Now let’s extend LFI to RCE to obtain shell of the host machine.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-TdfGItVXiXw/XTXMlYU-JyI/AAAAAAAAfY8/R6tE2kt681kaspP2pBaaiv-_5oSlY7WQgCLcBGAs/s1600/12.png"/></p>
+<p><span style="color: #000000;">As we knew that /Development is the only directory that has read/write both permissions, hence we can inject our malicious file inside this directory and execute the backdoor by exploiting LFI to obtain a reverse connection.</span></p>
+<p><span style="color: #000000;">Then I have used pentest’s monkey php reverse shell with little modification such $lhost &amp; $lport as a backdoor that to be injected inside the host machine.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-ffXhKchxrwo/XTXMlnZKPQI/AAAAAAAAfZA/PX5Vl7XCJ9oZHcbUgQSzaCGYn7hYvWJNQCLcBGAs/s1600/13.png"/></p>
+<p><span style="color: #000000;">So, we connect to SMB with the help of smbclient and upload the php-reverse-shell inside /Development. Simultaneously we launched netcat listener in a new terminal to obtain a reverse connection from the host machine.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">smbclient //10.10.10.123/Development</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-Z0MEtXgGG1I/XTXMmKDP5tI/AAAAAAAAfZE/00o-5NgMF5oCATedFUdAUeMOSuzC-blnACLcBGAs/s1600/14.png"/></p>
+<p><span style="color: #000000;">Then execute the uploaded php backdoor with the privilege of LFI as shown below:</span></p>
+<p><span style="color: #000000;"><strong>https://administrator1.friendzone.red/dashboard.php?image_id=b.jpg&amp;pagename=/etc/Development/php-reverse-shell</strong></span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-3zwdqNmZXPE/XTXMmhleafI/AAAAAAAAfZI/I_vsIV4Bk4Mq33hPFb0acwXQNJ28S53sgCLcBGAs/s1600/15.png"/></p>
+<p><span style="color: #000000;">As soon as we executed above URL in the browser, we have access netcat session and to obtain proper shell we import python pty one-liner and found our 1<sup>st</sup> flag inside /home/friend.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-4LWx62W6jFE/XTXMmu7RLdI/AAAAAAAAfZM/8Ua5NPNFtmMRI-nKZ4CTEIdKWVYiLJIUACLcBGAs/s1600/16.png"/></p>
+<p><span style="color: #000000;">With little more traversing I found credential for user “friend” from inside /var/www/mysql_data.conf</span></p>
+<p><span style="color: #000000;"><strong>user</strong>=friend</span></p>
+<p><span style="color: #000000;"><strong>pass</strong>=Agpyu12!0.213$</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-WweM7SYD0nY/XTXMnD1jnTI/AAAAAAAAfZQ/o5L52i16aKAi9Wc217WRcI4rPiSU9URSACLcBGAs/s1600/17.1.png"/></p>
+<h3><span style="color: #800000;">Privilege Escalation </span></h3>
+<p><span style="color: #000000;">So, with the help of above-enumerated creds, we try to access ssh and luckily, we connected to ssh and try to identify weak permission file or role for escalating privileges to access root shell or root flag.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ssh friend@10.10.10.123</pre>
+<p><span style="color: #000000;">As I failed to identify any sudo rights or SUID permission files, therefore I go for <a style="color: #000000;" href="https://github.com/DominicBreuker/pspy">pspy64s</a> to examine the running process of the machine. Thus, I downloaded the script it inside /tmp directory and gave full permissions.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-6ak3jLPPMxc/XTXMnp5GxRI/AAAAAAAAfZU/f1KCm0zDQ4UDVx42usYCVZcMGWae8dkfgCLcBGAs/s1600/17.2.png"/></p>
+<p><span style="color: #000000;">On running pspy64s, we notice that a python is executing by root which was surprising to us.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-ybbI2qMWmRo/XTXModuZQCI/AAAAAAAAfZY/udwYKAB_JKw1jVzcYVsUFjqRkCaf23_2gCLcBGAs/s1600/17.png"/></p>
+<p><span style="color: #000000;">So, I decided to take a look at what is script was doing, therefore I used the cat command to read what this script is running.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cat /opt/server_admin/reporter.py</pre>
+<p><span style="color: #000000;">Hmmm! So, I didn’t find any useful operation is being executed by this script other than import a python library “os.py” hence I take its advantage in privilege escalation.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-u9m5rRSNNtE/XTXMol_gppI/AAAAAAAAfZc/-Mke7GyOMR4sCA8jJj97_N3K-yS79iXgACLcBGAs/s1600/18.png"/></p>
+<p><span style="color: #000000;">Taking privilege of python library, we can create a bogus python library named as os.py to call root flag through this file.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd /tmp
+echo "system ('cat /root/root.txt &gt; /tmp/flag')" &gt;&gt; /usr/lib/python2.7/os.py</pre>
+<p><span style="color: #000000;">After some time it will create write the root flag inside /tmp/flag as shown in the below image. Thus, we have obtained the root flag and finished this challenge.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-LtVxX8WbIvM/XTXMo4Xly5I/AAAAAAAAfZg/Ul479_bVEl8IAbp0U138Giiw_eT2DMOAQCLcBGAs/s1600/19.png"/></p>
+<p><span style="color: #000000;"><strong>Author: </strong>Aarti Singh is a Researcher and Technical Writer at Hacking Articles an Information Security Consultant Social Media Lover and Gadgets. Contact</span><strong><a href="https://www.linkedin.com/in/aarti--singh/"> here</a></strong></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

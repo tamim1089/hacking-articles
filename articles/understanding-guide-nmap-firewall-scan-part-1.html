@@ -1,0 +1,175 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/nmap/" rel="category tag">Nmap</a>, <a href="https://www.hackingarticles.in/category/penetration-testing/" rel="category tag">Penetration Testing</a></span>            </div>
+            <h1 class="post-title entry-title">Understanding Guide to Nmap Firewall Scan (Part 1)</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/understanding-guide-nmap-firewall-scan-part-1/" rel="bookmark"><time class="entry-date published" datetime="2017-11-23T15:40:29+00:00">November 23, 2017</time><time class="updated" datetime="2025-05-23T19:03:06+00:00">May 23, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Several times you might have used <strong><a href="https://github.com/nmap/nmap">NMAP</a></strong> to performing Network scanning for enumerating active Port services of target machine but in some scenario. It is not possible to perform scanning with help of basic scan method especially in case of firewall filter.</span></p>
+<p><span style="color: #000000;">Today we are going to demonstrate “Nmap firewall scan” by making use of Iptable rules and try to bypass the firewall filter to perform NMAP Advance scanning. </span></p>
+<p><span style="color: #000000;"><strong>Let’s Begin!! </strong></span></p>
+<p><span style="color: #000000;">Attacker’s IP: 192.168.0.107 [kali linux]</span></p>
+<p><span style="color: #000000;">Target’s IP: 192.168.0.101 [Ubuntu]</span></p>
+<h3><span style="color: #800000;">Analysis TCP Scan</span></h3>
+<p><span style="color: #000000;">Open the terminal in your Kali Linux and execute the following command to perform TCP[sT] scan for open port enumeration.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -sT -p22 192.168.1.101</pre>
+<p><span style="color: #000000;">From given below image you can observe we had scanned port 22 as result it has shown Port 22 is <strong>Open</strong> for SSH service.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-E81IAdxm9aU/Wha54OqyApI/AAAAAAAASa8/0AJo9PygfUclUYRUYWxF4q-F8bnJ5UoWACEwYBhgL/s1600/1.png"/></span></p>
+<p><span style="color: #000000;">When you will use Wireshark in order to capture the packet send in the case of TCP while the network is being scanning. Here you need to notice few things such as “flag, Total length and time to live[TTL]” [in layer3].</span></p>
+<p><span style="color: #000000;">Following table contains detail of Flag, Data length and TTL in different scanning method:</span></p>
+<p><img fetchpriority="high" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjLjOoo4_adtWR6Oq6fl82vYUENGDuXBEu6H23okpRpQ_dD9ylkZXdtljLsokGrIppCHLd4m4YdjbLvPJPHZrEtfSSFHMtM_BhbTKUITPcRM2oY_oyIKw1PZKiDv2f6aPwsFvpXalkNVWaKW8cn9L0fYS458QeBr5xFX2Gke7_NgROi3giNlQURFbgqe2IT/s16000/table-image.png" alt="Nmap firewall scanning guide" width="1217" height="713"/></p>
+<p><span style="color: #000000;">Following image of Wireshark is showing network traffic generated while nmap TCP scan is running. Here, 1st stream indicates <strong>SYN packet</strong> which contains the following information:</span></p>
+<p><span style="color: #000000;">Total Length: <strong>60 </strong>[data length excluding 14 bytes of Ethernet]</span></p>
+<p><span style="color: #000000;">Time to live: <strong>64 </strong>[it is maximum TTL of the Linux system in TCP communication]</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-9IY9OyRDkHs/Wha56ocIIlI/AAAAAAAASa8/j3eKYu1r5d87c_NsddiRry3SOXUBP4BUQCEwYBhgL/s1600/2.png"/></span></p>
+<h3><span style="color: #800000;">Reject SYN Flag with IPTables</span></h3>
+<p><span style="color: #000000;">As we know there is the strong fight between security researcher and attacker. To increase network security admin will apply firewall filter which will now prevent 3-way handshake communication in the network. And resists attacker to perform TCP scan by rejecting <strong>SYN packet</strong> in the network.              </span></p>
+<p><span style="color: #000000;">Execute given below command in Ubuntu to block SYN packet:  </span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">iptables -I INPUT -p tcp --tcp-flags ALL SYN -j REJECT --reject-with tcp-reset</pre>
+<p><span style="color: #000000;">Iptable work as the firewall in the Linux operating system and above iptable rule will reject SYN packet to prevent TCP scan.</span></p>
+<p><span style="color: #000000;"><img decoding="async" class="alignnone" src="https://3.bp.blogspot.com/-rg16Zjj3O70/Wha5_Oe2T7I/AAAAAAAASa8/VyutGAjPv0g0BVTvBRhyXIvLsKK_PpBAgCEwYBhgL/s1600/3.png" alt="Nmap firewall scanning guide" width="852" height="45"/></span></p>
+<p><span style="color: #000000;">Now when the firewall in the target network rejects the SYN packe. The attacker will be unable to enumerate open ports of the target’s network even if services are activated.</span></p>
+<p><span style="color: #000000;">Now when we [the attacker] execute the TCP scan again, we see that <strong>Port 22 is closed</strong> as shown in the given image.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-q9XYgdS3mB4/Wha6DGhexRI/AAAAAAAASa8/s87BoDjhsu4QSCjRdlPlQgm911qcWCpywCEwYBhgL/s1600/4.png"/></span></p>
+<h3><span style="color: #800000;">Bypass SYN Filter</span></h3>
+<p><span style="color: #000000;">When the attacker fails to enumerate open port using a TCP scan. Then there are some advanced scanning methods used to bypass such type of firewall filter as given below :</span></p>
+<h3><span style="color: #800000;">FIN Scan</span></h3>
+<p><span style="color: #000000;">The TCP connection between the source and destination port typically terminates after the data transfer is complete using the FIN packet. In the place of the SYN packet, Nmastartsrt a FIN scan by sending FIN packet.  </span></p>
+<p><span style="color: #000000;"><strong>Fin Scan only works o</strong><strong>n Linux machine and does not work on latest version of windows</strong></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -sF -p22 192.168.0.101</pre>
+<p><span style="color: #000000;">Frothe m given image you can observe the result that port <strong>22</strong> is <strong>open.</strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" class="alignnone" src="https://3.bp.blogspot.com/-XD_23w3JvBw/Wha6DSXsgkI/AAAAAAAASa8/YgRTepSBGX0AiyXBFZGQ9F0mXhf6O_t7wCEwYBhgL/s1600/5.png" alt="Nmap firewall scanning guide" width="620" height="201"/></span></p>
+<p><span style="color: #000000;">When you will capture network traffic for FIN packet. You can bear out “data length” is 40 and “TTL” will be less than 64 every time. Moreover, there is no use of SYN packet to establish TCP communication with target machine.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-yY_j9T8AJqo/Wha6D5PwZ-I/AAAAAAAASa8/D60Cx8Ml56MiolLa2sQu0FH-wKcNthf4QCEwYBhgL/s1600/6.png"/></span></p>
+<h3><span style="color: #800000;">NULL Scan</span></h3>
+<p><span style="color: #000000;">A series of TCP packets with a sequence number of “zeros” (0000000) make up a Null Scan. Since none of the flags are set, the destination will not know how to reply to the request. It will discard the packet and send no reply, which indicates that the port is open.</span></p>
+<p><span style="color: #000000;"><strong>Null Scan are only workable in Linux machines and does not work on the latest version of windows</strong></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -sN -p22 192.168.0.101</pre>
+<p><span style="color: #000000;">For the m given image you can observe the result that port <strong>22</strong> is <strong>open.</strong></span></p>
+<p><span style="color: #000000;"><strong> <img loading="lazy" decoding="async" class="alignnone" src="https://2.bp.blogspot.com/-dIw-6JmpKmw/Wha6EUR2DHI/AAAAAAAASa8/wWaZ1ZvvQWYGMqqOj1ZFlIBSZ_f1oMXuwCEwYBhgL/s1600/7.png" alt="Nmap firewall scanning guide" width="621" height="202"/></strong></span></p>
+<p><span style="color: #000000;">Similarly, When you will capture network traffic for the NULL packet, you can bear out “data length” is 40 and “TTL” will be less than 64 every time. Here also there is no use of SYN packet to establish TCP communication with target machine.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-x_PMTNfW7Fc/Wha6EmlCk7I/AAAAAAAASa8/gKe566RBAN0ge50WiTIkTAOTmai6qTDGgCEwYBhgL/s1600/8.png"/></span></p>
+<h3><span style="color: #800000;">XMAS Scan</span></h3>
+<p><span style="color: #000000;">These scans manipulate the PSH, URG, and FIN flags of the TCP header, setting the FIN, PSH, and URG flags, lighting the packet up like a Christmas tree. When source sent FIN, PUSH, and URG packet to a specific port and if a port is open. Then destination will discard the packets and will not sent any reply to a source.</span></p>
+<p><span style="color: #000000;"><strong>Xmas Scan are only workable in Linux machines and does not work on the latest version of windows</strong></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -sX -p22 192.168.0.101</pre>
+<p><span style="color: #000000;">From the given image you can observe the result that port <strong>22</strong> is <strong>open.</strong></span></p>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://2.bp.blogspot.com/-nu9aTGOHOLM/Wha6E_UklJI/AAAAAAAASa8/TxOtab2FXo8FiKISxYF6q37xY4tPnXmgwCEwYBhgL/s1600/9.png" alt="Nmap firewall scanning guide" width="611" height="202"/></span></p>
+<p><span style="color: #000000;">Similarly, When you will capture network traffic for xmas scan you will get the combination of FIN, PSH and URG flags, here also you can bear out “data length” is 40 and “TTL” will be less than 64 every time.</span></p>
+<p><span style="color: #000000;"><strong>Conclusion:</strong> The TCP connection is established by the 3-way handshake, and if the firewall discards the 3-way handshake to prevent TCP communication. Then FIN, NULL, and XMAS scans are used for the TCP connection.  </span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-m4bFa9s2e7s/Wha54UOwgvI/AAAAAAAASa8/FmYJbr6sBLIoz8raUIBWMapUIpuuzivVwCEwYBhgL/s1600/10.png"/></span></p>
+<h3><span style="color: #800000;">Reject FIN Packet Using IPTABLES Rule </span></h3>
+<p><span style="color: #000000;">Again admin add a new firewall filter to Prevent Network enumeration from Fin scan which will reject FIN packet in the network.</span></p>
+<p><span style="color: #000000;">Execute given below command in Ubuntu to block FIN packet:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">iptables -I INPUT -p tcp --tcp-flags ALL FIN -j REJECT --reject-with tcp-reset</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-4-_X3lbn1Gk/Wha53zoIOaI/AAAAAAAASa8/DYI97y8Wmg8Inrm6CDUHIuIdsFBNWZLxACEwYBhgL/s1600/11.png" alt="Nmap firewall scanning guide" width="862" height="43"/></span></p>
+<p><span style="color: #000000;">Now when the attacker will try to perform advance scan through FIN scan. Then he will not able to enumerate open port information which you can confirm from given below image.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-pDYsMp6FSe0/Wha5460kEII/AAAAAAAASa8/LtELXNdMQZw3eqZYqDX7-sMOYt_3gNcXgCEwYBhgL/s1600/12.png"/></span></p>
+<p><span style="color: #000000;">At present only Null and Xmas will helpful to perform port enumeration until unless admin has not block traffic coming from these scan. From given below image you can confirm that port <strong>22 is close</strong> when Fin scan is performed while open when Null and Xmas is performed.</span></p>
+<p><span style="color: #000000;">To prevent you network from NULL and Xmas scan too, apply given below iptables rule for Null and Xmas respectively:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">iptables -I INPUT -p tcp --tcp-flags ALL NONE -j REJECT --reject-with tcp-reset
+iptables -I INPUT -p tcp --tcp-flags ALL FIN,PSH,URG -j REJECT --reject-with tcp-reset</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-I01iCM3VYIU/Wha55bzp7vI/AAAAAAAASa8/EDB-TCkQoCYt4hgO_lQ9kA7YscS2tK0igCEwYBhgL/s1600/13.png"/></span></p>
+<h3><span style="color: #800000;">Reject  Data-length with IPTables</span></h3>
+<p><span style="color: #000000;">As I had discussed above TCP communication based upon 3 factors i.e. “Flag” which I had demonstrated above, “TTL” which I will demonstrate later and “Data length” which I am going to demonstrate.     </span></p>
+<p><span style="color: #000000;">So now when admin wants secure again his network from TCP scan, instead of applying firewall filter on TCP-flags. He can also apply firewall rule to check “data length” of a specific size. Then stop the incoming network traffic for TCP connection. Execute given below command to apply firewall rule on “data length”. By default 60 is data length use for TCP scan which you can confirm from the table given above.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">iptables -I INPUT -p tcp -m length --length 60 -j REJECT --reject-with tcp-reset</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-83ce_p-qjnA/Wha55cKARpI/AAAAAAAASa8/3o7CX3lzp2QUG7GrqUEH3cMdEqF_jeH5wCEwYBhgL/s1600/17.png" alt="Nmap firewall scanning guide" width="886" height="40"/></span></p>
+<p><span style="color: #000000;">Now when the firewall in the target network blocks the data length of 60 bytes. The attacker will be unable to enumerate the open ports of the target even if the service is activated.</span></p>
+<p><span style="color: #000000;">Now when we [the attacker] executed the TCP scan again, we found that <strong>Port 22 is closed</strong> as shown in the given image.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-ZtyrVcfIbwY/Wha56E8OxhI/AAAAAAAASa8/5LWDsQioY3w1ikJvNaoXcey8eSmGtOhYQCEwYBhgL/s1600/18.png"/></span></p>
+<h4><span style="color: #800000;">Bypass Data-Length Restriction with Stealth Scan</span></h4>
+<p><span style="color: #000000;">When attacker fail to enumerate open port using TCP [sT] scan then there are some scanning method used to bypass such type of firewall filter as given below:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -sS -p 22 192.168.0.101</pre>
+<p><span style="color: #000000;">From the given below image, you can observe that when you execute the stealth scan [sS], it opens port 22 because the stealth scan sends a data length of 44 by default for the TCP connection.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-YEK0SPZdAp4/Wha56GgeetI/AAAAAAAASa8/TZxGRmtjmvkNU3xCY6qGK0lh5xGhGqEZQCEwYBhgL/s1600/19.png"/></span></p>
+<p><span style="color: #000000;">Stealth scan is much similar to TCP scan and also known as “half open” scanning because it send SYN packet and as response receives SYN/ACK packet from listening port and dump result without sending an ACK packet to listening port. Therefore, if the firewall blocks the “SYN packet,” this scan fails. This scan is only applicable if the firewall blocks data length = 60 or TTL = 64.</span></p>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://4.bp.blogspot.com/-1lr6rCHCqFg/Wha56-ZSgfI/AAAAAAAASa8/758FCla4DYAL3csxVKmR-VaMLbJwPdFLACEwYBhgL/s1600/20.png" alt="Nmap firewall scanning guide" width="762" height="442"/></span></p>
+<h3><span style="color: #800000;">Fragment Scan</span></h3>
+<p><span style="color: #000000;">The <strong>-f</strong><strong> option</strong> causes the requested scan to use tiny fragmented IP packets. The idea is to split up the TCP header over several packets to make it harder for packet filters, intrusion detection systems, and other annoyances to detect what you are doing. So a 20-byte TCP header would be split into three packets, two with eight bytes of the TCP header, and one with the final four.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -f -p22 192.168.0.101</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-yEfsZf9uUrs/Wha57HBo_TI/AAAAAAAASa8/WVGD6zpxyS01L6CO3rkQIr7Wczoxodm4gCEwYBhgL/s1600/21.png"/></span></p>
+<p><span style="color: #000000;">When you will capture network traffic, you can bear out “data length” is 28 excluding 14 bytes of Ethernet and “TTL” will be less than 64 every time.</span></p>
+<p><span style="color: #000000;">Similarly, you use Fin, Null and Xmas scan whose data length is 40 to enumerate open port of target network.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-NEjZ-jEHi8Q/Wha57_fu5aI/AAAAAAAASa8/UF7MLKBwMJwVnBwApC5WWKJScQEaEO8sQCEwYBhgL/s1600/22.png"/></span></p>
+<p><span style="color: #000000;">If admin will apply firewall filter to reject data length 40,44 and 60. Then it will not allow the attacker to perform above all scan either basic scan or advance scan by executing following iptables rules.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">iptables -I INPUT -p tcp -m length --length 60 -j REJECT --reject-with tcp-reset
+iptables -I INPUT -p tcp -m length --length 44 -j REJECT --reject-with tcp-reset
+iptables -I INPUT -p tcp -m length --length 40 -j REJECT --reject-with tcp-reset</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://4.bp.blogspot.com/-ZwfRlxe-TA4/Wha58MXcuCI/AAAAAAAASa8/b2g6BVDDlOAUM0tKV_8l4Z1mVcmrDKQYwCEwYBhgL/s1600/23.png" alt="Nmap firewall scanning guide" width="871" height="291"/></span></p>
+<p><span style="color: #000000;">From given below image you can observe now Fin, null, Xmas and stealth scan are some examples which were unable to enumerate open port of target network. All are showing port is close even if service is activated.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-35-hgekt0HM/Wha5784_G0I/AAAAAAAASa8/ffHNAq479z0NSaavN6c_hqdI8Uw7PWSEwCEwYBhgL/s1600/24.png"/></span></p>
+<h3><span style="color: #800000;">Data Length Scan</span></h3>
+<p><span style="color: #000000;"><strong>Note:</strong>– Nmap “–data-length” works with only stealth scan. It won’t work any other type of firewall scan. Some UDP and TCP ports get a custom payload by default for example:- FTP and SSH. Nmap will add ssh and Ftp headers while scanning port 21 and 22.</span></p>
+<p><span style="color: #000000;">When an attacker is unable to enumerate open port by applying the above scan. Then he should go with nmap “data-length scan” which will bypass above firewall filter too.</span></p>
+<p><span style="color: #000000;">By default nmap scan has fix data length as explain above. This scan let you append the random data length of your choice.</span></p>
+<p><span style="color: #000000;">Using the following command attacker is trying to enumerate open port by defining data length 12</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap --data-length 12 -p22 192.168.0.101</pre>
+<p><span style="color: #000000;"><strong>Awesome!!</strong> From given below image you can observe port 22 is open.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-ncN3Xu3sd1w/Wha59A6lg1I/AAAAAAAASa8/i9AaX2Rgwl4l40GLZ-T0vdKGyk6K0BEwwCEwYBhgL/s1600/25.png"/></span></p>
+<p><span style="color: #000000;">So when you use Wireshark to capture network traffic generated while executing this scan, you will get “Total length” for TCP as 44.</span></p>
+<p><span style="color: #000000;">Size of SSH packet is 70 bytes. Now reduce 14 bytes from its of Ethernet then remains 56 byte. Now reduce 12 bytes of data length which you have define at last total length will <strong>44 bytes</strong> left.</span></p>
+<p><span style="color: #000000;">Here, 70 bytes -14 bytes[Ethernet] = 56 bytes</span></p>
+<p><span style="color: #000000;">Now, 56 bytes -12 bytes[data-length] = 44 bytes</span></p>
+<p><img loading="lazy" decoding="async" class="alignnone" src="https://3.bp.blogspot.com/-kYV3Zeb5Gig/Wl2lWwnc_KI/AAAAAAAATRo/UsSdTHtqODcopsgK_rpJSqD0a0yuk5YWACLcBGAs/s1600/nmap.png" alt="Nmap firewall scanning guide" width="731" height="266"/></p>
+<h4><span style="color: #000000;">Reject Length size 1 to 100</span></h4>
+<p><span style="color: #000000;">If an admin is aware from nmap data-length scan. Then he should block a complete range of data length to prevent network scanning from the attacker by executing following iptable rule.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">iptables -I INPUT -p tcp -m length --length 1:100 -j REJECT --reject-with tcp-reset</pre>
+<p><span style="color: #000000;">Now firewall will analysis traffic coming on its network. Then reject the packet which contains data-length from 1 byte to 100 bytes and deny to establish TCP connections with the attacker. </span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-2cZ9EBG6-Jc/Wha59icsWGI/AAAAAAAASa8/s75grKtAHQAGceaH9txhwD4C3X38dwGZwCEwYBhgL/s1600/27.png"/></span></p>
+<p><span style="color: #000000;">Now if the attacker sends a data length between 1 byte and 100 bytes. The port scanning fails to enumerate its open state. You can confirm this from the image below, which shows that when the scanner sends data lengths of 12 bytes and 10 bytes, port 22 is closed. As soon as the attacker sends a data length of 101 bytes, which exceeds 100 bytes, port 22 opens.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-uKGc43fSJP0/Wha5-a8RW3I/AAAAAAAASa8/QPwqLsXgWaUZhM5cUUImilSxNcVrGTr2wCEwYBhgL/s1600/28.png"/></span></p>
+<h3><span style="color: #800000;">TTL Scan</span></h3>
+<h4><span style="color: #800000;">Reject TTL size with IPTables</span></h4>
+<p><span style="color: #000000;">After applying firewall filter on “TCP flags” and “data length” to secure network from enumeration now add firewall filter for “Time To Live” i.e. <strong>TTL.</strong></span></p>
+<p><span style="color: #000000;">If you had notice the table given in the beginning of the article. You will observe that only TCP Scan [sT] has TTL value equal to 64 else remaining scan has TTL value less than 64 every time. Hence if admin applies firewall filter to reject TTL value 64 then it will prevent network from TCP scanning.  </span></p>
+<p><span style="color: #000000;">Given below command will add a new firewall rule to check the TTL value of 64 and reject the packet.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">iptables -I INPUT -p tcp -m ttl --ttl 64 -j REJECT --reject-with tcp-reset</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-oRyLI5J8ZZ4/Wha5-2n4ebI/AAAAAAAASa8/nrVXpPPMRpMVBdby299WVkclPxxCtMGGACEwYBhgL/s1600/29.png"/></span></p>
+<p><span style="color: #000000;">Now if an attacker uses “TCP [sT] scan” to enumerate port information, it will always show “port is closed”. If the attacker performs another scan, they will get accurate information related to the port state. From given below image you can observe when “basic scan is execute” to enumerate port details it give “port 22 is open”.</span></p>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://3.bp.blogspot.com/-EBpj_hS7Dw0/Wha5_f66phI/AAAAAAAASa8/Hurdu6eOREcxFQlEaaJDW7FAcFtNrdHuACEwYBhgL/s1600/30.png" alt="Nmap firewall scanning guide" width="572" height="200"/></span></p>
+<p><span style="color: #000000;">This happen because the TTL value for “basic scan” is less than 64. The firewall of the target machine will reject only TTL value equal to 64. When we captured the network traffic generated during this scan. We found that the basic scan used a TTL value of 56.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-fgyyXJTTOXk/Wha5_w46qyI/AAAAAAAASa8/IAOlr1M-ML4DhvqUMT1qdERRaYB5V_jaACEwYBhgL/s1600/31.png"/></span></p>
+<h4><span style="color: #800000;">Strengthening Security: Blocking TTL 64 and Below</span></h4>
+<p><span style="color: #000000;">Now admin has added one more step of security to prevent his network from entire type scanning by rejecting TTL value of 64 and less than 64.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">iptables -I INPUT -p tcp -m ttl --ttl-lt 64 -j REJECT --reject-with tcp-reset</pre>
+<p><span style="color: #000000;">Now firewall will analysis the traffic coming on his network and blocks the packet contains TTL 64 or less than it.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-1ySNK9ZPnYU/Wha6AKLWeAI/AAAAAAAASa8/tEsVIlqeeCgzu5TwXuSLORTsW-XKh7xIgCEwYBhgL/s1600/32.png"/></span></p>
+<p><span style="color: #000000;"><strong>Bravo!! </strong></span><span style="color: #000000;">Above firewall rule is more powerful than the previous rules because it completely blocks NMAP “basic scan” as well as “advance scan”. If you notice the image given below, you will observe that TCP [sT], Fin Scan [sF], Data-length, and Stealth [sS] Scan all fail and show the port as closed.</span></p>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://4.bp.blogspot.com/-gfzkIWyUwhE/Wha6AkP1iaI/AAAAAAAASa8/9yIEkmV_U_EhT74aQkLuc0yKdICCkfcHgCEwYBhgL/s1600/33.png" alt="Nmap firewall scanning guide" width="580" height="649"/></span></p>
+<p><span style="color: #000000;">Still, there is a second way to enumerate port for an accurate result, by setting TTL value greater than 64. Following command will perform a port scan with defined TTL value i.e. 65 which will bypass firewall filter as 65 is greater than 64.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -p22 --ttl 65 192.168.0.101</pre>
+<p><span style="color: #000000;">So if the attacker is lucky to guess rejected TTL value or firewall rule and applied correct TTL. Then only port enumeration will get successful as shown in given image port 22 is open.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-Aqc7J34MSeU/Wha6A1zBDHI/AAAAAAAASa8/GB8zmGc4r_8NLloURW7pIDeX4tEmIHcYgCEwYBhgL/s1600/34.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Source Port Scan</strong></span></h3>
+<h4><span style="color: #800000;">Source Port Filter with IPTables</span></h4>
+<p><span style="color: #000000;">One more step to secure network from scanning is to apply firewall rule to allow traffic from a specific port only and reject traffic from remaining ports.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">iptables -I INPUT -p tcp --sport 80 -j  ACCEPT
+iptables -A INPUT -p tcp -j  REJECT --reject-with tcp-reset</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-r1Uk_-teRoI/Wha6BKnDqYI/AAAAAAAASa8/nJGXEKJe0VgYXTJizviXM-Byaxy4MVYXwCEwYBhgL/s1600/35.png"/></span></p>
+<p><span style="color: #000000;">Now again NMAP basic and advance will fail to enumerate open port state and if the attacker made a correct guess again firewall filter. Then he can execute NMAP source port scan to enumerate port details.</span></p>
+<p><span style="color: #000000;">The option g defines the source port that will carry the network packet to the destination port.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -g 80 192.168.0.101</pre>
+<p><span style="color: #000000;">Above command will send traffic from port 80 to perform scanning. Hence firewall will allow traffic from source port 80 and as a result show state for open ports.</span></p>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://4.bp.blogspot.com/-4b-OfsArGh0/Wha6BkTHE4I/AAAAAAAASa8/SQYRwE10TqEsUkE4oinAvbWdhv-RpAc1QCEwYBhgL/s1600/36.png" alt="Nmap firewall scanning guide" width="624" height="343"/></span></p>
+<h3><span style="color: #800000;">Decoy Scan</span></h3>
+<h4><span style="color: #800000;">Set Firewall Log to capture Attacker IP </span></h4>
+<p><span style="color: #000000;">Admin can set a firewall rule to create Log for IP from which traffic is coming. It will only create system logs to capture the attacker IP who is performing scanning.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">iptables -I INPUT -p tcp -j LOG --log-prefix "kaliNmap" --log-level=4</pre>
+<p><span style="color: #000000;">Now if the attacker will perform any type of network scanning on the targeted system. Then the firewall will generate its log which will capture his IP.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-pEIxt6bCP7I/Wha6BzmQueI/AAAAAAAASa8/aWJMAkgzQsIM3MXuNHaykIWadNQsLduHgCEwYBhgL/s1600/37.png"/></span></p>
+<h5><span style="color: #000000;"><strong>Escape from the Firewall log</strong></span></h5>
+<p><span style="color: #000000;">Always use some kind of precaution to escape yourself while performing network scanning. Because in windows “honey pot” and in Linux “iptables” are firewall will make the log of attacker’s IP. In such a situation, it is suggested that you use a Decoy Scan for port enumeration.</span></p>
+<h5><span style="color: #000000;"><strong>Decoy Scan</strong></span></h5>
+<p><span style="color: #000000;">The -D option makes it look like the trick scanning the target network. It does not hide your own IP. But it makes your IP one of a torrent of others supposedly scanning the victim at the same time. This not only makes the scan look scarier. But reduces the chance of you being trace from your scan (difficult to tell which system is the “real” source).</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -D 216.58.203.164 192.168.0.101</pre>
+<p><span style="color: #000000;">In the above command, we had to use Google IP as a torrent which will reflect as attacker IP in firewall log.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-N1bK5Cr8by4/Wha6CbDgIhI/AAAAAAAASa8/4JbK5I-VadQ4pdoY2R0WGrXd813MFMdjwCEwYBhgL/s1600/38.png"/></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">tail -f /var/log/syslog</pre>
+<p><span style="color: #000000;">When admin will read the system log. Then he will take higlighted IP as the attacker’s IP and may apply the filter on this IP to block incoming traffic from it.</span></p>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-xkPYEOwr5eE/Wha6C18nXmI/AAAAAAAASa8/FCyPk4ynYDIbekHC_fDrM2GMv1hCNaYiQCEwYBhgL/s1600/39.png" alt="Nmap firewall scanning guide" width="719" height="459"/></span></p>
+<p><span style="color: #000000;">To learn more on Nmap. Follow this</span> <strong><a href="https://www.hackingarticles.in/category/nmap/">Link.</a></strong></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

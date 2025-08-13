@@ -1,0 +1,213 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/nmap/" rel="category tag">Nmap</a>, <a href="https://www.hackingarticles.in/category/penetration-testing/" rel="category tag">Penetration Testing</a></span>            </div>
+            <h1 class="post-title entry-title">Understanding Nmap Packet Trace</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/understanding-nmap-packet-trace/" rel="bookmark"><time class="entry-date published" datetime="2018-07-30T07:39:40+00:00">July 30, 2018</time><time class="updated" datetime="2025-05-28T10:42:49+00:00">May 28, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p class="ai-optimize-6 ai-optimize-introduction"><span style="color: #000000;">Hello everyone. In this article, we’ll see how to capture network packet using nmap. And we’ll use Wireshark for comparing its result with nmap. In this article, we mainly focus on what types of network traffic is captured by nmap while we use various nmap ping scan.</span></p>
+<p class="ai-optimize-7"><span style="color: #000000;">Ping scan in nmap is done to check if the target host is alive or not. As we know that ping by default sends the ICMP echo request and gets an ICMP echo reply if the system is alive. Ping scan by default send an ARP packet and gets a response to check if the host is up.</span></p>
+<p class="ai-optimize-8"><span style="color: #000000;"><strong>NOTE:</strong> Nmap scans change their behavior according to the network they are scanning.</span></p>
+<ul>
+<li class="ai-optimize-9"><span style="color: #000000;">Scanning local network with nmap where nmap sends an ARP packet with every scan.</span></li>
+<li class="ai-optimize-10"><span style="color: #000000;">If an external network is to be scanned; nmap sends the following request packets:</span></li>
+</ul>
+<p class="ai-optimize-11"><span style="color: #000000;">ICMP echo request</span></p>
+<p class="ai-optimize-12"><span style="color: #000000;">ICMP timestamp request</span></p>
+<p class="ai-optimize-13"><span style="color: #000000;">TCP SYN to port 443</span></p>
+<p class="ai-optimize-14"><span style="color: #000000;">TCP ACK to port 80</span></p>
+<h3 class="ai-optimize-15"><span style="color: #800000;">Technique Involves in packet-tracing via nmap</span></h3>
+<p class="ai-optimize-16"><span style="color: #000000;">The nmap module is an interface with nmap’s internal functions and data structures. The API offers target host information such as port states and version detection results. It also provides an interface to the Nsock library for effective network I/O.</span></p>
+<p class="ai-optimize-17"><span style="color: #000000;"><strong>Nsock</strong> is a parallel sockets library used by NSE, service detection (service_scan.cc) and DNS (nmap_dns.cc). <strong>It acts as an abstraction layer above socket operations and is optimized for handling multiple sockets.</strong> “mspool” is defined at “nsock_internal.h” and contains among other things a struct event_lists which is a structure that keeps information on all pending events.</span></p>
+<h4 class="ai-optimize-18"><span style="color: #000000;">Event creation</span></h4>
+<p class="ai-optimize-19"><span style="color: #000000;">Events are represented with the msevent struct (nsock_internal.h) which contains (among other things)</span></p>
+<ul>
+<li class="ai-optimize-20"><span style="color: #000000;">The callback handler -&gt; nsock_ev_handler (nsock_pool, nsock_event, void *)</span></li>
+<li class="ai-optimize-21"><span style="color: #000000;">A pointer to a msiod struct -&gt; msiod *iod, which holds all the I/O descriptor (<strong>IOD</strong>) related information.</span></li>
+<li class="ai-optimize-22"><span style="color: #000000;">Struct filespace iobuf (a buffer usually 1024 bytes which holds the <strong>write/read</strong> bytes)</span></li>
+<li class="ai-optimize-23"><span style="color: #000000;">The nse_type (nsock.h)</span></li>
+<li class="ai-optimize-24"><span style="color: #000000;">The nse_status (nsock.h)</span></li>
+<li class="ai-optimize-25"><span style="color: #000000;">A unique id -&gt; nsock_event_id (<strong>EID</strong>)</span></li>
+</ul>
+<p class="ai-optimize-26"><span style="color: #000000;">Events are created with the the following special functions:</span></p>
+<p class="ai-optimize-27"><span style="color: #000000;"><strong>nsock_connect.c</strong></span></p>
+<ul>
+<li class="ai-optimize-28"><span style="color: #000000;">nsock_connect_tcp</span></li>
+<li class="ai-optimize-29"><span style="color: #000000;">nsock_connect_udp</span></li>
+<li class="ai-optimize-30"><span style="color: #000000;">nsock_connect_ssl</span></li>
+<li class="ai-optimize-31"><span style="color: #000000;">nsock_reconnect_ssl</span></li>
+</ul>
+<p class="ai-optimize-32"><span style="color: #000000;"><strong>nsock_read.c</strong></span></p>
+<ul>
+<li class="ai-optimize-33"><span style="color: #000000;">nsock_readlines</span></li>
+<li class="ai-optimize-34"><span style="color: #000000;">nsock_readbytes</span></li>
+<li class="ai-optimize-35"><span style="color: #000000;">nsock_read</span></li>
+</ul>
+<p class="ai-optimize-36"><span style="color: #000000;"><strong>nsock_write.c</strong></span></p>
+<ul>
+<li class="ai-optimize-37"><span style="color: #000000;">nsock_write</span></li>
+<li class="ai-optimize-38"><span style="color: #000000;">nsock_printf</span></li>
+</ul>
+<p class="ai-optimize-39"><span style="color: #000000;"><strong>nsock_timer_create.c</strong></span></p>
+<ul>
+<li class="ai-optimize-40"><span style="color: #000000;">nsock_timer_create</span></li>
+</ul>
+<p class="ai-optimize-41"><span style="color: #000000;">source: https://sock-raw.org/nmap-ncrack/nsock.html</span></p>
+<p class="ai-optimize-42"><span style="color: #000000;"><strong>Let’s Start!!</strong></span></p>
+<h3 class="ai-optimize-43"><span style="color: #800000;"><strong>Nmap Sweep Ping Analysis</strong></span></h3>
+<p class="ai-optimize-44"><span style="color: #000000;">Attribute <strong>-sn/ -sP</strong> are used for sweep ping and they try to identify the live host in the network. Using <strong>–packet-trace</strong> along nmap scan we can observe the network packet.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -sn 192.168.1.103 --packet-trace</pre>
+<p class="ai-optimize-45"><span style="color: #000000;">Here you can observe first two packets SENT/RECD (received) showing ARP request packet from 192.168.1.105 to 192.168.1.103 and then used NSOCK libraries to state actual request and response packets travel between the source and destination router.</span></p>
+<ul>
+<li class="ai-optimize-46"><span style="color: #000000;">NSOCK INFO that denotes a new nsock_event_id (<strong>EID</strong>) <strong>8</strong> is generated to represents I/O descriptor <strong>(IOD) #1</strong> for NSOCK UDP connection request to the router on <strong>port 53</strong>.</span></li>
+<li class="ai-optimize-47"><span style="color: #000000;">NSOCK INFO that denotes another (EID) <strong>18</strong> is generated to represents read request from (IOD) #1.</span></li>
+<li class="ai-optimize-48"><span style="color: #000000;">NSOCK INFO that denotes another (EID) <strong>27 </strong>is generated to represents write request for 44 bytes to (IOD) #1.</span></li>
+<li class="ai-optimize-49"><span style="color: #000000;">NSOCK INFO that denotes SUCCESSFUL operation when nsock used callback_handler to connect for EID 8.</span></li>
+<li class="ai-optimize-50"><span style="color: #000000;">NSOCK INFO that denotes SUCCESSFUL operation when nsock used callback_handler to write for EID 27.</span></li>
+<li class="ai-optimize-51"><span style="color: #000000;">NSOCK INFO that denotes SUCCESSFUL operation when nsock used callback_handler to read for EID 18.</span></li>
+<li class="ai-optimize-52"><span style="color: #000000;">NSOCK info that IOD #1 is deleted.</span></li>
+<li class="ai-optimize-53"><span style="color: #000000;">NSOCK info that nevent_delete is deleting on event 34.</span></li>
+<li class="ai-optimize-54"><span style="color: #000000;">At last Nmap scan report Host is up.</span></li>
+</ul>
+<p class="ai-optimize-55"><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-KvkWHy6f_vs/W165o9_EamI/AAAAAAAAYyY/gqnY4KMGubMDSRHQHMcWggOot2mo0js5QCEwYBhgL/s1600/7.png" border="0" data-original-height="465" data-original-width="794"/></span></p>
+<p class="ai-optimize-56"><span style="color: #000000;">You can observe the same traffic we have captured from Wireshark</span></p>
+<ul>
+<li class="ai-optimize-57"><span style="color: #000000;">Arp request packet for 192.168.1.105 to 192.168.1.103</span></li>
+<li class="ai-optimize-58"><span style="color: #000000;">Arp reply packet from 192.168.1.103 to 192.168.1.105</span></li>
+</ul>
+<p class="ai-optimize-59"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-d47AIZLgzQI/W165o25CfcI/AAAAAAAAYyU/UHVDdLLgisMYDI0lCXAOHdDq0IT7I-qUQCEwYBhgL/s1600/8.png" border="0" data-original-height="116" data-original-width="801"/></span></p>
+<h3 class="ai-optimize-161"><span style="color: #800000;">Disable ARP Ping and Analyze ICMP &amp; TCP</span></h3>
+<p class="ai-optimize-60"><span style="color: #000000;">Similar you can also choose <strong>–reason </strong>option with nmap command to enumerate response from host network.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -sn 192.168.1.103 --reason</pre>
+<p class="ai-optimize-61"><span style="color: #000000;">As you can observe it has clearly shown Host is up when received arp-response.</span></p>
+<p class="ai-optimize-62"><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-EaW6pwMsZJ4/W165pNYjjgI/AAAAAAAAYyY/mqPaIBWGKSwX0HXuDFgzvCvhWERyxO9_QCEwYBhgL/s1600/9.1.png" border="0" data-original-height="125" data-original-width="602"/></span></p>
+<p class="ai-optimize-63"><span style="color: #000000;">As we have seen, by default Nmap sent ARP packet to identify host status therefore now we will trace nmap packet when –disable-arp-ping is activated.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -sn 192.168.1.103 --packet-trace --disable-arp-ping</pre>
+<p class="ai-optimize-64"><span style="color: #000000;">Here you can notice the following SENT packets from source 192.168.1.105 to destination 192.168.1.103.</span></p>
+<ul>
+<li class="ai-optimize-65"><span style="color: #000000;">ICMP echo request</span></li>
+<li class="ai-optimize-66"><span style="color: #000000;">ICMP timestamp request</span></li>
+<li class="ai-optimize-67"><span style="color: #000000;">TCP SYN to port 443</span></li>
+<li class="ai-optimize-68"><span style="color: #000000;">TCP ACK to port 80</span></li>
+</ul>
+<p class="ai-optimize-69"><span style="color: #000000;">Then RCVD packet ICMP Echo-reply from destination <strong>192.168.1.103</strong> and then used NSOCK libraries to state actual request and response packets travel between source to the destination router.</span></p>
+<p class="ai-optimize-70"><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-y_Mqtu2GTlY/W165peNxlWI/AAAAAAAAYyY/4aqDwh6TJEU9ydco5mDOCelZYYqKUT_XwCEwYBhgL/s1600/9.png" border="0" data-original-height="609" data-original-width="774"/></span></p>
+<h3 class="ai-optimize-71"><span style="color: #800000;">Demonstrating working of Ping Sweep using Wireshark</span></h3>
+<p class="ai-optimize-72"><span style="color: #000000;">From given below image you can observe the following packet of request and reply between both network IP.</span></p>
+<ol>
+<li class="ai-optimize-73"><span style="color: #000000;">ICMP echo request</span></li>
+<li class="ai-optimize-74"><span style="color: #000000;">TCP SYN to port 443</span></li>
+<li class="ai-optimize-75"><span style="color: #000000;">TCP ACK to port 80</span></li>
+<li class="ai-optimize-76"><span style="color: #000000;">ICMP timestamp request</span></li>
+<li class="ai-optimize-77"><span style="color: #000000;">ICMP echo reply</span></li>
+<li class="ai-optimize-78"><span style="color: #000000;">TCP RST, ACK to port 443</span></li>
+<li class="ai-optimize-79"><span style="color: #000000;">TCP RST to port 80</span></li>
+<li class="ai-optimize-80"><span style="color: #000000;">ICMP Timestamp Reply</span></li>
+</ol>
+<p class="ai-optimize-81"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-6n5_Ai2Nd-I/W165kMrKgtI/AAAAAAAAYyA/2c03NXjiWVET3QdC1GaxAZkEzmL9_wdtgCEwYBhgL/s1600/10.png" border="0" data-original-height="211" data-original-width="828"/></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -sn 192.168.1.103 --disable-arp-ping --reason</pre>
+<p class="ai-optimize-82"><span style="color: #000000;">Similar you can also choose –reason option with nmap command to enumerate response from host network.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -sn 192.168.1.103 --disable-arp-ping --reason</pre>
+<p class="ai-optimize-83"><span style="color: #000000;">As you can observe it has clearly shown Host is up when received ICMP echo-response.</span></p>
+<p class="ai-optimize-84"><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-Su8imTVMS1U/W165kAUJp1I/AAAAAAAAYyA/lCQB-GwLM5kj7LH-4PhmkaoMoKE7FgSJgCEwYBhgL/s1600/11.1.png" border="0" data-original-height="132" data-original-width="578"/></span></p>
+<h3 class="ai-optimize-85"><span style="color: #800000;"><strong>Nmap TCP-SYN Ping Analysis</strong></span></h3>
+<p class="ai-optimize-86"><span style="color: #000000;"><strong>Attribute -PS sends TCP SYN packet on port 80 by default; we can change it by specifying the ports with it, like -P22.</strong></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -PS -p22 192.168.1.103 --packet-trace</pre>
+<p class="ai-optimize-87"><span style="color: #000000;">Here you can observe this scan is the addition of nmap <strong>ping scan</strong> and nmap <strong>stealth scan</strong> because, in the beginning, it sends arp packet then uses nsock libraries and at the end again implicates TCP half communication.</span></p>
+<p class="ai-optimize-88"><span style="color: #000000;">So you can observe the following information we fetched from nmap:</span></p>
+<ul>
+<li class="ai-optimize-89"><span style="color: #000000;">SENT/RECD ARP request and reply respectively.</span></li>
+<li class="ai-optimize-90"><span style="color: #000000;">Nsock libraries details</span></li>
+<li class="ai-optimize-91"><span style="color: #000000;">TCP-SYN packet from 192.168.1.105:36088 to 192.168.1.103:22.</span></li>
+<li class="ai-optimize-92"><span style="color: #000000;">TCP-SYN/ACK packet from 192.168.1.103:22 to 192.168.1.105:36088.</span></li>
+</ul>
+<p class="ai-optimize-93"><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-wQ0WRHtAvmw/W165kWOZbqI/AAAAAAAAYyI/4rQFxE3L5VE1eml2X9WtnOVOMF-NibVcQCEwYBhgL/s1600/11.png" border="0" data-original-height="563" data-original-width="785"/></span></p>
+<p class="ai-optimize-94"><span style="color: #000000;">Similarly, we saw the same pattern of network traffic in Wireshark.</span></p>
+<p class="ai-optimize-95"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-xxQsZqHcE9A/W165lL6l5mI/AAAAAAAAYyQ/vpJOFcgVhow2KUJDudtKaqXKgHjyRlkJgCEwYBhgL/s1600/12.png" border="0" data-original-height="157" data-original-width="777"/></span></p>
+<p class="ai-optimize-96"><span style="color: #000000;">Similar you can also choose –reason option with nmap command to enumerate response from host network.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -PS -p22 192.168.1.103 --reason</pre>
+<p class="ai-optimize-97"><span style="color: #000000;">Here you can observe port 22 is open and when received SYN/ACK packet from the host.</span></p>
+<p class="ai-optimize-98"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-2Blkp-Qg_5Y/W165kzMLPOI/AAAAAAAAYyQ/XeBswP8nmtsWFTv-lITc6nFDvOGrN4zCQCEwYBhgL/s1600/13.1.png" border="0" data-original-height="186" data-original-width="606"/></span></p>
+<p class="ai-optimize-99"><span style="color: #000000;">Now let figure out network traffic when –disable-arp-ping activated.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -PS -p22 192.168.1.103 --packet-trace --disable-arp-ping</pre>
+<p class="ai-optimize-100"><span style="color: #000000;">So you can observe the following information we fetched from nmap:</span></p>
+<ul>
+<li class="ai-optimize-101"><span style="color: #000000;">SENT TCP-SYN packet on port 80</span></li>
+<li class="ai-optimize-102"><span style="color: #000000;">RCVD TCP-RST/ACK from port 80.</span></li>
+<li class="ai-optimize-103"><span style="color: #000000;">Nsock libraries details</span></li>
+<li class="ai-optimize-104"><span style="color: #000000;">TCP-SYN packet from 192.168.1.105:63581 to 192.168.1.103:22.</span></li>
+<li class="ai-optimize-105"><span style="color: #000000;">TCP-SYN/ACK packet from 192.168.1.103:22 to 192.168.1.105:63851.</span></li>
+</ul>
+<p class="ai-optimize-106"><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-y79a1NNqA9g/W165lEClIaI/AAAAAAAAYyA/D5SbrNOXiG8ObXsyGQwSvLyc75S1M9LzACEwYBhgL/s1600/13.png" border="0" data-original-height="627" data-original-width="727"/></span></p>
+<p class="ai-optimize-107"><span style="color: #000000;">Similarly, we saw the same pattern of network traffic in Wireshark also.</span></p>
+<p class="ai-optimize-108"><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-jNrjk_0DrTA/W165l11f1rI/AAAAAAAAYyU/MA3znutKG4clybdAJlpttFuTPiWA4bOcQCEwYBhgL/s1600/14.png" border="0" data-original-height="149" data-original-width="808"/></span></p>
+<h3 class="ai-optimize-109"><span style="color: #800000;"><strong>Nmap ICMP Ping Analysis</strong></span></h3>
+<p class="ai-optimize-110"><span style="color: #000000;">Attribute –PE sends ICMP echo request packet [ICMP type 8] and received ICMP echo reply packet</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -sP -PE 192.168.1.103 --packet-trace --disable-arp-ping</pre>
+<p class="ai-optimize-111"><span style="color: #000000;">Here you can notice ICMP Echo-request packets SENT from source 192.168.1.105 to destination 192.168.1.103</span></p>
+<p class="ai-optimize-112"><span style="color: #000000;">Then RCVD packet ICMP Echo-reply from destination 192.168.1.103 and then used NSOCK libraries to state actual request and response packets travel between source to the destination router.</span></p>
+<p class="ai-optimize-113"><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-3MYw6SjtnF8/W165l8FeAmI/AAAAAAAAYyM/7e2u_qdS5kIG_VGKvVVtJSNlb_NInCXEQCEwYBhgL/s1600/15.png" border="0" data-original-height="494" data-original-width="736"/></span></p>
+<p class="ai-optimize-114"><span style="color: #000000;">Similarly, we saw the same pattern of network traffic in Wireshark also.</span></p>
+<p class="ai-optimize-115"><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-rr2czZltQE4/W165mJrzYhI/AAAAAAAAYyA/Ly3spvhRd-E_Ij_HFEGXm-T4yfnSTg9jQCEwYBhgL/s1600/16.png" border="0" data-original-height="104" data-original-width="834"/></span></p>
+<h3 class="ai-optimize-116"><span style="color: #800000;"><strong>Nmap Stealth Scan Analysis</strong></span></h3>
+<p class="ai-optimize-117"><span style="color: #000000;">Let’s capture the network packet for default nmap scan also called stealth scan which follows TCP half communication</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -p22 192.168.1.103</pre>
+<p class="ai-optimize-118"><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-boW3tfjKaxk/W165m4iyTyI/AAAAAAAAYyU/eU49LLm-gIwlZcvC-pTZWN63untp4YbtgCEwYBhgL/s1600/22.png" border="0" data-original-height="208" data-original-width="579"/></span></p>
+<p class="ai-optimize-119"><span style="color: #000000;">Here you can observe TCP-half communication:</span></p>
+<ul>
+<li class="ai-optimize-120"><span style="color: #000000;">TCP-SYN packet sent from source 192.168.1.105 to 192.168.1.103 on port 22.</span></li>
+<li class="ai-optimize-121"><span style="color: #000000;">TCP-SYN, ACK packet received from source 192.168.1.103 to 192.168.1.105.</span></li>
+<li class="ai-optimize-122"><span style="color: #000000;">TCP-RST packet sent from source 192.168.1.105 to 192.168.1.103.</span></li>
+</ul>
+<p class="ai-optimize-123"><span style="color: #000000;"><img decoding="async" class="CSS_LIGHTBOX_SCALED_IMAGE_IMG" src="https://3.bp.blogspot.com/-SQRL3dudUfU/W165mgayPXI/AAAAAAAAYyI/J-0L83xd_4I3MTC4Z3EDx4Gm_Hj2VJ5EgCEwYBhgL/s1600/23.png"/></span></p>
+<p class="ai-optimize-124"><span style="color: #000000;">Now let’s verify it with parameter –packet-trace and compare the result.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -p22 192.168.1.103 --packet-trace</pre>
+<p class="ai-optimize-125"><span style="color: #000000;">So you can observe the following information we fetched from nmap which is similar to TCP-SYN Ping.</span></p>
+<ul>
+<li class="ai-optimize-126"><span style="color: #000000;">SENT/RECD ARP request and reply respectively.</span></li>
+<li class="ai-optimize-127"><span style="color: #000000;">Nsock libraries details</span></li>
+<li class="ai-optimize-128"><span style="color: #000000;">TCP-SYN packet from 192.168.1.105:48236 to 192.168.1.103:22.</span></li>
+<li class="ai-optimize-129"><span style="color: #000000;">TCP-SYN/ACK packet from 192.168.1.103:22 to 192.168.1.105:48236.</span></li>
+</ul>
+<p class="ai-optimize-130"><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-KH4hI_i6TVk/W165mwHf9rI/AAAAAAAAYyE/V7Iv71hYaVEv44ti_zeqqUjREeGvEXhKgCEwYBhgL/s1600/24.png" border="0" data-original-height="563" data-original-width="757"/></span></p>
+<p class="ai-optimize-131"><span style="color: #000000;">Similarly, you can also choose the “–reason” option with nmap command to enumerate response from the host network.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -p22 192.168.1.103 --reason</pre>
+<p class="ai-optimize-132"><span style="color: #000000;">Here you can observe port 22 is open and when received SYN/ACK packet from the host.</span></p>
+<p class="ai-optimize-133"><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-j1YCYYMWFGk/W165nKFIJoI/AAAAAAAAYyM/tfvERb1ForIESFItYfl9U92EM6IGoQmNwCEwYBhgL/s1600/25.png" border="0" data-original-height="197" data-original-width="591"/></span></p>
+<p class="ai-optimize-134"><span style="color: #000000;">Now let’s figure out the behavior of network traffic when –disable-arp-ping activated.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -p22 192.168.1.103 --packet-trace --disable-arp-ping</pre>
+<p class="ai-optimize-135"><span style="color: #000000;">Here you can notice the following SENT packets from source 192.168.1.105 to destination 192.168.1.103.</span></p>
+<ul>
+<li class="ai-optimize-136"><span style="color: #000000;">SENT ICMP echo request</span></li>
+<li class="ai-optimize-137"><span style="color: #000000;">SENT TCP SYN to port 443</span></li>
+<li class="ai-optimize-138"><span style="color: #000000;">SENT TCP ACK to port 80</span></li>
+<li class="ai-optimize-139"><span style="color: #000000;">SENT ICMP timestamp request</span></li>
+<li class="ai-optimize-140"><span style="color: #000000;">Then RCVD packet ICMP Echo-reply from destination 192.168.1.103</span></li>
+<li class="ai-optimize-141"><span style="color: #000000;">Then used NSOCK libraries to state actual request and response packets travel between sources to the destination router.</span></li>
+<li class="ai-optimize-142"><span style="color: #000000;">SENT TCP-SYN request on port 22</span></li>
+<li class="ai-optimize-143"><span style="color: #000000;">RECV TCP-SYN, ACK reply from port 22.</span></li>
+</ul>
+<p class="ai-optimize-144"><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-ymUe9CY8pH8/W165nfmWnaI/AAAAAAAAYyQ/_FlcY_888-Iamq7tv1I6EbAZUBmUW3bsQCEwYBhgL/s1600/26.png" border="0" data-original-height="742" data-original-width="748"/></span></p>
+<p class="ai-optimize-145"><span style="color: #000000;">On the other hand, we saw the same pattern of network traffic in Wireshark too.</span></p>
+<p class="ai-optimize-146"><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-5OyluAxZ-Ms/W165niErSLI/AAAAAAAAYyI/XWdWWLuw8P8LGnyHWxigQRkRLwiKyzuLQCEwYBhgL/s1600/27.png" border="0" data-original-height="257" data-original-width="955"/></span></p>
+<h3 class="ai-optimize-147"><span style="color: #800000;"><strong>Nmap TCP Scan Analysis</strong></span></h3>
+<p class="ai-optimize-148"><span style="color: #000000;">We know from our basic network communication knowledge that a TCP scan performs a three-way-handshake. A nmap TCP scan is done here:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -sT -p22 192.168.1.103 --packet-trace</pre>
+<p class="ai-optimize-149"><span style="color: #000000;">So you can observe the following information we fetched from nmap which is similar to TCP-SYN Ping.</span></p>
+<p class="ai-optimize-150"><span style="color: #000000;">SENT/RECD ARP request and reply respectively.</span></p>
+<p class="ai-optimize-151"><span style="color: #000000;">Nsock libraries details</span></p>
+<p class="ai-optimize-152"><span style="color: #000000;">Connecting TCP Localhost from destination host 192.168.1.103:22 is in progress.</span></p>
+<p class="ai-optimize-153"><span style="color: #000000;">Connected TCP Localhost from destination host 192.168.1.103:22 successfully.</span></p>
+<p class="ai-optimize-154"><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-kR49w2vRVe8/W165oA_O8II/AAAAAAAAYyY/9nNkPXehYvwcysSCrWBJbGs9z4THAphBACEwYBhgL/s1600/28.png" border="0" data-original-height="558" data-original-width="736"/></span></p>
+<p class="ai-optimize-155"><span style="color: #000000;">Similarly, we saw the same pattern of network traffic in Wireshark too.</span></p>
+<p class="ai-optimize-156"><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-wbpunnIzJOA/W165oDCzy_I/AAAAAAAAYyQ/zs16iRbZkp4s4xm-JrpEqpKsrZ0e3c7KgCEwYBhgL/s1600/29.png" border="0" data-original-height="173" data-original-width="777"/></span></p>
+<p class="ai-optimize-157"><span style="color: #000000;">Similarly, you can also choose the “–reason” option with nmap command to enumerate response from the host network.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -sT -p22 192.168.1.103 --reason</pre>
+<p class="ai-optimize-158"><span style="color: #000000;">Here you can observe port 22 is open and when received SYN/ACK packet from the host.</span></p>
+<p class="ai-optimize-159"><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-VcCm6fk0cgc/W165oAx7kJI/AAAAAAAAYyM/2trVzwpRejUSLWF5K8PuRM87i1hhkd10gCEwYBhgL/s1600/30.png" border="0" data-original-height="192" data-original-width="572"/></span></p>
+<p class="ai-optimize-42"><span style="color: #000000;">To learn more on Nmap. Follow this</span> <strong><a href="https://www.hackingarticles.in/category/nmap/">Link.</a></strong></p>
+<p class="ai-optimize-160"><span style="color: #000000;"><strong>Author: Harshit Rajpal </strong>is an InfoSec researcher and a left and right brain thinker. contact<strong> <a class="broken_link" style="color: #000000;" href="https://in.linkedin.com/in/harshit-rajpal-79bb43103">here</a></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

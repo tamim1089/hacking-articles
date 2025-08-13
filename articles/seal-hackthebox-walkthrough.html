@@ -1,0 +1,112 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/" rel="category tag">HackTheBox</a></span>            </div>
+            <h1 class="post-title entry-title">Seal HackTheBox Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/seal-hackthebox-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2021-12-13T20:45:23+00:00">December 13, 2021</time><time class="updated" datetime="2025-06-20T16:49:13+00:00">June 20, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Hack the Box platform rates Seal as a medium difficulty CTF Linux machine. So let’s get started and deep dive into breaking down this machine by using the following methodology below.</span></p>
+<h3><span style="color: #800000;"><strong>Pentesting Methodologies </strong></span></h3>
+<p><span style="color: #000000;"><strong>Port Scanning &amp; Enumeration</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Nmap</span></li>
+<li><span style="color: #000000;">Dirb</span></li>
+<li><span style="color: #000000;">GitBucket</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Exploitation </strong></span></p>
+<ul>
+<li><span style="color: #000000;">Path Traversal</span></li>
+<li><span style="color: #000000;">Abusing Tomcat Server</span></li>
+<li><span style="color: #000000;">Netcat Reverse Connect</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Privilege Escalation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Digging SSH Id_rsa</span></li>
+<li><span style="color: #000000;">Abusing sudo right</span></li>
+</ul>
+<h3><span style="color: #800000;"><strong>Port Scanning &amp; Enumeration</strong></span></h3>
+<h4><span style="color: #000000;">Nmap</span></h4>
+<p><span style="color: #000000;">First, we’ll start by running a nmap aggressive scan to look for open ports. As you can see, 3 ports are open, namely:</span></p>
+<ul>
+<li><span style="color: #000000;">port 22 for ssh service running</span></li>
+<li><span style="color: #000000;">port 443 for SSL ngnix service running</span></li>
+<li><span style="color: #000000;">port 8080 for http-proxy service running</span></li>
+</ul>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -p- -A 10.129.186.142</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgrV_K3bBRPlMkoVBalHuZpT1HrmryNeXxj6K7MgK5-zPRnps6ksso2wB8ItcGTpnCdEogs2pl4hXXcSfCwVURL2zbntabw_njzvcYGb1I5KwpFSYeOJMUzj_GogbXAoDIJUzneA5aj_D_rYhdi1aLebStoMYwvAb4PUHLRZds6lw4riSwDZmKMt5VJpw=s16000"/></span></p>
+<p><span style="color: #000000;">Let’s browse the IP address in a browser. The http request is automatically redirected to https. The only usable information found here is the email address: <strong>admin@seal.htb.</strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjKIsOxPgUnS7CzZt5SdTfoNWQmWxp4gPQ0vmYRO3sQ7tgrWAXrE3KAEDx4NkpizFtXNThlpWA_Szvq1I6xYI7tR4JXmzgDroWkB6_Lh10wjAu1wUeLNPkEwbOYhH8d832MjPw7cb_mPZafCAvp_WuSmBfGIC43BQondjVKyb5C6Dt-x7keCKPHpU9w4A=s16000"/></span></p>
+<p><span style="color: #000000;">Here we use <strong>DIRB</strong> which is a web content scanner to brute force the directory and files name of the seal machine.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">dirb https://seal.htb</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhJUnvbSiIiMlb-Ykd2if0c2x2_0jdk0wOc8bjHmtSV6J_zSGb8ffp1aXPNsHc5bRnkODCeSjFhH1DMcxa-c77WR4rQepG9Q3w_FOj_kMy8nmeqN5H_Vvm93G7VJZ3nQaCUA-cgAdUXJ3u7wj0YHLOMiGCjHRV05zM4E6LUvHVCpq1iEZia6DDy3PNPZQ=s16000"/></span></p>
+<p><span style="color: #000000;">Browsing on the ip address on port 8080 lead us to a webpage <strong>GitBucket.</strong> We don’t have any credentials, so let’s create a new one.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEj2-u53xg-ikcrcrNaDOe1iyptEKxkRRop0muDDoWnDNV7fDOhd5oRhG2aRktn8I0-Mobc0mQZSurdKi1bXGp-uSW5X-b1o-rQRqFiR3hwSe4ZGfjPdle_uczyEV5kaVVHby7Q5uQ_d587qGQKhZnkyvxXvOHapgBCx_0FmfBvZSRvw73IFg8kHm_EsRg=s16000"/></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjZujzYLhT21O3JPmMSyCS7gNtuzp6Ph9wrNL3lmYbMb86tAxz714a36SBhx-NjLgUQizjS1iT5Rfb35u3FFeRA-uRt6LtslwWiR-XAITUREyIbMQtcXFGMm0hNJLf93cZVOz_AzoNlH2gLRf-w0rmge0Abr0SJe3NKLUSAATrN5D2G2S_mS9ylzJpjuQ=s16000"/></span></p>
+<p><span style="color: #000000;">Once an account has been created, we can now login into the website. We can see some comments on the landing page. As shown below, 2 comments were made by luis and alex regarding some issues.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjFXtlyMrc_3zoZYPyh_D6ZsmII4y86u78LHaaLmW7rYvb3lsAhVl9voHg5bILBfIt2lRT7fn1IpjifBwO5OrlZ7Nh_7BN235uwKZuSEx1agnd-xL-1ROXSrWEoHxOPNYe7PnaQ0LoHyhQ9-IPLuJbCMd8tN6Hj-FqrkgXMPGzNgluAKX1nYbB5LbFHUQ=s16000"/></span></p>
+<p><span style="color: #000000;">In the repository section, we can see 2 repos, root/seal_market and root/infra. The seal_market repo contains all applications, like nginx, the tomcat config files for the seal market applications. This application is running on port 8080.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjJR4j8QukZnzYF_Ae6n0DdOQGIkau9s-quDhICrFdosfG_xtp241XbCRZpNtsnn8ip8CLXVD_kUZWXQ9iaPifbz7GULZceU8tt38e73seFHTyb8evOAt3UxSG7YvyKwifJ9lSRVydSRLICWlgTECeHug2uagoYrNm338gpwlGefaUwEAOLEYVE05ko1Q=s16000"/></span></p>
+<p><span style="color: #000000;">There’s also an issue section where you can find 13 comments. It looks like someone made changes to the application 13 times. You can see that someone also performed some configuration to tomcat.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjtnOvfUIO1GO360y8uCr13e1lv2D-L1ucYUtJuvNXilBisMAjGQBKqhpFvvhdp3x1NHLM4Yfw8KwysR6WRRnj52wD7Ueu41VowNaO3NfwbIgXL_efAIPtDXvWNPAbr4EVSnbOKJsD_mHXCNGZhlEe1cH70naxcvTDwYyRQwND4RbIPSXCoykN9U4hqaw=s16000"/></span></p>
+<p><span style="color: #000000;">By expanding the comment, we can see that someone has changed many configuration files. But someone made the last configuration to the tomcat_user.xml file. It means that someone has changed some information about users. While going through the configuration file, we can find the tomcat username and password.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEiGuiXv-_79eSIVpYNQfGMAkKfQ1NWdoZSN8QKE3CfLqLqxXv69AbDcy1C3nuu-dmLpqml5E7_lfbBE7yn1nEImcWF5hbjISdXAmuVF9gCTMKIVoT1dj2XxpTjbqQT_nHLqOIgNVwuVPk9xHG7V0rKO9YOvasugMiWD28jpsrCqc16FD34afUizTUHJ6g=s16000"/></span></p>
+<p><span style="color: #000000;">While trying to access the link below which we find from the dirb results, we got a 403, which means there is some particular issue with this address.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgQP40JCu84xUJimgykNfYKavDMR7UTgC6RodM1t0KVa0r2MhzWsE_Eqr9O-uWy6x4JwxWxNRd7Rg-jwJ2mj04NLvpYFE1pNmFeo19FMS0L1jMZLZGn4SgqWGafNV5LwJsEi7MOvXytkFenIFLB3kknu3PzmB-zYNZxPnU29IkXNwNJajd8S09u8xUc7Q=s16000"/></span></p>
+<p><span style="color: #000000;">As per the ngnix configuration file which has also been recently modified as per Alex comments, we can see that the code below shows that if the verification is not successful, then display 403. And from the above screenshot, we got a 403. So, we have to bypass it.</span></p>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEi9PFKLnu3xPvT_ohKT9_b0sbuTSAY119UXhITdYbp8A81moCvDX8CkaCLhGdbtRr20fW9U8emFpJPvjTf9MBpb0MxMFfUcFezr14VDmhGtkYuHlJ8EX44zuLwLcHv1QAJG4Z5bSoaTPgWT7a0lFcOfLsIuwf-ffJqEohB7m3Fh5Xx9OMIhX73zI7HyeQ=s16000"/></strong></span></p>
+<h3><span style="color: #800000;"><strong>Exploitation</strong></span></h3>
+<p><span style="color: #000000;">So we will bypass it by adding the; syntax between <strong>https://seal.htb/manager/;/html</strong></span></p>
+<p><span style="color: #000000;">Now we have a pop up asking for a username and password. We already have the username and password in the tomcat-users configuration file.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjVY5pDXj1chhTzk59pVUrLtz58Rf_grjBhNWG8O6vBWhdeeRtB833P1WXO5fQKzR2mSU4nTVfeYBPwf-iB5IiOTSvw1ttllfxTghoIR8B0YNePPhaBIBjCOjNljFDyjypY2uGFOfzl_hPfUlLVRyJlcDm4cNw3SihD-_GUcEfGc27A_q97-FaUDUtSkA=s16000"/></span></p>
+<p><span style="color: #000000;">So we finally landed on the main page where we can exploit the apache tomcat server.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhLj6v63PnM_cQKgt_TbMIypGAOhXvgRkQaQIbl2K1lS1OpiGwaizQabn1f1QGm0XFVwGSXpE-7QfNPQR0kvQh_LO-KmlI27Doeg9OszbipxLFqQa0Sif2upbhW_8N1x5KA_xXXnpXn9ANMDrlYOu65slEU5obwJwyQe_cc3JJPjLzhcUKQQ5-r2B26tQ=s16000"/></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhUnmTsfdfrOLZ3Slu3F1n6JoRGLPF7tyNAE6mxdfIa_IkMeN3i8k1K3_g12i5TqkCgIRTY6c4BT1GLVSDnxHZp-5hFIR6typdU--ZSWjFvvBSC25W_6xQx9DvJMhNq2XfHPMIPgVtT4ja93plZioG7Jau0Xz8kQrJAbuuY9q4buVyTijskllfUOiieSg=s16000"/></span></p>
+<p><span style="color: #000000;">There is an option for uploading and deploying a WAR file. We will now create a WAR extension file and upload &amp; deploy it. This should enable us to have a reverse shell. We’ll create a payload call shell.war by using msfvenom.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgM6PANpv8PHzGw7ZxI9Qkl6zbjqjEkK4t_4TNa7L7NuAIWmiVa4VzD3x3w6M1JiRkaJw3DMgrfGJKLRvDYhVgsX0ps8WXr-SgXpHHYWso2646EF7h1pAFWdmwEB6DFCyxY1Isxc_5iJEJMt923RpVR0AxNETyAV7MwpcCoCJBCJbt0dqm-nmMJpMzvUg=s16000"/></span></p>
+<p><span style="color: #000000;">Now, if we try to upload and deploy it, we will get the error message 403. So we need to bypass it again. There are 2 methods to bypass it. One method has already been used above. The second method is to use the burp suite to analyse the request. As you can see below it is making a request to the manager page</span></p>
+<h5><span style="color: #000000;"> /manager/html/upload?</span></h5>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEi2u8yqodo9rXJ_k9ySQC6HuLNIr6_GLowmc97BhzY1mnTcyR0N_0mc6ht4MAUagtBk6o8c9gTNY2iUJQ7QoBIyTztsNsc8DXU2A6oiXYcvSzFTKDCp0a3HpskeqIIKGt8ko-czbFCHsBeMHECkD8aTuUb2Jo1V7zWxa8f4w17ppp_W7UQ52RSeq0rjMA=s16000"/></span></p>
+<p><span style="color: #000000;">So let’s add <strong>(;) </strong>character to bypass. /manager/<strong>;</strong>/html/upload?</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEiOHs0E2AbsOMBEl3whAzA0srpyM5ZNQRoH2diNoz6OGd4gDfLtNgcztgSTn50BgJJjOc4Aks3GshEpMlcmQ9rM5kY4jaTzA0efzMQBOxG5IEfcTTEcY2e-1n9iOEPoZ_NOaBhE2fiTQNc-shoGMGxkA3CkGXMPfTefVyujBboNNH-3z4IysnTmLKrTwg=s16000"/></span></p>
+<p><span style="color: #000000;">As you can see below we have been able to upload our shell.war file in the tomcat application manager.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhoYs89-cG2Fp6twwPc-mfJ3Xt1Vhyk4Bm4o5MTXBhJihWAOCSW08yYPRUGn6jhXrY0MgdJP9Mpc3-FgPLy-4IMV1TtjgwxtxjVsrfqWTgqBMeHZnjHIRxGefrjRp3FxMOsZU4DbfLoLakrYes4RQDAzgKbhdtcRghlrWXH2yhvErGsQYzpByPzP2_UEw=s16000"/></span></p>
+<p><span style="color: #000000;">So now if we click on the /shell, we get our reverse shell.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEiUCJIXYWSYE9t1v-RFGI1sHrjDIx5KajFgm5MFZd_zXdsLDe5joZwwOjgPGrCyzs6q_7IMqUK42LEwdqhqngz2XByFNA_bXDA20yf6iIR8zS6k2wIjM2r6alM2MARDVmW0mpDGUI-ZL_M261GRR1CzTQ4Y-3sg-z2GrjeI7Dzdp83Vnbx3Ft773HpVng=s16000"/></span></p>
+<p><span style="color: #000000;">So now the shell is running like a process on our system. If we press Ctrl + C, it will kill it and we will lose the shell. Now let make it permanent.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEidvrM7PFNzeQu_gSfeWLxWu1fopf_U4kKDsM1VbA7vMnBMzY6SJ77sX8bKxK6Q8TWUD4d6sLfI_woTpSspa6bF7qNMbBMEANHn0X1clCUF6sc_En2l-cHD_F4BG5QhZc_MSlti7LhxzQ61sOfXYTzbEgwqJ-Yoz9Ky51VcQUeisUGwYp3L3RQurIr5_w=s16000"/></span></p>
+<p><span style="color: #000000;">It’s done. Now even if we press Ctrl + C, the shell will not be terminated. We can now proceed further.</span></p>
+<p><span style="color: #000000;">Now let’s check what users we have on this system. Typing <strong>/cat/etc/passwd </strong>would show us the list of available users. We have <strong>luis user</strong>. We also have a backup file that has triggered our attention. So let’s dig into that also browser the complete directory to find any kind of files that can help.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgVOaYMFxd82OlmP5sTZ4qQY1k_LpYgOcQ5ClnFsorkVzKupRsHYe5pGoLeV-bb9NFn2PX0D9i3JNVtVN7XMlsOH_DKMUTgLe3BkWnbrGpGYR0VTjwccq6pFVIWWaLCtpRj7aeL1-dDXF-qHF3UnjQwDqBcuCvZNZ_4LP0NekjBJH7gfthuVNYhX2pnNw=s16000"/></span></p>
+<p><span style="color: #000000;">As you can see, there is a file named <strong>run.yml.</strong> What its actually doing, it’s backing up all files in the path <strong>/var/liv/tomcat9/webapps/ROOT/admin/dashboard</strong> and keeping it in destination <strong>/opt/backups/archives/backup-date and time</strong>. So if you can put any file in the source directory that can be helpful to us, it’s going to be automatically be zipped to the destination folder and we will be able to get access to it. So let’s browse to the home directory of the user we find above, that is, Luis.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEiWeoPF3iPJgox4o03b9oWBR3t20sHq6GkETatlMv7IPb3WpNbsHGkJ8GDLM9xcfKpOm_iXhYCKxxuAj_CnGPkQu5m5pdrMcCC9B4FDV8DincOhJWr6jTjkoFktefP3BH6bHmCOwOXaHZNGNnAzIpn6hF5N9VZi5QpzbtOXcKOiQ-JD8u2Od-O25Pwtyg=s16000"/></span></p>
+<p><span style="color: #000000;">And here we can find a very interesting file name: .ssh. This file is like a jackpot as it contains a private key that will enable us to access the system as luis via ssh.</span></p>
+<p><span style="color: #000000;">Now we are going to create a system link with this particular location so that after a few seconds when the backup runs, it’s going to make an archive at the destination location, and there we will be able to access, unzip and read the data.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEiVsT6yv6dbYK8mgpJfRtYQuVEIf9jZSj1Ky_h81IFAgkl6yLYV2iA0VSWbDULCPxCoOln7QluzViHj9KtMtpRLCCsMXAhiS7OeGHZH7xtMeYQ95ioUbL9ppB8wgO-G6fxGOXRjzb_dhaP6qmvrv3aeYgHektkuLsk2A1NzcCty9Ngu7Xw4hJoQgWzGeQ=s16000"/></span></p>
+<p><span style="color: #000000;">Once we execute the backup, if we go in the archive directory /opt/backups/archives, we will find the latest backup that we just executed. Now let’s copy the backup file to the tmp/data/ directory and extract it:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">tar -xvf backup.gz</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgZnUc8y2DW3KH-g0EpQkFlPYVZlC7PY_ZAyGjM_zr6isqc_kVOM3ad88bdSc6NLgI7mdYOycw4AmTNY78xue0cw-7p0nwpG5jqZjlWf4DXnLx85jTDMw31KG13oq95J2s3gGL7MHENQsqzmMmVWd3MjKrMmp2Npkr6fulQTk-Zc2aw9yyah079YmRfrA=s16000"/></span></p>
+<p><span style="color: #000000;">So now if we browse to the dashboard/uploads, we can find the .ssh folder. And when browsing the .ssh folder we can find 3 files including the id_rsa. Now we can cat this file to find the private key.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhwtbuwQ8t6iTJbacBANtAa6YkPNwl-QsAu3pH9duLoroA2ggmTfeL6mS2lNhjEhGf7IyL6UNXEgKXfDt0-SNuSAMKdN918byt1yrfAbTrzYQsFr_wMu8UaHgbxdwd7P1KPPYDjtC9bQ2lsrCg2dtz84gSWpd2KbqcG3oBkhqzmBw38-DyFWTQHS5kqdQ=s16000"/></span></p>
+<p><span style="color: #000000;">Let’s copy the private key and paste it in a new file id_rsa and give it full read/write permission. Then let’s try to login using Luis username and his private key.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEiSW1X5y0gx_hv3NOk5M0gdgZM9j94s4kcNQw8BjRg_NNnRJ5PMfgf5VjqhvtHk8ZxHttg9sPMSbgOGqQ-5UYHvsnpqDbrlyaebNoH3iq2EfjuvTYAP55rIofww6xh8lW2fZ2qpsp4arFzkwn5-yINYsYC523NHqChbvUImfUMoLjMVD-b-lQvP3sfbEg=s16000"/></span></p>
+<h3><span style="color: #800000;"><strong>Privilege Escalation</strong></span></h3>
+<p><span style="color: #000000;">Now that we have been able to login as Luis, let’s run the command <strong>sudo -l</strong> to verify any suoders privilege escalation. We can see that Luis can run ansible-playbook as sudo. Now we are going to create a file called <strong>test.yml</strong> put in that command below:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">name: "ignite"
+hosts: localhost
+connection: local
+tasks:
+-name: "ignite"
+shell: "chmod +s /bin/bash"
+register: "output"</pre>
+<p><span style="color: #000000;">The task part is very important here. What it is actually doing is, it’s putting suid bin on bash binary. Once we put the suid bit on a bash binary, we will execute it.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEiUTYfaaozjtJjkvPeI9OHOmNvYDt_-QR0-Snhqdbs9UFdT_fCFNmrsPc6MuqYhFCv4g3i12Vik3O7tXr20GdA20RJivpfrmZh5T_jmEYCSFnPZG4o0gPpipyzuCblOc7V6CEa3rFnC_CyxbJ3rTtIu04LYUpD9XcMrGu4tDgzh_KEJVz_b060FvxlzBQ=s16000"/></span></p>
+<p><span style="color: #000000;">We will execute the test.yml file by typing the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">sudo /usr/bin/ansible-playbook ./test.yml</pre>
+<p><span style="color: #000000;">As shown above we have a suid bin and we have root access.  </span></p>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhBhmsjNWcYwVJidrMzFWNRqnokfkhxkA2Giy50Bf6WHrmaO5mxp9-8PPcRwti-Z_tYDGWZxhb93NiaDkQfhDOCX2rqEr8Cu7ElDduxEMIrn22TWwQtibvUiRF6cJaz-9xua0mCeA58pVfUB_yR-_goamHipznSwO4oSV8qJ8u4HWNl6IIX2SyUW8ZS6A=s16000"/></p>
+<p><span style="color: #000000;">Thank you for giving your precious time to read this walkthrough. I hope you have enjoyed and learned something new today. If you want to read more HTB Write-ups. Follow this </span><strong><a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/">Link.</a></strong> <span style="color: #000000;">Happy Hacking!</span></p>
+<p><span style="color: #000000;"><strong>Author</strong>: Tirut Hawoldar is a Cyber Security Enthusiast and CTF player with 15 years of experience in IT Security and Infrastructure. Contact on <a href="https://www.linkedin.com/in/tirut-hawoldar-72b67214/"><span style="color: #0000ff;"><strong>LinkedIn</strong></span></a></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

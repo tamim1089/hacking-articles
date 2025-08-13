@@ -1,0 +1,143 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">Hack the RickdiculouslyEasy VM (CTF Challenge)</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/hack-rickdiculouslyeasy-vm-ctf-challenge/" rel="bookmark"><time class="entry-date published" datetime="2017-10-21T16:59:09+00:00">October 21, 2017</time><time class="updated" datetime="2025-06-10T20:29:59+00:00">June 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today we are going to take another CTF challenge known as RickdiculouslyEasy by Luke. It is a very simple Rick and Morty themed boot to root. We have to get total of 130 points by collecting different flags (each flag has its points recorded with it), we also have to get root. If anyone is new to pentesting, it is worth a try!</span></p>
+<p><span style="color: #000000;">You can download it from <a style="color: #000000;" href="https://www.vulnhub.com/entry/rickdiculouslyeasy-1,207/">https://download.vulnhub.com/rickdiculouslyeasy/RickdiculouslyEasy.zip</a> </span></p>
+<p><span style="color: #000000;"><strong>Security Level</strong>: Beginner</span></p>
+<h3><span style="color: #800000;"><strong>Penetration Methodology</strong></span></h3>
+<p><span style="color: #000000;"><strong>Scanning</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Discovering Targets IP</span></li>
+<li><span style="color: #000000;">Network scanning (Nmap)</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Enumeration</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Surfing HTTP service port </span></li>
+<li><span style="color: #000000;">Directory Enumeration</span></li>
+<li><span style="color: #000000;">Connect to ftp</span></li>
+<li><span style="color: #000000;">Command Injection</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Exploiting </strong></span></p>
+<ul>
+<li><span style="color: #000000;">SSH login using Metasploit</span></li>
+<li><span style="color: #000000;">Bruteforce login using Hydra</span></li>
+<li><span style="color: #000000;">Using Netcat to get the reverse shell</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Privilege Escalation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Checking SUID binaries</span></li>
+<li><span style="color: #000000;">Accessing root directory</span></li>
+<li><span style="color: #000000;">Capture the flag</span></li>
+</ul>
+<h3><span style="color: #800000;"><strong>Walkthrough</strong></span></h3>
+<h3><span style="color: #800000;"><strong>Scanning</strong></span></h3>
+<p><span style="color: #000000;">After loading up the VM, our first step was to find out the target’s IP address. </span></p>
+<pre class="lang:default decode:true">netdiscover</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-68kcOa9k8U8/XQuhvqZpXVI/AAAAAAAAe6U/G56W8aK9qR8C-lNAvHhzMpC_U4kR9e5OQCLcBGAs/s1600/1.png"/></span></p>
+<p><span style="color: #000000;">We found our target’s IP address to be 192.168.1.101, next step was to scan the target’s IP with nmap.</span></p>
+<pre class="lang:default decode:true">nmap -p- -A 192.168.1.101</pre>
+<p><span style="color: #000000;">The scan result showed open Ports; we found our first flag returned as a banner for the service running on port 13337, moreover, anonymous FTP login was allowed on port 21 holding another flag.txt file.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Oul9KBvKzdI/XQuhzRcQG_I/AAAAAAAAe68/iP0iloRQqyo6eOOVQphEe5dCanHW7QTkQCLcBGAs/s1600/2.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Enumeration</strong></span></h3>
+<p><span style="color: #000000;">From the nmap scan, we knew that anonymous ftp login is available. So, we logged in with username as ‘anonymous’ and password as blank. While working on the ftp console, <strong>ls</strong> displayed that it had<strong> ‘FLAG.txt’</strong> and a <strong>get </strong>command downloaded the FLAG.txt over FTP to the Kali box. We found our second flag inside FLAG.txt.</span></p>
+<pre class="lang:default decode:true">ftp 192.168.1.101
+ls
+get FLAG.txt
+quit
+cat flag.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-4n0A-NXFrHA/XQuh0yagAVI/AAAAAAAAe7Q/gcDO_54oM44uzZx7ceP5OwHIX_YmIZJMgCLcBGAs/s1600/3.png"/></span></p>
+<p><span style="color: #000000;">From nmap result we found HTTP service is also running on port 80. So, we browsed Target’s IP in the browser but in vain.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-j_9Of3dHJYI/XQuh1X0C--I/AAAAAAAAe7U/yxunFD7spxwZ5M2jXLYjJP3hABxZxKUpACLcBGAs/s1600/4.png"/></span></p>
+<p><span style="color: #000000;">Next, we listed directories using dirb, it showed us two important directories ‘/passwords/’ and ‘/robots.txt’.</span></p>
+<pre class="lang:default decode:true">dirb http://192.168.1.101/</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-4Go6lAygK_Q/XQuh1ROBPUI/AAAAAAAAe7Y/Zyu4FzBisTM6r2jhnn9AKIuqSuZyFWDegCLcBGAs/s1600/5.png"/></span></p>
+<p><span style="color: #000000;">Viewing ‘<strong>/passwords/’ </strong>directory displayed <strong>‘FLAG.txt’ </strong>and<strong> ‘password.html’</strong>.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-qSg2fVeZWMA/XQuh1VN7CCI/AAAAAAAAe7c/R-Uz5DftW98nhVmUg79plzQpHCOchJO_QCLcBGAs/s1600/6.png"/></span></p>
+<p><span style="color: #000000;">We found our third flag here, so far it was a cake walk.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-slcx6iva-ec/XQuh2FAKKvI/AAAAAAAAe7g/plFTqehv2acM81JPm-f-g-cPH2rw3pPQACLcBGAs/s1600/7.png"/></span></p>
+<p><span style="color: #000000;">Browsing ‘<strong>/passwords/password.html’</strong> pointed of the hidden password.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-s8P--1ID4uo/XQuh25fzW1I/AAAAAAAAe7k/-BqVCjMlgfoI9wVFfpjn4YFTkgqgWN7SACLcBGAs/s1600/8.png"/></span></p>
+<p><span style="color: #000000;">Why not go for source code! And the instinct was right we have a password here “winter” which we can use somewhere later.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-qy_0DuzQdCQ/XQuh3ULPO5I/AAAAAAAAe7o/dU_5jJtIg8Aldui_YXKTefdDtQjihHiiwCLcBGAs/s1600/9.png"/></span></p>
+<p><span style="color: #000000;">Next, we opened ‘/robots.txt’ and found link to two files ‘/cgi-bin/root_shell.cgi’ and ‘/cgi-bin/ tracertool.cgi’.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-68lqcbff4vU/XQuhvoW4beI/AAAAAAAAe6Q/yLV23BzCYRQvQZbCN2dHfvtWNQ3wVYY0ACLcBGAs/s1600/10.png"/></span></p>
+<p><span style="color: #000000;">Only ‘/cgi-bin/tracertool.cgi’ is found to be useful, browsing this I found that one could get away with command injection or say RCE.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-SPXf9JxpUqY/XQuhvyrvtYI/AAAAAAAAe6Y/5uEiBS9no-YXfmQn_NQ5EWLKyzoUddS1QCLcBGAs/s1600/11.png"/></span></p>
+<p><span style="color: #000000;">I also found that few commands have been filtered so we had to use <strong>‘more’ </strong>instead of <strong>‘cat’</strong> to get the name of the users in <strong>/etc/passwd</strong> file. Here I found three users as RickSanchez, Morty and Summer. Summer could be linked to ‘winter’ that we had found earlier.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-BkxL6Js_XLo/XQuhwcDq5GI/AAAAAAAAe6c/1o8ff5h7iu8IooUNEC8yAbGTlu2UBuaXQCLcBGAs/s1600/12.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Exploiting</strong></span></h3>
+<p><span style="color: #000000;">It was time to perform ssh login using Metasploit with port 22222 using newly acquired credentials. And we found one more flag here.</span></p>
+<pre class="lang:default decode:true">use auxiliary/scanner/ssh/ssh_login
+set rhosts 192.168.1.101
+set rport 22222
+set username Summer
+set password winter
+exploit
+sessions -u 1
+sessions 2
+ls
+cat FLAG.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-mfSaPw-E6LY/XQuhye-Gx5I/AAAAAAAAe6w/qYf1NrL0N5cPFAYCxLJqQOVyzHr2MrlGgCLcBGAs/s1600/13.png"/></span></p>
+<p><span style="color: #000000;">Further enumeration showed three directories with the same name as of users that we found earlier. From directory Morty, we downloaded two files ‘Safe_Password.jpg’ and ‘Journal.txt.zip’. </span></p>
+<pre class="lang:default decode:true">cd /home
+ls
+cd Morty
+ls
+download Safe_password.jpg .
+download journal.txt.zip .</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-U_vY6Y66Cgs/XQuhwk2aBzI/AAAAAAAAe6g/QvHEox5Bx8kX0tiVBAourh3OkCDDUcEPwCLcBGAs/s1600/14.png"/></span></p>
+<p><span style="color: #000000;">Safe_Password.jpg was an image file, but running strings on the file shows that a password <strong>“Meeseek” </strong>is contained inside it.</span></p>
+<pre class="lang:default decode:true">strings Safe_Password.jpg</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-S51NSu4PU28/XQuhxPGJqiI/AAAAAAAAe6k/pCmG32dBodMpuou8bjB0lTyWIf563FEPwCLcBGAs/s1600/15.png"/></span></p>
+<p><span style="color: #000000;">Unzipping the file and supplying the password ‘Meeseek’ opened the file journal.txt. And you can see the next flag inside it. </span></p>
+<pre class="lang:default decode:true">unzip journal.txt.zip
+cat journal.txt</pre>
+<p><span style="color: #000000;">Along with flag a number string ‘<strong>131333</strong>’was there too and the message in the file hints it to be some kind of password.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-VINMYTPKo_w/XQuhxgPfhfI/AAAAAAAAe6o/8M8SyFWIqowyDqAgxohCQdstyARBcUDZgCLcBGAs/s1600/16.png"/></span></p>
+<p><span style="color: #000000;">Back at the target VM, inside ‘RickSanchez’ directory there is a subdirectory named “RICK_SAFE” which was mentioned in the previous screenshot. Inside this, there is an executable file named “safe”. I downloaded this file into the main machine kali.</span></p>
+<pre class="lang:default decode:true">cd RickSanchez
+ls
+cd RICK_SAFE
+ls
+download safe .</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Ui8xqkzI9mI/XQuhxz9f6nI/AAAAAAAAe6s/ALmhcIUZ3FMCSP6QO0SiyxCLNxlv9ne4ACLcBGAs/s1600/17.png"/></span></p>
+<p><span style="color: #000000;">After providing all permissions to the file ‘safe’ when executed by providing the string given with the previous flag, it displayed our fifth flag. Inside it there are clues for Ricks’s password too.</span></p>
+<pre class="lang:default decode:true">chmod 777 safe
+./safe
+./safe 131333</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-8Ay8da46FsY/XQuhyvlgjbI/AAAAAAAAe64/1P7-pPVlTHcMtiDFX4cPBvtvpq4CZ4wdACLcBGAs/s1600/18.png"/></span></p>
+<p><span style="color: #000000;">As the next password contains 1 uppercase character, 1 digit followed by one of the words in the name of the old band of Rick Sanchez. So, I had to do some web surfing to find out the band’s name, it was called ‘the flesh curtains ‘. Next, we used crunch to create two different format dictionaries and saved both of them in dict.txt.</span></p>
+<pre class="lang:default decode:true">crunch 10 10 -t ,%Curtains -O &gt;&gt; dict.txt
+crunch 7 7 -t ,%Flesh -O &gt;&gt; dict.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-lYXdCBFgNqA/XQuhycHJwPI/AAAAAAAAe60/saooh8-1W7QTScKJHMwn9OKa0f0ehRvNgCLcBGAs/s1600/19.png"/></span></p>
+<p><span style="color: #000000;">It was time to use Hydra which tried to login the service using every possible combination of users and passwords provided in the dict.txt.</span></p>
+<pre class="lang:default decode:true">hydra -l RickSanchez -P dict.txt 192.168.1.101 ssh  -s  22222</pre>
+<p><span style="color: #000000;">Great! we found a user/password pair.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-XoHIYO_-7Lw/XQuhzyZjNdI/AAAAAAAAe7E/LXkfjCrXg6wBdh5PRQ750Az2UcoDlLqEACLcBGAs/s1600/20.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Privilege Escalation</strong></span></h3>
+<p><span style="color: #000000;">Then I logged into ssh using recently acquired credentials. I reminded myself of the message in the last flag that “sudo is wheely good” so I ran sudo -l to find out his permissions. He had sudo permissions for ALL commands, so I just popped into an interactive root shell. In the root directory, we had our next flag inside FLAG.txt. But in order to get the flag, we had to use ‘more’ instead of ‘cat’.</span></p>
+<pre class="lang:default decode:true">ssh RickSanchez@192.168.1.101 -p 22222
+sudo -l
+sudo su
+cd/root
+ls
+cat FLAG.txt
+more FLAG.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-P6tRmLrK05k/XQuhz6mpHVI/AAAAAAAAe7A/Ydm6zjNhMYozFMeb9rrzy469JL5WVpDwQCLcBGAs/s1600/21.png"/></span></p>
+<p><span style="color: #000000;">Now I was a root and  I had 110 points out of 130.Where did I miss 20 points? We still didn’t check out few open ports.</span></p>
+<p><span style="color: #000000;">We exploited port 60000 using netcat and it took us to a shell. <strong>ls</strong> showed us <strong>FLAG.txt</strong> and a <strong>cat</strong> displayed the flag.</span></p>
+<pre class="lang:default decode:true">nc 192.168.1.101 60000
+ls
+cat FLAG.txt</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://1.bp.blogspot.com/-dh-Xb6kCnQ4/XQuh0RtqiSI/AAAAAAAAe7I/76daugsbTeAPGq-1ua7ZtZy0X-tnDxlGwCLcBGAs/s1600/22.png"/></strong></span></p>
+<p><span style="color: #000000;">We opened port 9090 in a web browser and found the last flag. Hence the task is completed.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-voOWR8mMmBc/XQuh0h7QSgI/AAAAAAAAe7M/I68KshA0xzg2_cjfNJxhX3iZzpUODMZzQCLcBGAs/s1600/23.png"/></span></p>
+<p><span style="color: #000000;"><strong>Author</strong>: Nisha Yadav is trained in Certified Ethical hacking and Bug Bounty Hunter. She is currently working at Ignite Technologies as a Security Analyst. Connect with her <a style="color: #000000;" href="https://www.linkedin.com/in/nisha-yadav-90816120/"><strong>here</strong></a></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

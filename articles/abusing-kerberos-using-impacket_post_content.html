@@ -1,0 +1,81 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/red-teaming/" rel="category tag">Red Teaming</a></span>            </div>
+            <h1 class="post-title entry-title">Abusing Kerberos Using Impacket</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/abusing-kerberos-using-impacket/" rel="bookmark"><time class="entry-date published" datetime="2020-06-20T16:09:57+00:00">June 20, 2020</time><time class="updated" datetime="2025-05-31T09:44:58+00:00">May 31, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p class="ai-optimize-6 ai-optimize-introduction"><span style="color: #000000;">In this post, we are going to discuss how we can abuse Kerberos protocol remotely using Python libraries “Impacket” for conducting the lateral movement attack. You can download from <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://github.com/SecureAuthCorp/impacket.git">here</a></strong></span>.</span></p>
+<h3 class="ai-optimize-7"><span style="color: #800000;">Table of Content</span></h3>
+<ul>
+<li class="ai-optimize-8"><span style="color: #000000;">GetNPUSERs.py</span></li>
+<li class="ai-optimize-9"><span style="color: #000000;">GetUserSPN.py</span></li>
+<li class="ai-optimize-10"><span style="color: #000000;">Ticketer.py</span></li>
+<li class="ai-optimize-11"><span style="color: #000000;">TickerConverter.py</span></li>
+<li class="ai-optimize-12"><span style="color: #000000;">GetTGT.py</span></li>
+<li class="ai-optimize-13"><span style="color: #000000;">GetADUser.py</span></li>
+</ul>
+<h3 class="ai-optimize-14"><span style="color: #000000;"><span style="color: #800000;">About Impacket</span> </span></h3>
+<p class="ai-optimize-15"><span style="color: #000000;">Impacket is a collection of Python classes for working with network protocols. Impacket is focused on providing low-level programmatic access to the packets and for some protocols (e.g. SMB1-3 and MSRPC) the protocol implementation itself.</span></p>
+<p class="ai-optimize-16"><span style="color: #000000;">You can construct packets from scratch, as well as parse them from raw data, and the object-oriented API makes it simple to work with deep hierarchies of protocols. The library provides a set of tools as examples of what you can do within the context of this library.</span></p>
+<h3 class="ai-optimize-17"><span style="color: #800000;">GetNPUSers.py</span></h3>
+<p class="ai-optimize-18"><span style="color: #000000;">This script will attempt to list and get TGTs for those users that have the property ‘Do not require Kerberos preauthentication’ set (UF_DONT_REQUIRE_PREAUTH). For those users with such configuration, a John The Ripper output will be generated so you can send it for cracking.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python GetNPUsers.py -dc-ip 192.168.1.105 ignite.local/ -usersfile users -format john -outputfile hashes</pre>
+<p class="ai-optimize-19"><span style="color: #000000;">As a result, the attacker will able to obtain the NTLM Hashes inside the output file Hashes and with the help of John the ripper he can go for password cracking as done here.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">john --wordlist=/usr/share/wordlists/rockyou.txt hahses</pre>
+<p class="ai-optimize-20"><span style="color: #000000;">This script is useful for abusing Kerberos against <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.hackingarticles.in/as-rep-roasting/">AS-REP Roasting</a> </strong></span>attack.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-q4XgYZcpJSQ/Xu4yay4bwOI/AAAAAAAAk-0/F0i06EHLhM8zjG0Rfvm0z0toRt_vSAwdQCLcBGAsYHQ/s1600/1.png"/></p>
+<h3 class="ai-optimize-21"><span style="color: #800000;">GetUSERSPN.py</span></h3>
+<p class="ai-optimize-22"><span style="color: #000000;">This module attempts to find Service Principal Names associated with a normal user account. Since normal account passwords tend to be shorter than machine accounts, and knowing that a TGS request encrypts the ticket with the account the SPN runs under, we could execute an offline brute-forcing attack on the SPN’s account NTLM hash if we can gather valid TGS for those SPNs.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python GetUserSPNs.py -request -dc-ip 192.168.1.105 ignite.local/yashika</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-I9dp1zvCIy4/Xu4ye_6oscI/AAAAAAAAk-4/EWgVKtKhsaoN5AYVVBidROkCT7GQBU0wgCLcBGAsYHQ/s1600/2.png"/></p>
+<h3 class="ai-optimize-23"><span style="color: #800000;">Ticketer.py</span></h3>
+<p class="ai-optimize-24"><span style="color: #000000;">This script will create TGT/TGS tickets from scratch or based on a template (legally requested from the KDC) allowing you to customize some of the parameters set inside the PAC_LOGON_INFO structure, in particular the groups, extrasids, etc.</span></p>
+<p class="ai-optimize-25"><span style="color: #000000;">This will generate the ticket into ccache format which can be converted further into kirbi.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python ticketer.py -nthash f3bc61e97fb14d18c42bcbf6c3a9055f -domain-sid S-1-5-21-3523557010-2506964455-2614950430 -domain ignite.local raj</pre>
+<p class="ai-optimize-26"><span style="color: #000000;">This script can be helpful for abusing Kerberos against <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.hackingarticles.in/domain-persistence-golden-ticket-attack/">GOLDEN TICKET ATTACK</a></strong></span>.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-b36tSNZteFM/Xu4yii9C1fI/AAAAAAAAk_A/YJfZzIDUdQIXb7EaNd95FYnrfqux4H1DACLcBGAsYHQ/s1600/3.png"/></p>
+<h3 class="ai-optimize-27"><span style="color: #800000;">TicketConverter.py</span></h3>
+<p class="ai-optimize-28"><span style="color: #000000;">This script will convert kirbi files (commonly used by mimikatz) into ccache files used by impacket, and vice versa. As you can observe that the above script helps in generating the ccache file and with the of this script we can convert into kirbi.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python ticketConverter.py raj.ccache ticket.kirbi</pre>
+<p class="ai-optimize-29"><span style="color: #000000;"><strong> <img decoding="async" src="https://1.bp.blogspot.com/-TH-M5bqYK_w/Xu4ymtzD13I/AAAAAAAAk_E/VdrwctJrAM0yzIZCaF5Xhp1DtlZPZbxEgCLcBGAsYHQ/s1600/4.png"/></strong></span></p>
+<h3 class="ai-optimize-30"><span style="color: #000000;"><span style="color: #800000;">GetTGT.py</span></span></h3>
+<p class="ai-optimize-31"><span style="color: #000000;">This python script will request a TGT and save it as ccache for given a password, hash or aesKey. That we can be injected directory for access the requested service.</span></p>
+<p class="ai-optimize-32"><span style="color: #000000;">we have used getTGT to generate the ccache and used KERB5CCNAME pass the ccache file for the requested service. This is completely remote attack without using a local system of the compromised victim, but you need to compromise NTLM hashes for that, type following to conduct pass the ccache attack remotely.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python getTGT.py -dc-ip 192.168.1.105 -hashes :64fbae31cc352fc26af97cbdef151e03 ignite.local/yashika
+export KRB5CCNAME=yashika.ccache; psexec.py -dc-ip 192.168.1.105 -target-ip 192.168.1.105 -no-pass -k ignite.local/yashika@WIN-S0V7KMTVLD2.ignite.local</pre>
+<p class="ai-optimize-33"><span style="color: #000000;">And as result by injecting the ticket we have accessed the domain controller shell.</span></p>
+<p class="ai-optimize-34"><span style="color: #000000;">This script is useful in following attacks for abusing Kerberos:</span></p>
+<ul>
+<li class="ai-optimize-35"><strong><span style="color: #0000ff;"><a style="color: #0000ff;" href="https://www.hackingarticles.in/kerberoasting-and-pass-the-ticket-attack-using-linux/">Kerberoasting and Pass the Ticket Attack Using Linux</a></span></strong></li>
+<li class="ai-optimize-36"><strong><span style="color: #0000ff;"><a style="color: #0000ff;" href="https://www.hackingarticles.in/lateral-movement-pass-the-ccache/">Lateral Movement: Pass the Cache</a></span></strong></li>
+<li class="ai-optimize-37"><strong><span style="color: #0000ff;"><a style="color: #0000ff;" href="https://www.hackingarticles.in/lateral-movement-over-pass-the-hash/">Lateral Movement: Over Pass the Hash</a></span></strong></li>
+</ul>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-cd47sdtCtBo/Xu4ysOJDg0I/AAAAAAAAk_M/WMllGwb3lzQe-vWxA0I-3vU9kqDUQDmqwCLcBGAsYHQ/s1600/5.png"/></p>
+<h3 class="ai-optimize-38"><span style="color: #800000;">GetADUser.py</span></h3>
+<p class="ai-optimize-39"><span style="color: #000000;">This script will gather data about the domain’s users and their corresponding email addresses. It will also include some extra information about last logon and last password set attributes. If no entries are returned that means users don’t have email addresses specified. If so, you can use the -all-users parameter.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">GetADUSers.py -all ignite.local/Administrator:Ignite@987 -dc-ip 192.168.1.105</pre>
+<p class="ai-optimize-40"><span style="color: #000000;">As a result, it has dumped all username of the Activity Directory as shown in the image.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-41x9ulqCejk/Xu4yw3-8tCI/AAAAAAAAk_U/VD-gZPDI_C08Gw76cY1zB5YT0OMHfMd0QCLcBGAsYHQ/s1600/10.png"/></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">
+<!-- YARPP Thumbnails -->
+<h3>Related posts:</h3>
+<div class="yarpp-thumbnails-horizontal">
+<a class="yarpp-thumbnail" rel="norewrite" href="https://www.hackingarticles.in/diamond-ticket-attack-abusing-kerberos-trust/" title="Diamond Ticket Attack: Abusing kerberos Trust">
+<span class="yarpp-thumbnail-default"><img src="https://www.hackingarticles.in/wp-content/plugins/yet-another-related-posts-plugin/images/default.png" alt="Default Thumbnail" data-pin-nopin="true"/></span><span class="yarpp-thumbnail-title">Diamond Ticket Attack: Abusing kerberos Trust</span></a>
+<a class="yarpp-thumbnail" rel="norewrite" href="https://www.hackingarticles.in/sapphire-ticket-attack-abusing-kerberos-trust/" title="Sapphire Ticket Attack: Abusing Kerberos Trust">
+<span class="yarpp-thumbnail-default"><img src="https://www.hackingarticles.in/wp-content/plugins/yet-another-related-posts-plugin/images/default.png" alt="Default Thumbnail" data-pin-nopin="true"/></span><span class="yarpp-thumbnail-title">Sapphire Ticket Attack: Abusing Kerberos Trust</span></a>
+</div>
+</div>
+            </div><!-- .entry-content -->
+            <footer class="post-footer entry-footer">
+                                                
+            </footer><!-- .entry-footer -->
+            
+	<nav class="navigation post-navigation" aria-label="Posts">
+		<h2 class="screen-reader-text">Post navigation</h2>
+		<div class="nav-links"><div class="nav-previous"><a href="https://www.hackingarticles.in/remote-code-execution-using-impacket/" rel="prev">Remote Code Execution Using Impacket</a></div><div class="nav-next"><a href="https://www.hackingarticles.in/glasgow-smile-1-1-vulnhub-walkthrough/" rel="next">Glasgow Smile: 1.1 Vulnhub Walkthrough</a></div></div>
+	</nav>        </div>

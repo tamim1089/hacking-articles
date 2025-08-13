@@ -1,0 +1,101 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">GitRoot: 1 Vulnhub Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/gitroot-1-vulnhub-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2020-06-25T09:47:21+00:00">June 25, 2020</time><time class="updated" datetime="2025-06-10T20:10:26+00:00">June 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today we are going to solve another boot2root challenge called “GitRoot: 1”. It’s available at Vulnhub for penetration testing. This lab is an intermediate level and is based on Git. The credit for making this lab goes to RecursiveNULL. Let’s get started and learn how to successfully break it down.</span></p>
+<p><span style="color: #000000;">Level: <strong>Intermediate</strong></span></p>
+<p><span style="color: #000000;">Since these labs are available on the Vulnhub website. Let’s download the lab file from <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.vulnhub.com/entry/gitroot-1,488/">here</a></strong></span>.</span></p>
+<h3><span style="color: #800000;"><strong>Penetration Testing Methodology</strong></span></h3>
+<p><span style="color: #000000;"><strong>Reconnaissance</strong></span></p>
+<ul>
+<li><span style="color: #000000;"><strong>Netdiscover</strong></span></li>
+<li><span style="color: #000000;"><strong>Nmap</strong></span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Enumeration</strong></span></p>
+<ul>
+<li><span style="color: #000000;"><strong>Gobuster</strong></span></li>
+<li><span style="color: #000000;"><strong>GitTools</strong></span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Exploiting</strong></span></p>
+<ul>
+<li><span style="color: #000000;"><strong>Bruteforce SSH with Hydra</strong></span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Privilege Escalation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Linpeas</span></li>
+<li><span style="color: #000000;">Abuse Git Hooks</span></li>
+<li><span style="color: #000000;">Abuse SUDO</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Capture the flag</strong></span></p>
+<h3><span style="color: #800000;"><strong>Walkthrough</strong></span></h3>
+<h3><span style="color: #800000;"><strong>Reconnaissance</strong></span></h3>
+<p><span style="color: #000000;">As always we identify the host’s IP with the “Netdiscover” tool:</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-zDuIFSkOnXY/XvRvaeacAAI/AAAAAAAAlEA/5dyEeyo2PQcttAmt9RpN-MT2-IWIGMNLQCLcBGAsYHQ/s1600/1.png"/></span></p>
+<p><span style="color: #000000;">So, let’s start by listing all the TCP ports with nmap.</span></p>
+<pre class="lang:default decode:true">nmap -A -p- 192.168.10.162</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-GH7gM_BdkU4/XvRveKuej1I/AAAAAAAAlEE/2AfApH0E1L8dbS-MGtZxjIpWn30MdMm0QCLcBGAsYHQ/s1600/2.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Enumeration</strong></span></h3>
+<p><span style="color: #000000;">We access the website, it tells us that the site is hosted in the subdomain “<strong>wp.gitroot.vuln</strong>“.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-2x_EN4GqBgw/XvRviadO8hI/AAAAAAAAlEI/i20ce60gBlkdqqwQyyA_G5mvL0tbBlo8QCLcBGAsYHQ/s1600/3.png"/></span></p>
+<p><span style="color: #000000;">We added the subdomain to our “<strong>/etc/hosts</strong>” file.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-7v-F-aJErYA/XvRvpp90lGI/AAAAAAAAlEM/FRw13dqGaqIc5I-gdU_3r-ra8Jx31wYhgCLcBGAsYHQ/s1600/4.png"/></span></p>
+<p><span style="color: #000000;">We access the address of the subdomain and see that WordPress is displayed.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-SJkJPGr0dHU/XvRvwYFDLjI/AAAAAAAAlEY/8hVF26-JvhEnWoP0dv4oqkeKBcmzOQjKQCLcBGAsYHQ/s1600/5.png"/></span></p>
+<p><span style="color: #000000;">After trying to break the WP without success, I try to list more subdomains with the option “<strong>vhost</strong>” of the <strong>Gobuster</strong> tool and the “<strong>big.txt</strong>” dictionary that comes with Kali by default.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-AbgBWYtO1MU/XvRv2aiwLoI/AAAAAAAAlEg/Qno7sHL5PSkxHJUIsM8tIYqrj5bRdbEDACLcBGAsYHQ/s1600/6.png"/></span></p>
+<p><span style="color: #000000;">We put this subdomain in our list of hosts</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-GfnKjGS6TNU/XvRv6g3MCmI/AAAAAAAAlEk/Yv_uIx7n8lMSvq8osP9ug51IFTIpMY90gCLcBGAsYHQ/s1600/7.png"/></span></p>
+<p><span style="color: #000000;">We access the new subdomain and find a code storage service, so it looks great.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-tY_TYDNffV8/XvRv_NAapSI/AAAAAAAAlEs/tTVa5vd1MEEAwjyYLLnr7tX81vP4QSv3QCLcBGAsYHQ/s1600/8.png"/></span></p>
+<p><span style="color: #000000;">We will use <strong>Gobuster</strong> again, this time to merge directories and files within this subdomain.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-90WsHmhBn_8/XvRwDO_b5gI/AAAAAAAAlE0/Phzp_s3YC_sI2G-0X6kHs3F66u4vA_c9ACLcBGAsYHQ/s1600/9.png"/></span></p>
+<p><span style="color: #000000;">With <strong>GitDumper</strong> from the <strong><a style="color: #000000;" href="https://github.com/internetwache/GitTools">GitTools</a></strong> toolkit, we extract all the contents of “<strong>/.git/</strong>” into our Kali</span></p>
+<pre class="lang:default decode:true">./gitdumper.sh http://repo.gitroot.vuln/.git/ /root/GitRoot/git-tmp/</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-j-t9Mb-_4C4/XvRwHk4ipaI/AAAAAAAAlE8/83AG8cglVX03dKLSAl8hHDjHxVHSujI3gCLcBGAsYHQ/s1600/10.png"/></span></p>
+<p><span style="color: #000000;">He’ll list an assortment of files, but we’ll keep this one:</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-PDPs5i8Kf1s/XvRwLcV20WI/AAAAAAAAlFE/ecYR7FVfAyM56zyBsTvxO0l6DAwaL88JQCLcBGAsYHQ/s1600/11.png"/></span></p>
+<p><span style="color: #000000;">We have two interesting files, well, actually we only have one, the “<strong>pablo_HELP.txt</strong>” file has been deleted, but we will rescue it!</span></p>
+<p><span style="color: #000000;">Contents of the new file:</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-BW-tdKAQJJs/XvRwPdzO9cI/AAAAAAAAlFM/6CqyVugwYT41-ZoNrG8P_16JkUqAG79bQCLcBGAsYHQ/s1600/12.png"/></span></p>
+<p><span style="color: #000000;">Now, we’ll recover all the files with the <strong><a style="color: #000000;" href="https://github.com/internetwache/GitTools">GitTools</a></strong> Kit <strong>Extractor</strong> tool (including “<strong>pablo_HELP</strong>“)</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-2OJQ-OZBsF4/XvRwT-WWnHI/AAAAAAAAlFQ/ceMfyRw0sy4ex-JxPp_KSAraLufma84KgCLcBGAsYHQ/s1600/13.png"/></span></p>
+<p><span style="color: #000000;">Contents of the <strong>“pablo_HELP</strong>” file</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-sQs6rDoDy24/XvRwYMlldrI/AAAAAAAAlFY/D_ifsu2pl3A5Y-owYKYZfjsD-Eg1W98JwCLcBGAsYHQ/s1600/14.png"/></span></p>
+<p><span style="color: #000000;">Nothing useful, we continue to check the .php files, we found some credentials in the file “<strong>set.php</strong>“.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-q2MkqHmu2mM/XvRwcSIjttI/AAAAAAAAlFc/0bWMmDix3t8U5piL3Lv17Jrp3BTSWz0rgCLcBGAsYHQ/s1600/15.png"/></span></p>
+<h3><span style="color: #800000;">Exploiting</span></h3>
+<p><span style="color: #000000;">We used the credentials in both WordPress and SSH, but without success. Although we already know the names of the users, we carried out a brute force attack on <strong>the SSH service</strong> with the “<strong>rockyou</strong>” dictionary.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-6PoJIjAjA5o/XvRwgUaW--I/AAAAAAAAlFk/ah39lG_wsF8IKIAAs-oB0Br1KNhUoMbbQCLcBGAsYHQ/s1600/16.png"/></span></p>
+<p><span style="color: #000000;">With the credentials obtained, we access through SSH with the user “<strong>pablo”</strong> and read the flag of <strong>user.txt</strong>.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-8Tw1ysjX9JE/XvRwkEN6-2I/AAAAAAAAlFo/Tff7u256b9gXH5yB4a1Ga9YV3BLUSRxFgCLcBGAsYHQ/s1600/17.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Privilege Escalation (user “beth”)</strong></span></h3>
+<p><span style="color: #000000;">We keep listing the contents of “<strong>Pablo</strong>” folder, we find a folder called “<strong>public</strong>“, inside it, we have a message inviting us to check out a new git repository.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-xcyRUnzxZw8/XvRwnp0dekI/AAAAAAAAlFs/acf8AFATKDMKadDdmqPZdYV3hR0OgHBFQCLcBGAsYHQ/s1600/18.png"/></span></p>
+<p><span style="color: #000000;">We run “<strong><a style="color: #000000;" href="https://github.com/carlospolop/privilege-escalation-awesome-scripts-suite/tree/master/linPEAS">linpeas.sh</a></strong>” and it lists a git repository from user “beth”, so it looks like we found the new repository.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-t0Ga_vf5ArQ/XvRwreBCwvI/AAAAAAAAlFw/gRbsizcJcA4b_22fPgELJQkC9x5KPhV4QCLcBGAsYHQ/s1600/19.png"/></span></p>
+<p><span style="color: #000000;">We went into the heads directory of the git logs and found a large list, but if we sort them by size we’ll see that there’s one that’s larger than the rest.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-STAnOa1shZU/XvRwv2rUCoI/AAAAAAAAlF0/hPRQSPiW6u4zX6LcRk0SXbsoqp7xwN3pwCLcBGAsYHQ/s1600/20.png"/></span></p>
+<p><span style="color: #000000;">We read the file and show the content of the “<em>add some stuff</em>” commit, we’ll get “<strong>Beth</strong>” password inside the script.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-4TSUtbJmxY8/XvRwzxEJK9I/AAAAAAAAlGA/yv2A8Z3AuJIvfIIfNQVdwsrdRqV9_XjvQCLcBGAsYHQ/s1600/21.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Privilege Escalation (user “jen”)</strong></span></h3>
+<p><span style="color: #000000;">We authenticate ourselves as “<strong>beth</strong>” with the previously obtained password, read the content and see that we have a message from the user “<strong>jen</strong>“. In it, he asks us to leave a .zip in the folder he indicates, this user will be responsible for decompressing it.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-RaFBYTbbyik/XvRw4ZnqChI/AAAAAAAAlGI/izwObOz8aAwY2dqAu10-zJmQVYLL8NYMwCLcBGAsYHQ/s1600/22.png"/></span></p>
+<p><span style="color: #000000;">Well, let’s surprise him with a .zip containing a reverse shell con la ayuda de “<strong><a style="color: #000000;" href="https://githooks.com/">hooks</a></strong>” en git.</span></p>
+<p><span style="color: #000000;">We will create a “<strong>post-commit</strong>” file and put a reverse shell with python. We will give you all the necessary permissions, we will compress it with 7zip and copy it to the path where “<strong>jen</strong>” indicated.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-5YsU3kbKn0Q/XvRw8qEEitI/AAAAAAAAlGQ/CrAbN9phVJcw9IeWIGGguZ-4_udobW_YwCLcBGAsYHQ/s1600/23.png"/></span></p>
+<p><span style="color: #000000;">In our Kali, we will maintain a connection to netcat by listening on <strong>port 9999</strong> while waiting for the script to run.</span></p>
+<p><span style="color: #000000;">After having a shell with the user “<strong>jen</strong>“, we will read the file <strong>“.viminfo</strong>” and we will obtain his password.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-SsPjHoaSzMc/XvRxBGfvEjI/AAAAAAAAlGY/Hypo7wR5f841z9TlKl7rL9vnfOEGWGopgCLcBGAsYHQ/s1600/24.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Privilege Escalation (root)</strong></span></h3>
+<p><span style="color: #000000;">With the user’s password “<strong>jen</strong>” in our possession, we run the command “sudo -l” and see that we have permissions to the “<strong>git</strong>” binary, of which there are several methods for escalating privileges over it, we’ll use the command <em>“$ sudo git -p help config</em>”.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-44OflHXgO8s/XvRxFybe2rI/AAAAAAAAlGc/rl3ocW3oGz0_kvoYp4dqdd18SCYYBpiPACLcBGAsYHQ/s1600/25.png"/></span></p>
+<p><span style="color: #000000;">At the bottom, it will allow us to execute commands, type <strong>“!/bin/sh</strong>“, get the root prompt and read the flag.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-14EGtGsg19s/XvRxI869owI/AAAAAAAAlGk/ZKiOjZRdUQwDL5S9qicm-BdsvaZGIxvqgCLcBGAsYHQ/s1600/26.png"/></span></p>
+<p><span style="color: #000000;"><strong>Author</strong>: <strong>David Utón</strong> is Penetration Tester and security auditor for Web applications, perimeter networks, internal and industrial corporate infrastructures, and wireless networks </span><span style="color: #000000;">Contacted on <strong>LinkedIn</strong>.</span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

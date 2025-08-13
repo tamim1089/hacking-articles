@@ -1,0 +1,255 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/penetration-testing/" rel="category tag">Penetration Testing</a></span>            </div>
+            <h1 class="post-title entry-title">A Little Guide to SMB Enumeration</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/a-little-guide-to-smb-enumeration/" rel="bookmark"><time class="entry-date published" datetime="2021-03-08T15:37:46+00:00">March 8, 2021</time><time class="updated" datetime="2025-05-31T08:19:58+00:00">May 31, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p class="ai-optimize-6 ai-optimize-introduction"><span style="color: #000000;">We will shine the light on the process or methodology for enumerating SMB services on the Target System/Server in this article. There are numerous tools and methods to perform enumeration, we will be finding different types of information on SMB throughout the article.</span></p>
+<h3 class="ai-optimize-7"><span style="color: #800000;">Table of Contents</span></h3>
+<ul>
+<li class="ai-optimize-8"><span style="color: #000000;"><strong>What is SMB?</strong></span></li>
+<li class="ai-optimize-9"><span style="color: #000000;"><strong>SMB Working</strong></span></li>
+<li class="ai-optimize-10"><span style="color: #000000;"><strong>SMB Versions</strong></span></li>
+<li class="ai-optimize-11"><span style="color: #000000;"><strong>SMB Security</strong></span></li>
+<li class="ai-optimize-12"><span style="color: #000000;"><strong>SMB Enumeration</strong></span>
+<ul>
+<li class="ai-optimize-13"><span style="color: #000000;"><strong>Hostname</strong></span>
+<ul>
+<li class="ai-optimize-14"><span style="color: #000000;">nmblookup</span></li>
+<li class="ai-optimize-15"><span style="color: #000000;">nbtscan</span></li>
+<li class="ai-optimize-16"><span style="color: #000000;">nbstat NSE Script</span></li>
+<li class="ai-optimize-17"><span style="color: #000000;">nbtstat</span></li>
+<li class="ai-optimize-18"><span style="color: #000000;">ping</span></li>
+<li class="ai-optimize-19"><span style="color: #000000;">smb-os-discovery NSE Script</span></li>
+</ul>
+</li>
+<li class="ai-optimize-20"><span style="color: #000000;"><strong>Share and Null Session</strong></span>
+<ul>
+<li class="ai-optimize-21"><span style="color: #000000;">SMBMap</span></li>
+<li class="ai-optimize-22"><span style="color: #000000;">Smbclient</span></li>
+<li class="ai-optimize-23"><span style="color: #000000;">smb-enum-shares NSE Script</span></li>
+<li class="ai-optimize-24"><span style="color: #000000;">Net view</span></li>
+<li class="ai-optimize-25"><span style="color: #000000;">Metasploit: smb_enumshares</span></li>
+<li class="ai-optimize-26"><span style="color: #000000;">CrackMapExec</span></li>
+<li class="ai-optimize-27"><span style="color: #000000;">rpcclient</span></li>
+</ul>
+</li>
+<li class="ai-optimize-28"><span style="color: #000000;"><strong>Users</strong></span>
+<ul>
+<li class="ai-optimize-29"><span style="color: #000000;">Metasploit: smb_lookupsid</span></li>
+<li class="ai-optimize-30"><span style="color: #000000;">Impacket: Lookupsid</span></li>
+</ul>
+</li>
+<li class="ai-optimize-31"><span style="color: #000000;"><strong>Vulnerability Scanning</strong></span>
+<ul>
+<li class="ai-optimize-32"><span style="color: #000000;">smb-vuln NSE Script</span></li>
+</ul>
+</li>
+<li class="ai-optimize-33"><span style="color: #000000;"><strong>Overall Scanning</strong></span></li>
+<li class="ai-optimize-34"><span style="color: #000000;"><strong>Enum4linux</strong></span></li>
+</ul>
+</li>
+<li class="ai-optimize-35"><span style="color: #000000;"><strong>Conclusion</strong></span></li>
+</ul>
+<h3 class="ai-optimize-36"><span style="color: #800000;">What is SMB?</span></h3>
+<p class="ai-optimize-37"><span style="color: #000000;">SMB or Server Message Block is the modernized concept of what was used to known as Common Internet File System. It works as an Application Layer Network Protocol. It is designed to be used as a File Sharing Protocol. Different Applications can on a system can read and write simultaneously to the files and request the server for services inside a network. One of the interesting functionalities of SMB is that it allows users to run it top of its TCP/IP protocol or other network protocols. Additionally, with the help of SMB, authorized users, applications, or software can access files or other resources on a remote server. Users can perform actions that include reading data, creating data, and updating data. Clients and servers communicate using something called SMB client request.</span></p>
+<h3 class="ai-optimize-38"><span style="color: #800000;">SMB Working</span></h3>
+<p class="ai-optimize-39"><span style="color: #000000;">The SMB Protocol delegates the client to communicate with other participants in the same network, allowing it to access files or services open to it in the network. In order for it to function the other device also requires the implemented network protocol and receive and process the respective client request using an SMB server application. Therefore, client computers using SMB connect to a supporting server using NetBIOS over TCP/IP, IPX/SPX, or NetBEUI. The initial establishment of the connection is required for exchanging information. Subsequent data transport is regulated by the provisions of the TCP protocol. SMB functions as a request-response or client-server protocol. Once the connection is established, the client computer or program can then open, read/write, and access files similar to the file system on a local computer.</span></p>
+<h3 class="ai-optimize-40"><span style="color: #800000;">SMB Versions</span></h3>
+<ul>
+<li class="ai-optimize-41"><span style="color: #000000;">CIFS: The old version of SMB, which was included in Microsoft Windows NT 4.0 in 1996.</span></li>
+<li class="ai-optimize-42"><span style="color: #000000;">SMB 1.0 / SMB1: The version used in Windows 2000, Windows XP, Windows Server 2003 and Windows Server 2003 R2.</span></li>
+<li class="ai-optimize-43"><span style="color: #000000;">SMB 2.0 / SMB2: This version used in Windows Vista and Windows Server 2008.</span></li>
+<li class="ai-optimize-44"><span style="color: #000000;">SMB 2.1 / SMB2.1: This version used in Windows 7 and Windows Server 2008 R2.</span></li>
+<li class="ai-optimize-45"><span style="color: #000000;">SMB 3.0 / SMB3: This version used in Windows 8 and Windows Server 2012.</span></li>
+<li class="ai-optimize-46"><span style="color: #000000;">SMB 3.02 / SMB3: This version used in Windows 8.1 and Windows Server 2012 R2.</span></li>
+<li class="ai-optimize-47"><span style="color: #000000;">SMB 3.1: This version used in Windows Server 2016 and Windows 10.</span></li>
+</ul>
+<p class="ai-optimize-48"><span style="color: #000000;">Currently, the latest version of SMB is SMB 3.1.1, which was introduced with Windows 10 and Windows Server 2016. This version supports AES 128 GCM encryption in addition to AES 128 CCM encryption added in SMB3, and implements pre-authentication integrity check using SHA-512 hash. SMB 3.1.1 also makes secure negotiation mandatory when connecting to clients using SMB 2.x and higher.</span></p>
+<h3 class="ai-optimize-49"><span style="color: #800000;">SMB Security</span></h3>
+<p class="ai-optimize-50"><span style="color: #000000;">The SMB protocol supports two levels of security. The first is the share level. The server is protected at this level and each share has a password. The client computer or user has to enter the password to access data or files saved under the specific share. This is the only security model available in the Core and Core plus SMG protocol definitions. User level protection was later added to the SMB protocol. It is applied to individual files and each share is based on specific user access rights. Once a server authenticates the client, he/she is given a unique identification (UID) that is presented upon access to the server. The SMB protocol has supported individual security since LAN Manager 1.0 was implemented.</span></p>
+<h3 class="ai-optimize-51"><span style="color: #800000;">SMB Enumeration: Hostname</span></h3>
+<p class="ai-optimize-52"><span style="color: #000000;">Firstly, we will start the enumeration of the SMB by finding the hostname of the target machine. This can be done by various tools.</span></p>
+<h4 class="ai-optimize-53"><span style="color: #800000;">nmblookup</span></h4>
+<p class="ai-optimize-54"><span style="color: #000000;">We started with nmblookup tool. It is designed to make use of queries for the NetBIOS names and then map them to their subsequent IP addresses in a network. The options allow the name queries to be directed at a particular IP broadcast area or to a particular machine. All queries are done over UDP.</span></p>
+<h5 class="ai-optimize-55"><span style="color: #000000;"><strong>For unique names:</strong></span></h5>
+<p class="ai-optimize-56"><span style="color: #000000;">    00: Workstation Service (workstation name)</span></p>
+<p class="ai-optimize-57"><span style="color: #000000;">    03: Windows Messenger service</span></p>
+<p class="ai-optimize-58"><span style="color: #000000;">    06: Remote Access Service</span></p>
+<p class="ai-optimize-59"><span style="color: #000000;">    20: File Service (also called Host Record)</span></p>
+<p class="ai-optimize-60"><span style="color: #000000;">    21: Remote Access Service client</span></p>
+<p class="ai-optimize-61"><span style="color: #000000;">    1B: Domain Master Browser – Primary Domain Controller for a domain</span></p>
+<p class="ai-optimize-62"><span style="color: #000000;">    1D: Master Browser</span></p>
+<h5 class="ai-optimize-63"><span style="color: #000000;">For group names:</span></h5>
+<p class="ai-optimize-64"><span style="color: #000000;">    00: Workstation Service (workgroup/domain name)</span></p>
+<p class="ai-optimize-65"><span style="color: #000000;">    1C: Domain Controllers for a domain</span></p>
+<p class="ai-optimize-66"><span style="color: #000000;">    1E: Browser Service Elections</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmblookup -A 192.168.1.17</pre>
+<p class="ai-optimize-67"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-x1QuCQ2ki68/YEeIqlCxVDI/AAAAAAAAuiY/AEAIdpakQjQJoGTyyQhITmjGyxDiHD70gCLcBGAsYHQ/s16000/1.png"/></span></p>
+<p class="ai-optimize-68"><span style="color: #000000;">Here, we can see that we have enumerated the hostname to be DESKTOP-ATNONJ9.</span></p>
+<h4 class="ai-optimize-69"><span style="color: #800000;">nbtscan</span></h4>
+<p class="ai-optimize-70"><span style="color: #000000;">Moving Forward we used nbtscan tool.  NBTscan is a program for scanning IP networks for NetBIOS name information. It sends NetBIOS status query to each address in supplied range and lists received information in human-readable form. For each responded host it lists IP address, NetBIOS computer name, logged-in user name and MAC address (such as Ethernet).</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nbtscan 192.168.1.17</pre>
+<p class="ai-optimize-71"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-tbi-EiKXDxY/YEeJ2abR4EI/AAAAAAAAuig/rSi5lra7vpIkCQZd9aF852OcubFm50x8gCLcBGAsYHQ/s16000/2.png"/></span></p>
+<p class="ai-optimize-72"><span style="color: #000000;">Finally, we can see that we have enumerated the hostname to be DESKTOP-ATNONJ9.</span></p>
+<h4 class="ai-optimize-73"><span style="color: #800000;">nbstat NSE Script</span></h4>
+<p class="ai-optimize-74"><span style="color: #000000;">This nmap script attempts to retrieve the target’s NetBIOS names and MAC address. By default, the script displays the name of the computer and the logged-in user; if the verbosity is turned up, it displays all names the system thinks it owns. It also shows the flags that we studied in nmblookup tool.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap --script nbstat.nse 192.168.1.17</pre>
+<p class="ai-optimize-75"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-__Z3_V0_eCQ/YEeJ72UCY2I/AAAAAAAAuik/fQiA-aW1kg4Qhr5aLpUJtYzkxQAjgZeGACLcBGAsYHQ/s16000/3.png"/></span></p>
+<p class="ai-optimize-76"><span style="color: #000000;">Finally, we can see that we have enumerated the hostname to be DESKTOP-ATNONJ9.</span></p>
+<h4 class="ai-optimize-77"><span style="color: #800000;">nbtstat</span></h4>
+<p class="ai-optimize-78"><span style="color: #000000;">This Windows command displays the NetBIOS over TCP/IP (NetBT) protocol statistics. It can read the NetBIOS name tables for both the local computer and remote computers. It can also read the NetBIOS name cache. This command allows a refresh of the NetBIOS name cache and the names registered with Windows Internet Name Service (WINS). When used without any parameters, this command displays Help Information. This command is available only if the Internet Protocol (TCP/IP) protocol is installed as a component in the properties of a network adapter in Network Connections.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nbtstat -A 192.168.1.17</pre>
+<p class="ai-optimize-79"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-qXPrf8aV-c4/YEeKBW9ZUNI/AAAAAAAAuio/SjCXqvI5Zw4k3bU0ejx8lUuTa4clX7MAwCLcBGAsYHQ/s16000/4.png"/></span></p>
+<p class="ai-optimize-80"><span style="color: #000000;">Finally, we can see that we have enumerated the hostname to be DESKTOP-ATNONJ9.</span></p>
+<h4 class="ai-optimize-81"><span style="color: #800000;">Ping</span></h4>
+<p class="ai-optimize-82"><span style="color: #000000;">We can also use the ping command to detect the hostname of an SMB server or machine. The -a parameter specifies reverse name resolution to be performed on the destination IP address. If this is successful, ping displays the corresponding hostname.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ping -a 192.168.1.17</pre>
+<p class="ai-optimize-83"><span style="color: #000000;">Then, we can see that we have enumerated the hostname to be DESKTOP-ATNONJ9.</span></p>
+<p class="ai-optimize-84"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-PtchD3IfBkk/YEeKFwbMBBI/AAAAAAAAuiw/skM9WzFYeUcLVOUZB2ECUrN_1GWDcOJPQCLcBGAsYHQ/s16000/5.png"/></span></p>
+<h4 class="ai-optimize-85"><span style="color: #800000;">smb-os-discovery NSE Script</span></h4>
+<p class="ai-optimize-86"><span style="color: #000000;">This NSE script attempts to determine the operating system, computer name, domain, workgroup, and current time over the SMB protocol (ports 445 or 139). You achieve it by initiating a session with the anonymous account (or with a proper user account, if one is given; it likely doesn’t make a difference); in response to a session starting, the server will send back all this information.</span></p>
+<p class="ai-optimize-87"><span style="color: #000000;">The following fields may be included in the output, depending on the circumstances (e.g., the workgroup name is mutually exclusive with domain and forest names) and the information available:</span></p>
+<ul>
+<li class="ai-optimize-88"><span style="color: #000000;">OS</span></li>
+<li class="ai-optimize-89"><span style="color: #000000;">Computer name</span></li>
+<li class="ai-optimize-90"><span style="color: #000000;">Domain name</span></li>
+<li class="ai-optimize-91"><span style="color: #000000;">Forest name</span></li>
+<li class="ai-optimize-92"><span style="color: #000000;">FQDN</span></li>
+<li class="ai-optimize-93"><span style="color: #000000;">NetBIOS computer name</span></li>
+<li class="ai-optimize-94"><span style="color: #000000;">NetBIOS domain name</span></li>
+<li class="ai-optimize-95"><span style="color: #000000;">Workgroup</span></li>
+<li class="ai-optimize-96"><span style="color: #000000;">System time</span></li>
+</ul>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap --script smb-os-discovery 192.168.1.17</pre>
+<p class="ai-optimize-97"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-c9Ou1dH4VWI/YEeKLQNszAI/AAAAAAAAui4/5SECoo9N5qYFYdBMeifp-OCtxISkMc6cgCLcBGAsYHQ/s16000/6.png"/></span></p>
+<p class="ai-optimize-98"><span style="color: #000000;">Then, we can see that we have enumerated the hostname to be DESKTOP-ATNONJ9.</span></p>
+<h3 class="ai-optimize-99"><span style="color: #800000;">SMB Enumeration: Share and Null Session</span></h3>
+<p class="ai-optimize-100"><span style="color: #000000;">As we discussed earlier that SMB works on sharing files and resources. In order to transfer these files or resources, there are data streams that are called shares. There are public shares that are accessible to everyone on the network and then there are the user-specific shares. Let’s enumerate these shares.</span></p>
+<h4 class="ai-optimize-101"><span style="color: #800000;">SMBMap</span></h4>
+<p class="ai-optimize-102"><span style="color: #000000;">SMBMap allows users to enumerate samba share drives across an entire domain. List share drives, drive permissions, share contents, upload/download functionality, file name auto-download pattern matching, and even execute remote commands. This tool was designed with pen testing in mind and is intended to simplify searching for potentially sensitive data across large networks.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">smbmap -H 192.168.1.40</pre>
+<p class="ai-optimize-103"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-qM5lUnIllUs/YEeKQ66boEI/AAAAAAAAujA/e7qQN40rLjwsbTVBzk9eLIx13Z-Af_VHwCLcBGAsYHQ/s16000/7.png"/></span></p>
+<p class="ai-optimize-104"><span style="color: #000000;">Here we see that the target machine has some shares. There is a share by the name of the guest. That must be a public share. Let’s enumerate a user-specific share using the credentials for that user.  We are enumerating the share for the user raj as shown in the image below.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">smbmap -H 192.168.1.17 -u raj -p 123</pre>
+<p class="ai-optimize-105"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-c7V6aL7_obc/YEeKVjleUUI/AAAAAAAAujI/AdAex95dfUkhrUL0w3xgRjBEwWAIrlu5gCLcBGAsYHQ/s16000/8.png"/></span></p>
+<h4 class="ai-optimize-106"><span style="color: #800000;">smbclient</span></h4>
+<p class="ai-optimize-107"><span style="color: #000000;">smbclient is samba client with an “ftp like” interface. It is a useful tool to test connectivity to a Windows share. It can be used to transfer files, or to look at share names. In addition, it has a nifty ability to ‘tar’ (backup) and restore files from a server to a client and vice versa. We enumerated the target machine and found the guest share using the smbclient directly. Then we connect to the guest share and see that there is a text file by the name of file.txt. We can download it using the get command.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">smbclient -L 192.168.1.40
+smbclient //192.168.1.40/guest
+get file.txt</pre>
+<p class="ai-optimize-108"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-4m6NqnNW914/YEeKbcqdZqI/AAAAAAAAujM/rHVrzlzOgjc4LiM6PYuRcorlds14VjFYwCLcBGAsYHQ/s16000/9.png"/></span></p>
+<p class="ai-optimize-109"><span style="color: #000000;">Then we enumerate the user-specific share. We connect to the SMB as user raj and find a share by the name of ‘share’. We reconfigured the smbclient command to access the share and we see that we find a file named raj.txt. Again, we can download this file as well as using the get command.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">smbclient -L 192.168.1.17 -U raj%123
+smbclient //192.168.1.17/share -U raj%123
+get raj.txt</pre>
+<p class="ai-optimize-110"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-f1Lq_ZwKsJw/YEeKgtCbIEI/AAAAAAAAujU/EneNn-qALwc1nA1vCuiThuri7CTfQGhkgCLcBGAsYHQ/s16000/10.png"/></span></p>
+<h4 class="ai-optimize-111"><span style="color: #000000;"><span style="color: #800000;">smb-enum-shares NSE Script</span> </span></h4>
+<p class="ai-optimize-112"><span style="color: #000000;">This NSE scirpt attempts to list shares using the srvsvc.NetShareEnumAll MSRPC function and retrieve more information about them using srvsvc.NetShareGetInfo. If access to those functions is denied, the system checks a list of common share names. An administrator account is required to call NetShareGetInfo on all versions of Windows up to 2003, as well as Windows Vista, Windows 7, and Windows 10, if UAC is turned down. Even if NetShareEnumAll is restricted, users attempting to connect to a share will always reveal its existence. So, if NetShareEnumAll fails, the script uses a pre-generated list of shares, based on a large test network. If any of those succeed, the script records them. After finding a list of shares, the script attempts to connect to each of them anonymously, which divides them into “anonymous” for shares that the NULL user can connect to, or “restricted” for shares that require a user account.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap --script smb-enum-shares -p139,445 192.168.1.17</pre>
+<p class="ai-optimize-113"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-HuJcHWyBFdY/YEeKqz14dzI/AAAAAAAAujc/GZYUnOsoG2YiffRxtko31d0AmRz2E6dQQCLcBGAsYHQ/s16000/11.png"/></span></p>
+<p class="ai-optimize-114"><span style="color: #000000;">Then, we can see that we have the shares listed although the Access is Denied the existence of the share is confirmed.</span></p>
+<h4 class="ai-optimize-115"><span style="color: #800000;">Net view</span></h4>
+<p class="ai-optimize-116"><span style="color: #000000;">Displays a list of domains, computers, or resources that are being shared by the specified computer. Used without parameters, net view displays a list of computers in your current domain. This time we are on the Windows machine. We used the net view with the /All parameter to list all the shares on the target machine.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">net view \\192.168.1.17 /All</pre>
+<p class="ai-optimize-117"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-chNRoAi7McA/YEeKvNZlT7I/AAAAAAAAujk/ZIunG8dQKTIPRh8qD0jTFc-JdK1PWrLMACLcBGAsYHQ/s16000/12.png"/></span></p>
+<p class="ai-optimize-118"><span style="color: #000000;">Then we changed the command by adding the share, and we can read the contents of that share. Now using the copy command, we can download the file from share.</span></p>
+<h4 class="ai-optimize-119"><span style="color: #800000;">Metasploit: smb_enumshares</span></h4>
+<p class="ai-optimize-120"><span style="color: #000000;">The smb_enumshares module enumerates any SMB shares that are available on a remote system. You need the IP Address of the target server or machine followed by the set of credentials that can be used to access the share.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">use auxiliary/scanner/smb/smb_enumshares
+set rhosts 192.168.1.17
+set smbuser raj
+set smbpass 123
+exploit</pre>
+<p class="ai-optimize-121"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-vUkq5GgTKAI/YEeK1XwzvVI/AAAAAAAAujs/w11az32KXgIXc8zC8QErLqCgRhd40_8DACLcBGAsYHQ/s16000/13.png"/></span></p>
+<h4 class="ai-optimize-122"><span style="color: #800000;">CrackMapExec</span></h4>
+<p class="ai-optimize-123"><span style="color: #000000;">CrackMapExec (a.k.a CME) is a post-exploitation tool that helps automate assessing the security of large Active Directory networks. Built with stealth in mind, CME follows the concept of “Living off the Land”: abusing built-in Active Directory features/protocols to achieve its functionality and allowing it to evade most endpoint protection/IDS/IPS solutions. Additionally, CrackMapExec can Map the network hosts, Generate Relay List, enumerate shares and access, enumerate active sessions, enumerate disks, enumerate logged on users, enumerate domain users, Enumerate Users by bruteforcing RID, enumerate domain groups, enumerate local groups etc.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">crackmapexec smb 192.168.1.17 -u 'raj' -p '123' --shares</pre>
+<p class="ai-optimize-124"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-n6vxHFC-2l0/YEeK6M4RvdI/AAAAAAAAujw/IAeQCwDBFuE1dSB75Pv7ldxqfN-1-aHkwCLcBGAsYHQ/s16000/14.png"/></span></p>
+<p class="ai-optimize-125"><span style="color: #000000;">Then, we can see different shares and the permissions that are allowed on that particular share.   </span></p>
+<h4 class="ai-optimize-126"><span style="color: #800000;">rpcclient</span></h4>
+<p class="ai-optimize-127"><span style="color: #000000;">rpcclient is a utility initially developed to test MS-RPC functionality in Samba itself. It has undergone several stages of development and stability. Many system administrators have now written scripts around it to manage Windows NT clients from their UNIX workstation. We will be using it to enumerate the users on the SMB shares using the option of netshareenum as shown in the image below.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">rpcclient -U "" -N 192.168.1.40
+netshareenum
+netshareenumall</pre>
+<p class="ai-optimize-128"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-WiKeDjCNb5s/YEeK_TGVVzI/AAAAAAAAuj8/QT1aaIBCoEcAqEez9IOoAsHrVGKNz8iyACLcBGAsYHQ/s16000/15.png"/></span></p>
+<h3 class="ai-optimize-129"><span style="color: #800000;">SMB Enumeration: Vulnerability Scanning</span></h3>
+<p class="ai-optimize-130"><span style="color: #000000;">We enumerate a SMB server to compromise it, as we need to enumerate and find possible vulnerabilities that we can use to exploit the server. In order to do this in an optimized method, we can perform Vulnerability Scanning. There might be multiple tools to perform this kind of Scanning but here we will be focusing on this NSE script.</span></p>
+<h4 class="ai-optimize-131"><span style="color: #800000;">smb-vuln NSE Script</span></h4>
+<p class="ai-optimize-132"><span style="color: #000000;">Nmap in past used to have a script by the name of smb-check-vulns. It used to scan the target server for the various vulnerabilities such as:</span></p>
+<ul>
+<li class="ai-optimize-133"><span style="color: #000000;">conficker</span></li>
+<li class="ai-optimize-134"><span style="color: #000000;">cve2009-3103</span></li>
+<li class="ai-optimize-135"><span style="color: #000000;">ms06-025</span></li>
+<li class="ai-optimize-136"><span style="color: #000000;">ms07-029</span></li>
+<li class="ai-optimize-137"><span style="color: #000000;">regsvc-dos</span></li>
+<li class="ai-optimize-138"><span style="color: #000000;">ms08-067</span></li>
+</ul>
+<p class="ai-optimize-139"><span style="color: #000000;">Then the script was divided into single vulnerability checks that can run individually, such as smb-vuln-ms08-067. Hence to check all SMB vulnerabilities available in the Nmap Scripting Engine we use the * with the script.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap --script smb-vuln* 192.168.1.16</pre>
+<p class="ai-optimize-140"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-PyCtwRKU_4Y/YEeLFLQErUI/AAAAAAAAukA/VuILprJKXkkjmBHXf-CNnfFOFcjUue-lACLcBGAsYHQ/s16000/16.png"/></span></p>
+<h3 class="ai-optimize-141"><span style="color: #800000;">SMB Enumeration: Users</span></h3>
+<p class="ai-optimize-142"><span style="color: #000000;">In a Windows environment, the system assigns each user a unique identifier called Security ID or SID, which controls access to various resources like Files, Registry keys, network shares, etc. Hence, users shouldn’t compromise their SID.</span></p>
+<h4 class="ai-optimize-143"><span style="color: #800000;">smb_lookupsid</span></h4>
+<p class="ai-optimize-144"><span style="color: #000000;">The smb_lookupsid module brute-forces SID lookups on a range of targets to determine what local users exist in the system. Knowing what users exist on a system can greatly speed up any further brute-force logon attempts later on.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">use auxiliary/scanner/smb/smb_lookupsid
+set rhosts 192.168.1.17
+set smbuser raj
+set smbpass 123
+exploit</pre>
+<p class="ai-optimize-145"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-x0u8gvqIIB4/YEeLK43kz7I/AAAAAAAAukI/HjEjcSeF26YEv1pwxzbeCD0-G2hY3b-wACLcBGAsYHQ/s16000/17.png"/></span></p>
+<p class="ai-optimize-146"><span style="color: #000000;">Here, we can see that through enumerating SMB we have extracted two users: raj and aart.</span></p>
+<h4 class="ai-optimize-147"><span style="color: #800000;">Impacket: Lookupsid</span></h4>
+<p class="ai-optimize-148"><span style="color: #000000;">A Security Identifier (SID) is a unique value of variable length that is used to identify a user account. Through a SID User Enumeration, we can extract information about what users exist and their data. Lookupsid script can enumerate both local and domain users. There is a Metasploit module too for this attack. If you are planning on injecting a target server with a golden or a silver ticket then one of the things that are required is the SID of the 500 user. Lookupsid.py can be used in that scenario. When we provide the following parameters to the Lookupsid in such a format as shown below.</span></p>
+<p class="ai-optimize-149"><span style="color: #000000;">Requirements:</span></p>
+<ul>
+<li class="ai-optimize-150"><span style="color: #000000;">Domain</span></li>
+<li class="ai-optimize-151"><span style="color: #000000;">Username</span></li>
+<li class="ai-optimize-152"><span style="color: #000000;">Password/Password Hash</span></li>
+<li class="ai-optimize-153"><span style="color: #000000;">Target IP Address</span></li>
+</ul>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python3 lookupsid.py DESKTOP-ATNONJ9/raj:123@192.168.1.17</pre>
+<p class="ai-optimize-154"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-HDccQaHrYPE/YEeLTmT8McI/AAAAAAAAukM/4XkX1V9B62s6Oz5ryfnw1AGu7cooJd0ZwCLcBGAsYHQ/s16000/18.png"/></span></p>
+<h3 class="ai-optimize-155"><span style="color: #800000;">SMB Enumeration: Enum4Linux</span></h3>
+<p class="ai-optimize-156"><span style="color: #000000;">Enum4linux is a tool that developers designed to detect and extract data or enumerate from Windows and Linux operating systems, including SMB hosts on a network. Enum4linux is can discover the following:</span></p>
+<ul>
+<li class="ai-optimize-157"><span style="color: #000000;">Domain and group membership</span></li>
+<li class="ai-optimize-158"><span style="color: #000000;">User listings</span></li>
+<li class="ai-optimize-159"><span style="color: #000000;">Shares on a device (drives and folders)</span></li>
+<li class="ai-optimize-160"><span style="color: #000000;">Password policies on a target</span></li>
+<li class="ai-optimize-161"><span style="color: #000000;">The operating system of a remote target</span></li>
+</ul>
+<p class="ai-optimize-162"><span style="color: #000000;">To begin with, we start a normal scan using enum4linux. It then extracts the RID Range, Usernames, Workgroup, Nbtstat Information, Sessions, SID Information, and OS Information.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">enum4linux 192.168.1.40</pre>
+<p class="ai-optimize-163"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-z5Q4xKQMMuU/YEeLZBhWhDI/AAAAAAAAukU/svH7jfwJFMA72vwXgq5Rm34et4VbuZd4gCLcBGAsYHQ/s16000/19.png"/></span></p>
+<p class="ai-optimize-164"><span style="color: #000000;">We see that it has also extracted the two uses based on the SID. These two users are privs and ignite. The enum4linux script extracted this user information through communication via the SMB channels.</span></p>
+<p class="ai-optimize-165"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-2zJWtrNh6rM/YEeLw-d-66I/AAAAAAAAuks/HYEs-4FxzAMbeofrj_DqxwMBbJOIDyVXgCLcBGAsYHQ/s16000/21.png"/></span></p>
+<p class="ai-optimize-166"><span style="color: #000000;">At last, we have the Share Enumeration, which had the guest share that we enumerated earlier. Then we see that it attempted to enumerate inside the print share and IPC but faced restrictions. Then we have the Password Policy Information regarding the users on the system. It indicates whether the password was changed recently or if it has never been changed. It also tells us the complexity and other stuff regarding users and the operating system of the target system.</span></p>
+<p class="ai-optimize-167"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-K3l-W8FCJUE/YEeL1-ccjgI/AAAAAAAAukw/699yPPolTegoYqIF5Dgcu377GQeihyFowCLcBGAsYHQ/s16000/20.png"/></span></p>
+<h3 class="ai-optimize-168"><span style="color: #800000;">Conclusion</span></h3>
+<p class="ai-optimize-169"><span style="color: #000000;">In this article, we discuss the various scripts and tools that can enumerate with the SMB/MSRPC services on a target system. Enumeration is the key step in order to compromise and in order to defend your system and network. Be sure to safeguard your SMB service.</span></p>
+<p class="ai-optimize-6"><span style="color: #000000;">To learn more about Penetration Testing. Follow this <a href="https://www.hackingarticles.in/category/penetration-testing/">Link.</a></span></p>
+<p class="ai-optimize-170"><span style="color: #000000;"><strong>Author: Pavandeep Singh</strong> is a Technical Writer, Researcher, and Penetration Tester. Contact on</span> <strong>Twitter</strong> and <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.linkedin.com/in/pavan2318/">LinkedIn</a></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">
+<!-- YARPP Thumbnails -->
+<h3>Related posts:</h3>
+<div class="yarpp-thumbnails-horizontal">
+<a class="yarpp-thumbnail" rel="norewrite" href="https://www.hackingarticles.in/a-detailed-guide-on-wfuzz/" title="A Detailed Guide on Wfuzz">
+<span class="yarpp-thumbnail-default"><img src="https://www.hackingarticles.in/wp-content/plugins/yet-another-related-posts-plugin/images/default.png" alt="Default Thumbnail" data-pin-nopin="true"/></span><span class="yarpp-thumbnail-title">A Detailed Guide on Wfuzz</span></a>
+<a class="yarpp-thumbnail" rel="norewrite" href="https://www.hackingarticles.in/crunch-wordlist-generation-guide/" title="A Detailed Guide on Crunch">
+<span class="yarpp-thumbnail-default"><img src="https://www.hackingarticles.in/wp-content/plugins/yet-another-related-posts-plugin/images/default.png" alt="Default Thumbnail" data-pin-nopin="true"/></span><span class="yarpp-thumbnail-title">A Detailed Guide on Crunch</span></a>
+</div>
+</div>
+            </div><!-- .entry-content -->
+            <footer class="post-footer entry-footer">
+                                                
+            </footer><!-- .entry-footer -->
+            
+	<nav class="navigation post-navigation" aria-label="Posts">
+		<h2 class="screen-reader-text">Post navigation</h2>
+		<div class="nav-links"><div class="nav-previous"><a href="https://www.hackingarticles.in/academy-hackthebox-walkthrough/" rel="prev">Academy HackTheBox Walkthrough</a></div><div class="nav-next"><a href="https://www.hackingarticles.in/active-directory-pentesting-lab-setup/" rel="next">Active Directory Pentesting: Lab Setup</a></div></div>
+	</nav>        </div>

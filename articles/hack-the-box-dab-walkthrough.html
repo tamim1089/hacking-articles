@@ -1,0 +1,113 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/" rel="category tag">HackTheBox</a></span>            </div>
+            <h1 class="post-title entry-title">HacktheBox Dab Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/hack-the-box-dab-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2019-02-20T11:19:48+00:00">February 20, 2019</time><time class="updated" datetime="2025-06-29T19:34:39+00:00">June 29, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today we are going to solve another CTF challenge “Dab”. It is a retired vulnerable lab presented by Hack the Box for helping pentester’s to perform online penetration testing according to your experience level; they have a collection of vulnerable labs as challenges, from beginners to Expert level.</span></p>
+<p><span style="color: #000000;"><strong>Level</strong>: Expert</span></p>
+<p><span style="color: #000000;"><strong>Task</strong>: To find user.txt and root.txt file</span></p>
+<p><span style="color: #000000;"><strong>Note</strong>: Since these labs are online available therefore they have a static IP. The IP of Dab is 10.10.10.86</span></p>
+<h3><span style="color: #800000;">Penetrating Methodology</span></h3>
+<ul>
+<li><span style="color: #000000;">Network scanning (Nmap)</span></li>
+<li><span style="color: #000000;">Logging in FTP using Anonymous Login</span></li>
+<li><span style="color: #000000;">Find Hidden file using steghide</span></li>
+<li><span style="color: #000000;">Bruteforce Login Credential using Burpsuite</span></li>
+<li><span style="color: #000000;">Manage Cookies using Burpsuite to get access</span></li>
+<li><span style="color: #000000;">Bruteforce all ports using wfuzz</span></li>
+<li><span style="color: #000000;">Retrieve version and password hashes on Memcached server</span></li>
+<li><span style="color: #000000;">Crack password hash using John the Ripper</span></li>
+<li><span style="color: #000000;">Bruteforce the credentials using Hydra</span></li>
+<li><span style="color: #000000;">Logging into the server using SSH and getting user flag</span></li>
+<li><span style="color: #000000;">Using ltrace to extract application password</span></li>
+<li><span style="color: #000000;">Compile the remaining function using gcc</span></li>
+<li><span style="color: #000000;">Snagging the Root Flag</span></li>
+</ul>
+<h3><span style="color: #800000;">Walkthrough</span></h3>
+<p><span style="color: #000000;">Let’s start off with our basic Nmap command to find out the open ports and services.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -sV -sC 10.10.10.86</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-UkqCAwdtiEY/XG0sBwGyuxI/AAAAAAAAczI/1dM2umD27nQoIz5Nyt4Z5HCMyy3ovPyWgCLcBGAs/s1600/1.png"/></span></p>
+<p><span style="color: #000000;">The Nmap scan shows us that there are 4 ports open: 21(FTP), 22(SSH), 80(HTTP), 8080(HTTP)</span></p>
+<p><span style="color: #000000;">As port 21 is open, we access it using FTP and find a JPG file. We download it to our system to find more information about the image file.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-mX70ZAoJbbQ/XG0sI0y3JiI/AAAAAAAAcz4/KtMvkvwLfUM5SPKYHZfuZq9-m7jYN8bNACLcBGAs/s1600/2.png"/></span></p>
+<p><span style="color: #000000;">Then, we use a tool called “steghide” to find if there is any file hidden inside the image and find a hidden text file called “dab.txt”. We extract the file and open it and find that it was a dead end.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">steghide --info dab.jpg
+steghide extract -sf dab.jpg -xf dab.txt</pre>
+<p><img decoding="async" src="https://4.bp.blogspot.com/-sK6G-WaUsVk/XG02fiaAphI/AAAAAAAAc1o/rccYl654YCkHmYA5kU7e18sQecHMHXlRQCLcBGAs/s1600/3.png"/></p>
+<p><span style="color: #000000;">Now as port 80 is running HTTP, we access the web service and find a login page.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-yS88uCB1ZMU/XG0sNw-okHI/AAAAAAAAc08/iOpkJcoawZcqi08ZW_WtNsuFTffHL4PKQCLcBGAs/s1600/4.png"/></span></p>
+<p><span style="color: #000000;">Port 8080 is also running HTTP, we try to access the web service and get an error that the authentication cookie is not set.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/--PZ9GA2VYCw/XG0sOT0fb9I/AAAAAAAAc1A/KxwL_rUXZIQSzjOZ8KIi43eAqqO3ijqiQCLcBGAs/s1600/5.png"/></span></p>
+<h4><span style="color: #800000;">Bruteforce </span></h4>
+<p><span style="color: #000000;">We try to brute force the username and password, so we capture the request of the browser using burpsuite and send it to the intruder and selected attack type “Cluster bomb” and select the parameter username and password as a target.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Tstkr8VCwsk/XG0sO7BmqbI/AAAAAAAAc1E/Rt_QhxyWTWQPTSmSLuGvIzZB6ewugitqgCLcBGAs/s1600/6.png"/></span></p>
+<p><span style="color: #000000;">After selecting “rockyou.txt” as our wordlist we start the brute force and find the correct username and password to be “<strong>admin: Password1</strong>”.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-JWCDi2iGBNI/XG0sPS99qsI/AAAAAAAAc1I/7z8C45bYWhYiBznoZSGvtqbJhkimBujcwCLcBGAs/s1600/8.png"/></span></p>
+<p><span style="color: #000000;">We are still not able to access the web application on port 8080, as it still shows the same cookie error. So we brute-force the cookie parameter using burp suite.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-ryTMK9hjcL4/XG0sGe4VHqI/AAAAAAAAczM/B-YYdMhDbgoViMBLQRFbaoyUI6sAlfOvACLcBGAs/s1600/10.png"/></span></p>
+<p><span style="color: #000000;">After selecting “rockyou.txt” as wordlist, we find the cookie parameter is called “password”. We also get another error; stating that the password authentication cookie is incorrect.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-wt7MRzFzRow/XG0sGVCl7iI/AAAAAAAAczQ/x7pv2t36eCUuLqXi_NPmahJ1v0Uj83PAACLcBGAs/s1600/11.png"/></span></p>
+<p><span style="color: #000000;">So we again capture the request, and this time we brute force the value of password parameter.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-lkkU2Uuhbs0/XG0sGbV-hBI/AAAAAAAAczU/affhSIlqb9MCoaDGzFI9Idgjffgf56nDgCLcBGAs/s1600/12.png"/></span></p>
+<p><span style="color: #000000;">After selecting “rockyou.txt” as our wordlist, we brute force the “password” variable and find the value to be “secret”.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-SF4vSM-Zp1M/XG0sHAi1NAI/AAAAAAAAczc/x0FEo149TlsCV-tvOyalrjwFPSoaDAJ6gCLcBGAs/s1600/14.png"/></span></p>
+<p><span style="color: #000000;">Using Burp Suite, we change the cookie and can now access the web page. After we access it, we find a web application that allows us to send a command to a certain port.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-SsUw53ysUos/XG0sG8eu_EI/AAAAAAAAczY/kL6v_yNdu1I1txaw0UPPFZYY8qCRpgmmQCLcBGAs/s1600/13.png"/></span></p>
+<p><span style="color: #000000;">Using burpsuite we change the cookie and are now able to access the web page. After accessing it, we discover a web application that allows us to send a command to a certain port.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-954o6wqk-HA/XG0sHYqeBNI/AAAAAAAAczg/YJf3IyQCEFUfqYNKFCDGQJxHD4aEv1JUgCLcBGAs/s1600/15.png"/></span></p>
+<h5><strong><span style="color: #800000;">Using WFuzz</span></strong></h5>
+<p><span style="color: #000000;">We use wfuzz tool to brute force all the ports that can only be accessed internally and find port 11211 is open.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">wfuzz -c -z range,1-65535 -u 'http://10.10.10.86:8080/socket?port=FUZZ&amp;cmd=hack' –H "Cookie: password=secret" --hc=500</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-nEANDC_ARsQ/XG0sIMU4lfI/AAAAAAAAczs/ZPipzhDyw_09G-lzo2ZJnv27u_9kGFoewCLcBGAs/s1600/18.png"/></span></p>
+<p><span style="color: #000000;">Now port 11211 is for Memcached server, so we run version command to check the version of the Memcached server.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-xlL0g9vNYA0/XG0sIvDSisI/AAAAAAAAczw/KMlYqcNz1Qc7-aiwOBI2wpTVVQYKs7OSgCLcBGAs/s1600/19.png"/></span></p>
+<p><span style="color: #000000;">We find that we are successfully able to get the version of the Memcached server.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-oBpEJCm67Hc/XG0sI3BCqfI/AAAAAAAAcz0/flcsSRcjKAcT4L7rkGu9kRWwni2zmKMcQCLcBGAs/s1600/20.png"/></span></p>
+<p><span style="color: #000000;">Now after getting the version of the Memcached server, we try to find all the users that are available on the web server. So we send the command “get users” to port 11211.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-VhJIqNIEIN4/XG0sJFgzK7I/AAAAAAAAcz8/iC62GwHOUSshWXCEoDcfb08Xy_Ls2wawwCLcBGAs/s1600/21.png"/></span></p>
+<p><span style="color: #000000;">After running the command, we are successfully able to get username and password hashes available on the memcached server.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-sjXSOI8uXhs/XG0sJXUaSyI/AAAAAAAAc0A/ciSdtgqEOfM2WUZ4IeBnBuvaiMJjRxpKQCLcBGAs/s1600/22.png"/></span></p>
+<h5><strong><span style="color: #800000;">Using John the Ripper</span></strong></h5>
+<p><span style="color: #000000;">We copy the username and password from the web site into a text file so that we can user john the ripper to crack the hashes.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">john --format=raw-md5 --show user2.txt &gt; cracked.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-ArywgvXGysk/XG0sJduWE_I/AAAAAAAAc0E/XVmo5lzR7FsY8P3SDwBNCbnD0jmwxRWbACLcBGAs/s1600/23.png"/></span></p>
+<h5><strong><span style="color: #800000;">Using Hydra</span></strong></h5>
+<p><span style="color: #000000;">After cracking the password, we use the saved file to brute-force SSH login using hydra and find the correct credentials to be “<strong>genevieve: Princess1</strong>”.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">hydra -C cracked.txt ssh://10.10.10.86 -t4</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-AjVb6Bp8qBc/XG0sJ110tNI/AAAAAAAAc0I/FdAZWGjQxBs23yQ67nsC-JZc3HIDziAxgCLcBGAs/s1600/24.png"/></span></p>
+<h4><span style="color: #800000;">Exploitation</span></h4>
+<p><span style="color: #000000;">Now we use this credential to login through SSH. After logging in we find a file called “user.txt”, when we open it we find our first flag.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ssh genevieve@10.10.10.86</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-V2uxv9XlYgI/XG0sJw32aDI/AAAAAAAAc0M/13zXrxqBOTUdeapfkwhKIIGWwItHQ70ZACLcBGAs/s1600/25.png"/></span></p>
+<p><span style="color: #000000;">We now find the file with suid bit set, and find an application called “myexec”.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">find / -perm -4000 2&gt;/dev/null</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-1ynH0owYmnw/XG0sKMaRJ6I/AAAAAAAAc0Q/G7T2yLoq83430MMhOtBiCgbPBKyW_dU4ACLcBGAs/s1600/26.png"/></span></p>
+<p><span style="color: #000000;">Then, we run the application and find that it is asking for a password.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-YaWAixJSFvE/XG0sKWuAUtI/AAAAAAAAc0U/Jon9TVrp6L8z0JXXhcTTn0XcvnyODwVygCLcBGAs/s1600/27.png"/></span></p>
+<p><span style="color: #000000;">We now use ltrace to find the password of the application.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ltrace myexec</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-ogFjURkbF6k/XG0sKiALctI/AAAAAAAAc0Y/PDKETwTQRh0hZvIg_7ylyiBL8ILab1F5gCLcBGAs/s1600/28.1.png"/></span></p>
+<p><span style="color: #000000;">Now when we give the correct password and run it with ltrace. We find that a function is missing from the application.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-lyGQl_kC6lU/XG0sLbIdg_I/AAAAAAAAc0o/d8wqcrHazVME1wu7_bWC9CoHfn_SXHPgQCLcBGAs/s1600/30.png"/></span></p>
+<p><span style="color: #000000;">We find the shared library that the application is using. Then, we check “/etc/ld.so.conf.d/test.conf” to find the location that accepts the preloaded library and find it is the “/tmp” directory.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ldd /usr/bin/myexec
+cat /etc/ld.so.conf.d/test.conf</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-tuseuro-QqU/XG0sL-JrTkI/AAAAAAAAc0s/ywJRdHa2WdcjGrcanY_XO5LKa3f9yq1SgCLcBGAs/s1600/31.png"/></span></p>
+<p><span style="color: #000000;">Then create a C program to execute “/bin/bash” inside /tmp directory.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-VpUepEVKh0s/XG0sMUyNGyI/AAAAAAAAc0w/_DMG1skLhjgitNpLoHvnL2jf2-brsQ2ewCLcBGAs/s1600/32.png"/></span></p>
+<p><span style="color: #000000;">We compile it as a shared library.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">gcc –Wall –fPIC –shared –o libseclogin.so /tmp/libseclogin.c</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-9HkudNNXVd4/XG0sM3h2pUI/AAAAAAAAc00/2W1UenzvKbI5AYwrdpwEbkx4BAhPgqO_ACLcBGAs/s1600/33.png"/></span></p>
+<p><span style="color: #000000;">Now we copy it inside the /tmp/ directory and cache the shared library using “ldconfig”. Then when running the application and give it the correct password we are able to spawn a bash shell as the root user. We move to /root directory and find a file called “root.txt”. Finally, when we examine the content of the file and discover the final flag.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cp libseclogin.so /tmp/
+ldconfig
+myexec</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-cbCqOqZRKQA/XG0sNR_U1kI/AAAAAAAAc04/1NAcjM0FUIIJst6jr24MEEHznp_NsOCSgCLcBGAs/s1600/34.png"/></span></p>
+<p><span style="color: #000000;">Thank you for giving your precious time to read this walkthrough. If you want to read more HTB Write-ups. Follow this</span> <strong><a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/">Link.</a></strong> <span style="color: #000000;">Happy Hacking!</span></p>
+<p><span style="color: #000000;"><strong>Author</strong>: Sayantan Bera is a technical writer at hacking articles and cybersecurity enthusiast. Contact</span> <a href="https://www.linkedin.com/in/sayantan-bera-2098a613b/"><strong>Here</strong></a></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

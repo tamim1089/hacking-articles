@@ -1,0 +1,99 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">Tre:1 Vulnhub Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/tre1-vulnhub-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2020-07-04T17:30:23+00:00">July 4, 2020</time><time class="updated" datetime="2025-06-10T20:10:25+00:00">June 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today, I am going to share a writeup for the boot2root challenge of the vulnhub machine “Tre:1”. It is made by SunCSR team difficulty level of this machine is the intermediate level. And for this machine goal is to read the root shell.</span></p>
+<p><span style="color: #000000;">Download it from here: <span style="color: #0000ff;"><strong>https://www.vulnhub.com/entry/tre-1,483/</strong></span></span></p>
+<h3><span style="color: #800000;"><strong>Table of Content</strong></span></h3>
+<p><span style="color: #000000;"><strong>Recon </strong></span></p>
+<ul>
+<li><span style="color: #000000;">Netdiscover</span></li>
+<li><span style="color: #000000;">Nmap</span></li>
+<li><span style="color: #000000;">dirb</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Exploitation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Adminer exploit</span></li>
+<li><span style="color: #000000;">ssh login</span></li>
+<li><span style="color: #000000;">Exploitable writable file</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Privilege Escalation </strong></span></p>
+<ul>
+<li><span style="color: #000000;">Abusing /etc/passwd</span></li>
+</ul>
+<h3><span style="color: #000000;"><strong><span style="color: #800000;">Walkthrough</span> </strong></span></h3>
+<p><span style="color: #000000;"><strong>Recon</strong></span></p>
+<p><span style="color: #000000;">Let’s start recon for this machine using Netdiscover, It is used for identifying the IP address of the various machines in our network work It works as traceroute.</span></p>
+<pre class="lang:default decode:true">netdiscover</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-AvEYFxZqmZI/XwC4_2YAm6I/AAAAAAAAlQ4/qezgvnLDoP0up6HZpUNTYAMYJX2T72V9ACLcBGAsYHQ/s1600/1.png"/></span></p>
+<p><span style="color: #000000;">As we got our target IP address for the machine (192.168.1.104), Next, we use nmap for the port scanning and further information gathering on the target host.</span></p>
+<pre class="lang:default decode:true">nmap -A 192.168.1.104</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-oDYCzN2tVWI/XwC5DZ2ivnI/AAAAAAAAlQ8/cEi8ENESfEUt4p6hIPvsKgaw6vlRkdiDgCLcBGAsYHQ/s1600/2.png"/></span></p>
+<p><span style="color: #000000;">Since port 80 is open, Let’s explore the domain or webpage on this target IP address using a web browser.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-GWHxpKbmOMs/XwC5JWZbzJI/AAAAAAAAlRA/0E8gkZKf-9sHJBKlKaAVo8Ckf65JuOMdQCLcBGAsYHQ/s1600/3.png"/></span></p>
+<p><span style="color: #000000;">We will also perform fuzzing to find the endpoints using the dirbuster tool with the big.txt wordlist which can be located inside /usr/share/wordlists directory using some extensions like php,html.</span></p>
+<pre class="lang:default decode:true">dirb http://192.168.1.104/ /usr/share/wordlists/dirb/big.txt -X .html,.php,.txt</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://1.bp.blogspot.com/-2XWzvJSCNvg/XwC5NPmx9bI/AAAAAAAAlRI/dcpaV_Ye0b8qXB96HetStUeX5dD62wQAgCLcBGAsYHQ/s1600/4.png"/></strong></span></p>
+<p><span style="color: #000000;">We got some extensions like adminer.php, index.html, info.php. After checking all the extensions we got login page on the <u>http://192.168.1.104/adminer.php</u></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-IGoIM05tPlI/XwC5QWnUKsI/AAAAAAAAlRM/hjJts497OcUe-8uiL01YDzuQXKurZ5jKQCLcBGAsYHQ/s1600/5.png"/></span></p>
+<p><span style="color: #000000;">In the above login page, we need to escalate for the credentials. I have tried many login bypasses that didn’t work for this page. Now again we will try to brute force directories in hope of config file for this login page.</span></p>
+<pre class="lang:default decode:true">dirb http://192.168.1.104/ /usr/share/wordlists/dirb/big.txt</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://1.bp.blogspot.com/-y7qEqSNdqrk/XwC5U_xX_CI/AAAAAAAAlRU/bWUqNWYu9Jw0xJSOeHXqW3cOmg4wvWcrQCLcBGAsYHQ/s1600/6.png"/></strong></span></p>
+<p><span style="color: #000000;">After scanning and checking all the directories we got one directory /mantisbt/config in which will check for the credentials.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-A8oe4WzPmlg/XwC5YFgH1tI/AAAAAAAAlRY/qugT3EZ5nQkIhd8izhWYUFgPfoXj8kgWACLcBGAsYHQ/s1600/8.png"/></span></p>
+<p><span style="color: #000000;">we got the credentials for the login page in the a.txt which was present in the directory /mantisbt/config.</span></p>
+<p><span style="color: #000000;">Got the credentials that we want to use for the login of adminer login page.</span></p>
+<pre class="lang:default decode:true">username: mantissuser
+password: password@123AS
+database: mantis</pre>
+<p><span style="color: #000000;">Using the above credentials, we got logged in.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-AvL7pbYKe2c/XwC5ymEznaI/AAAAAAAAlRs/DN7wXuJOWQsww4-zbC3pCL1fjof2fdFhwCLcBGAsYHQ/s1600/9.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Exploitation</strong></span></h3>
+<p><span style="color: #000000;">We fill out all the information that we found earlier in the a.txt file and using those credentials we are successfully inside the panel.<strong>  </strong>Then we try to read the data of the table mantis_user_table and found 2 users here and with their password.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-eIHLjzKOhJA/XwC51vyNNUI/AAAAAAAAlRw/OFO42MgTW-Eiy4P9SJvwEnmccI7lAyM9ACLcBGAsYHQ/s1600/10.png"/></span></p>
+<p><span style="color: #000000;">We tried to login with the first user admin panel but was not able to upload any file. Now if we focus on the second user “tre” and the real name looks like giving us a hint towards ssh login, so we used the<strong> tre</strong> as username and <strong>Tr3@123456A!</strong> as password.</span></p>
+<p><span style="color: #000000;">First of all, we checked for the user privileges using the command sudo -l.</span></p>
+<pre class="lang:default decode:true">ssh tre@192.168.1.104
+Password: Tr3@123456A!
+sudo -l</pre>
+<p><span style="color: #000000;">As per sudo permission the user can run showdown command as privilege user. Further we download the linEnum script to check for further enumeration.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-D2_phRRsG3s/XwC55S1T5ZI/AAAAAAAAlR0/X0AADxUFNl4FAGI8CrRhdi64ICHIicISACLcBGAsYHQ/s1600/12.png"/></span></p>
+<p><span style="color: #000000;">Now let’s run linEnum script binary output on the other terminal.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-ikABwKlevv8/XwC58Ki1fxI/AAAAAAAAlR4/lWeczZlcqhIJCSf5sz0rwYZYPXz_Lvz0wCLcBGAsYHQ/s1600/13.png"/></span></p>
+<p><span style="color: #000000;">We did check the permissions of the /usr/bin/check-system.</span></p>
+<pre class="lang:default decode:true">ls -la check-system</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-gr0F9VJx8pw/XwC5_3adyGI/AAAAAAAAlR8/Zjlye7tjbOEPPfsjvLc4UaHkn7tR_0degCLcBGAsYHQ/s1600/14.png"/></span></p>
+<p><span style="color: #000000;">As the above file is having the permissions of the read-write as a user, edited this file using nano editor. And given SUID permissions for the nano file but /usr/bin/check-system will update the changes when the systems will reboot.</span></p>
+<pre class="lang:default decode:true">chmod +s /usr/bin/nano</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-hBUuLsxIyuI/XwC6D_vGnNI/AAAAAAAAlSA/Xsz7T1QZcn4MZvf7uZb7G4cfyioVYExDgCLcBGAsYHQ/s1600/15.png"/></span></p>
+<p><span style="color: #000000;">In the above step, we changed the privileges for the nano file. Now will use the /sbin/shutdown.</span></p>
+<pre class="lang:default decode:true">sudo shutdown -r now</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://1.bp.blogspot.com/-K8J0PAfUFlk/XwC6HCI9_QI/AAAAAAAAlSI/tOhugXQnXy8-_jssrMVi18J3xxyXo2iZwCLcBGAsYHQ/s1600/16.png"/></strong></span></p>
+<p><span style="color: #000000;">Here -r flag is used for the restart of the host system. Again will check for the permission of the nano file system and notice the SUID permission is enabled now. J</span></p>
+<p><span style="color: #000000;">Hence, now I can try to modify the passwd file for privilege Escalation.</span></p>
+<pre class="lang:default decode:true">ls -la /usr/bin/nano</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-PCeUCGzq_E0/XwC6KBX5gRI/AAAAAAAAlSQ/sY8m73wFLcAn6moKPoTYTwZWhJTHHtE0gCLcBGAsYHQ/s1600/17.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Privilege Escalation</strong></span></h3>
+<p><span style="color: #000000;">In a new terminal, we are using OpenSSL to make a new salted combined username and password in MD5 algorithm. For this, the command used is</span></p>
+<pre class="lang:default decode:true">openssl passwd -1 -salt user3 pass123</pre>
+<p><span style="color: #000000;"><strong><img decoding="async" src="https://1.bp.blogspot.com/-_Sqxoih4nm4/XwC6NHT8PZI/AAAAAAAAlSY/fD7-Oxy8zY88vVr0Ss7CtRC0FOaUdTrUACLcBGAsYHQ/s1600/18.png"/></strong></span></p>
+<p><span style="color: #000000;">Now using nono /etc/passwd command we are editing the passwd directory for adding a new user. The for the new user is username: Salted Value of username and password:0:0:root:/root:/bin/bash</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Gl6Wn6-BTWo/XwC6PzPuaMI/AAAAAAAAlSg/zoAanf4csH8ANveA28x2Uvm5XIdc-x7XQCLcBGAsYHQ/s1600/19.png"/></span></p>
+<p><span style="color: #000000;">Now we simply check if the user has been successfully added or not, so as to find them. For this, we have used su -raj command and in the password, we have given the password for this user which is pass123.</span></p>
+<pre class="lang:default decode:true">tail -n 2 /etc/passwd
+su raj
+Password: pass123
+cd /root
+ls
+cat root.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-p3IPXVNzfsE/XwC6TJMkPwI/AAAAAAAAlSk/QH4gp5ZbY3YmCeo39sCAFy-IA9xCnFNUACLcBGAsYHQ/s1600/20.png"/></span></p>
+<p><span style="color: #000000;">Here we got our root.txt… That explains it all. So that’s for now. See you next time.</span></p>
+<p><span style="color: #000000;">HAPPY HACKING!! 😊</span></p>
+<p><span style="color: #000000;"><strong>Author</strong>: Sushma Ahuja is a Technical Writer, Researcher, and Penetration Tester. Can be Contacted on <a style="color: #000000;" href="https://www.linkedin.com/in/sushma-ahuja-284907157/"><strong>LinkedIn</strong></a></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

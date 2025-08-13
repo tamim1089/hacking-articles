@@ -1,0 +1,183 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/android-penetration-testing/" rel="category tag">Android Penetration Testing</a></span>            </div>
+            <h1 class="post-title entry-title">Android Penetration Testing: WebView Attacks</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/android-penetration-testing-webview-attacks/" rel="bookmark"><time class="entry-date published" datetime="2021-01-17T16:40:38+00:00">January 17, 2021</time><time class="updated" datetime="2025-05-11T11:42:08+00:00">May 11, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Initially, there was a time when only HTML used to display web pages. Then came JavaScript and along came dynamic pages. Further down the line, some person thought opening dynamic pages within android applications was a good idea, hence, WebView came into the picture. But as the security guys would know from their lifetime of experience–no new technology comes without insecurities. In this article, we’ll be discussing WebViews, their implementation in Java, misconfiguration, and exploitation. WebView misconfiguration can lead to critical Web-based attacks within an android application and so, its impact is unparalleled. Here is what all you can find in this article:</span></p>
+<h3><span style="color: #800000;">Table of Content</span></h3>
+<ol>
+<li><strong><span style="color: #000000;">What is WebView</span></strong></li>
+<li><strong><span style="color: #000000;">WebView based Vulnerabilities</span></strong></li>
+<li><strong><span style="color: #000000;">Implementation</span></strong></li>
+<li><span style="color: #000000;"><strong>Exploiting XSS using WebViews</strong></span></li>
+<li><strong><span style="color: #000000;">XSS using Internal File Access in WebViews</span></strong></li>
+<li><strong><span style="color: #000000;">Mitigation</span></strong></li>
+<li><strong><span style="color: #000000;">Bonus</span></strong></li>
+<li><strong><span style="color: #000000;">Conclusion</span></strong></li>
+</ol>
+<p><strong><span style="color: #000000;">Let’s start.</span></strong></p>
+<h3><span style="color: #800000;">What is WebView</span></h3>
+<p><span style="color: #000000;">WebView is a view that displays web pages within your existing android application without the need for opening links in an external browser. There are various applications of WebView in an android file, for example:</span></p>
+<ol>
+<li><span style="color: #000000;">Advertisements</span></li>
+<li><span style="color: #000000;">Blogging applications that render web page within the native app</span></li>
+<li><span style="color: #000000;">Some shopping applications (Eg: Reliance Digital) works on webviews</span></li>
+<li><span style="color: #000000;">Search extensions</span></li>
+<li><span style="color: #000000;">API authentication to a website could be done using webviews</span></li>
+<li><span style="color: #000000;">Banking applications often render statements using webviews</span></li>
+</ol>
+<p><span style="color: #000000;">In the example attack scenario further, in the article, we’ll see how webviews render bank statements and how attacks can be performed on them.</span></p>
+<h3><span style="color: #800000;">WebView based Vulnerabilities</span></h3>
+<p><span style="color: #000000;">The use cases are dynamic but to generalize, the following vulnerabilities exist due to poor implementation of WebView</span></p>
+<ul>
+<li><span style="color: #000000;">Clear text credentials sniffing</span></li>
+<li><span style="color: #000000;">Improper SSL Error Handling</span></li>
+</ul>
+<p><span style="color: #000000;">Often devs ignore SSL errors. This means the app is vulnerable to MiTM attacks. For example, see the following code:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">@Override
+public void onReceivedSslError(WebView view, SslErrorHandler handler,
+SslError error)
+{
+handler.proceed();
+}</pre>
+<ul>
+<li><span style="color: #000000;">XSS if setJavaScriptEnabled() method is set to true</span></li>
+<li><span style="color: #000000;">RCE</span></li>
+<li><span style="color: #000000;">API attacks</span></li>
+<li><span style="color: #000000;">Injections if WebView has access to the content provider (i.e. if an app has allowed setAllowContent Access)</span></li>
+<li><span style="color: #000000;">Internal file access if setAllowUniversalAccessFromFileURLs is set to true</span></li>
+</ul>
+<h3><span style="color: #800000;">Implementation</span></h3>
+<p><span style="color: #000000;">Ever since the beginning of this series, I’ve only focused on native apps in Java, so I will limit the implementation of WebView to Java and how to tweak Android Studio Project files.</span></p>
+<p><span style="color: #000000;"><strong>Step 1:</strong> import android.webkit.WebView and android.webkit.WebSettings in your project and input the following in your activity file:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">webSettings.setJavaScriptEnabled(true);</pre>
+<p><span style="color: #000000;">We ensure that JavaScript successfully runs while calling WebViews, or the pages won’t look as flashy as they would on a browser.</span></p>
+<p><span style="color: #000000;"><strong>Step 2:</strong> Now, to implement a WebView in your application, we need to add the following code in the <strong>someActivity.java </strong>file:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">WebView var = (WebView) findViewbyId(R.id.webview);</pre>
+<p><span style="color: #000000;"><strong>Step 3:</strong> Thereafter, to load a specific URL in the <strong>WebView</strong> we can use <strong>loadUrl</strong> method.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">browser.loadUrl("https://hackingarticles.in");</pre>
+<p><span style="color: #000000;">Note that users can play around with various methods here, like clearHistory(), canGoBack(), destroy(), etc.</span></p>
+<p><span style="color: #000000;"><strong>Step 4:</strong> Next, we need to define the view in the XML layout file.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">&lt;WebView  xmlns:android="http://schemas.android.com/apk/res/android"
+   android:id="@+id/webview"
+   android:layout_width="fill_parent"
+   android:layout_height="fill_parent"
+/&gt;</pre>
+<p><span style="color: #000000;"><strong>Step 5:</strong> Finally, we need to give it permissions to access the internet in the manifest file.</span></p>
+<p><span style="color: #000000;"><strong>&lt;uses-permission android:name=”android.permission.INTERNET” /&gt;</strong></span></p>
+<p><span style="color: #000000;">An interesting point to note now is how to make WebViews interactive, as code enables Javascript in step 1. While this enables fully functioning webviews, it can also allow exploitation of various Web-related vulnerabilities like XSS in Android.</span></p>
+<h3><span style="color: #800000;">Exploiting XSS using WebViews</span></h3>
+<p><span style="color: #000000;">As we know, HTML pages can be remote and/or can be stored in internal storage too. Hence, WebViews can call remote URLs as well as internal HTML pages. Following code has to be present in WebView implementation for an app to launch remote and local HTML pages:</span></p>
+<ol>
+<li><span style="color: #000000;"><strong>For external URL access</strong>: permission to access the internet in the manifest file. <strong>SetJavaScriptEnabled()</strong> should also be true for dynamic pages.</span></li>
+<li><span style="color: #000000;"><strong>For internal file access</strong>: you can toggle setAllowFileAccess() to allow. If the manifest file has permission to read external storage, it can easily access custom HTML pages stored in the SD card too. Hence, this is one of the reasons why this permission is often considered dangerous to allow if not being used.</span></li>
+</ol>
+<h5><span style="color: #000000;"><strong>Scenario 1:</strong> </span></h5>
+<p><span style="color: #000000;">I have coded a very simple android app that uses a webview to render a hacking articles website when a button is clicked and fires an intent. You can download this app <span style="color: #0000ff;"><strong><u><a style="color: #0000ff;" href="https://github.com/harshitrajpal/VulnerableWebView">here</a></u></strong></span></span></p>
+<p><span style="color: #000000;"><img fetchpriority="high" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-5hm2cduPFh0/YARiQXvJa1I/AAAAAAAAs7Y/9eyK5T7N4BEv2hLx83i_YV7NJyCiLrVkgCLcBGAsYHQ/s16000/1.png" alt="Android WebView Attacks" width="464" height="397"/></span></p>
+<p><span style="color: #000000;">And when the button is clicked, you can see <strong>hackingarticles.in</strong> being rendered on the webview client</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-ENELPmp9KHo/YARiXKvLR6I/AAAAAAAAs7c/D7qsT_aaNBw3u3ZxfMHp3rDNgUkAiq7XgCLcBGAsYHQ/s16000/2.png"/></span></p>
+<p><span style="color: #000000;">Now, we need to fire up drozer agent and check out the exported activities. It is to be noted that if an activity is not exported, it cannot be called with an intent.</span></p>
+<p><span style="color: #000000;"><strong>Note: </strong>Here, using drozer, we are just simulating an app that would have a code in which will be using an intent to call this activity with a forged URL and therefore exploiting the vulnerability.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">adb forward tcp:31415 tcp:31415
+drozer console connect
+run app.package.attacksurface com.example.webviewexample
+run app.activity.info -a com.example.webviewexample</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Tw-lPijX9yY/YARicvUq1UI/AAAAAAAAs7g/JMKHYEdBtRMh5GT14MFCwgH5Xu70V0QawCLcBGAsYHQ/s16000/3.png"/></span></p>
+<p><span style="color: #000000;">Now, we see WebViewActivity being exported. Let’s decompile and see the source code running behind the activity so we can form an exploit.</span></p>
+<h5><strong><span style="color: #000000;">In MainActivity, we can see that the button is calling an intent on click. Let’s break it down:</span></strong></h5>
+<ol>
+<li><span style="color: #000000;">Intent intent = new Intent(Source Class, Destination Class); //Source calls destination class using intents like this</span></li>
+<li><span style="color: #000000;">intent.putExtra(KEY, VALUE); //This is the extra parameter that will travel to the destination class when an intent is called.</span></li>
+</ol>
+<p><span style="color: #000000;">Note: Key is the reference variable (aka the name of the extra we just put) of the value which in this case is “url1” and url is a string that contains “https://hackingarticles.in”</span></p>
+<ol start="3">
+<li><span style="color: #000000;">startActivity(intent) will call the destination class and start the activity.</span></li>
+</ol>
+<p><span style="color: #000000;"><img decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-MQJVtXt-96c/YARihn0S9NI/AAAAAAAAs7k/HGyW81OzsmMPocl8rvnNjH8ZQMMXJwQowCLcBGAsYHQ/s16000/4.png" alt="Android WebView Attacks" width="706" height="542"/></span></p>
+<h5><strong><span style="color: #000000;">Let’s have a look at WebViewActivity and break down what we have here</span></strong></h5>
+<ol>
+<li><span style="color: #000000;">String url = getIntent().getStringExtra(“url1”); // This will save the value of extra (here, url1) into a new string url</span></li>
+<li><span style="color: #000000;">setJavaScriptEnabled(true); // This will allow webviews to run javascript in our webview. Usually used to provide full functionality of the website, but can be exploited.</span></li>
+<li><span style="color: #000000;">loadUrl(url); //function used to load a URL in webview.</span></li>
+</ol>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-uSD9PAFCWyQ/YARit6NyjvI/AAAAAAAAs7w/-ScwKb26YtQu5CkMPUFmJwVfqKE6kc0KACLcBGAsYHQ/s16000/5.png"/></span></p>
+<p><span style="color: #000000;">Now, in the Drozer article <span style="color: #0000ff;"><strong><u><a style="color: #0000ff;" href="https://www.hackingarticles.in/android-penetration-testing-drozer/">here</a></u> </strong></span>we learned how to formulate a query calling intent that has extras in it. Hence, to exploit WebView using drozer we type in the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">run app.activity.start --component com.example.webviewexample com.example.webviewexample.WebViewActivity --extra string url1 https://google.com</pre>
+<p><span style="color: #000000;">What this query does is that it changes the initial value of url1 KEY while calling the WebViewActivity to launch a website of our providing.</span></p>
+<p><span style="color: #000000;"><img decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-PSCrUUbqlPM/YARizRugwfI/AAAAAAAAs74/1aRf6S4M4uAUEmLLeMPKzDbSbj_UG0txACLcBGAsYHQ/s16000/6.png" alt="Android WebView Attacks" width="624" height="622"/></span></p>
+<p><span style="color: #000000;">Now, what is an attacker were to host a phishing page or a page with some malicious javascript code in it? For example, I’ve set up a simple JS PoC in exploit.html and hosted it on my python server. This serves as a PoC for all the Client Side Injection attacks as per Mobile OWASP Top 10 2014 (M7 client-side injection).</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Exploit.html
+&lt;script&gt;alert("hacking articles!")&lt;/script&gt;
+python3 -m http.server 80</pre>
+<p><span style="color: #000000;"><strong><img decoding="async" src="https://1.bp.blogspot.com/-HB2lLEC4R_w/YARi4TwoipI/AAAAAAAAs78/d_MXrikwwrohh9fOiDLu9KM8YL_-mNm9ACLcBGAsYHQ/s16000/7.png"/></strong></span></p>
+<p><span style="color: #000000;">All that was left to do was to include this HTML page in the drozer query we just made.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">run app.activity.start --component com.example.webviewexample com.example.webviewexample.WebViewActivity --extra string url1 http://192.168.1.107/exploit.html</pre>
+<p><span style="color: #000000;">And as you can see, we have just exploited vulnerable WebView to perform an XSS attack!</span></p>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-wvp4eyfwRgc/YARjEobfDeI/AAAAAAAAs8E/1s790onkPL88E3BoJ1YSmzBNjrJm8Ja7wCLcBGAsYHQ/s16000/8.png" alt="Android WebView Attacks" width="649" height="632"/></span></p>
+<h5><span style="color: #000000;"><strong>Mitigations and Best Practices </strong></span></h5>
+<p><span style="color: #000000;">Following mitigations could be coded in practice to implement secure WebViews:</span></p>
+<ol>
+<li><span style="color: #000000;">Validate URLs being loaded in the WebViews</span></li>
+<li><span style="color: #000000;">Handle SSL/TLS errors properly or it could lead to MiTM attacks</span></li>
+<li><span style="color: #000000;">Override shouldOverrideUrlLoading method</span></li>
+<li><span style="color: #000000;">Disable Javascript if it is not necessary</span></li>
+<li><span style="color: #000000;">Avoid using the JavaScriptInterface function because it allows JS to inject Java Objects into code, which an attacker can exploit using WebViews</span></li>
+</ol>
+<h3><span style="color: #800000;">XSS using Internal File Access in WebViews</span></h3>
+<p><span style="color: #000000;">Oftentimes, a program creates and destroys files in the internal file system, and it renders its output in WebViews. These applications have read/write access to internal storage and therefore, an attacker can trick an application into executing his custom code from the locations of one of the files that the application is creating/using. What were to happen if we inject a javascript code into one of these files? Here, we’ll be using an application called InsecureBankv2 created by Dinesh Shetty (found <span style="color: #0000ff;"><strong><u><a style="color: #0000ff;" href="https://github.com/dineshshetty/Android-InsecureBankv2">here</a></u></strong></span>). After setting up the application you’ll see a page like the following:</span></p>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-arnhXhiGTXw/YARjKQKVgAI/AAAAAAAAs8M/gU48AKvgI84scz379yVI6pUhXDirzENIgCLcBGAsYHQ/s16000/9.png" alt="Android WebView Attacks" width="541" height="865"/></span></p>
+<p><span style="color: #000000;">Make sure AndroLabServer is running (Install dependencies first and run python app.py). The default creds are <strong>dinesh/Dinesh@123$</strong></span></p>
+<p><span style="color: #000000;">After logging in you’ll see three options. First I’ll transfer some funds using the first option. Here I’ll input two accounts num and amount, that’s it. After that, I’ll be clicking on the second option available called View Statement.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-AcNDAgoaLeI/YARjRCBK_sI/AAAAAAAAs8Q/T2RdUopDkH8gjBYCukYnO-e8kHeCegvFACLcBGAsYHQ/s16000/10.png"/></span></p>
+<p><span style="color: #000000;">On clicking the View Statement option we see a WebView being opened displaying something like this:</span></p>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-6rkknF0o5Fw/YARjbJX5VCI/AAAAAAAAs8c/RP6T5mh3Mk8uRD9hm0An1cLwWZc_jbZhgCLcBGAsYHQ/s16000/11.png" alt="Android WebView Attacks" width="458" height="624"/></span></p>
+<p><span style="color: #000000;">Before proceeding any further, we first will check the logs. They reveal so much about things like an activity that someone is calling; maybe we can even see account numbers, funds or credentials, or some other juicy information! So, we type in the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">adb logcat</pre>
+<p><span style="color: #000000;">Something interesting popped up</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-sMe-neo3gHk/YARjgh4Eg4I/AAAAAAAAs8g/3X4VQAU_zr08oMD9etWdY8SsP1f2FWeIwCLcBGAsYHQ/s16000/12.png"/></span></p>
+<p><span style="color: #000000;">Here, we see that an activity called ViewStatement takes input from an HTML file Statements_dinesh.html that is stored at external storage under /storage/emulated/0.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">adb shell
+cd storage/emulated/0 &amp;&amp; ls</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-cg9lVdoGO9E/YARjlyYiN3I/AAAAAAAAs8o/xujLVNelgMosz8o1of0_g5r-owA3mK9uwCLcBGAsYHQ/s16000/13.png"/></span></p>
+<h3><span style="color: #800000;">Exploitation </span></h3>
+<p><span style="color: #000000;">So, if an attacker installs an app on the victim’s device that has read/write access to storage, he can change the HTML code, possibly insert malicious code into it, and it will execute as soon as a legit user clicks on view statement.</span></p>
+<p><span style="color: #000000;">Let’s try to tweak <strong>Statements_dinesh.html </strong>like the following:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">adb shell
+cd storage/emulated/0
+echo "&lt;html&gt;&lt;body&gt;&lt;script&gt;alert("Hacking Articles!”)&lt;/script&gt;&lt;/body&gt;&lt;/html&gt;" &gt; Statements_dinesh.html</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-XOhbKHI9Alk/YARjqwRZqaI/AAAAAAAAs8s/AM62HIFfgKI1k7W9U6oY7Xh1IOzcvKU9ACLcBGAsYHQ/s16000/14.png" alt="Android WebView Attacks" width="562" height="291"/></span></p>
+<p><span style="color: #000000;">Let’s now click on view statement and see what happens</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-GAyTPgKV1G4/YARjvVylTLI/AAAAAAAAs8w/PWQ7zUqtkzc-knPPwdRaWdZzN_fAUfdmwCLcBGAsYHQ/s16000/15.png"/></span></p>
+<p><span style="color: #000000;">As you can see our custom code is now being run. But how? Upon inspecting the code below we found an insecure implementation of <strong>loadUrl()</strong> function that was accessing an internal file using the <strong>file://</strong> resolver.</span></p>
+<p><span style="color: #000000;">The icing was that JavaScript was enabled as well.</span></p>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-T5XEOjsfDB4/YARj0HqdCfI/AAAAAAAAs84/8a2Hf91LdMYRDql9vTrv0_tNy-SC8faAQCLcBGAsYHQ/s16000/16.png" alt="Android WebView Attacks" width="1002" height="646"/></span></p>
+<h3><span style="color: #800000;">Mitigation</span></h3>
+<p><span style="color: #000000;">Discouragement exists for loading content via file:// URLs. You can use setAllowFileAccess(boolean) to enable or disable access to storage by a webview. Note that you can still load assets using file:// (like above), but it is highly insecure. To solve this issue, always use androidx.webkit.WebViewAssetLoader to access files, including assets and resources, over http(s):// schemes instead of file:// URLs.</span></p>
+<h3><span style="color: #800000;">Bonus</span></h3>
+<p><span style="color: #000000;">CORS (Cross-Origin Resource Sharing) plays a role in Android. Developers can configure CORS in Android to allow WebView access to different file schemes. For example, you can call a file:// via URLs using the setAllowFileAccessFromFileURLs() method. This poses a high security risk, as a malicious script can execute in file://. Avoid enabling this setting if you open files that external sources may create or alter.</span></p>
+<h3><span style="color: #800000;">Conclusion</span></h3>
+<p><span style="color: #000000;">Web-based attacks run in Android apps due to the insecure use of a class called WebView that allows Android apps to use an embedded browser. Developers often misconfigure this class, which can lead to many attacks that fall under the OWASP Top 10 of 2017 Web Attacks and the OWASP Top 10 of 2016 in Mobile Applications. Consequently, its impact is higher compared to any other vulnerability due to its highly dynamic nature. Some improper WebView configurations can even allow an attacker to obtain a session on the victim’s device. We demonstrated two methodologies of attacks in WebViews, we’ll be posting more articles in the future that may involve some more attack methodologies, so it is very important you follow this series of articles and read them all in sequence. Thanks for reading!</span></p>
+<p><span style="color: #000000;"><strong>Author: Harshit Rajpal </strong>is an InfoSec researcher and left and right brain thinker. Contact<strong> <span style="color: #0000ff;"><a class="broken_link" style="color: #0000ff;" href="https://in.linkedin.com/in/harshit-rajpal-79bb43103">here</a></span></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">
+<!-- YARPP Thumbnails -->
+<h3>Related posts:</h3>
+<div class="yarpp-thumbnails-horizontal">
+<a class="yarpp-thumbnail" rel="norewrite" href="https://www.hackingarticles.in/a-detailed-guide-on-log4j-penetration-testing/" title="A Detailed Guide on Log4J Penetration Testing">
+<span class="yarpp-thumbnail-default"><img src="https://www.hackingarticles.in/wp-content/plugins/yet-another-related-posts-plugin/images/default.png" alt="Default Thumbnail" data-pin-nopin="true"/></span><span class="yarpp-thumbnail-title">A Detailed Guide on Log4J Penetration Testing</span></a>
+</div>
+</div>
+            </div><!-- .entry-content -->
+            <footer class="post-footer entry-footer">
+                                                
+            </footer><!-- .entry-footer -->
+            
+	<nav class="navigation post-navigation" aria-label="Posts">
+		<h2 class="screen-reader-text">Post navigation</h2>
+		<div class="nav-links"><div class="nav-previous"><a href="https://www.hackingarticles.in/thick-client-pentest-lab-setup-dvta-part-2/" rel="prev">Thick Client Pentest Lab Setup: DVTA (Part 2)</a></div><div class="nav-next"><a href="https://www.hackingarticles.in/bastard-hackthebox-walkthrough/" rel="next">Bastard HackTheBox Walkthrough</a></div></div>
+	</nav>        </div>

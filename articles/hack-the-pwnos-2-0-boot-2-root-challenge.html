@@ -1,0 +1,76 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">Hack the pWnOS: 2.0 (Boot 2 Root Challenge)</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/hack-the-pwnos-2-0-boot-2-root-challenge/" rel="bookmark"><time class="entry-date published" datetime="2016-07-05T17:54:58+00:00">July 5, 2016</time><time class="updated" datetime="2025-06-10T20:13:19+00:00">June 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Hello friends!! Today we are going to solve a fun CTF challenge named “pWnOS: 2.0” presented on Vulnhub for practicing Penetration Testing by pWnOS. This virtual machine is having intermediate to the medium difficulty level. You can download the Lab from <a style="color: #000000;" href="http://www.vulnhub.com/entry/pwnos-20-pre-release,34/">here</a>.</span></p>
+<p><span style="color: #000000;"><strong>Initial Configuration of Lab:</strong></span></p>
+<p><span style="color: #000000;">Configure your attacking platform to be within the 10.10.10.0/24 network range.</span></p>
+<p><span style="color: #000000;">We set the VMWare’s Network Adapter to Host-Only but can set it to either NAT or Host-Only depending on your setup.</span></p>
+<p><span style="color: #000000;">Goal: Get Root Shell.</span></p>
+<h3><span style="color: #800000;"><strong>Penetrating Methodologies</strong></span></h3>
+<ul>
+<li><span style="color: #000000;">Network Scanning (Nmap, netdiscover)</span></li>
+<li><span style="color: #000000;">Directory busting the server</span></li>
+<li><span style="color: #000000;">Getting Login Credentials (Metasploit)</span></li>
+<li><span style="color: #000000;">Upload PHP reverse shell</span></li>
+<li><span style="color: #000000;">Get Limited Shell</span></li>
+<li><span style="color: #000000;">Enumerate Root Credentials</span></li>
+<li><span style="color: #000000;">Get Root</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Let’s Start!!!</strong></span></p>
+<p><span style="color: #000000;">Usually, we start by getting the IP Address of the Lab. In this case we already know the static IP address of the Lab, but still for the sake of doing it let’s do it.</span></p>
+<pre class="lang:default decode:true ">netdiscover</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-7acQx-hvQcU/W1i4Hl7RkjI/AAAAAAAAYps/K40V8H8ARS4aTck82Vdmnje7j-3-vBxYwCLcBGAs/s1600/1.png"/></span></p>
+<p><span style="color: #000000;">Now let’s move towards enumeration in context to identifying the running services and open ports of the victim’s machine by using the most popular tool Nmap.</span></p>
+<pre class="lang:default decode:true">nmap -A 10.10.10.100</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-C9FvKw2eoaA/W1i4IJnsVpI/AAAAAAAAYp4/NVFIwjyEe1cBaQ9z9F1OVf3wwRZZptpggCLcBGAs/s1600/2.png"/></span></p>
+<p><span style="color: #000000;">Knowing port 80 is open in the victim’s network I preferred to explore his IP in the browser. It seems a basic site with a login form and Register form.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-EgwWyfVg_H4/W1i4In1kZlI/AAAAAAAAYqA/VRDQvtagyyMG-PjWRdQx1_PZgW9aytXuQCLcBGAs/s1600/3.png"/></span></p>
+<p><span style="color: #000000;">But I tried to follow another set of direction by running a Web Content Scanner (dirb) and found the blog directory.</span></p>
+<pre class="lang:default decode:true">dirb http://10.10.10.100/</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-GAfwnpFavwo/W1i4I4Ls9pI/AAAAAAAAYqE/5O6T1Gvp56YCikSNKTVW3lSoXO6Wqy6RwCLcBGAs/s1600/4.png"/></span></p>
+<p><span style="color: #000000;">After finding the blog directory, I tried to open the blog directory in the browser, it gave another simple looking webpage when looked at the first glance seems not interesting but as we know that the authors of these labs usually like to hide in plain sight. So, I opened the source code of the Webpage.</span></p>
+<p><span style="color: #000000;">And as I closely inspected the source code, I ran into the line shown in the screenshot, it is an important hint as it tells us that the Website runs on Simple PHP Blog and the Version 0.4.0.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-gRYO0Gs7NfY/W1i4JO7HjEI/AAAAAAAAYqI/g8TaBmBUvus5T6WeC2ONIzQq_t8qB-HuQCLcBGAs/s1600/5.png"/></span></p>
+<p><span style="color: #000000;">Simple PHP Blog is also known as ‘sphpblog’. So, I searched for any possible exploits for sphpblog in the Metasploit framework. I found a bunch of them. Among them, I thought to try out the exploit/unix/webapp/sphpblog_file_upload.</span></p>
+<p><span style="color: #000000;">In Metasploit Shell I ran the following command to exploit:</span></p>
+<pre class="lang:default decode:true">use exploit/unix/webapp/sphpblog_file_upload
+msf exploit(sphpblog_file_upload) &gt; set rhost 10.10.10.100
+msf exploit(sphpblog_file_upload) &gt; set uri /blog
+msf exploit(sphpblog_file_upload) &gt; exploit</pre>
+<p><span style="color: #000000;">This exploit failed to give us and any shell, but it gets creative and created a Login Credentials as shown in the Screenshot.</span></p>
+<p><span style="color: #000000;">Let’s use these credentials to Login.</span></p>
+<pre class="lang:default decode:true">Username: WJx2Fp
+Password: PiRpoM</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-3-SPeeUXZks/W1i4JDJEYfI/AAAAAAAAYqM/Nr0lWtTHTI0n0KBgzAiBIIfici84TAXeACLcBGAs/s1600/6.png"/></span></p>
+<p><span style="color: #000000;">(You will get a different set of Login Credentials as the Exploit generated them unique every time.)</span></p>
+<p><span style="color: #000000;">Logging In gave us some additional options in the Menu. Among which the Upload Image Option took my attention.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-kZaoOPIPOb0/W1i4JtJzv1I/AAAAAAAAYqU/v9Jg2arUZKAh42bi574xIW7fyCmN8ZPeACLcBGAs/s1600/7.png"/></span></p>
+<p><span style="color: #000000;">Upload image option opens a simple Upload webpage. Let’s try to upload the <strong>php-reverse-shell.</strong>php which is inbuilt in Kali Linux from path<strong>: /user/share/webshells/php</strong>. Although uploading PHP files most probably will be not allowed.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-BXUqraF3GL4/W1i4JhcAXmI/AAAAAAAAYqQ/grL4Mo4dkrgSKo4CzNX7QQ1WAmIWcYXYwCLcBGAs/s1600/8.png"/></span></p>
+<p><span style="color: #000000;">Wow!! We successfully uploaded the php-reverse-shell directly. This is awesome.</span></p>
+<p><span style="color: #000000;">So, I browsed to the location of the uploaded PHP file, which is <strong>10.10.10.100/blog/images.</strong> (Found this location in the initial dirb scan)</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-42Jgu7HOllY/W1i4JhIzi4I/AAAAAAAAYqY/4O1DTUoqEaMZoCEM1N028aTDd2xwtvbLgCLcBGAs/s1600/9.png"/></span></p>
+<p><span style="color: #000000;">Now let’s open the file and start Netcat listen in a new terminal to get victim’s reverse connection.</span></p>
+<pre class="lang:default decode:true">nc -lvp 1234</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-FvbrrwGXhOc/W1i4HzHy9uI/AAAAAAAAYp0/FEjRDE9NP24RYu1UpI5IwdO5mX3t5NHtwCLcBGAs/s1600/10.png"/></span></p>
+<p><span style="color: #000000;">We got an improper shell, let’s convert it into a proper shell using the python one-liner.</span></p>
+<pre class="lang:default decode:true">python -c 'import pty;pty.spawn("/bin/bash")'</pre>
+<p><span style="color: #000000;">Now, traversing Directory to Directory, files to files, I ended up in the <strong>/var </strong>directory and here I found a PHP file named mysqli_connect.</span></p>
+<p><span style="color: #000000;">On opening this file using cat, I found the root credentials.</span></p>
+<pre class="lang:default decode:true">cat mysqli_connect.php
+Root Credentials
+Username: root
+Password: root@ISIntS</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-3Nuo50IPx0I/W1i4Hj-p3wI/AAAAAAAAYpw/WQAUHJNBWmsMKsdEdpDR7xPxM7iBlDV0wCLcBGAs/s1600/11.png"/></span></p>
+<p><span style="color: #000000;">Now let’s wrap up this lab by getting the root shell, for this I will be using an ssh connection to the lab generated with the root credentials and as you can see in the screenshot given, we got the root shell.</span></p>
+<pre class="lang:default decode:true">ssh root@10.10.10.100</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-VOnCvU9gZMo/W1i4IXbLyjI/AAAAAAAAYp8/sO5LcINEGAQDYGeo8FTnV_vO0Yfc8pcrwCLcBGAs/s1600/12.png"/></span></p>
+<p><span style="color: #000000;"><strong>Author: Pavandeep Singh</strong> is a Technical Writer, Researcher and Penetration Tester Contact <strong><a style="color: #000000;" href="https://www.linkedin.com/in/pavandeep-singh-6b1074132">here</a></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

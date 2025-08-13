@@ -1,0 +1,263 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/red-teaming/domain-enumeration/" rel="category tag">Domain Enumeration</a>, <a href="https://www.hackingarticles.in/category/red-teaming/" rel="category tag">Red Teaming</a></span>            </div>
+            <h1 class="post-title entry-title">Active Directory Enumeration: PowerView</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/active-directory-enumeration-powerview/" rel="bookmark"><time class="entry-date published" datetime="2021-04-26T19:21:55+00:00">April 26, 2021</time><time class="updated" datetime="2025-05-13T08:28:45+00:00">May 13, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">In this guide, we will explore how to perform Active Directory enumeration using PowerView, a powerful tool within PowerShell. PowerView enables penetration testers and security professionals to gather crucial information about an Active Directory environment, aiding in post-exploitation and lateral movement. By leveraging PowerView for Active Directory enumeration, you can identify valuable targets and enhance your security assessment capabilities.</span></p>
+<p><span style="color: #000000;">Active Directory Enumeration is a challenge for even some of the seasoned attackers and it is easy to miss some key components and lose the change to elevate that initial foothold that you might receive. In this article, we bring you methods that you can use to enumerate AD using PowerShell.</span></p>
+<h3><span style="color: #800000;">Table of Contents</span></h3>
+<ul>
+<li><span style="color: #000000;"><strong>Introduction</strong></span></li>
+<li><span style="color: #000000;"><strong>Get-NetUser</strong></span></li>
+<li><span style="color: #000000;"><strong>Get-UserProperty</strong></span></li>
+<li><span style="color: #000000;"><strong>Find-UserField</strong></span></li>
+<li><span style="color: #000000;"><strong>Invoke-UserHunter</strong></span></li>
+<li><span style="color: #000000;"><strong>Get-NetDomain</strong></span></li>
+<li><span style="color: #000000;"><strong>Get-NetDomainController</strong></span></li>
+<li><span style="color: #000000;"><strong>Get-NetComputer</strong></span></li>
+<li><span style="color: #000000;"><strong>Get-UserProperty</strong></span></li>
+<li><span style="color: #000000;"><strong>Get-NetForest</strong></span></li>
+<li><span style="color: #000000;"><strong>Get-NetForestCatalog</strong></span></li>
+<li><span style="color: #000000;"><strong>Get-NetForestDomain</strong></span></li>
+<li><span style="color: #000000;"><strong>Get-NetLoggedon</strong></span></li>
+<li><span style="color: #000000;"><strong>Get-DomainPolicy</strong></span></li>
+<li><span style="color: #000000;"><strong>Get-NetOU</strong></span></li>
+<li><span style="color: #000000;"><strong>Get-NetGroup</strong></span></li>
+<li><span style="color: #000000;"><strong>Get-NetGroupMember</strong></span></li>
+<li><span style="color: #000000;"><strong>Get-NetGPO</strong></span></li>
+<li><span style="color: #000000;"><strong>Find-GPOLocation</strong></span></li>
+<li><span style="color: #000000;"><strong>Invoke-EnumerateLocalAdmin </strong></span></li>
+<li><span style="color: #000000;"><strong>Get-NetProcess</strong></span></li>
+<li><span style="color: #000000;"><strong>Invoke-ShareFinder</strong></span></li>
+<li><span style="color: #000000;"><strong>Invoke-FileFinder</strong></span></li>
+<li><span style="color: #000000;"><strong>Invoke-ACLScanner</strong></span></li>
+<li><span style="color: #000000;"><strong>Find-LocalAdminAccess</strong></span></li>
+<li><span style="color: #000000;"><strong>Get-NetSession</strong></span></li>
+<li><span style="color: #000000;"><strong>Conclusion</strong></span></li>
+</ul>
+<h3><span style="color: #800000;">Introduction </span></h3>
+<p><span style="color: #000000;">We have configured an Active Directory Lab that mimics a Real-Life Environment with a bunch of Users, Machines, and Vulnerabilities. In this Article/Demonstration, we are focused on our ability to Enumerate Information that can be then further be used to elevate privileges or be able to help with Lateral Movement. A tool by the name of PowerView was developed and integrated <strong>by <a style="color: #000000;" href="https://x.com/harmj0y">Will Schroeder</a> (a.k.a harmj0y)</strong>. It soon became an integral toolkit to perform Active Directory Attacks and Enumeration. For this demonstration, we will assume that we have gained the initial foothold. Now we will use PowerShell with PowerView to enumerate the machine and the Domain. In case you run into difficulties running any of the commands depicted use the Official <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://github.com/PowerShellMafia/PowerSploit/tree/master/Recon">GitHub</a> </strong></span>for the Installation Process.</span></p>
+<h3><span style="color: #800000;">Get-NetUser</span></h3>
+<p><span style="color: #000000;">In our Active Directory Lab Setup, we created 7 users with different roles and privileges. We can confirm this by Viewing the Active Directory Users and Computers as shown in the image.  </span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-EnjZLVu70tk/YIcGMyxsEcI/AAAAAAAAvdQ/QKI5Xe47R3AUNF9SzlFbP1R83hYUjkNYACLcBGAsYHQ/s16000/1.png"/></span></p>
+<h4 data-start="452" data-end="489"><span style="color: #000000;">Running PowerView for Enumeration</span></h4>
+<p><span style="color: #000000;">This setup helps demonstrate and correlate the information we are about to enumerate using PowerShell. The attacker has transferred the PowerView to the Target System. To run the PowerShell Script on the System, the Execution Policy must be set to Bypass as shown in the image. Next, the attacker imports the Modules from the PowerView Script. This is a one-time process. After this, the attacker can directly use the Modules to perform Enumeration. To get the users that are active on the Network, the attacker runs the following command.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Get-NetUser</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-DAGtd_BMjLs/YIcGSXZGE7I/AAAAAAAAvdU/3OEPiY-ws1ozJOX0m-W3TIg6ofZ4Q-_6wCLcBGAsYHQ/s16000/2.png"/></span></p>
+<p><span style="color: #000000;">The users that are enumerated are not just restricted to usernames. The data collected also consists of logoncount. It gives an idea of an active or inactive user in the network. Next, there is a badpasswordtime. It tells the last time and date when an attempt to log on was made with an invalid password on this account. Then, there is a small description of the user. It includes the names of groups that this particular user is part of. At last, it shows the date and time since the last password change. This information is very important. It helps the attacker learn about the user Behavior.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-HtcS4GyyZkA/YIcGXFyzJUI/AAAAAAAAvdY/dDQUAoTpXvoVy5KmN0AR4VBEMjC7DVW_gCLcBGAsYHQ/s16000/3.png"/></span></p>
+<h4><span style="color: #000000;">Filtering and Targeting Specific Users</span></h4>
+<p><span style="color: #000000;">Similar Information is available for the users Yashika and Geet.</span></p>
+<p><span style="color: #000000;">To get an abstract list of users created on the Network, the attacker grabs the Common Name. This is done by using the select command on the output of the Get-NetUser Module.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Get-NetUser | select cn</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-JCIgqSCAT0k/YIcGbSYDFlI/AAAAAAAAvdc/BbbsrkUqDhQptvBmTG8kH9FYdUOuRuBSwCLcBGAsYHQ/s16000/4.png"/></span></p>
+<p><span style="color: #000000;">Administrator, Yashika, Geet, Aarti, Raj, Pavan, Jeenali, Japneet, etc. are the various users in this Network Environment.</span></p>
+<p><span style="color: #000000;">Similarly, to gather information about a particular user, the attacker can target a specific account. For example, after the attacker extracts users in the previous section, they choose a particular user. Now, more information about that user is required. This can be done using a flag <code data-start="2400" data-end="2411">-Username</code> with the username that the attacker wants to target. In this case, the attacker chooses the Yashika User.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Get-NetUser -UserName yashika</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-zf8KTrq1qiE/YIcGgDVSQeI/AAAAAAAAvdg/XPu6Jvj9sMMhYX6bZ4OT-bKzb4URESz8wCLcBGAsYHQ/s16000/5.png"/></span></p>
+<p><span style="color: #000000;">A streamlined but detailed output regarding the Yashika user is extracted by the attacker.</span></p>
+<h3><span style="color: #800000;">Get-UserProperty</span></h3>
+<p><span style="color: #000000;">When working with the Users and their properties, we see that there is a variable by the name pwdlastset. We can use this to check which user is reluctant to change their passwords. This can be configured to any of the property that was extracted in the previous. For this demonstration, we will be extracting the password last set property of all the users.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Get-UserProperty -Properties pwdlastset</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/--QwOofgRMds/YIcGnhyhL0I/AAAAAAAAvds/L5732d-iMUE5nvOve_iKlB845KAARkDSwCLcBGAsYHQ/s16000/6.png"/></span></p>
+<h3><span style="color: #800000;">Find-UserField</span></h3>
+<p><span style="color: #000000;">There are times when the network has so many users that it becomes difficult for the Domain Administrator to track all users and their credentials. In such cases, administrators sometimes resort to risky methods to save credential information. A common example I’ve encountered in real environments is saving credentials or important user details in the user description.</span></p>
+<h4><span style="color: #000000;">Using Find-UserField for Enumeration</span></h4>
+<p><span style="color: #000000;">This information can be extracted using the Find-UserField command with a specific search term. In this demonstration, we used the term “pass” to search for potential passwords. As seen, the user Yashika had their password written and saved in the description.</span><br/>
+<span style="color: #000000;">This technique is not limited to passwords. By using the right set of keywords, such as “built,” attackers can also identify built-in accounts. The following commands can help with this:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Find-UserField -SearchField Description -SearchTerm "pass"
+Find-UserField -SearchField Description -SearchTerm "built"</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-ikmM0Uoe5b4/YIcGsHgWQaI/AAAAAAAAvd0/E0Kcn9rosMcHbVimuNA4PHP3g3xjlsWLgCLcBGAsYHQ/s16000/7.png"/></span></p>
+<p><span style="color: #000000;">The information extracted using the Find-UserField command comes from the Properties of a user. On the server, you can view these properties by opening the user list, right-clicking on any user, and selecting Properties. This will display a window, similar to the one shown in the image below. In this example, the Administrator has stored their password in the Description Field.</span><br/>
+<span style="color: #000000;">It’s important to note that this is a major security risk. From the attacker’s perspective, always check for such descriptions, as they may contain valuable information that can help further the attack.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-PDPTgXphYXs/YIcGw43LcDI/AAAAAAAAvd8/X1ubEd93pRslxXSSxX6U9PZWdrp3zs4fwCLcBGAsYHQ/s16000/8.png"/></span></p>
+<h3><span style="color: #800000;">Invoke-UserHunter</span></h3>
+<p><span style="color: #000000;">The Invoke-UserHunter module in PowerView is used to locate where specific users are currently logged in within an Active Directory environment. This is especially useful for attackers or red teamers who want to identify systems where privileged users (like Domain Admins) are active, enabling targeted attacks like credential dumping or lateral movement.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Invoke-UserHunter</pre>
+<p><span style="color: #000000;">By default, this command searches for sessions of users who are members of high-privileged groups (e.g., Domain Admins).</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-X_WD9r7ww3g/YIcG1LiAN2I/AAAAAAAAveA/dZvNWw7dBs8EzuLpjLbPMNabqFrDSp1FgCLcBGAsYHQ/s16000/9.png"/></span></p>
+<h4><span style="color: #000000;">Parameters</span></h4>
+<ul>
+<li><span style="color: #000000;">-UserName &lt;name&gt; – Target a specific username.</span></li>
+<li><span style="color: #000000;">-CheckAccess – Filter systems that you have admin rights to (very useful for practical attacks).</span></li>
+<li><span style="color: #000000;">-Stealth – Uses fewer queries to evade detection, but may miss some results.</span></li>
+<li><span style="color: #000000;">-Delay &lt;seconds&gt; – Adds a delay between queries (helps avoid detection by monitoring systems).</span></li>
+</ul>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Invoke-UserHunter -CheckAccess</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-tjZ6LtjVUKo/YIcG5JkZRfI/AAAAAAAAveI/UHxbqCysr7MND1NeLUMesviStF8rVY2dACLcBGAsYHQ/s16000/10.png"/></span></p>
+<h5><span style="color: #000000;">Why It’s Useful:</span></h5>
+<p><span style="color: #000000;">Helps attackers focus efforts on machines with high-value targets.</span><br/>
+<span style="color: #000000;">Reduces noise by skipping irrelevant machines.</span><br/>
+<span style="color: #000000;">Assists Blue Teamers in understanding attacker behavior and improving defenses (e.g., limiting interactive logins for privileged users).</span></p>
+<h3><span style="color: #800000;">Get-NetDomain</span></h3>
+<p><span style="color: #000000;">When attackers need to extract domain-related information directly from the target server, they can rely on Get-NetDomain. This command extracts various Domain data, including the Forest Name and Domain Controllers with Children (which might be configured in a real environment server). It also retrieves the Name of the Parents, along with the RidRoleOwner—a Domain Controller (DC) Object that holds the Relative Identifier (RID) master role—and the PdcRoleOwner, which is another DC Object that holds the PDC emulator role for that specific Domain.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Get-NetDomain</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-l5bcHj66ORQ/YIcHOHK-BpI/AAAAAAAAveY/9VOsUhp01nk5a4iTRbqqJF1XV0KF6gmEQCLcBGAsYHQ/s16000/11.png"/></span></p>
+<p><span style="color: #000000;">In case the attacker wanted to go against a specific domain, they can use a domain option by providing the name of the exact domain that they are looking for and Get-NetDomain will extract the data for that particular domain.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Get-NetDomain -domain "ignite.local"</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-V8JUnErR59c/YIcHXgkU6NI/AAAAAAAAvec/XurS8jIn0vErwjdBFIBg9s_0oU81BF-3QCLcBGAsYHQ/s16000/12.png"/></span></p>
+<h3><span style="color: #800000;">Get-NetDomainController</span></h3>
+<p><span style="color: #000000;">Next on the lineup, we have the Get-NetDomainController. This provides the information of the particular server device instead of the domain. When an attacker wants to extract the data about the Domain Controller Machine then this tool can be used. It extracts the Forest Information, with the Time and Date configured on the Server. IT tells the OS Version that can help constraint the search for Kernel Exploits for the attacker. Then the attacker has the IP Addressing data with the Inbound and Outbound connections.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Get-NetDomainController</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-a2ngOXo9-sY/YIcHeW6u24I/AAAAAAAAveg/kgp2HmTOaCQC5BbwYjwfYrfGCd9bWWaHQCLcBGAsYHQ/s16000/13.png"/></span></p>
+<p><span style="color: #000000;">Similar to the Get-NetDomain the attacker can configure Get-NetDomainController to be targeted to a specific domain. The scenario that the attacker might be looking at multiple domains set up with multiple server setup so the attacker can use the -Domain option to target that specific Domain Controller inside the Domain.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Get-NetDomainController -Domain ignite.local</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-8my3SHBPEl8/YIcHmpuu3EI/AAAAAAAAvek/2OjOLouEbxA-1XBHamBgXuzaQxZIR0mQwCLcBGAsYHQ/s16000/14.png"/></span></p>
+<h3><span style="color: #800000;">Get-NetComputer</span></h3>
+<p><span style="color: #000000;">What seems to be a pretty simple option can turn out to be one of the most used tools to extract a huge amount of data from either the Domain Controller or even a single device. If the attacker runs the Get-NetComputer directly on the Domain Controller machine as demonstrated, it will reveal the Computer Names of all the devices connected in the Domain.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Get-NetComputer</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-DLLT32PPQ3I/YIcHrwesoVI/AAAAAAAAveo/UQGWndsAzn8jpJ9fuw-ioYOS9kyZpA3kACLcBGAsYHQ/s16000/15.png"/></span></p>
+<p><span style="color: #000000;">Moving on, if the attacker decides to use -Ping Option then they can get the list of all the devices that can be pinged from the machine they are running the Get-NetComputer from.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Get-NetComputer -Ping</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Qpv6AK87VuI/YIcHyO8lNmI/AAAAAAAAvew/bANRnO8svQwZvItvtfAxB8ElBhYOBzKtQCLcBGAsYHQ/s16000/16.png"/></span></p>
+<p><span style="color: #000000;">If the attacker doesn’t want to extract the data one parameter at a time there is an option to extract all the data from the Machine. This can be done with the FullData option, but keep in mind that a large amount of data extraction leads to large chances of getting detected.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Get-NetComputer -FullData</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-4kU7S2QsCos/YIcH6MsXYNI/AAAAAAAAve4/nf-1ddcYM8wxSdrp73bNZmOsGe89HTuxgCLcBGAsYHQ/s16000/17.png"/></span></p>
+<p><span style="color: #000000;">Moreover, if the attacker decides to use the -OperatingSystem option with the Get-NetComputer and provide the Name of the OS as a parameter then they can extract all the machines that are running that specific Operating System.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Get-NetComputer -Operatingsystem "Windows Server 2016 Standard Evaluation"</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-fXLD-TZCF1U/YIcIAadnuqI/AAAAAAAAvfA/j8v55X3JcJopjpYQJNMChU0dhSrxMXADwCLcBGAsYHQ/s16000/18.png"/></span></p>
+<h3><span style="color: #800000;">Get-UserProperty</span></h3>
+<p><span style="color: #000000;">Next on the list is the UserProperty. Up until now, the attacker can extract the users and very little information about them. This was limited but this problem is solved using UserProperty. With it, the attacker can aim to those niche details about any particular property. Some of the information extractable is check for Administrator Level Access, Password Time, Password Change Date, Description of the User, check what group the different users are a part of, and much more.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Get-UserProperty</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-1ypfKKzAio8/YIcIGdhD92I/AAAAAAAAvfI/FhEGNOSzbYUghXrnuEWm9jj6_7zrxKZJgCLcBGAsYHQ/s16000/19.png"/></span></p>
+<p><span style="color: #000000;">To target a specific Property, the attacker can use the Properties option and specify the property they want to inquire about. For the demonstration, the property that was inquired here was badpwdcount. This tells the attacker about the unsuccessful attempts that were made against all the users. </span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Get-UserProperty -Properties badpwdcount</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-GKkf97jvrIg/YIcIMoEqLhI/AAAAAAAAvfQ/-oCA7Ouj1rkbePIT8dwn8QC6EqvIhKTOwCLcBGAsYHQ/s16000/20.png"/></span></p>
+<p><span style="color: #000000;">The attacker can focus on the logoncount property to get an understanding as to which of the users are dormant and which among them are active. In a real-life scenario, inactive users might be the users in a network of ex-employees that have been overlooked by the Administrator. This can create a problem as firstly these accounts would not adhere to change their password also the attack mounted on these accounts won’t raise flags being these users are legit.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Get-UserProperty -Properties logoncount</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-wwOMmf18WzM/YIcIRvXKWQI/AAAAAAAAvfU/yHbC26L6DfIG0t10cGAmLjVfeyXsYADWACLcBGAsYHQ/s16000/21.png"/></span></p>
+<h3><span style="color: #800000;">Get-NetForest</span></h3>
+<p><span style="color: #000000;">Apart from the domain information and the user information, the attacker can also gain information about the forests and there can be multiple forests inside a domain. To procure information about the forest in the current user’s domain is to use Get-NetForest.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Get-NetForest</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-i9zQuycM2fM/YIcIXX1VgbI/AAAAAAAAvfc/nlRrvk5pIWoIrA9KlyyhhCFsstsInK8cACLcBGAsYHQ/s16000/22.png"/></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Get-NetForestCatalog</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-YuMhtfKcWuU/YIcIcvft0aI/AAAAAAAAvfk/bxjpRk30UzUhdI-2FhAgJv8efWsBZqp2wCLcBGAsYHQ/s16000/23.png"/></span></p>
+<p><span style="color: #000000;">Forests typically have different global catalogs that can help the attacker to get some precarious information about the domain. This can be observed from the following demonstration of extracting all the global catalogs of the current forest using the Get-NetForestCatalog.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Get-NetForestCatalog</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-tt9DV_u74k0/YIcIiPHldOI/AAAAAAAAvfs/qD8GZuU6mOA9MRUOjWTPS3UZ5MLQ6CtTwCLcBGAsYHQ/s16000/24.png"/></span></p>
+<h3><span style="color: #800000;">Get-NetForestDomain</span></h3>
+<p><span style="color: #000000;">Moving on from the catalogs, the attacker can also work on extracting the various domains of the forest the current user is located in. This can be done by running Get-NetForestDomain as shown in the demonstration.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Get-NetForestDomain</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-tt9DV_u74k0/YIcIiPHldOI/AAAAAAAAvfs/qD8GZuU6mOA9MRUOjWTPS3UZ5MLQ6CtTwCLcBGAsYHQ/s16000/24.png"/></span></p>
+<h3><span style="color: #800000;">Get-NetLoggedon</span></h3>
+<p><span style="color: #000000;">That’s enough Forest, getting back to the users on the local or remote machine the attacker can take advantage of the NetLoggedon module. Administrative Rights are required to use this module. This module uses the NetWkstaUserEnum Win32API call to extract the users currently logged on. If the attacker is in a bit of a hurry, they can enumerate all the users logged on to all the machines in the domain by first running Get-DomainComputer and then using Get-NetLoggedon on that data. They can concatenate this using a pipe.<br/>
+</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Get-DomainComputer | Get-NetLoggedon</pre>
+<p><span style="color: #000000;">In this demonstration, however, it is shown how to enumerate users that are loggedon on a particular machine with the help of the ComputerName option and providing the Name.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Get-NetLoggedon -ComputerName DC1</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-PbvIys3vcl0/YIcIoQswaEI/AAAAAAAAvf0/WJzOM2qovussB6I21lgiBXnC3bpxSnqygCLcBGAsYHQ/s16000/25.png"/></span></p>
+<h3><span style="color: #800000;">Get-DomainPolicy</span></h3>
+<p class="" data-start="37" data-end="336"><span style="color: #000000;">The Get-DomainPolicy command in PowerView is used to retrieve the default domain policy and domain controller policy settings in an Active Directory (AD) environment. This includes password policies, lockout policies, and Kerberos settings—crucial for both attackers and defenders.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Get-DomainPolicy</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Ung9oS3Mr9U/YIcIzJEFEZI/AAAAAAAAvgA/o-zr9noS7A80hXviPcjpW7Z_cvtW52ZjACLcBGAsYHQ/s16000/26.png"/></span></p>
+<p><span style="color: #000000;">To enumerate Kerberos details, the attacker can try and go after the Kerberos Policy which contains data such as the Max Ticket Age, Max Renew Age, and several Ticket Validation Client. This kind of information can come in handy if the attacker is trying to perform a ticket forging attack or similar attack.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">(Get-DomainPolicy)."KerberosPolicy"</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-nXhVSqBc2PU/YIcJQcDDk4I/AAAAAAAAvgM/nQjHHqSdJXkLwBHDacNrxJPkWIgxUs35wCLcBGAsYHQ/s16000/27.png"/></span></p>
+<h4>Parameters</h4>
+<ul>
+<li>–<span style="color: #000000;">Domain &lt;domain&gt; — Specify a different domain to query.</span></li>
+<li><span style="color: #000000;">-LDAPFilter — Apply custom LDAP filtering if needed.</span></li>
+<li><span style="color: #000000;">-Server &lt;domain controller&gt; — Target a specific domain controller.</span></li>
+</ul>
+<p class="" data-start="1363" data-end="1432"><span style="color: #000000;">Returns the password and lockout policy portion of the domain policy.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">(Get-DomainPolicy)."SystemAccess"</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-We8caCMGi2c/YIcJYaW3YGI/AAAAAAAAvgQ/WlKY59wlfNs4GmppBmuURI9WcptX8gUMQCLcBGAsYHQ/s16000/28.png"/></span></p>
+<h3><span style="color: #800000;">Get-NetOU</span></h3>
+<p class="" data-start="30" data-end="295"><span style="color: #000000;">Attackers use the Get-NetOU command in PowerView to enumerate Organizational Units (OUs) in an Active Directory (AD) environment. Organizational Units are containers within AD used to group users, computers, and other objects—often by department, location, or role.</span></p>
+<p><span style="color: #000000;">To Enumerate, run the following command on PowerShell.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Get-NetOU</pre>
+<p class="" data-start="355" data-end="396"><span style="color: #000000;">This lists all OUs in the current domain.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-02X7LgksgnY/YIcJjlXt31I/AAAAAAAAvgY/rToMMFX7fTgPtte36l7clZK3bxOndItOQCLcBGAsYHQ/s16000/29.png"/></span></p>
+<p><span style="color: #000000;">It can be observed that there are 4 OUs on the Target Server. Namely, Tech, VPN, Sales, and HR.</span></p>
+<h3><span style="color: #800000;">Get-NetGroup</span></h3>
+<p class="" data-start="33" data-end="261"><span style="color: #000000;">The Get-NetGroup command in PowerView is used to enumerate groups in an Active Directory (AD) environment. It’s a key recon tool for both Red Teamers and Blue Teamers to discover group-based privileges and access controls.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Get-NetGroup</pre>
+<p class="" data-start="324" data-end="382"><span style="color: #000000;">This retrieves a list of all groups in the current domain.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-_5r_Q6FxmCE/YIcJy4YalpI/AAAAAAAAvgg/hsMXpSTZ5A48ztgBzEbSxNIqvmi_Zm09QCLcBGAsYHQ/s16000/30.png"/></span></p>
+<h4><span style="color: #000000;">Parameters</span></h4>
+<ul>
+<li><span style="color: #000000;">-GroupName &lt;name&gt; — Search for a specific group by name.</span></li>
+<li><span style="color: #000000;">-Domain &lt;domain&gt; — Query a different domain.</span></li>
+<li><span style="color: #000000;">-FullData — Get all LDAP attributes for each group.</span></li>
+<li><span style="color: #000000;">-SearchBase &lt;OU DN&gt; — Limit search to a specific Organizational Unit.</span></li>
+</ul>
+<h4><span style="color: #000000;">Extracting and Targeting Group Information</span></h4>
+<p><span style="color: #000000;">When the attacker wants to extract groups that include the keyword “admin,” they use it to find relevant administrator-related groups. These groups might be important or contain sensitive information.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Get-NetGroup *admin*</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-VSsN9aC1QuU/YIcJ37RBXYI/AAAAAAAAvgo/bmbXtJCNYtA_ApusVeTNzEGhxhf7hT5vQCLcBGAsYHQ/s16000/31.png"/></span></p>
+<p><span style="color: #000000;">Suppose the attacker wants to check the group membership of a specific user. Then they can use the <code data-start="1316" data-end="1326">UserName</code> option to do so, as shown in the example. The attacker extracts information for the Yashika user:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Get-NetGroup -UserName yashika</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-ZaWuOUpa5WY/YIcKCIYEbXI/AAAAAAAAvgw/anhaVcLYrYoq1H8g8EIjPHH9TtB8b6aswCLcBGAsYHQ/s16000/32.png"/></span></p>
+<p><span style="color: #000000;">To target a specific domain, the attacker can use the <code data-start="1530" data-end="1538">Domain</code> option along with the domain name provided:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Get-NetGroup -Domain ignite.local</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-aa8-5VzrDtw/YIcKJEHVePI/AAAAAAAAvg0/L6mNdy5G0rQ-Aqy_npOtgYJdaek80S5zwCLcBGAsYHQ/s16000/33.png"/></span></p>
+<h4><span style="color: #000000;">Detailed Group Enumeration and Filters</span></h4>
+<p><span style="color: #000000;">Furthermore, if the attacker wants to extract all data about groups in the domain, they use the FullData option. It helps extract all users with their group details. In the demonstration, it is observed that an Admin exists in the domain and is a member of the Administrator Group along with other User Groups.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Get-NetGroup -FullData</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-C7dRRVAVt8U/YIcKOqLAHdI/AAAAAAAAvg8/YDziN9_vMrID44J7DpSTOK69709toIbNgCLcBGAsYHQ/s16000/34.png"/></span></p>
+<p class="" data-start="2037" data-end="2231"><span style="color: #000000;">There is a member named Japneet who is part of the Tech Group. When the attacker looks for more information about group users, they observe that a user named Geet also belongs to the Tech Group.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-YLrC5V6TSaU/YIcKXPoiBmI/AAAAAAAAvhE/XFNM7f2NqQAqFJuJ4dv1w3py4GXgp60xQCLcBGAsYHQ/s16000/35.png"/></span></p>
+<p><span style="color: #000000;">Next, the attacker moves from user-based group enumeration to group-based enumeration by providing a specific group name:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Get-NetGroup "Domain Admins"</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-WZcQHWy4-II/YIcKeVEZLZI/AAAAAAAAvhQ/AEQqweFl7tg_-XU1KRvB-M9qgC-aRpcUwCLcBGAsYHQ/s16000/36.png"/></span></p>
+<p><span style="color: #000000;">They can also combine multiple options to enumerate detailed data about a group:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Get-NetGroup "Domain Admins" -FullData</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-H42reYULEiY/YIcKj_18ljI/AAAAAAAAvhU/zR3o-iApgD0DoQfrSlrgmVWUvlK2-7kQgCLcBGAsYHQ/s16000/37.png"/></span></p>
+<p><span style="color: #000000;">Finally, the attacker can streamline enumeration by combining several options. This includes specifying a particular group name and domain.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Get-NetGroup -GroupName *admin* -Domain ignite.local</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-YJWJR6ohqPw/YIcLOeZeINI/AAAAAAAAvhs/K6N4CL_z298shwKD9X9MlJGliiIrvEjmgCLcBGAsYHQ/s16000/38.png"/></span></p>
+<h3><span style="color: #800000;">Get-NetGroupMember</span></h3>
+<p><span style="color: #000000;">In the enumeration, if the attacker gets to a stage where they have successfully enumerated the group names then they can use that in collaboration with the Get-NetGroupMember to extract the members of that group. In the demonstration, we extracted the members of the group Domain Admins.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Get-NetGroupMember -GroupName "Domain Admins"</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-27khFtKKUAs/YIcMCAA0J4I/AAAAAAAAvh8/_QB9YSt1UbwvZi_jlzBMHqYRDb2P9MKbgCLcBGAsYHQ/s16000/39.png"/></span></p>
+<p><span style="color: #000000;">As discussed earlier Get-NetGroupMember also supports some options to run along such as the Recurse. It helps the attacker extracts significant amounts of data about all the users of the group they provided.  As it can be observed from the screenshots of running Get-NetGroupMember with and without Recurse there is some significant difference between them both.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Get-NetGroupMember -GroupName "Administrators" -Recurse</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-sGXo8rSWgHg/YIcMKm5AHAI/AAAAAAAAviA/HqXvMXbl5psJxrJWObpxp6RKjuZKboriwCLcBGAsYHQ/s16000/40.png"/></span></p>
+<h3><span style="color: #800000;">Get-NetGPO</span></h3>
+<p><span style="color: #000000;">Group Policy provides an interesting way to figure out how the Domain is set up and what set of rules and policies the Administrator has designed to govern the Domain. You can enumerate this using Get-NetGPO. This command extracts all the information regarding Group Policies configured on the Target System.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Get-NetGPO</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-OD1vmh4vNdU/YIcMb7pg57I/AAAAAAAAviM/JRY373Jx-LUVFufQ05cjQGXzpF9QyjD9QCLcBGAsYHQ/s16000/41.png"/></span></p>
+<p><span style="color: #000000;">As you can observe from the previous iteration of running Get-NetGPO, the amount of information can be overwhelming. Hence, to get a clean and easy-to-understand output, you can use selection to retrieve specific names of the policies.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Get-NetGPO | select displayname</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-lEg1LVGGivE/YIcMhwZimSI/AAAAAAAAviQ/HQM8hE4DGC8cIRQvNCQXCkAcg1iElEZkgCLcBGAsYHQ/s16000/42.png"/></span></p>
+<h3><span style="color: #800000;">Find-GPOLocation</span></h3>
+<p><span style="color: #000000;">Getting the GPO location is a good way to map the abilities of a specific user. It takes the username that is provided to it and checks for the permissions for that users. This means that it will return the locations that are accessible for that user. In this demonstration, we use the Yashika user and we choose the verbose option as well to elaborate the result to get the most out of it.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Find-GPOLocation -UserName yashika -verbose</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-RlTclnBEBQU/YIcMnn2DVGI/AAAAAAAAviU/6wYkFeqcjT4287KN269xPrNzyMLMSYQLACLcBGAsYHQ/s16000/43.png"/></span></p>
+<h3><span style="color: #000000;"><span style="color: #800000;">Invoke-EnumerateLocalAdmin</span></span></h3>
+<p><span style="color: #000000;">Invoke-EnumerateLocalAdmin does exactly what the names say. It searched for the Local Administrators for the domain. In our demonstration, we see that we have extracted the Administrator, Enterprise Admins and Domain Admins for our domain ignite. local.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Invoke-EnumerateLocalAdmin</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-ipYvLbC6lkk/YIcMsbBrKZI/AAAAAAAAvic/XHIHzABH8hIfhERWB6T07R1gfEsLpuQ3QCLcBGAsYHQ/s16000/44.png"/></span></p>
+<h3><span style="color: #800000;">Get-NetProcess</span></h3>
+<p><span style="color: #000000;">The Get-NetProcess command in PowerView is used to enumerate running processes on remote systems in an Active Directory environment. It’s especially useful during post-exploitation when an attacker wants to identify processes like antivirus tools, command shells, or credential managers running on target machines.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Get-NetProcess</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-oUloRXwesVM/YIcM0H9du8I/AAAAAAAAvik/pg8L4k4YHQASbDS0II2DqTE3kYUupLlWwCLcBGAsYHQ/s16000/45.png"/></span></p>
+<h3><span style="color: #800000;">Invoke-ShareFinder</span></h3>
+<p>Any inexperienced attacker might wonder why there is a need to enumerate the shares when they can do that externally using SMB enumeration. But an experienced attacker knows that some shares are not visible to all users. The system can configure whether a particular share is visible and accessible to everyone or only to specific users. Therefore, to enumerate the shares in a domain, use Invoke-ShareFinder.</p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Invoke-ShareFinder</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-D6-cDvcFOHA/YIcM7_RjD5I/AAAAAAAAvis/DcLPums4oJk_frFWiN336Mk1Y7UXHRa5QCLcBGAsYHQ/s16000/46.png"/></span></p>
+<h3><span style="color: #800000;">Invoke-FileFinder</span></h3>
+<p><span style="color: #000000;">Searching on the machine that the attacker has an initial foothold is not that difficult task. But to search a specific file across the network in the domain can be done using the Invoke FileFinder. It will search for sensitive files such as the Credentials files and other files that can lead to a serious compromise.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Invoke-FileFinder</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-8usBPfyeTug/YIcNBGMcPwI/AAAAAAAAviw/fLZulS08kYI3Jz0e136ketUh-n7xLrRNACLcBGAsYHQ/s16000/47.png"/></span></p>
+<h3><span style="color: #800000;">Invoke-ACLScanner</span></h3>
+<p><span style="color: #000000;">ACL or Access Control Lists can be scanned on a domain that will return the weak permissions on the files. Bear in mind that Domain Permission can be a bit challenging to wrap your head around and the permission that you might find using Invoke-ACLScanner can be difficult to exploit. However, this does not mean that any attacker should not check for those. In simpler terms, Invoke-ACLScanner finds the permissions that the users and group have which are possible subject to exploitation. It determines this by separating the default permission and showing the list of permissions that do not default or new defined by the Administrator.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Invoke-ACLScanner -ResolveGUIDs</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-zy_xowoSiOU/YIcNGBlWhBI/AAAAAAAAvi4/3Z9q1pwplp4PWQtsJQanaem4ZLlKElmyACLcBGAsYHQ/s16000/48.png"/></span></p>
+<h3><span style="color: #800000;">Find-LocalAdminAccess</span></h3>
+<p><span style="color: #000000;">Find-LocalAdminAccess also is pretty self-defined. It enumerated for machines on the local domain that have the users who have the local administrator access. It checks if the user has local administrator access using Test-AdminAccess. Then it checks for the Credential option. If passed, then it uses Invoke-UserImpersonation to impersonate the specified user before enumeration.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Find-LocalAdminAccess</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-pWYQ8nAOyxw/YIcNY70NuGI/AAAAAAAAvjE/FEUbgVdEGS42Dp-cAaK1pVUvEObDiIdJQCLcBGAsYHQ/s16000/49.png"/></span></p>
+<h3><span style="color: #800000;">Get-NetSession</span></h3>
+<p><span style="color: #000000;">At last, it’s time to shine some light on the sessions generated inside a Domain. Attackers can enumerate these sessions with the help of the Get-NetSession tool. When they run this command, they extract session information for the local or a remote machine. This function executes the NetSessionEnum Win32API call to extract the session information. They can use it in its bare form, as demonstrated, or use it with the ComputerName option to target a specific host.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Get-NetSession</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-SEZPJPMASiw/YIcNdeYSFSI/AAAAAAAAvjI/_qtB7D6oVCgBDhpAJ3-Ecb12XMUVBOWpwCLcBGAsYHQ/s16000/50.png"/></span></p>
+<h3><span style="color: #800000;">Conclusion</span></h3>
+<p><span style="color: #000000;"><strong><a href="https://www.hackingarticles.in/tag/active-directory/">Active Directory</a></strong> is extensive and can be confusing for novice security professionals. In this guide, we will explore how to perform Active Directory enumeration using PowerView, a powerful tool within PowerShell. PowerView enables penetration testers and security professionals to gather crucial information about an Active Directory environment, aiding in post-exploitation and lateral movement. This resource will help you enumerate your Active Directory Deployment and understand the information that an attacker can extract. </span></p>
+<p><span style="color: #000000;"><strong>Author: Pavandeep Singh</strong> is a Technical Writer, Researcher, and Penetration Tester. Contact on <span style="color: #0000ff;"><strong>Twitter</strong></span> and <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.linkedin.com/in/pavan2318/">LinkedIn</a></strong></span></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

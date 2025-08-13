@@ -1,0 +1,154 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/android-penetration-testing/" rel="category tag">Android Penetration Testing</a></span>            </div>
+            <h1 class="post-title entry-title">Android Penetration Testing: APK Reversing (Part 2)</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/android-penetration-testing-apk-reversing-part-2/" rel="bookmark"><time class="entry-date published" datetime="2021-02-18T19:06:36+00:00">February 18, 2021</time><time class="updated" datetime="2025-05-11T11:01:47+00:00">May 11, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Android reverse engineering refers to the process of decompiling the APK to investigate the source code that is running in the background of an application. In <strong>part 1</strong> (refer <span style="color: #0000ff;"><strong><u><a style="color: #0000ff;" href="https://www.hackingarticles.in/android-penetration-testing-apk-reverse-engineering/">here</a></u></strong></span>), we saw how an attacker would be able to decompile, change the small files, and recompile and sign the APK to perform some kind of function, for example, changing root detection logic of the application. In this extension of reversing articles on <strong>APK Reversing for Android Penetration Testing</strong>, we’ll see different scenarios in which an attacker can extract juicy information by decompiling an APK while understanding various default files present in Android. It is wrong to say this article covers all of the aspects of reversing and extracting info, however, it will lay out a fundamental process as to how one can proceed to do so. Let’s begin</span></p>
+<h3><span style="color: #800000;">Table of Content</span></h3>
+<ul>
+<li><strong><span style="color: #000000;">Understanding default files</span></strong></li>
+<li><strong><span style="color: #000000;">Understanding improper WebView implementation</span></strong></li>
+<li><strong><span style="color: #000000;">Hardcoded secrets</span></strong></li>
+<li><strong><span style="color: #000000;">Secrets in strings.xml file</span></strong></li>
+<li><strong><span style="color: #000000;">Insecure classes implementation</span></strong></li>
+<li><strong><span style="color: #000000;">Insecure decryption method for hardcoded values</span></strong></li>
+<li><strong><span style="color: #000000;">Insecure cryptography in SQLite database</span></strong></li>
+<li><strong><span style="color: #000000;">Hard coded AWS credentials</span></strong></li>
+</ul>
+<h3><span style="color: #800000;">Understanding default files</span></h3>
+<h4><span style="color: #000000;">AndroidManifest.xml </span></h4>
+<p><span style="color: #000000;">“Manifest” literally means “to show.” This file is the most literal in the entire application because it does exactly what its name implies. A tag is used at the start. Additionally, “xmlns: attribute”, which declares a number of system attributes utilized in the file, should be included. It states:</span></p>
+<ul>
+<li><span style="color: #000000;">&lt;permissions&gt; – Permissions that APK requires to run</span></li>
+<li><span style="color: #000000;">&lt;activity&gt; – Various activities in the APK</span></li>
+<li><span style="color: #000000;">&lt;intent-filter&gt; – Intent filters</span></li>
+<li><span style="color: #000000;">&lt;data android:scheme=”string” /&gt; – Data Schemes</span></li>
+<li><span style="color: #000000;">&lt;action android:name=”string” /&gt; – Action that an intent performs</span></li>
+<li><span style="color: #000000;">&lt;uses-configuration&gt; tag – specifies input mechanisms</span></li>
+<li><span style="color: #000000;">&lt;uses-sdk&gt; tag – specifies android API to be used</span></li>
+</ul>
+<p><span style="color: #000000;">Hence, Manifest file is the guide which is needed by the package to make particular components behave the way the developer intended them to.</span></p>
+<h4><span style="color: #000000;">Strings.xml</span></h4>
+<p><span style="color: #000000;">This XML file holds strings that the application or other resource files (such as an XML layout) can reference. In other words, I can use a reference to strings’ object in my actual Java class so that I don’t have to type in the complete value then and there and also if there is a need to change that value in future, I won’t need to go to my java class every single time to change it, I can just change the value in the strings file. One example occurs in the Java file where the code flows like this:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">String string = getString(R.string.hello);</pre>
+<p><span style="color: #000000;"><strong> </strong>Here, R.string.&lt;string object&gt; sets the value of variable string. I can make its reference in the layout file like this:</span></p>
+<p><strong><span style="color: #000000;">&lt;TextView</span></strong><br/>
+<strong><span style="color: #000000;">android:layout_width=”fill_parent”</span></strong><br/>
+<strong><span style="color: #000000;">android:layout_height=”wrap_content”</span></strong><br/>
+<strong><span style="color: #000000;">android:text=”@string/hello” /&gt;</span></strong></p>
+<p><span style="color: #000000;">This sets the type of view that the hello object would have while displaying in app. Here, <strong>@string/hello </strong>refers to strings.xml file’s hello object. So, finally in the strings.xml file code would be something like:</span></p>
+<p><span style="color: #000000;"><strong>&lt;?xml version=”1.0″ encoding=”utf-8″?&gt;</strong></span><br/>
+<span style="color: #000000;"><strong>&lt;resources&gt;</strong></span><br/>
+<span style="color: #000000;"><strong>&lt;string name=”hello”&gt;Hello!&lt;/string&gt;</strong></span><br/>
+<span style="color: #000000;"><strong>&lt;/resources&gt;</strong></span></p>
+<p><span style="color: #000000;">So, the variable string would indirectly get assigned a value “Hello!” Note that &lt;resources&gt; tag allocates a string value.</span></p>
+<h4><span style="color: #000000;">R.java file </span></h4>
+<p><span style="color: #000000;">AAPT (Android Asset Packaging Tool) automatically generates a file that contains resource IDs for all the resources in the res/ directory. When you create any component in the activity_main.xml file, this file automatically generates the id for the corresponding component. You can use this id in the activity source file to perform any action on the component. If you delete this, the system will auto-generate it again.</span></p>
+<p><span style="color: #000000;">There are various other default files as well, we’ll talk about them later when we discover each.</span></p>
+<h3><span style="color: #800000;">Understanding improper WebView implementation</span></h3>
+<p><span style="color: #000000;">If you have no idea what a WebView is please first read <span style="color: #0000ff;"><u><a style="color: #0000ff;" href="https://www.hackingarticles.in/android-penetration-testing-webview-attacks/"><strong>this</strong> </a></u></span>article. This will lay up your basics. Now, this article specifically talks about what code to look for in order to understand if webview implementation is insecure or not. Now, for the purpose of this article, I’ll be using InjuredAndroid.apk developed by Kyle Benac. You can find it <span style="color: #0000ff;"><strong><u><a style="color: #0000ff;" href="https://github.com/B3nac/InjuredAndroid">here</a></u></strong></span>. It would look something like this</span></p>
+<p><span style="color: #000000;"><img fetchpriority="high" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-lj4OinWhjYg/YC6WqzCaRJI/AAAAAAAAt3U/4qJIC6_SL94bvZFZk8TgbF9TsTwIVe5DwCLcBGAsYHQ/s16000/1.png" alt="APK Reversing for Android Penetration Testing" width="573" height="948"/></span></p>
+<p><span style="color: #000000;">In the very first challenge of the application, we’ll see a poor webview implementation. First activity’s source code is:</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-rFNwwZFM1X0/YC6Wv1540XI/AAAAAAAAt3Y/hHyZIK-akOYddFVPgjgwMlGH0usyzb3JACLcBGAsYHQ/s16000/2.png"/></span></p>
+<p><span style="color: #000000;">Here, we can see that a string type variable post is receiving a value from an input field and supplying it to DisplayPostXSS.class using intent. We’ll understand what happens when it reaches the said class from the source code:</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-TWvc8KXr7PE/YC6W0ZazLHI/AAAAAAAAt3c/iTKl0fkKElsMS4ZK5M2d_5IOdFSccGJgwCLcBGAsYHQ/s16000/3.png"/></span></p>
+<p><span style="color: #000000;">Here, we can easily see that the said input is getting parsed as an HTML and being displayed within a webview. Also, JavaScript is enabled. This means only one thing for us researchers. XSS!</span></p>
+<p><span style="color: #000000;"><img decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-WbttHlwcI6k/YC6W5SCuQ7I/AAAAAAAAt3g/iXSKjXiyPnIbs-qDfCSCMJ9ArvDv7W9-wCLcBGAsYHQ/s16000/4.png" alt="APK Reversing for Android Penetration Testing" width="570" height="504"/></span></p>
+<p><span style="color: #000000;">After sending in the payload we can see that WebView is able to display the supplied input in an HTMl format like this</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-02Orb79ofw0/YC6W-VAp9tI/AAAAAAAAt3k/9t7cjz7xqXwX_bFt7cSn9o1BYWlsuxvywCLcBGAsYHQ/s16000/5.png"/></span></p>
+<p><span style="color: #000000;">Hence, this taught us how we can look for XSS bugs by decompiling the application</span></p>
+<h3><span style="color: #800000;">HardCoded Secrets</span></h3>
+<p><span style="color: #000000;">Oftentimes, for ease of access developers would hard code various secret keys, decryption functions and other juicy things within the application and so by reversing the APK we can extract them. For example, if we see <strong>FlagOneLoginActivity </strong>developer has laid out a little hint at the bottom.</span></p>
+<p><span style="color: #000000;"><img decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-6aFCOQdf_2c/YC6XCqg9zzI/AAAAAAAAt3s/nctqyetS_p8otPJ9w7Z1CC975xtlHYbPQCLcBGAsYHQ/s16000/6.png" alt="APK Reversing for Android Penetration Testing" width="573" height="948"/></span></p>
+<p><span style="color: #000000;">Now, let’s reverse the application using JADX and see what’s hidden under GUI. Even after obfuscation, we can easily infer that the submitFlag() method compares a user-supplied input with the given flag “F1ag_0n3”. Hence, we bypass the entire login mechanism just by looking for the right class after reversing.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-SjGPpDzuEUk/YC6XHz9xmCI/AAAAAAAAt3w/JsWPwuUBJ942nQfKSqnOv0XX372cHxubQCLcBGAsYHQ/s16000/7.png"/></span></p>
+<p><span style="color: #000000;">After we input the flag, we see that it was indeed correct.</span></p>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-yinHxiSOcYw/YC6Xpca1NcI/AAAAAAAAt4E/xUmu-IxpPnUrgwbue1O4HC6JA-GzkT8cwCLcBGAsYHQ/s16000/8.png" alt="APK Reversing for Android Penetration Testing" width="568" height="799"/></span></p>
+<h3><span style="color: #800000;">Secrets in strings.xml file</span></h3>
+<p><span style="color: #000000;">Oftentimes, developers create a reference string and use that object in Java class whose actual value is stored in strings.xml file. For example, in <strong>FlagThreeActivity </strong>we can see the developer has laid out a little hint at the bottom.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-mW_fjEU6k0k/YC6XuRbk8HI/AAAAAAAAt4I/WPvaPjmVuvgDOisJZ7CF4mowxL-RqjpmgCLcBGAsYHQ/s16000/9.png"/></span></p>
+<p><span style="color: #000000;">Now, let’s look at this activity’s code in jadx first. We’ll observe that an object with a gibberish name is being used.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-ym2FkCHhetI/YC6Xzi81iVI/AAAAAAAAt4M/4_Y8CIY5EgYSxT573E5xdM1p2fdq99izgCLcBGAsYHQ/s16000/10.png"/></span></p>
+<p><span style="color: #000000;">It is quite easily understood that user-supplied input is being compared with a resource that is stored in <strong>strings.xml</strong> file. Hence, what we’ll do is decompile the package using <strong>apktool </strong>and then traverse to the directory: <strong>/res/values/strings.xml</strong></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">apktool d InjuredAndroid-1.0.10-release.apk
+cd InjuredAndroid-1.0.10-release/res/values
+cat strings.xml | grep cmVz</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://1.bp.blogspot.com/-_PqBLeaaDfE/YC6X47oEp2I/AAAAAAAAt4Q/rHWwvZSNGxo_dHd7vqf-CdwadjLHp6l3wCLcBGAsYHQ/s16000/11.png"/></strong></span></p>
+<p><span style="color: #000000;">Hence, we have our third flag.</span></p>
+<h3><span style="color: #800000;">Insecure classes implementation</span></h3>
+<p><span style="color: #000000;">Just like you can refer to an object from the strings.xml file, you can also implement other classes to perform a specific function with an object and use its return value. For example, in the FlagFourActivity, we see something similar.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-IhiBjNs2H0U/YC6X9hLdhTI/AAAAAAAAt4U/CALyw4mghw8eAaJsfLOXU5xH4cUzVubrgCLcBGAsYHQ/s16000/12.png"/></span></p>
+<p><span style="color: #000000;">Now, after observing the code underneath the class we see that return value from a certain <strong>g</strong> class’ <strong>a()</strong> method. Now, due to obfuscation the original classes and methods names have been changed.</span></p>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-P-JInm-Yep4/YC6YD7W_9pI/AAAAAAAAt4g/Qqyw0IcgMgc-LaKwVdoeUvl3uIOiGyUBwCLcBGAsYHQ/s16000/13.png" alt="APK Reversing for Android Penetration Testing" width="819" height="868"/></span></p>
+<p><span style="color: #000000;">Pondering over g.a() we’ll see that a base64 encoded value is being decoded and supplied as an input and typecasted in a byte array.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-7bS_3kzp_SE/YC6YKMfvjII/AAAAAAAAt4o/ctM6eyrS3i0MimyRB3qkoWl-o11lgPDsQCLcBGAsYHQ/s16000/14.png"/></span></p>
+<p><span style="color: #000000;">Finally, after encoding this, we’ll get this flag.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">echo "NF9vdmVyZG9uZV9vbWVsZXRz" &gt; to_decode
+cat to_decode | base64 --decode</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://1.bp.blogspot.com/-k7FQA0Xwklw/YC6YQiOlEuI/AAAAAAAAt4w/Wip9q_JJeWoUKGZVdLsa3ggbYY6Phhm4gCLcBGAsYHQ/s16000/15.png"/></strong></span></p>
+<h5><span style="color: #000000;"><strong>Insecure decryption method for hard coded values</strong></span></h5>
+<div class="output-content"><span style="color: #000000;">Oftentimes, developers implement methods to generate keys and encrypt some information that they either receive from a user or encrypt a secret such as login credentials within the application. For example, in FlagSixLoginActivity, we can see that a certain k.a() return value compares with a user input.</span></div>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-MaTTi5MtiM4/YC6YV_3mCoI/AAAAAAAAt44/sal0R2gIei8x4k0-NTktQrXth8483HbcQCLcBGAsYHQ/s16000/16.png"/></span></p>
+<p><span style="color: #000000;">This gibberish value is a base64 encoded byte array. Now, we are going to inspect k.a() method.</span></p>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-zv6oNVLMwcw/YC6YaZrnuKI/AAAAAAAAt5A/lSBtRec6XGovPhMY9vbPHn4U-MDRVtOCwCLcBGAsYHQ/s16000/17.png" alt="APK Reversing for Android Penetration Testing" width="1035" height="600"/></span></p>
+<p><span style="color: #000000;">This certainly implies that a is receiving string str, which is getting base64 decoded first and then encrypted using a DES key generated. Reversing this function manually in very difficult, but it is certainly possible if we intercept the () method’s return value when it calculates and supplies the value to FlagSixLoginActivity. Kyle Benac has given a code in his repository to do this with javascript using Frida. Here is the code:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">console.log("Script loaded successfully ");
+Java.perform(function x() {
+console.log("Inside java perform function");
+var my_class = Java.use("b3nac.injuredandroid.VGV4dEVuY3J5cHRpb25Ud28");
+var string_class = Java.use("java.lang.String");
+my_class.decrypt.overload("java.lang.String").implementation = function (x) { //hooking the new function
+console.log("*************************************")
+var my_string = string_class.$new("k3FElEG9lnoWbOateGhj5pX6QsXRNJKh///8Jxi8KXW7iDpk2xRxhQ==");
+console.log("Original arg: " + x);
+var ret = this.decrypt(my_string);
+console.log("Return value: " + ret);
+console.log("*************************************")
+return ret;
+};
+Java.choose("b3nac.injuredandroid", {
+onMatch: function (instance) {
+console.log("Found instance: " + instance);
+console.log("Result of secret func: " + instance.decrypt());
+},
+onComplete: function () { }
+});
+});</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-NWvB5GnjPls/YC6Ylq0HP5I/AAAAAAAAt5M/pJtdorT_1lQUvcF_njYV7tr6ap2F8ZVSgCLcBGAsYHQ/s16000/18.png"/></span></p>
+<p><span style="color: #000000;">Pretty easy to code this right? No? Then you must follow my previous article on Frida <span style="color: #0000ff;"><strong><u><a style="color: #0000ff;" href="https://www.hackingarticles.in/android-penetration-testing-frida/">here</a></u> </strong></span>to understand how to create hooks in a better way.</span></p>
+<h3><span style="color: #800000;">Insecure cryptography in SQLite database</span></h3>
+<p><span style="color: #000000;">Oftentimes, juicy information is obtained from an application’s SQLite database. This happens because the developer has stored some values like credentials, keys etc. within the sqlite itself. Let’s look at one such implementation in <strong>FlagSevenSqliteActivity</strong></span></p>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-JFfU6X49k2w/YC6Yts-saDI/AAAAAAAAt5U/E_YlY8KJUF0oc5UG7qoT-8X5aCqeJxV4QCLcBGAsYHQ/s16000/19.png" alt="APK Reversing for Android Penetration Testing" width="570" height="908"/></span></p>
+<p><span style="color: #000000;">Now, each database has its own SQLite database associated with itself. We simply need to traverse to this database and dump values. Note that having root access is sometimes critical to do this, other times if your user has the permissions you’d be able to have a look at the database.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">adb shell
+cd /data/data/b3nac.injuredandroid/databases
+ls
+sqlite3 Thisisatest.db
+select * from Thisisatest;</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-5DsVkaj9cyU/YC6Y1x1o-VI/AAAAAAAAt5c/vjXHaPtnWJULtMNpH5oQsMbxyB_lEpWyQCLcBGAsYHQ/s16000/20.png"/></span></p>
+<p><span style="color: #000000;">And just like that we have the flag’s hash which is in MD5 and password which is encrypted in some format as well (ROT47). One can decrypt it and is good to go. It is essential for developers not to use old encryption and hashing techniques.</span></p>
+<h3><span style="color: #800000;">Hardcoded AWS key and access ID</span></h3>
+<p><span style="color: #000000;">“World is moving to cloud” ~ Google</span></p>
+<p><span style="color: #000000;">“But stupidity exists everywhere” ~ Pentesters</span></p>
+<p><span style="color: #000000;">Oftentimes developers hard code or create a reference value of AWS bucket credentials. One such example could be seen in <strong>FlagEightLoginActivity</strong>. Here, the developer has given a little hint at the bottom too.</span></p>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-DixAru28eY0/YC6ZFKxwvGI/AAAAAAAAt5k/ZZlW9--O-IEp2f5RGBNa2Akr4bRo052FQCLcBGAsYHQ/s16000/21.png" alt="APK Reversing for Android Penetration Testing" width="572" height="912"/></span></p>
+<p><span style="color: #000000;">On exploring the activity’s code we see that this client authenticates with aws.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Q686fzTIBFg/YC6ZKPU5DUI/AAAAAAAAt5s/Bmg4PtIPZuIq7iDI_87tthl5tdE_B-StgCLcBGAsYHQ/s16000/22.png"/></span></p>
+<p><span style="color: #000000;">One of the most common places to look for AWS creds is in the strings.xml file. So we check it:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd /InjuredAndroid-1.0.10-release/res/values
+cat strings.xml | grep AWS</pre>
+<p><span style="color: #000000;">And it worked like a charm.</span></p>
+<p><span style="color: #000000;">Then, we’ll create a profile of AWS and can easily use AWS cli to connect to it. To make profile:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd ~ &amp;&amp; mkdir .aws
+cd .aws &amp;&amp; nano credentials</pre>
+<p><span style="color: #000000;">Copy the obtained ID and access key in it.</span></p>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-L78aI6_xF8Q/YC6ZOtpc9-I/AAAAAAAAt5w/ikqob1U8rScTlWD_kbq5S4zOiXOgXrkRgCLcBGAsYHQ/s16000/23.png" alt="APK Reversing for Android Penetration Testing" width="893" height="385"/></span></p>
+<h3><span style="color: #800000;">Conclusion</span></h3>
+<p><span style="color: #000000;">Even after string obfuscation, various classes, objects and strings can be reversed and used to harm an organisation. It is very essential that developers follow strict practices for security given by OWASP MSTG. Thanks for reading.</span></p>
+<p><span style="color: #000000;"><strong>Author: Harshit Rajpal </strong>is an InfoSec researcher and left and right brain thinker. Contact<strong> <span style="color: #0000ff;"><a class="broken_link" style="color: #0000ff;" href="https://in.linkedin.com/in/harshit-rajpal-79bb43103">here</a></span></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

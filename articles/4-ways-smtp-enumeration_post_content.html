@@ -1,0 +1,69 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/penetration-testing/" rel="category tag">Penetration Testing</a></span>            </div>
+            <h1 class="post-title entry-title">4 ways to SMTP Enumeration</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/4-ways-smtp-enumeration/" rel="bookmark"><time class="entry-date published" datetime="2017-09-25T16:04:57+00:00">September 25, 2017</time><time class="updated" datetime="2025-05-13T08:24:26+00:00">May 13, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">We can also find out <strong>version</strong> and <strong>valid user</strong> of SMTP server <strong>using telnet</strong>. Execute the following command and find out its version and valid user.</span></p>
+<h3><span style="color: #800000;"><strong>Telnet</strong></span></h3>
+<pre class="lang:default decode:true">telnet 192.168.1.107 25</pre>
+<p><span style="color: #000000;">From the given image you can observe that it has successfully shown “220 mail.ignite.lab ESMTP Postfix” has been installed on the target machine.</span></p>
+<p><span style="color: #000000;">You can guess for valid user account through the following command and if you receive response code 550 it means unknown user account:</span></p>
+<pre class="lang:default decode:true">vrfy raj@mail.lab.ignite</pre>
+<p><span style="color: #000000;">If you received a message <strong>code 250,251,252</strong> which means the server has accepted the request and user account is valid.</span></p>
+<p><span style="color: #000000;">But if you received a message <strong>code 550</strong> it means invalid user account as shown in given image</span></p>
+<pre class="lang:default decode:true">vrfy admin@mail.ignite.lab</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-WfBSt0lyER4/WcknVeaMJWI/AAAAAAAARlc/clE0NNWbcGcTipDfRcXrHlVyDcNLKRwvgCLcBGAs/s1600/1.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Metasploit</strong></span></h3>
+<p><span style="color: #000000;">The SMTP service has two internal commands that allow the enumeration of users: VRFY (confirming the names of valid users) and EXPN (which reveals the actual address of user’s aliases and lists of e-mail (mailing lists)). Through the implementation of these SMTP commands can reveal a list of valid users.</span></p>
+<pre class="lang:default decode:true">use auxiliary/scanner/smtp/smtp_enum
+msf auxiliary(smtp_enum) &gt; set rhosts 192.168.1.107
+msf auxiliary(smtp_enum) &gt; set rport 25
+msf auxiliary(smtp_enum) &gt; set USER_FILE /root/Desktop/user.txt
+msf auxiliary(smtp_enum) &gt; exploit</pre>
+<p><span style="color: #000000;">From the given image you can read the valid username found in the targeted server as well as it also grabs the SMTP banner.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-A4r1pD-gWw8/Wckn0i3xU7I/AAAAAAAARl0/OKMrfTJCFbY4s4HwF2oCM0WqSxI1yrf1QCLcBGAs/s1600/2.png"/></span></p>
+<h3><span style="color: #800000;"><strong>smtp-user-enum</strong></span></h3>
+<p><span style="color: #000000;"><strong>smtp-user-enum</strong> is a tool for enumerating OS-level user accounts on Solaris via the SMTP service (sendmail). Enumeration is performed by inspecting the responses to VRFY, EXPN, and RCPT TO commands. It could be adapted to work against other vulnerable SMTP daemons, but this hasn’t been done as of v1.0.</span></p>
+<p><span style="color: #000000;"><strong> </strong>Type following command to enumerate username using a dictionary of usernames:</span></p>
+<pre class="lang:default decode:true">smtp-user-enum -M VRFY -U /root/Desktop/user.txt -t 192.168.1.107</pre>
+<p><span style="color: #000000;"> <strong>-M:</strong> mode Method to use for username guessing EXPN, VRFY or RCPT </span></p>
+<p><span style="color: #000000;"><strong> -U:</strong> file File of usernames to check via SMTP service</span><br/>
+<span style="color: #000000;"> <strong> -t:</strong> host Server host running SMTP service</span></p>
+<p><span style="color: #000000;">From the given image you can see out of total 7 queries only 5 names are valid and exist in SMTP server.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-B7OruMhVIPY/Wckn-d59_JI/AAAAAAAARl8/VkPKfhfjPkYKO2zrKIjN33h3iBMKzMFYQCLcBGAs/s1600/3.png"/></span></p>
+<p><span style="color: #000000;">Type following command to verify user email address on mail server:</span></p>
+<pre class="lang:default decode:true">smtp-user-enum -M VRFY -D mail.ignite.lab -u raj -t 192.168.1.107</pre>
+<p><span style="color: #000000;"><strong>-D:</strong>  dom   Domain to append to supplied user list to make email addresses; Use this option when you want to guess valid email addresses instead of just usernames.</span></p>
+<p><span style="color: #000000;">From the given image you can see it has shown <a href="mailto:raj@mail.ignite.lab">raj@mail.ignite.lab</a> is valid email ID for user raj.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-x4zRRGK9sA4/WckoFtfZypI/AAAAAAAARmA/gqzK-CKrHiQ0PNrfdEPcOqhU0Bqpl_aVQCLcBGAs/s1600/4.png"/></span></p>
+<h3><span style="color: #800000;"><strong>i</strong><strong>SMTP</strong></span></h3>
+<p><span style="color: #000000;"><strong>iSMTP</strong> is the Kali Linux tool which is used for testing SMTP user enumeration (RCPT TO and VRFY), internal spoofing, and relay.</span></p>
+<p><span style="color: #000000;">Type following command to enumerate valid email ID of targeted server:</span></p>
+<pre class="lang:default decode:true ">ismtp -h 192.168.1.107:25 -e /root/Desktop/email.txt</pre>
+<p><span style="color: #000000;"><strong>-h &lt;host&gt;</strong>       The target IP and port (IP:port)</span></p>
+<p><span style="color: #000000;"><strong> -e &lt;file&gt;</strong>   Enable SMTP user enumeration testing and imports email list.</span></p>
+<p><span style="color: #000000;">From the given image you can see blue color text refer to a valid email account and the red color text refers to an invalid account.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-4XOSy6qm7uU/Wcn_pAF1hdI/AAAAAAAARno/pRQJEDLDTag5nwR1D3bsVYcquBUy49u-gCLcBGAs/s1600/5.png"/></p>
+<p><span style="color: #000000;"><strong>Author</strong>: Sanjeet Kumar is an Information Security Analyst | Pentester | Researcher  Contact <a href="https://www.linkedin.com/in/sanjeet-kumar-27828058/"><strong>Here</strong></a></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">
+<!-- YARPP Thumbnails -->
+<h3>Related posts:</h3>
+<div class="yarpp-thumbnails-horizontal">
+<a class="yarpp-thumbnail" rel="norewrite" href="https://www.hackingarticles.in/firefox-addons-for-pentesting/" title="Firefox Addons for Pentesting">
+<span class="yarpp-thumbnail-default"><img src="https://www.hackingarticles.in/wp-content/plugins/yet-another-related-posts-plugin/images/default.png" alt="Default Thumbnail" data-pin-nopin="true"/></span><span class="yarpp-thumbnail-title">Firefox Addons for Pentesting</span></a>
+</div>
+</div>
+            </div><!-- .entry-content -->
+            <footer class="post-footer entry-footer">
+                                                
+            </footer><!-- .entry-footer -->
+            
+	<nav class="navigation post-navigation" aria-label="Posts">
+		<h2 class="screen-reader-text">Post navigation</h2>
+		<div class="nav-links"><div class="nav-previous"><a href="https://www.hackingarticles.in/penetration-testing-telnet-port-23/" rel="prev">Penetration Testing on Telnet (Port 23)</a></div><div class="nav-next"><a href="https://www.hackingarticles.in/hack-primer-vm-ctf-challenge/" rel="next">Hack the Primer VM (CTF Challenge)</a></div></div>
+	</nav>        </div>

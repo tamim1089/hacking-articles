@@ -1,0 +1,103 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/android-penetration-testing/" rel="category tag">Android Penetration Testing</a></span>            </div>
+            <h1 class="post-title entry-title">Android Penetration Testing: Apk Reverse Engineering</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/android-penetration-testing-apk-reverse-engineering/" rel="bookmark"><time class="entry-date published" datetime="2021-02-03T18:48:47+00:00">February 3, 2021</time><time class="updated" datetime="2025-05-11T11:17:27+00:00">May 11, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Android reverse engineering refers to the process of decompiling the APK for the purpose of investigating the source code that is running in the background of an application. An attacker would ideally be able to change the lines of bytecode to make the application behave in the way that the attacker wants. However, as easily as it is put, reversing and rebuilding an APK takes more than just a shallow statement. In this article, we’ll be looking at the basics of decompilation, rebuilding, signing and changing the behaviour of an application while we do this. Let’s start.</span></p>
+<h3><span style="color: #800000;">Table of Content</span></h3>
+<ol>
+<li><span style="color: #000000;">Installation of Uncrackable Level 1 APK</span></li>
+<li><span style="color: #000000;">Decompilation</span></li>
+<li><span style="color: #000000;">Android bytecode viewer</span></li>
+<li><span style="color: #000000;">Smali files and modification</span></li>
+<li><span style="color: #000000;">Signing APK and Rebuilding</span></li>
+<li><span style="color: #000000;">Solving Challenge</span></li>
+</ol>
+<h3><span style="color: #800000;">Installation</span></h3>
+<p><span style="color: #000000;"><strong>Uncrackable</strong> is an intentionally <strong>vulnerable APK</strong> created by Bernhard Mueller which was later undertaken by the OWASP MSTG project. Level 1 of the 4 levelled challenge of APKs focuses on the basics of root detection bypass and hooking to find a secret encryption key. To install this application, follow <span style="color: #0000ff;"><strong><u><a style="color: #0000ff;" href="https://github.com/OWASP/owasp-mstg/blob/master/Crackmes/Android/Level_01/UnCrackable-Level1.apk">here</a></u></strong></span>.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-cwcGaFjep7k/YBrqSDHyW2I/AAAAAAAAtbo/7lVBtu7t8qQa45_SXTP3QWjRYgDwO-fUQCLcBGAsYHQ/s16000/1.png"/></span></p>
+<p><span style="color: #000000;">After you download the apk and install using adb in your genymotion emulator, you’d see something like this:</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-itaCoFEDHCU/YBrqWBErVdI/AAAAAAAAtbs/q6CukWns6lkNLydcmGzj77kHZhy417mnACLcBGAsYHQ/s16000/2.png"/></span></p>
+<p><span style="color: #000000;">This means that the application has some kind of logic hardcoded that prevents it from opening in rooted devices and since genymotion’s android APIs are root by default this is presenting the user with this problem. In real life environment, you’ll see many applications in which developers code this root detection logic as a security measure to prevent aid to an attacker in his campaign and thus safeguard PIIs. However, this could also pose the possibility of poor coding practice and is exploitable. There are multiple ways to solve this first hurdle; hooking and removing this restriction while runtime is one option, making the application debuggable and injecting while executing is also one method but we’ll follow the third method, which is reversing method. We’d decompile the application and remove the exit logic of the application to prevent exit.</span></p>
+<h3><span style="color: #800000;">Decompilation</span></h3>
+<p><span style="color: #000000;">The Android decompilation process is fairly simple and resembles java decompilation in many ways. Basics of the decompilation process have already been covered in a previous article <span style="color: #0000ff;"><strong><u><a style="color: #0000ff;" href="https://www.hackingarticles.in/android-application-framework-beginners-guide/">here</a></u></strong></span>. It is highly recommended you read para 3 of the article mentioned first and then resume this part.</span></p>
+<p><span style="color: #000000;">It is to be noted that Dalvik bytecode is stored in *.dex format. This dex is the compiled version of source code which is further packed with resources, manifest, META-INF (certificate) into a zip file also known as an android app with an extension *.apk.</span></p>
+<p><span style="color: #000000;">This *.dex file can be decompiled using <strong>dexdump </strong>which is provided in android SDK. In articles prior to this, we’ve used the <strong>dex2jar </strong>tool to convert dex files in readable jar format. This same was done by first unpacking the APK using apktool and then further converting <strong>classes.dex</strong> file into readable jar variant. So, let’s unpack the APK first:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">apktool d -f -r UnCrackable-Level1.apk</pre>
+<p><span style="color: #000000;">Here is something different from previous time; -r option has automatically converted classes.dex into <strong>smali </strong>files.</span></p>
+<h3><span style="color: #800000;">Smali files and modification</span></h3>
+<p><span style="color: #000000;">Smali in android is similar to what Assembly in Windows is. This is the human-readable version of dalvik bytecode. <strong>Baksmali </strong>is the tool which decompiles dex into smali files. Here, note that baksmali has converted classes.dex in smali files.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-8z4wdrTadeI/YBrqcGSLjUI/AAAAAAAAtbw/8v6e8P1RdKsMZvhwbBvinhZ40bsuxMyxACLcBGAsYHQ/s16000/3.png"/></span></p>
+<p><span style="color: #000000;">A nifty little tool known as bytecode viewer converts APK directly into readable format java code thus eliminating the need to use apktool then dex2jar and then jd-gui to view a readable java format. Here is how the application looks decompiled in bytecode viewer.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-HqNykB7oFxY/YBrqf69RnVI/AAAAAAAAtb0/t6U8PvfTpDsSRI07PIBOA6qnkWI4w1-kwCLcBGAsYHQ/s16000/4.png"/></span></p>
+<p><span style="color: #000000;">Oh, wait, while just decompiling this APK, my eye went on an interesting piece of code under MainActivity$1.class.</span></p>
+<h5><strong><span style="color: #000000;">Dealing with Obfuscation and Reverse Engineering</span></strong></h5>
+<p><span style="color: #000000;">One thing to be noted is that since this application was obfuscated while building, it is forcing it to display ambiguous information like same class name multiple times, change of name of methods etc. This is due to Proguard obfuscation technique, which, is not properly implemented since the code is still pretty much readable. Strong obfuscation makes it a headache to reverse an application and makes it near impossible for an average attacker to patch APKs.</span></p>
+<p><span style="color: #000000;">Now, let’s have a look at MainActivity$1.class</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-SoXNaExvQoo/YBrqkTHqTLI/AAAAAAAAtb8/BDhJZmmMWOsCXJ3mqd_rmFFbTO5FdLu9ACLcBGAsYHQ/s16000/5.png"/></span></p>
+<p><span style="color: #000000;">Did you note as well that application is exiting using an onClick popup? Ahh! This popup is the popup that we saw in our installation step where the application is detecting whether the device is the root or not. So, hypothetically speaking, if I remove the logic to detect SU binaries, the system won’t exist. Yes, that is one correct method, but I leave it to you readers to do and implement that. Other easier method is to remove the exit dialogue itself. This way, even if the application detects SU binaries, it will still not exit since <strong>system.exit </strong>won’t be existing now. To do that, I need to open the smali file of this class.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-5PgjlYQxXxs/YBrrWC0KHOI/AAAAAAAAtc8/cMJWfvxM3FwVymZQZfhtIJYE9LIs1mCPQCLcBGAsYHQ/s16000/7.png"/></span></p>
+<h5><strong><span style="color: #000000;">Editing Smali to Bypass Root Detection</span></strong></h5>
+<p><span style="color: #000000;">Do you see the line where I’ve marked red? This is the same system.exit logic that we just saw. Now, it takes a little practice to understand smali instructions and is certainly not possible to understand this in a day or two but with a little smart work, we can make our way around to bypass root detection. Here, <strong>invoke-static </strong>refers to a function being invoked, that is defined in the very adjoining line of code: <strong>Ljava/lang/System. </strong>This is the path where a package of the system is stored. Next, <strong>exit(I) </strong>corresponds to exit() method of System, with I as in integer as a value which is denoted by <strong>V</strong>. Pretty simple right? Now let’s delete this line altogether!</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-o6Xl5A0plD4/YBrrcHt12yI/AAAAAAAAtdA/hlt_CaP07uIpygtEzzVffsPxjZ11w83HgCLcBGAsYHQ/s16000/8.png"/></span></p>
+<p><span style="color: #000000;">That’s more than just pretty. This way we can rely on return-void instruction to return null value every time application detects a SU package and so, whole logic is rendered useless just by this alteration. Let’s try to rebuild this APK now.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">apktool b UnCrackable-Level1 -o new_uncrackable.apk</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-mdkQOoeBSHU/YBrrjU8cglI/AAAAAAAAtdE/YlLfOGisIM0gP3Y57o6tMKV1WZ22cBD-gCLcBGAsYHQ/s16000/9.png"/></span></p>
+<p><span style="color: #000000;">And just like that, we’ve built a new application. Let’s try to install this new application in our genymotion device.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">adb install new_uncrackable.apk</pre>
+<p><span style="color: #000000;">OOPS! That’s peculiar. Did this work for you? Probably not. Let’s understand why.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-hIP0nkY54OU/YBrrnB4edxI/AAAAAAAAtdM/s0NX3QjWPfgZ_8N8pose2qCOfk2fuqzaACLcBGAsYHQ/s16000/10.png"/></span></p>
+<h3><span style="color: #800000;">Signing APK and Rebuilding</span></h3>
+<p><span style="color: #000000;">The error I, and by extension, you must have received is a certificate error. Android uses something called a certificate and a Keystore. A public-key certificate, also known as a digital certificate or an identity certificate, contains the public key of a public/private key pair, as well as some other metadata identifying the owner of the key (for example, name and location). The owner of the certificate holds the corresponding private key.</span></p>
+<p><span style="color: #000000;">When you sign an APK, the signing tool attaches the public-key certificate to the APK. The public-key certificate serves as a “fingerprint” that uniquely associates the APK to you and your corresponding private key. This helps Android ensure that any future updates to your APK are authentic and come from the original author. The key used to create this certificate is called the app signing key.</span></p>
+<p><span style="color: #000000;">A Keystore is a binary file that contains one or more private keys.</span></p>
+<p><span style="color: #000000;">Every app must use the same certificate throughout its lifespan in order for users to be able to install new versions as updates to the app.</span></p>
+<p><span style="color: #000000;">When running or debugging your project from the IDE, Android Studio automatically signs your APK with a debug certificate generated by the Android SDK tools. The first time you run or debug your project in Android Studio, the IDE automatically creates the debug Keystore and certificate in $HOME/.android/debug. Keystore, and sets the Keystore and key passwords.</span></p>
+<p><span style="color: #000000;">Because the build tools create the debug certificate and design it to be insecure, most app stores (including the Google Play Store) will not accept an APK signed with a debug certificate for publishing.</span></p>
+<h5><span style="color: #000000;"><strong>But you must be wondering WHY IS THIS IMPORTANT?</strong></span></h5>
+<p><span style="color: #000000;">We’d be creating our own Keystore and signing our APK using it. To do this we’ll use a tool called <strong>keytool</strong>.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">keytool -genkey -v -keystore harshit_key.keystore -alias harsh_key -keyalg RSA -keysize 2048 -validity 10000</pre>
+<p><span style="color: #000000;">After that, you need to fill up your keystore password, name, org, city details and you’d have prepared yourself a keystore.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-1-sN6Cwlf5k/YBrrtRr3siI/AAAAAAAAtdQ/o66Da5sWhzQrAklabY7HZK4nc6oeZTonQCLcBGAsYHQ/s16000/11.png"/></span></p>
+<p><span style="color: #000000;">Basically, your keystore now saves a self-signed certificate with 10,000 days of validity, which is an RSA 2048 bit key. Now, let’s sign our patched app using this key.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">jarsigner -verbose -sigalg SHA1withRSA -digestalg SHA1 -keystore harshit_key.keystore new_uncrackable.apk harsh_key</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://1.bp.blogspot.com/-zhBTG6W8_T0/YBrr0oTuEKI/AAAAAAAAtdY/F6UDtry_Wb8aW8270Q0oUdCYg5NSByb2QCLcBGAsYHQ/s16000/12.png"/></strong></span></p>
+<p><span style="color: #000000;">Now, let’s try once again to install our apk in genymotion device using adb and see if this time it throws an error or not.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">adb install new_uncrackable.apk</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-HzBndeBnHlQ/YBrr6GSYJ-I/AAAAAAAAtdc/xrxCFoLfcR4ILucc2tz9CR9B1JvN6KkyACLcBGAsYHQ/s16000/13.png"/></span></p>
+<p><span style="color: #000000;">Perfect! Now that we’ve installed this, let’s test run our application.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-IJnij37naS4/YBrr-64K1eI/AAAAAAAAtdk/AhNVklbPGqoZ_xtcbYf6DE_Zw9OMGR2BACLcBGAsYHQ/s16000/14.png"/></span></p>
+<p><span style="color: #000000;">Voila! We’ve done it successfully. Let’s finish the challenge now by using Frida hooking technique.</span></p>
+<h3><span style="color: #800000;">Solving Challenge</span></h3>
+<p><span style="color: #000000;">Now, the challenge is to extract the secret string and get it validated as a flag. Upon further investigating it came to our notice that method a() is returning the value of the secret string. Ha! This is poor practice but helpful for our case.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-DEf9y2xF9Wc/YBrsC9J7wGI/AAAAAAAAtdo/892ir5yOOSAElb5f-Xgvooog7MvMfAlOQCLcBGAsYHQ/s16000/15.png"/></span></p>
+<p><span style="color: #000000;">Now, all we need to do is to draft out a javascript hook for frida that will change the implementation of this a() and give the secret as an output in our very own console. Huge shoutout to 0daylabs for giving the code for this hook. Here is the code:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Java.perform(function () {
+var aes = Java.use("sg.vantagepoint.a.a");
+// Hook the function inside the class.
+aes.a.implementation = function(var0, var1) {
+// Calling the function itself to get its return value
+var decrypt = this.a(var0, var1);
+var flag = "";
+// Converting the returned byte array to ascii and appending to a string
+for(var i = 0; i &lt; decrypt.length; i++) {
+flag += String.fromCharCode(decrypt[i]);
+}
+// Leaking our secret
+console.log(flag);
+return decrypt;
+}
+});</pre>
+<p><span style="color: #000000;">Now, we need to run this code using frida and check the output.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">frida -U -f owasp.mstg.uncrackable1 -l expl.js --no-pause</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-2MxVII6tPAA/YBrsGqvsedI/AAAAAAAAtds/RzUHkbAdS5Y2LVPC1vTZTx-BMx0puWuLQCLcBGAsYHQ/s16000/16.png"/></span></p>
+<p><span style="color: #000000;">As you can see that the output is successfully dumped now! Let’s see what the output is in the genymotion device.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-9DeFjvwaOgc/YBrsKj-FCVI/AAAAAAAAtdw/ea-H-ZSQqVU8sY59X6AsvxMS4nt3hB4_ACLcBGAsYHQ/s16000/17.png"/></span></p>
+<p><span style="color: #000000;">And just like that, we’ve solved this challenge. Thanks for reading.</span></p>
+<p><span style="color: #000000;"><strong>Author: Harshit Rajpal </strong>is an InfoSec researcher and left and right brain thinker. Contact<strong> <span style="color: #0000ff;"><a class="broken_link" style="color: #0000ff;" href="https://in.linkedin.com/in/harshit-rajpal-79bb43103">here</a></span></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

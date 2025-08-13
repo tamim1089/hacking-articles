@@ -1,0 +1,275 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/penetration-testing/" rel="category tag">Penetration Testing</a></span>            </div>
+            <h1 class="post-title entry-title">Penetration Testing on VoIP Asterisk Server</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/penetration-testing-on-voip-asterisk-server/" rel="bookmark"><time class="entry-date published" datetime="2020-04-13T07:13:32+00:00">April 13, 2020</time><time class="updated" datetime="2025-06-04T16:04:11+00:00">June 4, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p class="ai-optimize-6 ai-optimize-introduction"><span style="color: #000000;">Today we will be learning about VoIP Penetration Testing, which includes how to perform enumeration, information gathering, User extension, and password enumeration, SIP registration hijacking and spoofing.</span></p>
+<h3 class="ai-optimize-7"><span style="color: #800000;">Table of Content</span></h3>
+<ul>
+<li class="ai-optimize-8"><span style="color: #000000;"><strong>Introduction to VoIP</strong></span>
+<ul>
+<li class="ai-optimize-9"><span style="color: #000000;">Uses of VoIP</span></li>
+</ul>
+</li>
+<li class="ai-optimize-10"><span style="color: #000000;"><strong>SIP Protocol</strong></span>
+<ul>
+<li class="ai-optimize-11"><span style="color: #000000;">SIP Requests</span></li>
+<li class="ai-optimize-12"><span style="color: #000000;">SIP Responses</span></li>
+<li class="ai-optimize-13"><span style="color: #000000;">SIP Interaction Structure</span></li>
+</ul>
+</li>
+<li class="ai-optimize-14"><span style="color: #000000;"><strong>Real-Time Transport Protocol</strong></span></li>
+<li class="ai-optimize-15"><span style="color: #000000;"><strong>Configurations Used in Practical</strong></span></li>
+<li class="ai-optimize-16"><span style="color: #000000;"><strong>Setting Viproy VoIP Kit</strong></span></li>
+<li class="ai-optimize-17"><span style="color: #000000;"><strong>Identifying SIP Servers</strong></span></li>
+<li class="ai-optimize-18"><span style="color: #000000;"><strong>Extension Brute-force</strong></span></li>
+<li class="ai-optimize-19"><span style="color: #000000;"><strong>Extension Registration</strong></span></li>
+<li class="ai-optimize-20"><span style="color: #000000;"><strong>Call Spoofing</strong></span></li>
+<li class="ai-optimize-21"><span style="color: #000000;"><strong>Log Monitoring</strong></span></li>
+<li class="ai-optimize-22"><span style="color: #000000;"><strong>Sniffing Calls using Wireshark</strong></span></li>
+</ul>
+<h3 class="ai-optimize-23"><span style="color: #800000;">Introduction to VoIP</span></h3>
+<p class="ai-optimize-24"><span style="color: #000000;">VoIP means Voice over Internet Protocol, it’s called IP telephony, VoIP is used for communication purpose. VoIP technology allows you to make audio calls using the Internet connection instead of a regular phone (Landlines, mobile phones). Some VoIP partners may only allow you to call other people using the same service, but others may allow you to call anyone who has a telephone number – including local, long-distance, mobile, and international numbers. Also, while some VoIP services only work over your computer or a special VoIP phone (example a Cisco or Polycom, etc.).</span></p>
+<p class="ai-optimize-25"><span style="color: #000000;">VoIP by default use 5060 as its SIP signalling port. This used for registration When a phone (example a Cisco, Polycom, etc.) registers with Asterisk on port 5060.</span></p>
+<p class="ai-optimize-26"><span style="color: #000000;">The below mention functionality commonly used within VoIP installations that are not common in legacy telephony networks:</span></p>
+<ul>
+<li class="ai-optimize-27"><span style="color: #000000;">Usage of multiple lines (PRI lines, BRI Lines) and extensions</span></li>
+<li class="ai-optimize-28"><span style="color: #000000;">Voicemail service</span></li>
+<li class="ai-optimize-29"><span style="color: #000000;">Voice recording</span></li>
+<li class="ai-optimize-30"><span style="color: #000000;">Administrative Control</span></li>
+<li class="ai-optimize-31"><span style="color: #000000;">Register calls</span></li>
+<li class="ai-optimize-32"><span style="color: #000000;">Modular Configurations</span></li>
+<li class="ai-optimize-33"><span style="color: #000000;">IVR and welcome messages</span></li>
+</ul>
+<h3 class="ai-optimize-34"><span style="color: #800000;">SIP Protocol</span></h3>
+<p class="ai-optimize-35"><span style="color: #000000;">The Session Initiation Protocol (SIP) allows us to establish communication, end or change voice or video calls. The voice or video traffic is transmitted via the Real-Time Protocol (RTP) protocol. SIP is an application layer protocol that uses UDP or TCP for traffic. By default, SIP uses port 5060 UDP/TCP for unencrypted traffic or port 5061 for TLS encrypted traffic. As we will see later, Man-in-the-Middle (MITM) attack vectors exist for all types of communication, including VoIP/SIP. Therefore, encryption is a necessary compensating control to have in place regardless of the environment or service method Session Initiation Protocol is ASCII based and very similar to the HTTP protocol as it uses a Request/Response Model. Requests to the SIP client are made through SIP URI and AGI via a user-agent similar to an HTTP request made by a web browser.</span></p>
+<h4 class="ai-optimize-36"><span style="color: #800000;">SIP Requests</span></h4>
+<p class="ai-optimize-37"><span style="color: #000000;">The following request types are common within SIP:</span></p>
+<table>
+<tbody>
+<tr>
+<td width="56"><span style="color: #000000;"><strong>Sno.</strong></span></td>
+<td width="76"><span style="color: #000000;"><strong>Request</strong></span></td>
+<td width="491"><span style="color: #000000;"><strong>Description</strong></span></td>
+</tr>
+<tr>
+<td width="56"><span style="color: #000000;">1.</span></td>
+<td width="76"><span style="color: #000000;">INVITE</span></td>
+<td width="491"><span style="color: #000000;">The client is being invited to participate in a call session</span></td>
+</tr>
+<tr>
+<td width="56"><span style="color: #000000;">2.</span></td>
+<td width="76"><span style="color: #000000;">ACK</span></td>
+<td width="491"><span style="color: #000000;">Confirms that the client has received a final response to an INVITE request</span></td>
+</tr>
+<tr>
+<td width="56"><span style="color: #000000;">3.</span></td>
+<td width="76"><span style="color: #000000;">BYE</span></td>
+<td width="491"><span style="color: #000000;">Terminates a call and can be sent by either the caller or the caller</span></td>
+</tr>
+<tr>
+<td width="56"><span style="color: #000000;">4.</span></td>
+<td width="76"><span style="color: #000000;">CANCEL</span></td>
+<td width="491"><span style="color: #000000;">Deletes any pending request</span></td>
+</tr>
+<tr>
+<td width="56"><span style="color: #000000;">5.</span></td>
+<td width="76"><span style="color: #000000;">OPTIONS</span></td>
+<td width="491"><span style="color: #000000;">Queries the capabilities of servers</span></td>
+</tr>
+<tr>
+<td width="56"><span style="color: #000000;">6.</span></td>
+<td width="76"><span style="color: #000000;">REGISTER</span></td>
+<td width="491"><span style="color: #000000;">Registers the address listed in the header field with a SIP server</span></td>
+</tr>
+<tr>
+<td width="56"><span style="color: #000000;">7.</span></td>
+<td width="76"><span style="color: #000000;">PRACK</span></td>
+<td width="491"><span style="color: #000000;">Provisional Acknowledgement</span></td>
+</tr>
+<tr>
+<td width="56"><span style="color: #000000;">8.</span></td>
+<td width="76"><span style="color: #000000;">SUBSCRIBE</span></td>
+<td width="491"><span style="color: #000000;">Subscribes for an Event of Notification from the Notifier</span></td>
+</tr>
+<tr>
+<td width="56"><span style="color: #000000;">9.</span></td>
+<td width="76"><span style="color: #000000;">NOTIFY</span></td>
+<td width="491"><span style="color: #000000;">Notify the subscriber of a new Event</span></td>
+</tr>
+<tr>
+<td width="56"><span style="color: #000000;">10.</span></td>
+<td width="76"><span style="color: #000000;">PUBLISH</span></td>
+<td width="491"><span style="color: #000000;">Publishes an event to the Server</span></td>
+</tr>
+<tr>
+<td width="56"><span style="color: #000000;">11.</span></td>
+<td width="76"><span style="color: #000000;">INFO</span></td>
+<td width="491"><span style="color: #000000;">Sends mid-session information that does not modify the session state</span></td>
+</tr>
+<tr>
+<td width="56"><span style="color: #000000;">12.</span></td>
+<td width="76"><span style="color: #000000;">REFER</span></td>
+<td width="491"><span style="color: #000000;">Asks recipient to issue SIP request (Call Transfer)</span></td>
+</tr>
+<tr>
+<td width="56"><span style="color: #000000;">13.</span></td>
+<td width="76"><span style="color: #000000;">MESSAGE</span></td>
+<td width="491"><span style="color: #000000;">Transports instant messages using SIP</span></td>
+</tr>
+</tbody>
+</table>
+<p> </p>
+<p class="ai-optimize-38"><span style="color: #000000;">Based on modifies the state of the session without changing the state of the dialogue</span></p>
+<h4 class="ai-optimize-39"><span style="color: #800000;">SIP Responses</span></h4>
+<p class="ai-optimize-40"><span style="color: #000000;">We can understand the Responses using the Response code. The general categories of the Response codes are given below:</span></p>
+<ul>
+<li class="ai-optimize-41"><span style="color: #000000;">1xx (Informational)</span></li>
+<li class="ai-optimize-42"><span style="color: #000000;">2xx (Success)</span></li>
+<li class="ai-optimize-43"><span style="color: #000000;">3xx (Redirection)</span></li>
+<li class="ai-optimize-44"><span style="color: #000000;">4xx (Failed requests)</span></li>
+<li class="ai-optimize-45"><span style="color: #000000;">5xx (Web server cannot complete request)</span></li>
+<li class="ai-optimize-46"><span style="color: #000000;">6xx (Global errors)</span></li>
+</ul>
+<h4 class="ai-optimize-47"><span style="color: #800000;">SIP Interaction Structure</span></h4>
+<p class="ai-optimize-48"><span style="color: #000000;">The Typical SIP Interaction Structure consists of the following:</span></p>
+<ol>
+<li class="ai-optimize-49"><span style="color: #000000;">The sender initiates an INVITE request.</span></li>
+<li class="ai-optimize-50"><span style="color: #000000;">The receiver sends back a 100 (Trying) response.</span></li>
+<li class="ai-optimize-51"><span style="color: #000000;">The sender starts ringing by sending a 180 (Ringing) response.</span></li>
+<li class="ai-optimize-52"><span style="color: #000000;">The receiver picks up the phone and a 200  success response is sent (OK).</span></li>
+<li class="ai-optimize-53"><span style="color: #000000;">ACK is sent by the initiator.</span></li>
+<li class="ai-optimize-54"><span style="color: #000000;">The call started using RTP.</span></li>
+<li class="ai-optimize-55"><span style="color: #000000;">BYE request sent to end the call.</span></li>
+</ol>
+<h3 class="ai-optimize-56"><span style="color: #800000;">Real-time Transport Protocol</span></h3>
+<p class="ai-optimize-57"><span style="color: #000000;">The RTP is a network protocol for delivering audio and video over networks. RTP protocol is used in communication and entertainment systems that involve streaming media such as telephony and video or teleconference applications. RTP default port from 16384 to 32767, those ports used for sip calls. In our scenario, we are using the UDP port range 10000-20000 for RTP-the media stream, voice, and video channels.</span></p>
+<h3 class="ai-optimize-58"><span style="color: #800000;">Configurations used in Practical</span></h3>
+<ul>
+<li class="ai-optimize-59"><span style="color: #000000;"><strong>Attacker:</strong></span>
+<ul>
+<li class="ai-optimize-60"><span style="color: #000000;">OS: Kali Linux 2020.1</span></li>
+<li class="ai-optimize-61"><span style="color: #000000;">IP: 192.168.1.4</span></li>
+</ul>
+</li>
+<li class="ai-optimize-62"><span style="color: #000000;"><strong>Target:</strong></span>
+<ul>
+<li class="ai-optimize-63"><span style="color: #000000;">VOIP Server: Trixbox</span></li>
+<li class="ai-optimize-64"><span style="color: #000000;">VOIP Client: Zoiper</span></li>
+<li class="ai-optimize-65"><span style="color: #000000;">IP: 192.168.1.7</span></li>
+</ul>
+</li>
+</ul>
+<p class="ai-optimize-66"><span style="color: #000000;">We have already published an article on How to set up a VoIP Server. Please read it before proceeding further. We will be using the same server that we configured in that article</span></p>
+<p class="ai-optimize-67"><span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.hackingarticles.in/lab-setup-voip-penetration-testing/">Lab Setup for VOIP Penetration Testing</a></strong></span></p>
+<h3 class="ai-optimize-68"><span style="color: #800000;">Setting up Viproy VoIP Kit</span></h3>
+<p class="ai-optimize-69"><span style="color: #000000;">Before beginning with the Penetration Testing, we need to add the Viproy-VoIP kit to our Metasploit. A detailed procedure on how to add modules in Metasploit can be found <a style="color: #000000;" href="https://github.com/rapid7/metasploit-framework/wiki/Setting-Up-a-Metasploit-Development-Environment">here</a>. The steps depicted are taken from Rapid7 and Viproy Author.</span></p>
+<h5 class="ai-optimize-107"><span style="color: #000000;"><strong>Installing Dependencies and Cloning Repository</strong></span></h5>
+<p class="ai-optimize-70"><span style="color: #000000;">We need to install some dependencies. First, we will be updating our sources and then install the following dependencies.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">sudo apt update &amp;&amp; sudo apt install -y git autoconf build-essential libcap-dev libpq-dev zlib1g-dev libsqlite3-dev</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-hi87ZhovTqc/XpQKiVoSTpI/AAAAAAAAjgE/BTI-nZ3jB_MUqlNt886R-KlgYJFt0MGVQCLcBGAsYHQ/s1600/1.png"/></p>
+<p class="ai-optimize-71"><span style="color: #000000;">Once we are done with installing all the dependencies, its time to clone the Viproy Repository to our Kali Linux. It contains the modules that we need to add to our Metasploit Framework</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">git clone https://github.com/fozavci/viproy-voipkit.git</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-CzrNSMT-8rc/XpQKlWVjZxI/AAAAAAAAjgs/UeMdmVe7c60v0FBM6DOHCVVirdVOX3qpQCLcBGAsYHQ/s1600/2.png"/></p>
+<p class="ai-optimize-72"><span style="color: #000000;">Here we can see that we have the lib directory and the modules directory as well as the kaliinstall script.</span></p>
+<h5 class="ai-optimize-108"><span style="color: #000000;"><strong>Manual Module Installation</strong></span></h5>
+<p class="ai-optimize-73"><span style="color: #000000;">Before running the script, we need to manually copy the contents of the lib directory and the modules directory to the Metasploit’s lib and modules directory respectively.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd /viproy-voipkit/modules/auxiliary/
+cp -r voip/ /usr/share/metasploit-framework/modules/auxiliary/VoIP/</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-53GjGwwsX50/X4Co64NhuAI/AAAAAAAApVo/9KcVe_lvLhcqrPpIrDdmQHBYlAAxWWOiwCLcBGAsYHQ/s16000/8.png"/></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd viproy-voipkit/modules/auxiliary/spoof/cisco
+cp viproy_cdp.rb /usr/share/metasploit-framework/modules/auxiliary/VoIP/</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-oU7vmZr-VOI/X4CpSUuH74I/AAAAAAAApV0/52kOR2Knep4NxLAWYx0FYBUMD1S9BaNIgCLcBGAsYHQ/s16000/9.png"/></p>
+<p class="ai-optimize-74"><span style="color: #000000;">Now we need to make the entries of the modules we copied in the Mixins Files located at /usr/share/Metasploit-framework/lib/msf/core/auxiliary/.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">echo "require 'msf/core/auxiliary/sip'" &gt;&gt; /usr/share/metasploit-framework/lib/msf/core/auxiliary/mixins.rb
+echo "require 'msf/core/auxiliary/skinny'" &gt;&gt; /usr/share/metasploit-framework/lib/msf/core/auxiliary/mixins.rb
+echo "require 'msf/core/auxiliary/msrp'" &gt;&gt; /usr/share/metasploit-framework/lib/msf/core/auxiliary/mixins.rb</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-JywzYh0rs6A/XpQKl5emyuI/AAAAAAAAjg0/qoTCzzXqROoew1VqeHoxGbPUOQMmWoB-wCLcBGAsYHQ/s1600/4.png"/></p>
+<p class="ai-optimize-75"><span style="color: #000000;">This can be done manually as well or using another text editor.</span></p>
+<h5 class="ai-optimize-109"><span style="color: #000000;"><strong>Alternative Installation Method</strong></span></h5>
+<p class="ai-optimize-76"><span style="color: #000000;">This is all that we needed to do. If this method doesn’t work or gives some errors. The author was kind enough to give a pre-compiled version. To install that we will be following these steps.</span></p>
+<p class="ai-optimize-77"><span style="color: #000000;">First, we will clone the precompiled version from GitHub.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">git clone https://github.com/fozavci/metasploit-framework-with-viproy.git</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-DcAe0WZOTpk/X4Cpy4tqH2I/AAAAAAAApV8/IfttT1wLlBIJA3ilgLKUcmfL8qU3E6WggCLcBGAsYHQ/s16000/10.png"/></p>
+<p class="ai-optimize-78"><span style="color: #000000;">Then we will traverse into the directory and install the viproy using gem.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd metasploit-framework-with-viproy/
+gem install bundler
+bundle install</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/--XSYIEdUwhI/X4Cp8nNID9I/AAAAAAAApWA/T8cLhRXgsssnMEyufPSoK3EYVIv3qqdgACLcBGAsYHQ/s16000/11.png"/></p>
+<p class="ai-optimize-79"><span style="color: #000000;">It will take some time. After it’s done we will need to reload the modules in Metasploit Framework.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">reload_all</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-Y7FFbcXbiGI/XpQKmYa8-YI/AAAAAAAAjg8/qSd8bnQ4QnAWhshVAdGLaOixmD79xhvLwCLcBGAsYHQ/s1600/6.png"/></p>
+<p class="ai-optimize-80"><span style="color: #000000;">That was the installation of the Viproy Toolkit. Let’s start Penetration Testing on our VoIP Server.</span></p>
+<p class="ai-optimize-81"><span style="color: #000000;">In a VoIP network, information that can be proven useful is VoIP gateway’s or servers, IP-PBX systems, client software (softphones)/VoIP phones and user extensions. Let’s have a look at some of the widely used tools for enumeration and fingerprinting.</span></p>
+<h3 class="ai-optimize-82"><span style="color: #800000;">Identifying SIP Servers</span></h3>
+<p class="ai-optimize-83"><span style="color: #000000;">By using sip Metasploit Scanner Module identify systems by providing a single IP or a range of IP addresses we can scan all the VoIP Servers and their enabled options.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">use auxiliary/scanner/sip/options
+set rhosts 192.168.1.0/24
+run</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-c6h3zcHP17E/XpQKmk-zm7I/AAAAAAAAjhA/rj3UuzLj3skGiSHYR1OSI4Q2FqhUS0nuACLcBGAsYHQ/s1600/7.png"/></p>
+<p class="ai-optimize-84"><span style="color: #000000;">Here, we can see that our scan gave us a VoIP Server running on 192.168.1.7. We can also see that it has a User-Agent as “Asterisk” and we can see that it has multiple Requests enabled on it.</span></p>
+<h3 class="ai-optimize-85"><span style="color: #800000;">Extension Bruteforce</span></h3>
+<p class="ai-optimize-86"><span style="color: #000000;">Next, we will be doing a brute-force on the target server to extract the Extensions and Passwords or secrets. For this particular practice, we made 2 dictionaries. One for the usernames and the other for the passwords. Next, we need to define the range for the extensions. We chose the range 0000000 to 99999999. And then we run the exploit</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">use auxiliary/voip/viproy_sip_bruteforce
+set rhosts 192.168.1.7
+set minext 00000000
+set maxext 99999999
+set user_file /home/kali/user.txt
+set pass_file /home/kali/pass.txt
+exploit</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-UD6fEBx1-bM/XpQKm4myhHI/AAAAAAAAjhE/jsDDLS-APPExHQSExcTZ8gwL5dhUaHp2ACLcBGAsYHQ/s1600/8.png"/></p>
+<p class="ai-optimize-87"><span style="color: #000000;">Here, we can see that we were able to extract 10 extensions. Ensure that the secret that we setup for the extension is difficult to guess to prevent brute-force of this kind.</span></p>
+<h3 class="ai-optimize-88"><span style="color: #800000;">Extension Registration</span></h3>
+<p class="ai-optimize-89"><span style="color: #000000;">Since we have the extensions and the secrets. Now it’s time to move one step ahead and register the extensions so that we can be able to initiate calls from the attacker machine. We chose the extension 99999999. We cracked its secret to be 999. Now, all we had to do is provide the server IP address and the extension and secret. As soon as we run the auxiliary, we get a 200 OK response from the server telling us that the extension is registered with this IP Address.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">use auxiliary/voip/viproy_sip_register
+set rhosts 192.168.1.7
+set username 99999999
+set password 999
+run</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-kYRC4LpBLjo/XpQKnVrqe9I/AAAAAAAAjhI/L3rjxRzfnfcdNepbTEYjFeHleaG7AMsjACLcBGAsYHQ/s1600/9.png"/></p>
+<p class="ai-optimize-90"><span style="color: #000000;">Here, we have to register the software as we don’t have a trunk line or PSTN lines or PRI line for making the outgoing calls. Hence, we are testing the extension to extension calling.</span></p>
+<h3 class="ai-optimize-91"><span style="color: #800000;">Call Spoofing</span></h3>
+<p class="ai-optimize-92"><span style="color: #000000;">We registered the extension 99999999 in the last practical; going forward, we will use it to call the extension 00000000. Here, we have complete control over how we spoof the caller ID. We have Hacker selected. In order to access the server using the 999 secrets, we must set the login to true. Additionally, in order for the numeric user to accept the numeric extensions, we must set it to true.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">use auxiliary/voip/viproy_sip_invite
+set rhosts 192.168.1.7
+set to 00000000
+set from 99999999
+set login true
+set fromname hacker
+set username 99999999
+set password 999
+set numeric users true
+run</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-myKHnOciw-w/XpQKinQmoiI/AAAAAAAAjgM/I108NIME5WYpERtDlONEiZbPFQV5_zNWgCLcBGAsYHQ/s1600/10.png"/></p>
+<p class="ai-optimize-93"><span style="color: #000000;">As soon as we run the auxiliary, we can see that there is a call initiated from the extension 999999999 to the extension 00000000 which we set on our Zoiper Client. We can also see that we have the Hacker Caller ID that we set in the auxiliary.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-qCuMmMCBRU8/XpQKjDtmeRI/AAAAAAAAjgQ/zCTYSn9CxVY3sQB9z8_iOgEq6Aru2I7oACLcBGAsYHQ/s1600/11.png"/></p>
+<h3 class="ai-optimize-94"><span style="color: #e69999;"><span style="color: #800000;">Log Monitoring</span> </span></h3>
+<p class="ai-optimize-95"><span style="color: #000000;">We can monitor the logs on the VoIP Server which contains the information about all the calls that were initiated, connected, dropped. All the extensions and other important information. We can always brute-force it or check for default credentials. First, we will connect the server using the ssh and then we will run the following command to open up the asterisk console panel. This panel records the logs in real-time.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ssh 192.168.1.7
+asterisk -rvvvvvvvvvvvvvvv</pre>
+<h3><img decoding="async" src="https://1.bp.blogspot.com/-368oYmrsuz0/XpQKj94L4HI/AAAAAAAAjgU/vA_JNUqcLFIctFUGvs3YHfr6ANbh6o6ugCLcBGAsYHQ/s1600/12.png"/></h3>
+<h3 class="ai-optimize-96"><span style="color: #800000;">Sniffing Calls using Wireshark</span></h3>
+<p class="ai-optimize-97"><span style="color: #000000;">When users initiate a phone call, we can observe the captured SIP traffic using Wireshark. We launch the Wireshark and choose the network adapter on which the VoIP server is working on. Then we start capturing packets. If we observe closely, we can see that there is a tab called Telephony in Wireshark’s Menu. In the drop-down menu, we have the first option “VoIP Calls”.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-PfYfsxyU9yM/XpQKj2av7gI/AAAAAAAAjgY/d2ZV5D4ZmJEYI8Q4PdLtV-2GT62bKWKSACLcBGAsYHQ/s1600/13.png"/></p>
+<h5 class="ai-optimize-110"><span style="color: #000000;"><strong>Capturing and Analyzing VoIP Calls</strong></span></h5>
+<p class="ai-optimize-98"><span style="color: #000000;">As soon as we click on the VoIP Calls, the system opens a window showing all the calls that we captured during the sniffing. We see that there is a sequence of packets from one IP Address to another.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-b_qgtYtwmIw/XpQKkMh8cVI/AAAAAAAAjgc/G3E0YtAS56AQnN34MepiZNKuD3ihSLNxwCLcBGAsYHQ/s1600/14.png"/></p>
+<p class="ai-optimize-99"><span style="color: #000000;">If we click on the Flow Sequence button at the bottom, we can see the SIP Communication handshakes that we learned about in the Introduction.</span></p>
+<p class="ai-optimize-100"><span style="color: #000000;">In this picture, we can analyze a call in-detail. In a SIP call flow, there are several SIP transactions. A SIP transaction consists of several requests and answers and the way to group them in the same transaction is using the CSeq:103 parameter.</span></p>
+<h5 class="ai-optimize-111"><span style="color: #000000;"><strong>Understanding SIP Call Flow</strong></span></h5>
+<p class="ai-optimize-101"><span style="color: #000000;">The first step is the must be registering the extension. After extension registration corresponds to a session establishment. From extension 99999999 session consists of an INVITE request of the user to the 00000000. Immediately, the proxy sends a TRYING 100 to stop the broadcastings and reroute the request to the extension 00000000.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-LoRa3Lag954/XpQKkirHSxI/AAAAAAAAjgg/fRGcKQE4g3knKvNB8mylgzzogRFcIfCAQCLcBGAsYHQ/s1600/15.png"/></p>
+<p class="ai-optimize-102"><span style="color: #000000;">The extension 00000000 sends a Ringing 180 when the telephone begins to ring, and it is also rerouting by the proxy to the A user. Finally, the OK 200 message corresponds to the accept process (the extension 00000000 response the call). After ringing the call server try to assign the RTP ports and the RTP transport protocol starts with the parameters (ports, addresses, codecs, etc.) of the SDP protocol. The last transaction corresponds to a session end. The system carries out this with an only BYE request to the Proxy and later reroutes to extension 00000000.</span></p>
+<h5 class="ai-optimize-112"><span style="color: #000000;"><strong>Playing Captured Audio Streams</strong></span></h5>
+<p class="ai-optimize-103"><span style="color: #000000;">This user replies with an OK 200 message to confirm that the system received the final message correctly. A user named hacker initiated the call with the extension 99999999 to extension 00000000. The above example shows the duration of the call and the current state. Wireshark assembled the call packets, and now we can listen to the entire phone call. After disconnecting we play the entire phone call conversion.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-FnHUF5H05LM/XpQKlDIbs2I/AAAAAAAAjgo/6cTGswL1Qh8HLJX9lTivUTD96CPMfhvaQCLcBGAsYHQ/s1600/17.png"/></p>
+<p class="ai-optimize-104"><span style="color: #000000;">When we click the Play Streams button it asks the output device based on your laptop driver. Then we can click on the Play Button, and we can hear the conversation that someone made on that VoIP Call.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-67-M-_qLGks/XpQKk3ShVeI/AAAAAAAAjgk/9nJCfdnOoDkVJy3PmyR5O-g3kylJUtf9QCLcBGAsYHQ/s1600/16.png"/></p>
+<p class="ai-optimize-105"><span style="color: #000000;">This was one of the articles in a series of articles that we are currently researching on VoIP. Stay Tuned for more!</span></p>
+<p class="ai-optimize-106"><span style="color: #000000;"><strong>Author: </strong>Madhava Rao Yejarla is an Ethical Hacker, Security Analyst, Penetration Tester from India. Contact on <strong><a style="color: #000000;" href="https://www.linkedin.com/in/yejarla-madhava-rao-b285b5b1/">LinkedIn</a> </strong>or <strong><a style="color: #000000;" href="https://twitter.com/YejarlaMadhava" data-saferedirecturl="https://www.google.com/url?q=https://www.linkedin.com/mwlite/in/yejarla-madhava-rao-b285b5b1&amp;source=gmail&amp;ust=1586846757025000&amp;usg=AFQjCNFC8mQwK4xoGPpotVKcAlO7SIxW-A">Twitter</a></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

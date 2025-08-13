@@ -1,0 +1,92 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">Photographer 1: Vulnhub Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/photographer-1-vulnhub-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2020-08-14T12:39:32+00:00">August 14, 2020</time><time class="updated" datetime="2025-07-15T16:24:01+00:00">July 15, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today, in this article we are going to gain the root access of an easy level machine called <strong>“Photographer 1”</strong> which is available at Vulnhub for penetration testing and you can download it from <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.vulnhub.com/entry/photographer-1,519/">here</a></strong></span>. The credit for making this lab goes to <a style="color: #000000;" href="https://twitter.com/v1n1v131r4">v1n1v131r4</a>. So, let’s get started and learn how to successfully root this machine.</span></p>
+<h3><span style="color: #800000;"><strong>Table</strong><strong> of Content</strong></span></h3>
+<p><span style="color: #000000;"><strong>Reconnaissance</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Netdiscover to find the machines on our Network</span></li>
+<li><span style="color: #000000;">Nmap to detect open ports</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Enumeration</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Enumerating sambashare</span></li>
+<li><span style="color: #000000;">Discovering Koken CMS</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Exploitation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Authenticating and exploiting Koken CMS using a public exploit</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Privilege Escalation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">SUID binary set for php7.2</span></li>
+</ul>
+<h3><span style="color: #800000;"><strong>Reconnaissance</strong></span></h3>
+<p><span style="color: #000000;"><strong> </strong>Let’s set up our lab using a NAT network. We will first detect the IP address of the vulnerable machine using <strong>netdiscover. </strong>The command to be used is:</span></p>
+<pre class="lang:default decode:true">netdiscover -r 10.0.2.0/24</pre>
+<p><span style="color: #000000;"><strong><img decoding="async" src="https://1.bp.blogspot.com/-cBeFxqSYVcI/XzZ_VbhvNlI/AAAAAAAAnMs/HFK5LnUh8WEMLNYuAnGgnzJmBXBpLHgYwCLcBGAsYHQ/s1600/1.png"/> </strong></span></p>
+<p><span style="color: #000000;">So, the IP address found is <strong>10.0.2.20</strong>.</span></p>
+<p><span style="color: #000000;">Now, that we have our target machine’s IP let’s go ahead and scan it using <strong>nmap</strong>. </span><span style="color: #000000;">We’ll do this by using the command:</span></p>
+<pre class="lang:default decode:true">sudo nmap –sV 10.0.2.20</pre>
+<p><span style="color: #000000;"><strong> </strong>From the below screenshot, we can see that there are 4 ports open on our target machine which can be further used for the <strong>enumeration</strong> process.</span></p>
+<p><span style="color: #000000;">The discovered ports are 80,139,445 and 8000.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-WzCyK6bbT1E/XzZ_huV-zoI/AAAAAAAAnMw/Tu8wRJelaMcHT3XToUyCmhs3eGIswucpQCLcBGAsYHQ/s1600/2.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Enumeration</strong></span></h3>
+<p><span style="color: #000000;"><strong> </strong>With ports 139 and 445 open, which are the <strong>SMB</strong> ports let’s try for the low hanging fruit that is samba share. Usually, in a boot2root, we could attempt a null session and see if we get any information. We’ll use <strong>smbclient</strong> to find the shares which we can access without creds. The below commands are to be used to find the shares:</span></p>
+<pre class="lang:default decode:true">smbclient –N –L \\\\10.0.2.20
+smbclient  \\\\10.0.2.20\\sambashare
+get mailsent.txt
+get wordpress.bkp.zip</pre>
+<p><span style="color: #000000;">Ok!!! So, it seems that we can access sambashare. Let’s go ahead and access that.</span></p>
+<p><span style="color: #000000;">We find two files in sambashare by the names <strong>mailsent.txt</strong> and <strong>wordpress.bkp.zip</strong> which we’ll download into our machine for further inspection using the <strong>get</strong> command.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-m0kDtVryhqQ/XzZ_sCdcqAI/AAAAAAAAnM4/uuI8lrHjeOYz-8ATVhWxdhNcx07vS1SOgCLcBGAsYHQ/s1600/3.png"/></span></p>
+<p><span style="color: #000000;">The <strong>mailsent.txt</strong> file seems to be interesting. Let’s read that and see if there’s anything useful in it for us.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/--BVvQ5uAf4Y/XzZ_3VvJ6qI/AAAAAAAAnNA/YszWTagK3dUeLMz664YlK4CVKRWngBwEwCLcBGAsYHQ/s1600/4.png"/></span></p>
+<p><span style="color: #000000;">Well, we do have some important information with us. We get two usernames <strong>Daisa</strong> and <strong>Agi</strong>.</span></p>
+<p><span style="color: #000000;">We can see that <strong>Agi</strong> is talking about some secret. At this stage, we felt it might be some sort of credentials related clue so, let’s save this information for future use.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-hecxg53I1DM/XzaAAQlQu_I/AAAAAAAAnNI/WiTb18eNaBcEZyeKErI2b-4kY3LpiIscwCLcBGAsYHQ/s1600/5.png"/></span></p>
+<p><span style="color: #000000;">Now, that we have the usernames with us let’s go ahead and enumerate port 80. Unfortunately, we couldn’t find anything resourceful there so, we decided to enumerate port 8000 and we were greeted with this:</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-xSCHkNKF3aQ/XzaBTLj-i1I/AAAAAAAAnNY/VyMh4xprij4hKAUyEWK9l5W90nllermtgCLcBGAsYHQ/s1600/6.png"/></span></p>
+<p><span style="color: #000000;">The server seems to be running <strong>Koken CMS</strong>. Let’s Google it to search for a public exploit. It seems that we have found one.</span></p>
+<p><strong><span style="color: #0000ff;"><a style="color: #0000ff;" href="https://www.exploit-db.com/exploits/48706">https://www.exploit-db.com/exploits/48706</a></span></strong></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-oE8CaU_FnmY/XzaBYGc8VlI/AAAAAAAAnNc/cx6B1Y4cgzEnIQJfj0VhY3n6VxxNetQPwCLcBGAsYHQ/s1600/7.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Exploitation</strong></span></h3>
+<p><span style="color: #000000;">Reading through the exploit, it seems to be an authenticated file upload exploit, which means we need some credentials. Browsing to the admin page of the CMS, we see we need to enter some credentials</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-1wKQDyPyGlI/XzaBc72WWYI/AAAAAAAAnNg/0KLqSRQGrHsf-fYktQeKsABpq63QIeVWQCLcBGAsYHQ/s1600/8.png"/></span></p>
+<p><span style="color: #000000;">After some trial and error, we were still unable to sign-in. Seems to be a roadblock. But wait, we have yet not tried the credentials we got earlier.</span></p>
+<p><span style="color: #000000;">If you remember, we had got two usernames earlier <strong>Daisa</strong> and <strong>Agi </strong>from the <strong>mailsent.txt</strong> file. Let’s go ahead and try those usernames.</span></p>
+<p><span style="color: #000000;">Great!!! We have successfully logged in using the below credentials:</span></p>
+<pre class="lang:default decode:true">daisa@photographer.com : babygirl.</pre>
+<p><span style="color: #000000;">Now, we are logged in the CMS.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-JYaKJ0rp788/XzaBjOPJ7ZI/AAAAAAAAnNk/0pUSy-qj7jIL1eGwgXWis43y7XMe7ki0wCLcBGAsYHQ/s1600/9.png"/></span></p>
+<p><span style="color: #000000;">We will now upload our <strong>php shell</strong> which is already available in Kali. To upload our shell, we’ll follow the steps mentioned in the exploitdb link. We click on <strong>“import content”</strong> first</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-2MtNgo5vysY/XzaBsACo6uI/AAAAAAAAnNs/IaXPsOThKM85cWcmPWYjbSodqifUl4ECACLcBGAsYHQ/s1600/10.png"/></span></p>
+<p><span style="color: #000000;">Now, we get a prompt to upload our shell as we can see below.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-MPDGIYgsETo/XzaB0ZXXkhI/AAAAAAAAnN4/FaD2gRZRrFIFVPi0dcBraezZjYDKASHdwCLcBGAsYHQ/s1600/11.png"/></span></p>
+<p><span style="color: #000000;">Before uploading our php reverse shell, we need to add a <strong>.jpg</strong> extension to it in order to bypass extension filtering according to the exploit. Once, we rename it accordingly, we will use burp suite to intercept the imported data and remove the <strong>jpg</strong> extension and forward the request.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-n7okl88GyoQ/XzaB7ymnb9I/AAAAAAAAnOA/HMTV2ORLcGkHZSDlh5RJtNWIwhOUT8dbgCLcBGAsYHQ/s1600/12.png"/></span></p>
+<p><span style="color: #000000;">We need to press the forward tab two-three times after making the changes. We immediately get a reverse shell on our <strong>netcat</strong> listener.</span></p>
+<p><span style="color: #000000;">Now, that we have gained the reverse shell we shall first spawn the shell by using the command:</span></p>
+<pre class="lang:default decode:true">python -c "import pty;pty.spawn('/bin/bash')"</pre>
+<p><span style="color: #000000;"><strong> </strong>After spawning our shell we’ll change our directory from<strong> home </strong>to<strong> daisa. </strong></span><span style="color: #000000;">Once, we are in dais’s directory we’ll go ahead and open the <strong>user.txt</strong> file. </span><span style="color: #000000;">On opening the file, we found our <strong>user flag</strong> which is shown in the image below.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-zpeZj3hTraI/XzaCGTyy1hI/AAAAAAAAnOI/Drm1-1fF6EYCHu90LLA9i1yxqBzKald6QCLcBGAsYHQ/s1600/13.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Privilege Escalation</strong></span></h3>
+<p><span style="color: #000000;"><strong> </strong>Now, it’s time for that part of the CTF where everyone waits to gain the root access. </span><span style="color: #000000;">But, hold on. Let’s go slow and steady. </span><span style="color: #000000;">We will first check for any <strong>suid</strong> binaries using the command:</span></p>
+<pre class="lang:default decode:true">find / -perm –u=s –type f 2&gt;/dev/null</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-sMYu3axuGqw/XzaCRNeE5tI/AAAAAAAAnOQ/c2eIaxNm3d4q6Ge5S8iKltdKZYCKuDzsgCLcBGAsYHQ/s1600/14.png"/></span></p>
+<p><span style="color: #000000;">It seems that php7.2 was set to suid and we can easily escalate our privileges by using php7.2 like this:</span></p>
+<pre class="lang:default decode:true">/usr/bin/php7.2 -r "pcntl_exec('/bin/bash', ['-p']);"</pre>
+<p><span style="color: #000000;">We referred to <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://gtfobins.github.io/">GTFO</a> </strong></span>bins for it. </span><span style="color: #000000;">Great!!! Now, that we have root access, are we all ready to get the root flag?</span></p>
+<p><span style="color: #000000;">I’m sure everybody is, so let’s go and capture that final flag. </span><span style="color: #000000;">Once you are in the root shell simply change your directory to root by using the command:</span></p>
+<pre class="lang:default decode:true">cd root</pre>
+<p><span style="color: #000000;">Now, that we are in the root directory we’ll read the<strong> proof.txt </strong>file by using the command <strong>cat proof.txt </strong></span><span style="color: #000000;">Alright, there you go. We now have access to our final flag as shown in the image below.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Zds-STaAHEo/XzaCYjEfnRI/AAAAAAAAnOY/7KqVrS5aYes4fd-K-qeunMXk60nekw38gCLcBGAsYHQ/s1600/15.png"/></span></p>
+<p><span style="color: #000000;"><strong>Author</strong>: Arnav Tripathy is cybersecurity enthusiast and blogger. Contact  <strong><a style="color: #000000;" href="https://twitter.com/tripster98" target="_blank" rel="noopener noreferrer" data-saferedirecturl="https://www.google.com/url?q=https://twitter.com/tripster98&amp;source=gmail&amp;ust=1597494867484000&amp;usg=AFQjCNHGiL7TK1b_V6gM8JZuejxqop8CSQ">here</a> </strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

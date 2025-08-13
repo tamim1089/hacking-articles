@@ -1,0 +1,119 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/red-teaming/" rel="category tag">Red Teaming</a></span>            </div>
+            <h1 class="post-title entry-title">RDP Session Hijacking with tscon</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/rdp-session-hijacking-with-tscon/" rel="bookmark"><time class="entry-date published" datetime="2020-04-24T07:32:10+00:00">April 24, 2020</time><time class="updated" datetime="2025-06-02T07:27:13+00:00">June 2, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p class="ai-optimize-6 ai-optimize-introduction"><span style="color: #000000;">In this article, we will learn to hijack an RDP session using various methods. This is a part of Lateral movement which is a technique that the attacker uses to move through the target environment after gaining access.</span></p>
+<h3 class="ai-optimize-7"><span style="color: #800000;">Table of Content</span></h3>
+<ul>
+<li class="ai-optimize-8"><span style="color: #000000;">Introduction to RDP</span></li>
+<li class="ai-optimize-9"><span style="color: #000000;">Features of RDP</span></li>
+<li class="ai-optimize-10"><span style="color: #000000;">Working of RDP</span></li>
+<li class="ai-optimize-11">Introduction of tscon</li>
+<li class="ai-optimize-12"><span style="color: #000000;">Manual</span></li>
+<li class="ai-optimize-13"><span style="color: #000000;">Task manager</span></li>
+<li class="ai-optimize-14"><span style="color: #000000;">Mimikatz</span></li>
+<li class="ai-optimize-15"><span style="color: #000000;">Mitigation</span></li>
+<li class="ai-optimize-16"><span style="color: #000000;">Conditions for the practical</span></li>
+<li class="ai-optimize-17"><span style="color: #000000;">Conclusion</span></li>
+</ul>
+<h3 class="ai-optimize-18"><span style="color: #800000;">Introduction to RDP</span></h3>
+<p class="ai-optimize-19"><span style="color: #000000;">RDP stands for Remote Desktop Protocol, which works on port number TCP/UDP 3389 and Microsoft developed it. Later, other operating systems also applied it. It allows a user to connect with another user remotely using a GUI. Although it comes by default in Windows, numerous third-party tools are available too. This protocol enables users to remotely manage systems and applications.</span></p>
+<h3 class="ai-optimize-20"><span style="color: #800000;">Features of RDP </span></h3>
+<p class="ai-optimize-21"><span style="color: #000000;">RDP 6.0 came with various features in 2011. These features are listed below:</span></p>
+<ul>
+<li class="ai-optimize-22"><span style="color: #000000;">Windows Presentation Foundation applications and remoting</span></li>
+<li class="ai-optimize-23"><span style="color: #000000;">Multiple monitor support</span></li>
+<li class="ai-optimize-24"><span style="color: #000000;">Redirection</span></li>
+<li class="ai-optimize-25"><span style="color: #000000;">Aero glass remoting</span></li>
+<li class="ai-optimize-26"><span style="color: #000000;">Encrypted connection</span></li>
+<li class="ai-optimize-27"><span style="color: #000000;">Bandwidth reduction</span></li>
+<li class="ai-optimize-28"><span style="color: #000000;">Supports up to 64,000 channels for data transmission</span></li>
+</ul>
+<h3 class="ai-optimize-29"><span style="color: #800000;">Working of RDP</span></h3>
+<p class="ai-optimize-30"><span style="color: #000000;">When an RDP connection is initiated and the data is ready for transfer, the system encrypts the data. This encrypted data is then further added to frames for transmission. The data is then transferred on the principles of TCP/IP table.</span></p>
+<p class="ai-optimize-31"><span style="color: #000000;">Wdtshare.sys, the RDP driver, manages the GUI and is in-charge of encryption and transmission of data. It also takes care of compressing the data and adding it to the frames. Tdtcp.sys, transport driver, make sure that data is ready and is being sent through the network on the bases of TCP/IP table.</span></p>
+<h3 class="ai-optimize-32"><span style="color: #800000;">Introduction to tscon</span></h3>
+<p class="ai-optimize-33">tscon is a Microsoft Windows utility that was introduced the release of Windows Server 2012. It is used to connect to another session on a Remote Desktop Session Host server. It requires the destination and the session id to work. The User credentials can also be passed as parameter in tscon. Read more about it <a href="https://docs.microsoft.com/en-us/windows-server/administration/windows-commands/tscon">here</a>.</p>
+<h3 class="ai-optimize-34"><span style="color: #800000;">Manual</span></h3>
+<p class="ai-optimize-35"><span style="color: #000000;">As we have understood the RDP protocol and its working, so let’s move the focus on one thing, i.e. this RDP protocol also allows us to connect to a different user in the same system using tscon.exe. And that’s what we will do in this method. First, we will get an RDP session of <strong>user 1, i.e. yashika</strong>, and once we have established RDP connection with yashika then we will obtain RDP connection of <strong>user 2, i.e. pavan</strong>, via yashika (user 1). The only condition in this method is that you should have administrator rights of yashika (user 1). Let’s start with the proof of concept.</span></p>
+<p class="ai-optimize-36"><span style="color: #000000;">As you can see, in the image below, we have two users – yashika and pavan</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-JLhOrln34fY/XqKRz2evHtI/AAAAAAAAjr4/9HRMpaV3EBYx_aYdde4Y2ftsbqSP2l67gCLcBGAsYHQ/s1600/0.png"/></p>
+<p class="ai-optimize-37"><span style="color: #000000;">Let now get the IP of yashika (user 1) using the<strong> ipconfig</strong> command just like we have shown in the image below:</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-L717VawDLAY/XqKRzjwlV9I/AAAAAAAAjr0/3XrXCAr4TOIseU6z7nEDuRiPVPdKy5GYACLcBGAsYHQ/s1600/1.png"/></p>
+<p class="ai-optimize-38"><span style="color: #000000;">Launch the remote desktop connection app and enter the IP of the target system, in our case that is the IP yashika (user 1) and then click on Connect button as shown in the image below:</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-1u5UfBEMlSU/XqKR0QrH7vI/AAAAAAAAjsE/Lg7U276mi8gE0GYltU-fgwn6-zzVhLWJgCLcBGAsYHQ/s1600/2.png"/></p>
+<p class="ai-optimize-39"><span style="color: #000000;">As you click on the Connect button, it will ask you for the credentials for yashika (user 1) as shown below:</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-Aeqxg-X-KBM/XqKR0uWp55I/AAAAAAAAjsI/BZDFEnruvawCE1BBJjlVl0d-Fe7UmN-pwCLcBGAsYHQ/s1600/3.png"/></p>
+<p class="ai-optimize-40"><span style="color: #000000;">Once you have entered the credentials, click on OK button and as soon as you click on OK, Remote Desktop GUI will be activated. Now that we have access to yashika (user 1), we will use a couple of commands from the command prompt to first check the pavan’s (user 2) information such as their user ID and then we will use tscon command to create a process that will interact with pavan (user 2) and then we will start the process to enable Remote Desktop GUI of pavan (user 2).</span></p>
+<h5 class="ai-optimize-41"><span style="color: #000000;"><strong>Syntax</strong>:</span></h5>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">sc create &lt;process_name&gt; binpath= "cmd.exe /k tscon &lt;user 2_ID&gt; /dest:&lt;session_name&gt;"</pre>
+<p class="ai-optimize-42"><span style="color: #000000;">And the commands are:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">query user
+sc create hijack binpath= "cmd.exe /k tscon 2 /dest:rdp-tcp#1"
+net start hijack</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-xjRWL-lC5Xs/XqKR1ZvBQjI/AAAAAAAAjsM/cnR7GSXs-l8J2UX4yYHa0Sx-gKPxLxlAwCLcBGAsYHQ/s1600/5.png"/></p>
+<p class="ai-optimize-43"><span style="color: #000000;">And as you can see in the image below, we have the Remote Desktop GUI of pavan (user 2) which can be validated using the command <strong>whoami</strong>.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-wsQzygf3iAc/XqKR1oZNXCI/AAAAAAAAjsQ/h5pw5ORYOaw9Z_hU3Uau2iZ16kqI-uRugCLcBGAsYHQ/s1600/6.png"/></p>
+<h3 class="ai-optimize-44"><span style="color: #800000;">Task Manager</span></h3>
+<p class="ai-optimize-45"><span style="color: #000000;">Now the same thing can also be done via task manager. The one condition with this method is to know the credentials of both users. And then using a similar method above just get the remote session of GUI of yashika (user 1) and then <strong>open task manager</strong> and go to <strong>user tab</strong>. Under the user tab, you can see pavan (user 1) just like in the image below. There, <strong>right-click on pavan</strong> (user 2). A drop-down menu will appear. From that menu click on <strong>Connect</strong>.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-zp_MQcz0gao/XqKR1gZkPFI/AAAAAAAAjsU/ScFo0lE6UeURuNPLVWqpa1Tg6i-Jo049ACLcBGAsYHQ/s1600/7.png"/></p>
+<p class="ai-optimize-46"><span style="color: #000000;">As soon as you click on Connect, it will as you for the credentials of pavan (user 2) as shown in the image below:</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-o7lOXzhHNfc/XqKR2NZKtvI/AAAAAAAAjsY/g_zOjIRA5E0GveGGytOJIYae0kQ6rpbnwCLcBGAsYHQ/s1600/8.png"/></p>
+<p class="ai-optimize-47"><span style="color: #000000;">Once you give the credentials, the remote session GUI of pavan will be initiated as shown in the image below. And then again you can validate the session using <strong>whoami </strong>command.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-GBEU3uz9Zk0/XqKR2ecfUmI/AAAAAAAAjsc/gSWNv2iwuo8Ldl2BAfWciIE8BK4iOG5dwCLcBGAsYHQ/s1600/9.png"/></p>
+<h3 class="ai-optimize-48"><span style="color: #800000;">Mimikatz</span></h3>
+<p class="ai-optimize-49"><span style="color: #000000;">Another method of hijacking RDP is through Mimikatz. This is one of the best methods as there are no conditions in this method. Once you are connected with yashika (user1), fire up the good ole mimikatz. Use the following command to have various user’s information:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ts::sessions</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-lekko4tzZvU/XqKRzyNfApI/AAAAAAAAjr8/euze0tntuDc6lUPkATrrDThV2nQdD2z1gCLcBGAsYHQ/s1600/10.png"/></p>
+<p class="ai-optimize-50"><span style="color: #000000;">Once you have the required user information, use the following command for privilege escalation:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">privilege::debug
+token::elevate</pre>
+<p class="ai-optimize-51"><span style="color: #000000;">And when you elevate the privileges, use the following command to initiate the remote GUI connection to pavan (user 2):</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ts::remote /id:1</pre>
+<p class="ai-optimize-52"><span style="color: #000000;">here, in id:1, 1 is the <strong>session number</strong> that we retrieved by using the command <strong>ts::sessions.</strong></span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-7d1DkskR8Yw/XqKR0cgJUqI/AAAAAAAAjsA/wHtQLPhq5RgDBpC2O1c19bi7GtZAgEpywCLcBGAsYHQ/s1600/11.png"/></p>
+<p class="ai-optimize-53"><span style="color: #000000;">Once you execute the above set of commands, you will have the remote GUI connection to pavan (user 2) via yashika (user 1).</span></p>
+<h3 class="ai-optimize-54"><span style="color: #800000;">Mitigation</span></h3>
+<p class="ai-optimize-55"><span style="color: #000000;">For mitigation against RDP session hijacking use the following methods:</span></p>
+<ul>
+<li class="ai-optimize-56"><span style="color: #000000;">Apply various group policies such as log off the disconnected session after user disconnects.</span></li>
+<li class="ai-optimize-57"><span style="color: #000000;">Implement network Segmentation, i.e. do not reveal RDP to the internet.</span></li>
+<li class="ai-optimize-58"><span style="color: #000000;">You can also apply two-factor authentication.</span></li>
+<li class="ai-optimize-59"><span style="color: #000000;">Disable RDP is not necessary</span></li>
+<li class="ai-optimize-60"><span style="color: #000000;">Make sure your employees are aware of how RDP hijacking is done.</span></li>
+<li class="ai-optimize-61"><span style="color: #000000;">Limit the permissions of a user accessing RDP.</span></li>
+<li class="ai-optimize-62"><span style="color: #000000;">Audit the remote Desktop users regularly</span></li>
+<li class="ai-optimize-63"><span style="color: #000000;">Monitor tscon.exe</span></li>
+<li class="ai-optimize-64"><span style="color: #000000;">Keep an eye on all the services using cmd.exe /k or cmd.exe /c parameters in regards to RDP</span></li>
+</ul>
+<h3 class="ai-optimize-65"><span style="color: #800000;">Conditions for the practical</span></h3>
+<ul>
+<li class="ai-optimize-66"><span style="color: #000000;">You must have Full Control access permission or Connect special access permission to connect to another session.</span></li>
+<li class="ai-optimize-67"><span style="color: #000000;">The /dest:&lt;SessionName&gt; parameter allows you to connect the session of another user to a different session.</span></li>
+<li class="ai-optimize-68"><span style="color: #000000;">If you do not specify a password in the &lt;Password&gt; parameter, and the target session belongs to a user other than the current one, tscon fails.</span></li>
+<li class="ai-optimize-69"><span style="color: #000000;">You cannot connect to the console session.</span></li>
+</ul>
+<h3 class="ai-optimize-70"><span style="color: #800000;">TL; DR</span></h3>
+<p class="ai-optimize-71"><span style="color: #000000;">Attackers can connect to various systems/users in the network using RDP. This technique is known as Remote Desktop Session Hijacking. They can use various credential dumping techniques to get their hands-on credentials for RDP but tools like Mimikatz allow us to highjack such RDP sessions without knowing the credentials. This high-jacking of RDP sessions can be done both remotely and locally for both active and disconnected sessions. It can be locally by using the following commands:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">query user
+sc create hijack binpath= "cmd.exe /k tscon 2 /dest:rdp-tcp#1"
+net start hijack</pre>
+<p class="ai-optimize-72"><span style="color: #000000;">the tscon.exe allows an attacker to get RDP session without the requirement of credentials. You can also high-jack RDP sessions using task manager (which I explained above in the article), and when you implement such a technique with Mimikatz, use the following commands:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">privilege::debug
+token::elevate
+ts::remote /id:1</pre>
+<h3 class="ai-optimize-73"><span style="color: #800000;">Conclusion</span></h3>
+<p class="ai-optimize-74"><span style="color: #000000;">RDP session hijacking has been done large scale. Many C2 servers, such as Cobalt Strike and Kodiac, allow us to initiate RDP connection,s which further leads to lateral movement, such as RDP session hijacking. The attacker has used this technique in multiple high-level attacks. For example, Lazarus Group used RDP for propagation, WannaCry tries to execute itself on each session, Leviathan targeted RDP credentials and used it to move through the network, FIN8 used RDP for lateral movement, etc. Therefore, it is important to be familiar with such methods and technique to protect oneself as it a liability which works in the favour of attackers. </span></p>
+<p class="ai-optimize-74"><span style="color: #000000;">It is one of the popular lateral movement techniques as it does not make proper event logs, which allows the attacker to cover their tracks. Such a technique can also point the attacker to Remote System Discovery. And all of this is done by using mere native Windows commands.</span></p>
+<h3 class="ai-optimize-75"><span style="color: #800000;">Reference</span></h3>
+<p class="ai-optimize-76"><span style="color: #0000ff;"><a style="color: #0000ff;" href="https://attack.mitre.org/techniques/T1076/">MITRE ATT&amp;CK</a></span></p>
+<p class="ai-optimize-77"><span style="color: #0000ff;"><a style="color: #0000ff;" href="http://www.korznikov.com/2017/03/0-day-or-feature-privilege-escalation.html">http://www.korznikov.com/2017/03/0-day-or-feature-privilege-escalation.html</a></span></p>
+<p class="ai-optimize-6"><span style="color: #000000;">To learn more about Red Teaming. Follow this</span> <a href="https://www.hackingarticles.in/category/red-teaming/">Link.</a></p>
+<p class="ai-optimize-78"><span style="color: #000000;"><strong>Author: </strong>Yashika Dhir is a Cyber Security Researcher, Penetration Tester, Red Teamer, Purple Team enthusiast. Contact her on <a style="color: #000000;" href="https://www.linkedin.com/in/yashika-dhir/">Linkedin</a> and Twitter</span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

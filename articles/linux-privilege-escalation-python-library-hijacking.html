@@ -1,0 +1,150 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/privilege-escalation/" rel="category tag">Privilege Escalation</a></span>            </div>
+            <h1 class="post-title entry-title">Linux Privilege Escalation: Python Library Hijacking</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/linux-privilege-escalation-python-library-hijacking/" rel="bookmark"><time class="entry-date published" datetime="2021-06-03T16:44:24+00:00">June 3, 2021</time><time class="updated" datetime="2025-05-27T18:13:33+00:00">May 27, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p class="ai-optimize-6 ai-optimize-introduction"><span style="color: #000000;">In this article, we will demonstrate another method of Escalating Privileges on Linux-based Devices by exploiting the Python Libraries and scripts.</span></p>
+<h3 class="ai-optimize-7"><span style="color: #800000;">Table of Content</span></h3>
+<ul>
+<li class="ai-optimize-8"><span style="color: #000000;"><strong>Introduction</strong></span></li>
+<li class="ai-optimize-9"><span style="color: #000000;"><strong>Python Script Creation</strong></span></li>
+<li class="ai-optimize-10"><span style="color: #000000;"><strong>Method 1 [Write Permissions]</strong></span>
+<ul>
+<li class="ai-optimize-11"><span style="color: #000000;">Vulnerability Creation</span></li>
+<li class="ai-optimize-12"><span style="color: #000000;">Exploitation</span></li>
+</ul>
+</li>
+<li class="ai-optimize-13"><span style="color: #000000;"><strong>Method 2 [Priority Order]</strong></span>
+<ul>
+<li class="ai-optimize-14"><span style="color: #000000;">Vulnerability Creation</span></li>
+<li class="ai-optimize-15"><span style="color: #000000;">Exploitation</span></li>
+</ul>
+</li>
+<li class="ai-optimize-16"><span style="color: #000000;"><strong>Method 3 [PYTHONPATH Environment Variable]</strong></span>
+<ul>
+<li class="ai-optimize-17"><span style="color: #000000;">Vulnerability Creation</span></li>
+<li class="ai-optimize-18"><span style="color: #000000;">Exploitation</span></li>
+</ul>
+</li>
+<li class="ai-optimize-19"><span style="color: #000000;"><strong>Conclusion</strong></span></li>
+</ul>
+<h3 class="ai-optimize-20"><span style="color: #800000;">Introduction</span></h3>
+<p class="ai-optimize-21"><span style="color: #000000;">In general, whenever an attacker is introduced inside an environment that has python files. The options that the attacker can use to elevate its access are limited. There are 3 methods that we will discover in the article. Some misconfigurations include write permissions, sudo privileges, and editing the Path Variable.</span></p>
+<h3 class="ai-optimize-22"><span style="color: #800000;">Python Script Creation </span></h3>
+<p class="ai-optimize-23"><span style="color: #000000;">To demonstrate the action of elevating privileges using python scripts, we created a sample script that imports some libraries. In a real-life scenario, this can be general python scripts or projects that a bunch of developers is working on. In a Capture the Flag Scenario, these are easy to find and might contain a script that would be similar to this one. The script imports the webbrowser module and then proceeds to use the open function to run the default web browser on the device to open the hackingarticles web page.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nano hack.py
+import webbrowser
+webbrowser.open("https://hackingarticles.in")
+cat hack.py</pre>
+<p class="ai-optimize-24"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-ez-BEVvDBjg/YLkCb6zhVZI/AAAAAAAAwS4/jOW8bx2T6GsMTj7xLry83S0JH43D-kJ_gCLcBGAsYHQ/s16000/1.png"/></span></p>
+<p class="ai-optimize-25"><span style="color: #000000;">To see how the scripts work, we run the script and find that a web browser is opened with hackingaricles web page as depicted below.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python3 hack.py</pre>
+<p class="ai-optimize-26"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-9nbXFPoYHK8/YLkCvbkj5oI/AAAAAAAAwTA/lh8v5bs85XwTIGRfNtVrZumTXK8Qw1LQwCLcBGAsYHQ/s16000/2.png"/></span></p>
+<h3 class="ai-optimize-27"><span style="color: #800000;">Method 1</span></h3>
+<p class="ai-optimize-28"><span style="color: #000000;">This vulnerability arises from the permissions that apply to the Module file that our script imports. When the imported module file has permissions that allow any user to edit, it creates a vulnerability. In the python script we created, we call the webbrowser.py module file. When you have an unaltered environment that has all the default permission, it is not an issue but in a development environment, there tends to have some compromises of security over minor convenience. To get a better understanding of what goes in the background, what permissions can lead to a privilege escalation we will first create the vulnerability in our ubuntu environment and then use Kali Linux to exploit this vulnerability. </span></p>
+<h3 class="ai-optimize-29"><span style="color: #000000;"><span style="color: #800000;">Vulnerability Creation</span> </span></h3>
+<p class="ai-optimize-30"><span style="color: #000000;">As discussed, in this method the vulnerability is based on the permissions on the module file. To create this vulnerability, we need to locate the module file first. We used the locate command to find it. We see that it is located inside the /usr/lib/python3.8/. This could vary from installation to installation. So, try and locate it in your environment. Then we can see that the permission that is by default on the module file are read, write, execute permissions for owner, execute and read for group and only execute permissions for other. This means unless the user is the root, it cannot edit the file. To create the vulnerability, we changed the permissions so that they can be read, write, and executed by every user. This can be verified from the image below.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">locate webbrowser.py
+ls -la /usr/lib/python3.8/webbrowser.py
+sudo chmod 777 /usr/lib/python3.8/webbrowser.py
+ls -la /usr/lib/python3.8/webbrowser.py</pre>
+<p class="ai-optimize-31"><span style="color: #000000;"><strong> <img decoding="async" src="https://1.bp.blogspot.com/-ORywM4muHHA/YLkC0eyB3XI/AAAAAAAAwTE/XnkMSsz1T2omn2cl-L766EaiMNAh3OZtACLcBGAsYHQ/s16000/3.png"/></strong></span></p>
+<p class="ai-optimize-32"><span style="color: #000000;">The next order of business to make our machine vulnerable is to provide a way to run the python script. The easiest way to do this is to make an entry inside the sudoers file so that the attacker (which will have access to user pavan) will be able to execute the python script that we created (hack.py)</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nano /etc/sudoers
+pavan ALL=(root) NOPASSWD: /usr/bin/python3.8 /home/pentest/hack.py</pre>
+<p class="ai-optimize-33"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-M07_jvjrGig/YLkC4Y4mLHI/AAAAAAAAwTI/zR6FUrhwJhAIezsgZsv9GZyYsl9xN5lFgCLcBGAsYHQ/s16000/4.png"/></span></p>
+<p class="ai-optimize-34"><span style="color: #000000;">This is a complete process that made the machine vulnerable to Python Library Hijacking. All the configurations that are not mentioned are to set to the default that Linux has. No other changes have been made whatsoever. Time to pose as an attacker.</span></p>
+<h3 class="ai-optimize-35"><span style="color: #800000;">Exploitation </span></h3>
+<p class="ai-optimize-36"><span style="color: #000000;">The exploitations will not contain a method to gain the initial foothold on the target machine. It will contain the method to elevate the privilege after the attacker gains the initial foothold. To stimulate this we connect to the target machine as the user pavan. As any attacker who requires to elevate privileges, we ran the sudo -l command to see which scripts or binaries we can run with elevated access. We see that we can use python3.8 to run the hack.py. As an attacker, we investigate the script using the cat command to see that it is importing a module by the name of webbrowser. We use the locate command to find the location of the module and find that it is located inside /usr/lib/python3.8. Next, we check for permissions for the module and find that it is writable by a pavan user to whom we have access.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ssh pavan@192.168.1.46
+sudo -l
+cat /home/pentest/hack.py
+locate webbrowser.py
+ls -la /usr/lib/python3.8/webbrowser.py</pre>
+<p class="ai-optimize-37"><span style="color: #000000;"><strong> <img decoding="async" src="https://1.bp.blogspot.com/-OKWHat1TDCk/YLkDDP1P-LI/AAAAAAAAwTQ/dkMe1eC8bqQY9h8QHmWU9Ltv6NCH20w7ACLcBGAsYHQ/s16000/5.png"/></strong></span></p>
+<p class="ai-optimize-38"><span style="color: #000000;">We use the nano editor to open the module file and added the python reverse shell script inside the function that is called by the hack.py file. We saw earlier that it opens up a webpage in the browser. So, it will be using an open function. Hence, we will add the reverse shellcode as depicted below.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nano /usr/lib/python3.8/webbrowser.py</pre>
+<p class="ai-optimize-39"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-xjOTbXnv7cY/YLkDIH7NqNI/AAAAAAAAwTY/SdYeXpC6LHkIjX6Lz9QKi0YlqpPIgxAOgCLcBGAsYHQ/s16000/6.png"/></span></p>
+<p class="ai-optimize-40"><span style="color: #000000;">After editing the module file, we save and close the editor. Back on the Kali Linux console, we open a Netcat listener on the port mentioned in the reverse shell script and then come back to the shell as the pavan user and execute the hack.py script with sudo as shown in the image.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">sudo /usr/bin/python3.8 /home/pentest/hack.py</pre>
+<p class="ai-optimize-41"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-CSYdWrZZHb8/YLkDMuuvKTI/AAAAAAAAwTc/dq82PQwBEnMEVyGVsUtA90aUs_rFZit8QCLcBGAsYHQ/s16000/7.png"/></span></p>
+<p class="ai-optimize-42"><span style="color: #000000;">As soon as the script is running, we see that a session is connected to our Netcat listener. The whoami command clarifies that the session we have is for the root user on the target machine. We have successfully elevated privilege from the pavan user to the root user.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nc -lvp 1234
+whoami</pre>
+<p class="ai-optimize-43"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-zy4Rom8DskY/YLkDYbN3FcI/AAAAAAAAwTo/Cq-48aYfXvIoEIDAZROysLl_01MTPcfUwCLcBGAsYHQ/s16000/8.png"/></span></p>
+<h3 class="ai-optimize-44"><span style="color: #800000;">Method 2</span></h3>
+<p class="ai-optimize-45"><span style="color: #000000;">This vulnerability arises from the priority order of the Python Library path that our script applies to the Module file it imports. When a script imports a module, Python looks for the particular module file inside the default directories in a specific priority order. In the Python script we created, we call the webbrowser.py module file. The system will locate the searched module in one of the default paths. Although if there exists a python module file in the same directory as the original script, it will get priority over the default paths. To get a better understanding of what goes in the background, how can it lead to a privilege escalation we will first create the vulnerability in our ubuntu environment and then use Kali Linux to exploit this vulnerability. </span></p>
+<h3 class="ai-optimize-46"><span style="color: #000000;"><span style="color: #800000;">Vulnerability Creation</span> </span></h3>
+<p class="ai-optimize-47"><span style="color: #000000;">As discussed, in this method the vulnerability is based on the priority order of the module file execution. To create this vulnerability, first, we need to revert the vulnerable permissions that we created earlier. So that this machine doesn’t become vulnerable in multiple ways. We change the permissions of the webbrowser.py.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ls -la /usr/lib/python3.8/webbrowser.py</pre>
+<p class="ai-optimize-48"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-QbOhtPxoD7Q/YLkDe4GfRRI/AAAAAAAAwTs/XoGCQOwoNIo9TDPjqYITDVum500T4rOzwCLcBGAsYHQ/s16000/11.png"/></span></p>
+<p class="ai-optimize-49"><span style="color: #000000;">Next, we get back to the python script that we created earlier. We can see that it is located in the home of the pavan user and it still contains the same code that we began with. It still imports the webbrowser module.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ls
+cat hack.py</pre>
+<p class="ai-optimize-50"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-ckvDvUwU49Q/YLkDpDraY3I/AAAAAAAAwT0/h8UJFikKbdEIMzpUC7PQplpg5TsD8nKWQCLcBGAsYHQ/s16000/12.png"/></span></p>
+<p class="ai-optimize-51"><span style="color: #000000;">Since we moved the script from the pentest user home directory to the home directory of the pavan user, we need to make the change inside the sudoers file as well so that it contains the correct path for the script hack.py.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nano /etc/sudoers
+pavan ALL=(root) NOPASSWD: /usr/bin/python3.8 /home/pavan/hack.py</pre>
+<p class="ai-optimize-52"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-0nG7soE2s4U/YLkDuxYhYnI/AAAAAAAAwT8/9G-8CnDRYwAhD93GkXMcifYZt5-8MFiqACLcBGAsYHQ/s16000/13.png"/></span></p>
+<p class="ai-optimize-53"><span style="color: #000000;">This is a complete process that made the machine vulnerable to Python Library Hijacking. All the configurations that are not mentioned are to set to the default that Linux has. No other changes have been made whatsoever. Time to pose as an attacker.</span></p>
+<h3 class="ai-optimize-54"><span style="color: #800000;">Exploitation </span></h3>
+<p class="ai-optimize-55"><span style="color: #000000;">Again, the exploitation will not contain a method to gain the initial foothold on the target machine. It will contain the method to elevate the privilege after the attacker gains the initial foothold. To stimulate this, we connect to the target machine as the user pavan. As any attacker who requires to elevate privileges, we ran the sudo -l command to see which scripts or binaries we can run with elevated access. We see that we can use python3.8 to run the hack.py. As an attacker, we investigate the script using the cat command to see that it is importing a module by the name of webbrowser.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ssh pavan@192.168.1.46
+sudo -l
+ls
+cat hack.py</pre>
+<p class="ai-optimize-56"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-9pTFoy81wEc/YLkDz-BFvYI/AAAAAAAAwUA/_-HWN5FrXy4yuIggWw1lR6sr1vyBkuWNACLcBGAsYHQ/s16000/14.png"/></span></p>
+<p class="ai-optimize-57"><span style="color: #000000;">Since the hack.py is located inside the home directory of the pavan user, and we have access as the pavan user, we can create a file inside the home directory. In this scenario, it should be noted that we can’t edit the hack.py file. If that was the case, we would directly edit the file and add a reverse shellcode inside but in this scenario, we will create a webbrowser.py file. We will add the python reverse shellcode inside the webbrowser.py file that we just created.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nano webbrowser.py
+cat webbrowser.py</pre>
+<p class="ai-optimize-58"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-949B5nZz8g0/YLkD4Jv95FI/AAAAAAAAwUE/h06yjE8K-ZcVzV5Ra17MSnb_7jEWEH7dACLcBGAsYHQ/s16000/15.png"/></span></p>
+<p class="ai-optimize-59"><span style="color: #000000;">Next, we need to run a Netcat listener on the port that we mentioned inside the reverse shellcode. Then we will proceed to execute the hack.py script using the sudo.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">sudo /usr/bin/python3.8 /home/pavan/hack.py</pre>
+<p class="ai-optimize-60"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-EGSYfHepS7I/YLkEBTv6fGI/AAAAAAAAwUQ/Z9O1xxL7-VEFTk4SrnYMi_AaV-O6BjJRwCLcBGAsYHQ/s16000/16.png"/></span></p>
+<p class="ai-optimize-61"><span style="color: #000000;">As soon as the script is running, we see that a session is connected to our Netcat listener. The id command clarifies that the session we have is for the root user on the target machine. We have successfully elevated privilege from the pavan user to the root user.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nc -lvp 1234
+id</pre>
+<p class="ai-optimize-62"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Mrp--goPQLc/YLkEKnmyJmI/AAAAAAAAwUc/LcPjRunzCg0VMItjtJUqt9V435UkSAtIQCLcBGAsYHQ/s16000/17.png"/></span></p>
+<h3 class="ai-optimize-63"><span style="color: #800000;">Method 3</span></h3>
+<p class="ai-optimize-64"><span style="color: #000000;">This vulnerability is based on the Python Library that is searching through the Python PATH Environment Variable. This variable holds a list of directories where the python searches for the different directories for the imported modules. If an attacker can change or modify that variable then they can use it to elevate privileges on the target machine. To get a better understanding of what goes in the background, how can it lead to a privilege escalation we will first create the vulnerability in our ubuntu environment and then use Kali Linux to exploit this vulnerability. </span></p>
+<h3 class="ai-optimize-65"><span style="color: #000000;"><span style="color: #800000;">Vulnerability Creation</span> </span></h3>
+<p class="ai-optimize-66"><span style="color: #000000;">As discussed, this method the vulnerability is based on the environment path variable. To create this vulnerability, first, we need to revert the vulnerable permissions that we created earlier. So that this machine doesn’t become vulnerable in multiple ways. We create the hack.py script inside the tmp directory. We can verify that the contents of the script are the same as before.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd /tmp
+ls
+cat hack.py</pre>
+<p class="ai-optimize-67"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Njl9nqdtlPQ/YLkEP4sZK2I/AAAAAAAAwUg/pXFszUtxCpU--ccRHyH_knSlL_k-KrkjQCLcBGAsYHQ/s16000/50.png"/></span></p>
+<h4 class="ai-optimize-83">Edit Sudoers File</h4>
+<p class="ai-optimize-68"><span style="color: #000000;">Then, we need to make some changes inside the sudoers file. First, we change the location of the file to /tmp directory then we add the SETENV tag into the file. This means that the pavan user can use the SETENV command with sudo permissions without entering the root password. The SETENV is the tool that can change the value for the PYTHONPATH environment variable to include any location into the order of execution that we learned in the previous method.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nano /etc/sudoers
+pavan ALL=(root) NOPASSWD:SETENV  /usr/bin/python3.8 /tmp/hack.py</pre>
+<p class="ai-optimize-69"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-_sJkKUzIy7I/YLkEUE1EujI/AAAAAAAAwUo/Y7T9UU015XEy9KGp5mDRs9i9XQggzugkQCLcBGAsYHQ/s16000/51.png"/></span></p>
+<p class="ai-optimize-70"><span style="color: #000000;">This is the complete process that made the machine vulnerable to Python Library Hijacking. Set all the configurations that are not mentioned to the default that Linux has. No one has made any other changes whatsoever. Time to pose as an attacker.</span></p>
+<h3 class="ai-optimize-71"><span style="color: #800000;"><strong>Exploitation</strong></span></h3>
+<h4 class="ai-optimize-82">Enumerate Sudo Permissions</h4>
+<p class="ai-optimize-72"><span style="color: #000000;">Again, the exploitation will not contain a method to gain the initial foothold on the target machine. It will contain the method to elevate the privilege after the attacker gains the initial foothold. To stimulate this, we connect to the target machine as the user pavan. As any attacker who requires to elevate privileges, we ran the sudo -l command to see which scripts or binaries we can run with elevated access. We see that we can use the SETENV with elevated access. This means that we can use it to alter the priority order of the imported module. Since the hack.py is located inside the /tmp directory, we move into it and check the hack.py script.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ssh pavan@192.168.1.46
+sudo -l
+cd /tmp
+ls</pre>
+<p class="ai-optimize-73"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-_8W6tyh5Sh8/YLkEam-HJfI/AAAAAAAAwUs/UP4ffKGNxZIUv-S5lv6KQLqDOKmivMTaQCLcBGAsYHQ/s16000/52.png"/></span></p>
+<h4 class="ai-optimize-81">Create Malicious Python Module</h4>
+<p class="ai-optimize-74"><span style="color: #000000;">Since it is importing the webbrowser module, we first will create a malicious module file with the name of webbrowser.py, and then using the ability to change the Environment Variable PYTHONPATH we will make an entry to include our malicious module file. The malicious module file contains the reverse shellcode. We start a Netcat listener on the same port as mentioned in the script and proceed to add the /tmp directory into the Python Path and then execute the hack.py file to elevate our access.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cat hack.py
+nano webbrowser.py
+cat webbrowser.py
+sudo PYTHONPATH=/tmp/ /usr/bin/python3.8  /tmp/hack.py</pre>
+<p class="ai-optimize-75"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-h-AQP4hygPk/YLkEh7CfmbI/AAAAAAAAwU0/6wadQFSRNNsAgpRpzXnEqxoUjsadl-h5QCLcBGAsYHQ/s16000/53.png"/></span></p>
+<p class="ai-optimize-76"><span style="color: #000000;">As soon as the script is running, we see that our Netcat listener connects to a session. The whoami command clarifies that we have a session for the root user on the target machine. We successfully elevated privilege from the pavan user to the root user.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nc -lvp 1234
+id</pre>
+<p class="ai-optimize-77"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-IMWIB-AKNAw/YLkElo2rDuI/AAAAAAAAwU8/3Ex6CCRw3Js6s8WQPWw6n0ugPhiNJCLJQCLcBGAsYHQ/s16000/54.png"/></span></p>
+<h3 class="ai-optimize-78"><span style="color: #800000;"><strong>Conclusion </strong></span></h3>
+<p class="ai-optimize-79"><span style="color: #000000;">In this article, we were able to set up three real-life scenarios for the environment for the Python Libraries and then introduced some misconfigurations that can lead to an attacker elevating their access to the root level. Attackers target the development environment because they prioritize the ease of performing tasks over the security of the environment. This article proves that single misconfigured settings can result in devastating results.</span></p>
+<p class="ai-optimize-84"><span style="color: #000000;">To learn more about Privilege Escalation. Follow this <strong><a href="https://www.hackingarticles.in/category/privilege-escalation/">Link.</a></strong></span></p>
+<p class="ai-optimize-80"><span style="color: #000000;"><strong>Author: Pavandeep Singh</strong> is a Technical Writer, Researcher, and Penetration Tester. Contact on <span style="color: #0000ff;"><strong>Twitter</strong> </span>and <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.linkedin.com/in/pavan2318/">LinkedIn</a></strong></span></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

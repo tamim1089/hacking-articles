@@ -1,0 +1,259 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/android-penetration-testing/" rel="category tag">Android Penetration Testing</a></span>            </div>
+            <h1 class="post-title entry-title">Android Penetration Testing: Frida</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/android-penetration-testing-frida/" rel="bookmark"><time class="entry-date published" datetime="2021-01-03T17:03:56+00:00">January 3, 2021</time><time class="updated" datetime="2025-05-11T16:00:21+00:00">May 11, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Researchers use Frida, a dynamic instrumentation toolkit, to perform android hooking (intercepting IPC and modifying it to make a function perform the desired function). Frida uses javascript to perform hooking since Android’s native code and javascript both run on JIT compilation techniques, it can intercept its inter-process communication, add the code specified in a script and completely change the function’s implementation. Some of its use cases in real life are:</span></p>
+<ul>
+<li><span style="color: #000000;">Spy on Crypto APIs</span></li>
+<li><span style="color: #000000;">Modify function’s output</span></li>
+<li><span style="color: #000000;">Bypass AES encryption</span></li>
+<li><span style="color: #000000;">Bypass SSLPinning and Root detection</span></li>
+<li><span style="color: #000000;">Trace private application code</span></li>
+<li><span style="color: #000000;">Bypass various software sided locks (like applock)</span></li>
+</ul>
+<p><span style="color: #000000;">In this article, we’ll explain the basics of Frida, how to create your own Frida script, hook it into processes, and perform various functions. Needless to say, a program can do countless things; therefore, Frida’s applications have no limit, hence, this article only covers the basics. If you want an advanced look into Frida and reverse engineering, I’ll tag the resources at the bottom of the article.</span></p>
+<h3><span style="color: #800000;">Table of Content</span></h3>
+<ul>
+<li><strong><span style="color: #000000;">Root detection bypass</span></strong></li>
+<li><strong><span style="color: #000000;">Hooking different kinds of methods used in Java</span></strong>
+<ul>
+<li><strong><span style="color: #000000;">Native methods – onCreate, onStart etc.</span></strong></li>
+<li><strong><span style="color: #000000;">exit()</span></strong></li>
+<li><strong><span style="color: #000000;">user defined methods</span></strong></li>
+<li><strong><span style="color: #000000;">variable</span></strong></li>
+</ul>
+</li>
+<li><strong><span style="color: #000000;">SSLPinning bypass</span></strong></li>
+<li><strong><span style="color: #000000;">Implementing hooking in python</span></strong></li>
+<li><strong><span style="color: #000000;">Playing a game!</span></strong></li>
+</ul>
+<p><span style="color: #000000;">Let’s go then.</span></p>
+<h3><span style="color: #800000;">Root Detection Bypass</span></h3>
+<p><span style="color: #000000;">Application developers sometimes hard-code a detection logic per which an application successfully detects the presence of various SU binaries and stops execution of the application. One such example is demonstrated below. As you can see the app gives a popup of restriction and exits as soon user hits ok.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-c8YjaehEcAc/X_Hv-Kz0kuI/AAAAAAAAsXc/DKQLxqREZ-MJVYypMENsX6c2-ceCoMQZgCLcBGAsYHQ/s16000/0.png"/></span></p>
+<p><span style="color: #000000;">Now, we’ll try and remove this restriction using Frida. First, it is recommended you install a Frida server in the device (Follow steps <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.hackingarticles.in/android-hooking-and-sslpinning-using-objection-framework/">here</a></strong></span>). Next, we’ll launch the server onto the device.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">adb connect 192.168.27.105
+adb shell "/tmp/frida-server &amp;"</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-RisoSaInhHc/X_HwDa1yjYI/AAAAAAAAsXg/DKpyvWSRR8cOwoaSjTukQyURO9OECymJQCLcBGAsYHQ/s16000/1.png"/></span></p>
+<p><span style="color: #000000;">Now, we’ll first install frida with the command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">pip install frida
+pip install frida-tools</pre>
+<p><span style="color: #000000;">After a successful install, we can see all the running process in the device on which frida server is running by the command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">frida-ps -U</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-BAw4X6-8Xqo/X_HwH-KCbZI/AAAAAAAAsXk/aMYBV8KcEngtw5Uu6hK5Dowq86D90tFUACLcBGAsYHQ/s16000/2.png"/></span></p>
+<p><span style="color: #000000;">As you can see that our app is running here. We have to bypass root detection here. We can either try and reverse engineer the jar files, create our own javascript code and bypass root detection or we can rely on code already created by a large community of developers on codeshare frida repo.</span></p>
+<p><span style="color: #000000;">Weblink to the site is: <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://codeshare.frida.re/browse">https://codeshare.frida.re/browse</a></strong></span></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-CtQhlk7SC4A/X_HwMr8tc6I/AAAAAAAAsXo/F0fYNuvjAHIIR0vg5TjD0XEOTj3txOSDACLcBGAsYHQ/s16000/2_0.png"/></span></p>
+<p><span style="color: #000000;">Here, we can see an antiroot script by dzonerzy. We’ll run it with the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">frida -U --codeshare dzonerzy/fridantiroot -f in.&lt;package company&gt;.&lt;package name&gt;</pre>
+<p><span style="color: #000000;">Now, press y to trust the project.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-x0wMAMDfpKU/X_HwQnlvabI/AAAAAAAAsXs/fiTECj2jU1EV3KMiG4MjIlH-BTwfeuu3gCLcBGAsYHQ/s16000/3.png"/></span></p>
+<p><span style="color: #000000;">Now, all that’s left to do is press <strong>“%resume”</strong> to resume the execution with our hooked code!</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-gyN5m4fkOr4/X_HwUG-PesI/AAAAAAAAsX0/iXi3gZoxG2wlQMWDd_A5tyDiICCz-gvDwCLcBGAsYHQ/s16000/4.png"/></span></p>
+<p><span style="color: #000000;">And just like that, we can see that root detection has been successfully bypassed!</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-1909zAkZp0g/X_HwZoUlxMI/AAAAAAAAsX8/MHeLKU1jIEoKB9_3aEimWHAueVIxfgpngCLcBGAsYHQ/s16000/5.png"/></span></p>
+<h4><span style="color: #000000;">Hooking different methods in Java</span></h4>
+<p><span style="color: #000000;">Now, a class might have multiple methods, and each of these methods has a specific purpose. For example, the onCreate() method defines how the activity functions as soon as the system creates (or launches) the activity. So, we can hook this function and change the behaviour of the activity when we create it. For demonstration purposes, I’ll just print some custom text in my console as soon as I call the activity, but the possibilities are limitless. Typically, you won’t have access to the source code; hence, what we’ll do is extract the APK first and then decompile it to view the source code. To pull the APK, we’ll first need to know the path and then pull it.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">adb shell pm path jakhar.aseem.diva
+adb pull /data/app/jakhar.aseem.diva-dxAm4hRxYY4VgIq2X5zU6w==/base.apk</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-ixo5qfj7fhY/X_HwdeEZhiI/AAAAAAAAsYA/TsvMGq-7zzcfrmcUBjJBnHnZirUIseJHwCLcBGAsYHQ/s16000/6.png"/></span></p>
+<p><span style="color: #000000;">Now, as explained in part 1 of this series (refer to para 3 of the article <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.hackingarticles.in/android-application-framework-beginners-guide/">here</a></strong></span>), we’ll decompile it using apktool and then use dex2jar to convert it in jar format, and finally use jd-gui to view the decompiled source code like below. Here is the MainActivity class decompiled.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-nYLTJp4jXrk/X_Hwh5WNTWI/AAAAAAAAsYI/K6kT3qUoj4QSpRXEdNmi3Gv8hi72igNTACLcBGAsYHQ/s16000/7.png"/></span></p>
+<p><span style="color: #000000;">Here we see the following things:</span></p>
+<ul>
+<li><span style="color: #000000;">We can see that onCreate has a Bundle parameter</span></li>
+<li><span style="color: #000000;">It’s creating a view of the main page</span></li>
+</ul>
+<p><span style="color: #000000;">Now, below is an example of how to hook onCreate() method.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">console.log("Script loaded!");
+Java.perform(function(){
+                var mainapp = Java.use("jakhar.aseem.diva.MainActivity");
+                mainapp.onCreate.implementation = function(){
+                                console.log("My script called!");
+                                var ret = this.onCreate.overload("android.os.Bundle").call(this);
+                                send("Hooks installed");
+};
+});</pre>
+<h4><span style="color: #000000;">Explanation</span></h4>
+<ol>
+<li><span style="color: #000000;">Any implementation of the hook is put inside <strong>perform(function(){ //&lt;code&gt;</strong></span></li>
+<li><span style="color: #000000;">The activity we want to hook (main activity) is put inside <strong>use(“jakhar.aseem.diva.MainActivity”), </strong>and assign a variable to it. Here, <strong>mainapp</strong></span></li>
+<li><span style="color: #000000;">Now, <strong>onCreate.implementation </strong>sets a definition of the function.</span></li>
+<li><span style="color: #000000;">Here, we can insert any code we cant to run in the onCreate method. I just inserted <strong>log</strong> function to output “My script called!” every time onCreate is called.</span></li>
+<li><span style="color: #000000;">New variable ret calls this newly formed implementation function. overload method is used to add this code to the existing piece of code. Here, “<strong>os.Bundle</strong>” is input as a parameter since in the original function a bundle object is used.</span></li>
+<li><span style="color: #000000;">Finally, the call method is used to call the current method using “this” pointer.</span></li>
+<li><span style="color: #000000;">send() function outputs the text in double-quotes on the current Frida command line.</span></li>
+</ol>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-iRdEgUoLWnY/X_Hwl9vbQcI/AAAAAAAAsYQ/84NOjIuQhmgMFz2n1LUjte23IesIFAWGwCLcBGAsYHQ/s16000/8.png"/></span></p>
+<p><span style="color: #000000;">To launch this script we type in the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">frida -U -l mainactivityhook.js -f jakhar.aseem.diva</pre>
+<p><span style="color: #000000;">As you can see now, the hook is successfully installed, activity launches and our custom output is now displayed and the hook is successfully installed</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-mzyiIXqA25c/X_Hwpj9E0AI/AAAAAAAAsYU/SF2rUeK7UU0z1L87K9QSM5i3f_wU_OC8wCLcBGAsYHQ/s16000/9.png"/></span></p>
+<h5><span style="color: #000000;"><strong>Hooking a defined method</strong></span></h5>
+<p><span style="color: #000000;">Unlike the onCreate method that is present in the native libraries, some methods are custom created. For example, if you inspect the code of diva, you’ll see a function <strong>startChallenge() </strong>that is launching challenges in the application. I’m not putting the code in here but you can refer to the decompiled code in the above step. Now, we’ll observe that startChallenge is launching activities present in the project. And since it is launching an activity, it has an “android.view.VIEW” argument passed in its code. Now in the code below, every time a user hits a button to start any challenge, we’ll just force him to call our hook and our defined output would be displayed (that is MainActivity.startChallenge() is now started). Needless to say, we can change this by any implementation we want.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">console.log("Hooked startChallenge() function");
+Java.perform(function(){
+var newstart = Java.use("jakhar.aseem.diva.MainActivity");
+                newstart.startChallenge.overload("android.view.View").implementation = function(v){
+                                //enter any implementation of startChallenge you want
+                                //for demo I'm just sending an alert on frida console
+                                send("MainActivity.startChallenge() is now started");
+                                var ret = this.startChallenge.overload("android.view.View").call(this);
+                };
+});</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://1.bp.blogspot.com/--WqCKdVCtoU/X_HwuwLtIiI/AAAAAAAAsYc/KdACQC4ZcjwNbM4HI9rN1Cg-5YoGYhUJwCLcBGAsYHQ/s16000/11.png"/></strong></span></p>
+<p><span style="color: #000000;">To call this script, without having to input <strong>%resume</strong> this time, we can type in the command with <strong>–no-pause</strong> filter:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">frida -U -l main_startchallenge.js -f jakhar.aseem.diva</pre>
+<p><span style="color: #000000;">And sure enough, every time a button is pressed, our custom input is displayed.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-xZVZud7mIPE/X_Hw2MOXE1I/AAAAAAAAsYo/KPva3P30g5sBrReNbxWvoM6SbOXBlnFkwCLcBGAsYHQ/s16000/12.png"/></span></p>
+<h5><span style="color: #000000;"><strong>Hooking exit() method</strong></span></h5>
+<p><span style="color: #000000;">We can also tamper the exit method in android just like we tampered onCreate method. Here, I’m using a demonstration application that I custom-coded (link <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://github.com/harshitrajpal/sample_android_hooking">here</a></strong></span>). It has a button that performs an exit function. You can see a sample screenshot below:</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-GiWHJAVybPI/X_Hw6YL4PxI/AAAAAAAAsYw/GthesHknPAY7bdMoR1rGif7prs594PbSgCLcBGAsYHQ/s16000/13.png"/></span></p>
+<p><span style="color: #000000;">At this point, we see the exit button. As the name suggests, pressing it will exit the application..</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-sw2KbPfh1Ig/X_Hw_EPGNzI/AAAAAAAAsY4/0zBTyCzmsEoSp8xzpw9jgK1nKZlueY20QCLcBGAsYHQ/s16000/14.png"/></span></p>
+<p><span style="color: #000000;">We create a hook down below that will stop the exit. Here, “java.lang.System” is the package that has exit function and so we’ll overload it using “sysexit.exit.overload().implementation.” Now, whenever a user clicks on exit, our send method will be called and exit will be stopped.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">console.log("Hooking on exit function");
+Java.perform(function(){
+var sysexit = Java.use("java.lang.System");
+           sysexit.exit.overload("int").implementation = function(var_0) {
+                        send("I've stopped java.lang.System.exit() now!");
+            };
+});</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-RihN7Aglf4M/X_HxDRRMPmI/AAAAAAAAsY8/IkHREd2P-3Aaxw9FhhlY2JRUqlnud_xAACLcBGAsYHQ/s16000/15.png"/></span></p>
+<p><span style="color: #000000;">Let’s fire this script up, and sure enough, we see that the exit button does not terminate the process. If it had terminated, Frida must have thrown a process-terminated error and closed the console.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">frida -U -l avoidexit.js -f com.example.harshitrajpal --no-pause</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-2IIVcRJIK78/X_HxHIyIE6I/AAAAAAAAsZE/pZ62msOiXRwH0tlW5h_25OpjpQvKu4XLQCLcBGAsYHQ/s16000/16.png"/></span></p>
+<h5><span style="color: #000000;"><strong>Hooking return value</strong></span></h5>
+<p><span style="color: #000000;">We have hooked methods till now, but we can also hook a return variable and tamper with its output. In article 3 of this series, I already demonstrated this using the Objection tool, but today we’ll do this using Frida and our manual code. In the application that I custom-coded and mentioned above, a simple program displays output of 10 and 50. We’ll hook this return value and output 100. The code to do this is pretty straightforward:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">console.log(“Hook for implementation of method”);
+Java.perform(function myFunc() {
+            var myClass = Java.use(“com.example.harshitrajpal.MainActivity”);
+            myClass.returnValue.implementation = function(){
+                        //we will manipulate the return value here
+                        var ret = 100;
+                        return ret;
+            }
+});</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://1.bp.blogspot.com/-MGHl9AcF7ac/X_HxKkISZLI/AAAAAAAAsZM/poIpQM4apXQIJw6WfPlFj3Oq3LDFPB9-wCLcBGAsYHQ/s16000/17.png"/></strong></span></p>
+<p><span style="color: #000000;">To begin with, let’s first run the program without loading our hook. We can see that the program outputs 60, which is the correct answer.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-DNPqWNKWCu8/X_HxOp7gMBI/AAAAAAAAsZQ/WEszZ_H_BX46IA9KS8jaqjUbgQ2dXvO8ACLcBGAsYHQ/s16000/18.png"/></span></p>
+<p><span style="color: #000000;">Now, we’ll fire up our script and see what changes happen in the application now.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">frida -U -l retValueHook.js -f com.example.harshitrajpal --no-pause</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-JfVJDTmgFUg/X_HxSo839_I/AAAAAAAAsZY/aTr-QfilAvc2kZ0YtR56VkgbeD4DDon4QCLcBGAsYHQ/s16000/19.png"/></span></p>
+<p><span style="color: #000000;">And sure enough, the output gets tampered and 100 is returned now!</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-7_2JC_Nf4Wc/X_HxW61IawI/AAAAAAAAsZg/GVinVuAWMS0Dm5Y4KuTrmZ8TyCZm6MO0wCLcBGAsYHQ/s16000/20.png"/></span></p>
+<h3><span style="color: #800000;">SSLPinning Bypass</span></h3>
+<p><span style="color: #000000;">Researchers and pen testers most commonly use Frida to bypass SSLPinning in Android so they can intercept its network calls and conduct a traffic analysis. For the demo of this attack, I downloaded an application named “Certificate Pinning Demo”. For the demonstration of this attack, you must have your Burp Suite configured with your device (follow point 3 of the article <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.hackingarticles.in/android-hooking-and-sslpinning-using-objection-framework/">here</a></strong></span>). Now, when I pin the client and send an HTTPS request, it throws an SSL error.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-fv8vmMCJ8bE/X_HxbVRMRHI/AAAAAAAAsZo/3ESrp4cdr0I3KIhkwvd35IYPEZf08Og7QCLcBGAsYHQ/s16000/21.png"/></span></p>
+<p><span style="color: #000000;">And sure enough, no communication is intercepted in Burp Suite as well.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-A_2oaqoYKLs/X_HxgABGS6I/AAAAAAAAsZs/QXtNfbi4SAEbI0rCvuBPgxm7tXml0p3nwCLcBGAsYHQ/s16000/22.png"/></span></p>
+<p><span style="color: #000000;">Now, on the codeshare repository <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://codeshare.frida.re/@akabe1/frida-multiple-unpinning/">here</a></strong></span>, akabe1 has put a great script to perform SSLPinning bypass. We’ll use this script to perform the attack. Note that applications might have different code of pinning, so these codes need to be modified as and when required.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">frida -U --codeshare akabe1/frida-multiple-unpinning -f com.osfg.certificatepinning</pre>
+<p><span style="color: #000000;">Type <strong>%resume</strong> once the script gets loaded.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-EoQW2pvmuyM/X_HxkmGE9XI/AAAAAAAAsZ0/R_cGyxDTAQIoCGdG8RO8e1L4gi2wnyUWgCLcBGAsYHQ/s16000/23.png"/></span></p>
+<p><span style="color: #000000;">And finally, when we now send a request to sslabs.com in pinned mode, we are able to get an HTTP 200 response code!</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-0zK5132IjJ8/X_HxoaSSUBI/AAAAAAAAsZ4/PVmpnwBVqtIzRh57XMsIh1tjxOkdU23bACLcBGAsYHQ/s16000/24.png"/></span></p>
+<p><span style="color: #000000;">Surely, we are now able to intercept communication in burp suite as well.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-hue9h76N4IU/X_HxsFzDsVI/AAAAAAAAsaA/PT1x-grqKGgEXziQ9Yyfr0wCLCEVK7sigCLcBGAsYHQ/s16000/25.png"/></span></p>
+<h3><span style="color: #800000;">Hooking in Python</span></h3>
+<p><span style="color: #000000;">Python coders can customize a whole fridascript to run in python environment using the python’s frida package and API. This would make performing multiple processes in hooks easier. Here, I’ll create a hook on startChallenge function as above.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">jscode = """
+console.log("Hooked startChallenge() function");
+Java.perform(function(){
+var newstart = Java.use("jakhar.aseem.diva.MainActivity");
+            newstart.startChallenge.overload("android.view.View").implementation = function(v){
+                        //enter any implementation of startChallenge you want
+                        //for demo I'm just sending an alert on console
+                        send("MainActivity.startChallenge() is now started");
+                        console.log("You clicked...but in vain!");
+                        var ret = this.startChallenge.overload("android.view.View").call(this);
+            };
+});
+"""
+import frida,sys
+process = frida.get_usb_device().attach("jakhar.aseem.diva")
+script = process.create_script(jscode)
+print("*** Running Hook on startChallenge() now!")
+script.load()
+sys.stdin.read()</pre>
+<p><span style="color: #000000;">Now, every time user clicks on any button to start the challenge, the execution stops and our custom output is printed instead.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-rc5gyrZmDvM/X_HxxcMpcjI/AAAAAAAAsaI/QA1yAa9ZXrcIIdvm8ISFatcS1Mn2f1l5gCLcBGAsYHQ/s16000/26.png"/></span></p>
+<p><span style="color: #000000;">We, run this script using the command below:</span></p>
+<pre class="lang:default decode:true">python3 startChallenge.py</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-5R6fQCbVEe0/X_Hx3pbTYrI/AAAAAAAAsaQ/6P_YWvBtI5oK8UP0srATAH5s9C8OKK2rACLcBGAsYHQ/s16000/27.png"/></span></p>
+<h3><span style="color: #800000;">Let’s Play a Game!</span></h3>
+<p><span style="color: #000000;">All the examples I have demonstrated till now are very basic. Advanced hooking techniques exist to perform various different functions, and I’ll mention their references at the end. One such challenge I found on 11×256’s blog was in example 1, where we have to intercept the APK, see what’s happening behind the white screen, change its implementation, and modify its behaviour. Finally, we’ll check logcat to see if our hook worked and if the sum of our custom-defined integers is thrown or not.</span></p>
+<p><span style="color: #000000;">Follow the link <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://github.com/11x256/frida-android-examples/tree/master/examples/1">here</a> </strong></span>and download the sample APK.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-LnieVTb8kKM/X_Hx9qnkRLI/AAAAAAAAsac/NtiYi2LsZBUX_YSBD2wlh-LoHnbjnfvCQCLcBGAsYHQ/s16000/28.png"/></span></p>
+<h5>Exploring the APK with Drozer and Objection</h5>
+<p><span style="color: #000000;">First, after running the application in the emulator, we saw just a plain white screen. That means something must be happening in the background.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-rySpVIa0qF8/X_HyBNK9qpI/AAAAAAAAsag/CYHXFIA2HscRUbdpf0iL0WZHKmwtKiOtwCLcBGAsYHQ/s16000/28_0.png"/></span></p>
+<p><span style="color: #000000;">We’ll use drozer to see activities here:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">run app.activity.info -a com.example.a11x256.frida_test</pre>
+<p><span style="color: #000000;">As you can see, <strong>my_activity</strong> is present. This means this is the activity responsible for the full white front screen.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-YjDQLYSB4eQ/X_HyFLRb8NI/AAAAAAAAsak/cxhkpP6wKtku5iS00djWi39RsFNA4IV8wCLcBGAsYHQ/s16000/29.png"/></span></p>
+<p><span style="color: #000000;">Now, we’ll use objection to watch what this class is actually doing. (Full objection tutorial <a style="color: #000000;" href="https://www.hackingarticles.in/android-hooking-and-sslpinning-using-objection-framework/"><span style="color: #0000ff;"><strong>here</strong></span></a>.)</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">objection --gadget com.example.a11x256.frida_test explore
+android hooking watch class com.example.a11x256.frida_test --dump-args --dump-return --dump-backtrace</pre>
+<p><span style="color: #000000;">Here, observe that fun() calls. This has two int parameters, so, presumably, a mathematical operation performs on these two integers.</span></p>
+<p><span style="color: #000000;">Now, we write a code in javascript:</span></p>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://1.bp.blogspot.com/-CpGZionPEbM/X_HyItc7oKI/AAAAAAAAsas/iRPbfxkKHj4itAMAg16F_5OIh7q0T6ICACLcBGAsYHQ/s16000/30.png"/></strong></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">console.log("Script loaded successfully ");
+Java.perform(function x() { //Silently fails without the sleep from the python code
+    console.log("Inside java perform function");
+    //get a wrapper for our class
+    var my_class = Java.use("com.example.a11x256.frida_test.my_activity");
+    //replace the original implmenetation of the function `fun` with our custom function
+    my_class.fun.implementation = function (x, y) {
+        //print the original arguments
+        console.log("original call: fun(" + x + ", " + y + ")");
+        //call the original implementation of `fun` with args (2,5)
+        var ret_value = this.fun(2, 5);
+        return ret_value;
+    }
+});</pre>
+<p><span style="color: #000000;">This code does nothing but defines the fun() function and specifies 2 and 5 as our own integers on which we will perform some mathematical function. But before that, the script also intercepts and displays the original call and obviously the original integers!</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-gGAQvdJHNtg/X_HyMP2IftI/AAAAAAAAsaw/ofENuiM7zXc8ZuOxwA1RL_LUIHPrbNOQACLcBGAsYHQ/s16000/31.png"/></span></p>
+<p><span style="color: #000000;">Then, let’s fire it up using Frida:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">frida -U -l 11x256.js -f com.example.a11x256.frida_test</pre>
+<p><span style="color: #000000;">As we can see, the original call had two integers, namely, 50 and 30.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-ssdOTxXE_1k/X_HyPu6sqzI/AAAAAAAAsa0/YqBDQNerNfgDE_0jkjxQklRGGcOWPXe9gCLcBGAsYHQ/s16000/32.png"/></span></p>
+<h5><span style="color: #000000;"><strong>Checking the Results in Logcat</strong></span></h5>
+<p><span style="color: #000000;">Let’s quickly check logcat and see what is happening in the background.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">adb logcat | grep frida_test</pre>
+<p><span style="color: #000000;">As we can see in the screenshot below, the app repeatedly calls a mathematical Sum of type Double. This resembles the behaviour of the app we just installed, which called a method called fun after every second. Hence, it is safe to conclude that fun() adds two integers. We intercepted and dumped the original numbers 50 and 30, changed them to 2 and 5, and now the app calls the sum of 2 and 5, as evident in logcat.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-ngbvk5iP8rY/X_HyT0hg51I/AAAAAAAAsa8/i4w-XHVQpXAX9e4fhTS5zQ8oZ6hJfwGpQCLcBGAsYHQ/s16000/33.png"/></span></p>
+<h3><span style="color: #800000;">References</span></h3>
+<p><span style="color: #000000;">In the world of security, hooking is a pentester’s best buddy and a reverse engineer’s most handy tool. Given its numerous applications, like writing custom scripts for tasks such as sniffing crypto APIs or decrypting AES, a tester needs a solid understanding of JavaScript, reverse engineering APKs, and Java. To get good at Frida and hooking (dynamic instrumentation), I’ll mention the following references:</span></p>
+<ul>
+<li><span style="color: #000000;">11×256’s blog <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://11x256.github.io/">here</a></strong></span></span></li>
+<li><span style="color: #000000;">Frida docs <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://frida.re/docs/home/">here</a></strong></span></span></li>
+<li><span style="color: #000000;">Apps to perform a frida demo <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://github.com/11x256/frida-android-examples/tree/master/examples/1">here</a>, </strong></span>along with DIVA and our custom APK <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://github.com/harshitrajpal/sample_android_hooking">here</a></strong></span></span></li>
+<li><span style="color: #000000;">Josh Spicer’s blog <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://joshspicer.com/android-frida-1">here</a></strong></span></span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Author: Harshit Rajpal </strong>is an InfoSec researcher and a left and right brain thinker. Contact<span style="color: #0000ff;"><strong> <a class="broken_link" style="color: #0000ff;" href="https://in.linkedin.com/in/harshit-rajpal-79bb43103">here</a></strong></span></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">
+<!-- YARPP Thumbnails -->
+<h3>Related posts:</h3>
+<div class="yarpp-thumbnails-horizontal">
+<a class="yarpp-thumbnail" rel="norewrite" href="https://www.hackingarticles.in/winrm-penetration-testing/" title="WinRM Penetration Testing">
+<span class="yarpp-thumbnail-default"><img src="https://www.hackingarticles.in/wp-content/plugins/yet-another-related-posts-plugin/images/default.png" alt="Default Thumbnail" data-pin-nopin="true"/></span><span class="yarpp-thumbnail-title">WinRM Penetration Testing</span></a>
+<a class="yarpp-thumbnail" rel="norewrite" href="https://www.hackingarticles.in/tomcat-penetration-testing/" title="Tomcat Penetration Testing">
+<span class="yarpp-thumbnail-default"><img src="https://www.hackingarticles.in/wp-content/plugins/yet-another-related-posts-plugin/images/default.png" alt="Default Thumbnail" data-pin-nopin="true"/></span><span class="yarpp-thumbnail-title">Tomcat Penetration Testing</span></a>
+</div>
+</div>
+            </div><!-- .entry-content -->
+            <footer class="post-footer entry-footer">
+                                                
+            </footer><!-- .entry-footer -->
+            
+	<nav class="navigation post-navigation" aria-label="Posts">
+		<h2 class="screen-reader-text">Post navigation</h2>
+		<div class="nav-links"><div class="nav-previous"><a href="https://www.hackingarticles.in/thick-client-pentest-lab-setup-dvta-2/" rel="prev">Thick Client Pentest Lab Setup: DVTA</a></div><div class="nav-next"><a href="https://www.hackingarticles.in/conceal-hackthebox-walkthrough/" rel="next">Conceal HackTheBox Walkthrough</a></div></div>
+	</nav>        </div>

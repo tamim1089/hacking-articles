@@ -1,0 +1,114 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">Matrix-3: Vulnhub Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/matrix-3-vulnhub-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2019-07-12T17:34:41+00:00">July 12, 2019</time><time class="updated" datetime="2025-06-10T20:11:34+00:00">June 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today we are going to take another CTF challenge from the series of Matrix. The credit for making this VM machine goes to “Ajay Verma” and it is another boot2root challenge where we have to root the server and capture the flag to complete the challenge.</span></p>
+<p><span style="color: #000000;">You can download this VM <a style="color: #000000;" href="https://www.vulnhub.com/entry/matrix-3,326/"><strong>here</strong></a>.</span></p>
+<p><span style="color: #000000;"><strong>Security Level</strong>: Intermediate</span></p>
+<h3><span style="color: #800000;"><strong>Penetrating Methodology:</strong></span></h3>
+<ol>
+<li><span style="color: #000000;"><strong>Scanning</strong></span></li>
+</ol>
+<ul>
+<li><span style="color: #000000;">Netdiscover</span></li>
+<li><span style="color: #000000;">NMAP</span></li>
+</ul>
+<ol start="2">
+<li><span style="color: #000000;"><strong>Enumeration</strong></span></li>
+</ol>
+<ul>
+<li><span style="color: #000000;">Web Directory Search </span></li>
+</ul>
+<ol start="3">
+<li><span style="color: #000000;"><strong>Exploitation</strong></span></li>
+</ol>
+<ul>
+<li><span style="color: #000000;">Ghidra</span></li>
+<li><span style="color: #000000;">SSH</span></li>
+</ul>
+<ol start="4">
+<li><span style="color: #000000;"><strong>Privilege Escalation</strong></span></li>
+</ol>
+<ul>
+<li><span style="color: #000000;">Exploiting Sudo rights</span></li>
+</ul>
+<h3><span style="color: #800000;">Walkthrough:</span></h3>
+<h3><span style="color: #000000;"><strong><span style="color: #800000;">Scanning</span>:</strong></span></h3>
+<p><span style="color: #000000;">Let’s start of by scanning the network and identifying the host IP address. We can identify our host IP as 192.168.1.104 by using Netdiscover.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-fdp3Xwm9eMs/XSjBqy5wgFI/AAAAAAAAfME/t2SSTL8hP8Yw5iO6echS0xRfDcW3U6_aQCLcBGAs/s1600/1.png"/></span></p>
+<p><span style="color: #000000;">Then we used Nmap for port enumeration. We found that port 80 is open, SSH is running on port 6464 and port 7331 is open on the target machine.</span></p>
+<pre class="lang:default decode:true">nmap –p- –A 192.168.1.104</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-lqNVH6Usegw/XSjBt8CxSLI/AAAAAAAAfMg/YvmcocqtGNgDy_EXkEtk5mTg6jBiasGiQCLcBGAs/s1600/2.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Enumeration:</strong></span></h3>
+<p><span style="color: #000000;">As we can see port 80 is open, we tried to open the IP address in our browser but we didn’t find anything useful on the webpage.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-BugT5E8FtnI/XSjBuSesfYI/AAAAAAAAfMo/pbYQb4C88GIwWtEdl9sig-P7Kx9WkGOSgCLcBGAs/s1600/3.png"/></span></p>
+<p><span style="color: #000000;">So we used <strong>dirb</strong> for directory enumeration.</span></p>
+<pre class="lang:default decode:true">dirb http://192.168.1.104</pre>
+<p><span style="color: #000000;">After brute-forcing with dirb, we found a directory named <strong>/assets</strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-23bLYwtOq2Q/XSjBuJ6651I/AAAAAAAAfMk/YQQN0plebKMHFPmnJ5XZzAC8cvFF8MmEACLcBGAs/s1600/4.1.png"/></span></p>
+<p><span style="color: #000000;">We opened the assets directory in the browser and found an image file named <strong>Matrix_can-show-you-the-door.png </strong>under <strong>/assets/img/ </strong>URL.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-4jFwBwbLf00/XSjBuy1IoAI/AAAAAAAAfMs/70R3HORbdAouGSGl69TxUjx8dHLwU-T3QCLcBGAs/s1600/4.2.png"/></span></p>
+<p><span style="color: #000000;">We first opened this image but didn’t find anything of our use. Then upon looking at the file name properly we found out that the name of the file is itself giving us the path forward.</span></p>
+<p><span style="color: #000000;">So we used <strong>Matrix </strong>in the URL as shown in the image below and it worked for us.</span></p>
+<p><span style="color: #000000;">From the contents of the directory Matrix, we understood that we have to make a right combination of the alphanumeric to go ahead.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-HEwsj7Bc-ak/XSjBvRm6UQI/AAAAAAAAfM0/4eba2yCry58jpjdp3xtXYWo9RtiQ17oxwCLcBGAs/s1600/4.3.png"/></span></p>
+<p><span style="color: #000000;">So after trying multiple combinations we used our little brain more aggressively and made a combination of <strong>n/e/o/6/4,  neo</strong> is the name of the actor in the Matrix movie and <strong>64</strong> number is I guess favourite number of the creator of this VM because he is using it everywhere.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-tjaSa3os5eI/XSjBvOWKf0I/AAAAAAAAfMw/DIsmZl6Lj4cX2jeSrqKl3Wzr0NAVBB8-QCLcBGAs/s1600/4.png"/></span></p>
+<p><span style="color: #000000;">We downloaded the file <strong>secret.gz </strong>and found that it’s actually a <strong>txt </strong>file and is containing the username and password.</span></p>
+<pre class="lang:default decode:true">file secret.gz
+cat secret.gz</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-pXAC7okt_QQ/XSjBv22dhPI/AAAAAAAAfM4/9jWJL6iTtCQ39RJL98HwMZj075GX1abqwCLcBGAs/s1600/5.png"/></span></p>
+<p><span style="color: #000000;">Upon cracking the hashed password using online tool hashkiller, we found the password as <strong>passwd.</strong></span></p>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://1.bp.blogspot.com/-F49HFAOdR48/XSjBwVcMBQI/AAAAAAAAfM8/j-3_ogp5JJEilzR8JBEX7EbQTCjaEBl3wCLcBGAs/s1600/6.png"/></strong></span></p>
+<p><span style="color: #000000;">If you remember from the nmap scan we have a port 7331 open and it was protected with Basic Authentication.</span></p>
+<p><span style="color: #000000;">So we tried to open the URL <strong>http://192.168.1.104:7331</strong>  and were prompted for authentication, so we used <strong>admin:passwd </strong>as username and password and were able to login successfully.</span></p>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://1.bp.blogspot.com/-_wmV-mXgQMQ/XSjBw9JkwJI/AAAAAAAAfNA/ZajT_Q8ZmpsSlxzGmAwqIawBgS4ZSo5awCLcBGAs/s1600/8.png"/></strong></span></p>
+<p><span style="color: #000000;">But we couldn’t find anything useful there, so we used <strong>dirb </strong>with an already obtained username and password for directory bruteforcing.</span></p>
+<p><span style="color: #000000;">After bruteforcing, we found a directory named <strong>data.</strong></span></p>
+<pre class="lang:default decode:true">dirb http://192.168.1.104:7331 / -u admin:passwd</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-74ivq8TqHoM/XSjBwxm4ooI/AAAAAAAAfNE/n4cIUl_MRcA_EHUklKOXDKnkEWBTMbY2gCLcBGAs/s1600/9.png"/></span></p>
+<p><span style="color: #000000;">In the data directory, we found a file name <strong>data </strong>which came out to be a DOS file.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-SvzPHb8x0zU/XSjBrOwmeoI/AAAAAAAAfMI/RPNcM-ZA5CkqFanPtovvRTPfh9MKIUoDACLcBGAs/s1600/10.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Exploitation:</strong></span></h3>
+<p><span style="color: #000000;">We took the help of our best friend in need Google to know how to open a DOS file. And after some research, we found a tool named <a style="color: #000000;" href="https://ghidra-sre.org/"><strong>Ghidra</strong></a> for opening a DOS file.</span></p>
+<p><span style="color: #000000;">After opening the data file with Ghidra tool we found a username and password <strong>guest:7R1n17yN30</strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-5JFX3B8sCrQ/XSjBrI6y5OI/AAAAAAAAfMM/SR7qgPLkifE7bO6Q8_lr19x71SLffXP_ACLcBGAs/s1600/11.png"/></span></p>
+<p><span style="color: #000000;">As we already know from our nmap scan that there is SSH running on port 6464 on the target machine, so we tried to ssh the target machine with the above-found username and password and were successfully able to login.</span></p>
+<pre class="lang:default decode:true ">ssh guest@192.168.1.104 –p6464
+id</pre>
+<p><span style="color: #000000;">But we were provided with the restricted bash (rbash) shell, so we used <strong>–t </strong>option to run ssh with <strong>noprofile </strong>extension and we got a complete shell of the <strong>guest </strong>user.</span></p>
+<p><span style="color: #000000;">Checking the sudo permissions for the guest user we came to know that this user can run <strong>/bin/cp </strong>with permissions of another user <strong>trinity.</strong></span></p>
+<pre class="lang:default decode:true">ssh guest@192.168.1.104 –p6464 –t "bash --noprofile"
+sudo -l</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-kaAgq9mXq3E/XSjBryJiJLI/AAAAAAAAfMQ/OqGRvAUMLFAAFOVZAdNWYJ8E6N6IubG5gCLcBGAs/s1600/12.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Privilege Escalation</strong></span></h3>
+<p><span style="color: #000000;">To elevate to a more privilege’s user, what we did is we created a new ssh key pair, gave read write execute permissions to <strong>id_rsa.pub </strong>file so that we would be able to copy it to our target location.</span></p>
+<pre class="lang:default decode:true">ssh-keygen
+cd .ssh
+chmod 777 id_rsa.pub</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-PiL8nO8LnR4/XSjBsnwTR9I/AAAAAAAAfMU/MABsuMF9rWAz-oA_8KKDNnO5-HSbgGl4QCLcBGAs/s1600/13.png"/></span></p>
+<p><span style="color: #000000;">And then we took the advantage of sudo permission to copy the id_rsa.pub file in the <strong>/home/trinity/.ssh/authorized_keys </strong>folder. Now we can access ssh of the target machine with <strong>trinity </strong>user using the <strong>id_rsa </strong>key.</span></p>
+<p><span style="color: #000000;">Checking the sudo permission for trinity it can execute <strong>oracle </strong>file with root permissions.</span></p>
+<pre class="lang:default decode:true ">cp id_rsa.pub /home/guest
+cd ..
+sudo -u trinity /bin/cp ./id_rsa.pub /home/trinity/.ssh/authorized_keys
+ssh trinity@127.0.0.1 -i /.ssh/id_rsa -p 6464
+sudo -l</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-0tFT1aVgmoQ/XSjBsnnLwXI/AAAAAAAAfMY/vj9pnW0RhJkdPZA2iWpEiAt2TE-6PTJtgCLcBGAs/s1600/14.png"/></span></p>
+<p><span style="color: #000000;">But there was no file with the name oracle in the /home/trinity directory, so we created an <strong>oracle</strong> file with <strong>/bin/sh </strong>in it using the echo command. In the end, we executed the oracle file with sudo command, we got the <strong>root shell.</strong></span></p>
+<p><span style="color: #000000;"> And once you have the root shell you can easily get the flag.</span></p>
+<pre class="lang:default decode:true">echo "/bin/sh" &gt; oracle
+chmod 777 oracle
+sudo ./oracle
+id
+ls
+cat flag.txt</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://1.bp.blogspot.com/-M3Sr5ezSmyw/XSjBs0XIzEI/AAAAAAAAfMc/wahptFmJvu07UPbAqfqlOjiC6Ej8I948wCLcBGAs/s1600/15.png"/></strong></span></p>
+<p><span style="color: #000000;"><strong>Author</strong>: Auqib Wani is a Certified Ethical Hacker, Penetration Tester and a Tech Enthusiast with more than 5 years of experience in the field of Network &amp; Cyber Security. Contact <strong><a style="color: #000000;" href="https://www.linkedin.com/in/auqib-wani-14210a71/">Here</a></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

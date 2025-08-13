@@ -1,0 +1,164 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/cyber-forensics-tricks/" rel="category tag">Cyber Forensics</a></span>            </div>
+            <h1 class="post-title entry-title">Forensic Investigation: Windows Registry Analysis</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/forensic-investigation-windows-registry-analysis/" rel="bookmark"><time class="entry-date published" datetime="2020-08-07T18:26:41+00:00">August 7, 2020</time><time class="updated" datetime="2025-05-19T05:34:20+00:00">May 19, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">In this article, we will learn how we can use RegRipper to analyze the windows registry in the forensic investigation environment.</span></p>
+<h3><span style="color: #800000;">Table of Content</span></h3>
+<p><span style="color: #000000;"><strong>Introduction to RegRipper</strong></span></p>
+<p><span style="color: #000000;"><strong>Creating a Registry Hives</strong></span></p>
+<p><span style="color: #000000;"><strong>SAM Hive</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Analyzing Log: SAM</span></li>
+<li><span style="color: #000000;">Analyzing Report: SAM</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>System Hive</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Analyzing Log: System</span></li>
+<li>Analyzing Report: System</li>
+</ul>
+<p><span style="color: #000000;"><strong>Software Hive</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Analyzing Log: Software</span></li>
+<li><span style="color: #000000;">Analyzing Report: Software</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Security Hive</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Analyzing Log: Security</span></li>
+<li><span style="color: #000000;">Analyzing Report: Security</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Conclusion</strong></span></p>
+<p><span style="color: #000000;"><strong>Let’s begin the Forensic Investigation!!</strong></span></p>
+<h3><span style="color: #800000;">Introduction to Regripper</span></h3>
+<p><span style="color: #000000;">RegRipper is an open-source tool, written in Perl. To extracting and parsing information like [keys, values, data] from the Registry and presenting it for analysis.</span></p>
+<p><span style="color: #000000;">Its GUI version allows the analyst to select a hive to parse, an output file for the results. It also includes a command-line (CLI) tool called rip.</span></p>
+<p><span style="color: #000000;">Rip can be pointed against a hive and can run either a profile (a list of plugins) or an individual plugin against that hive, with the results being sent to STDOUT.</span></p>
+<p><span style="color: #000000;">Plugins are extremely valuable in the sense that they can be written to parse data in a manner that is useful to individual analysts.</span></p>
+<p><span style="color: #000000;">To learn more about RegRipper click <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.kali.org/tools/regripper/">here</a></strong></span>.</span></p>
+<p><span style="color: #000000;">We can download RegRipper for windows from <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://github.com/keydet89/RegRipper3.0">here</a></strong></span>.</span></p>
+<h3><span style="color: #800000;">Creating a Registry Hives</span></h3>
+<p><span style="color: #000000;">A hive is a logical group of keys, subkeys, and values in the registry that has a set of supporting files loaded into memory when the OS is started or user login.</span></p>
+<p><span style="color: #000000;">Each time a new user logs on a computer, a new hive file is created for that user with a separate file for the user profile hive.</span></p>
+<p><span style="color: #000000;">A user’s hive contains specific registry information about user’s application settings, desktop, environment, network connections, and printers. User profile hives are located under the <strong>HKEY_USERS key</strong>.</span></p>
+<p><span style="color: #000000;">We can learn more about <strong>Registry Hives </strong>from <a style="color: #000000;" href="https://docs.microsoft.com/en-us/windows/win32/sysinfo/registry-hives">here</a>.</span></p>
+<p><span style="color: #000000;">Use these commands to save a copy of these Registry Hives [<strong>SAM, System, Software, and Security</strong>].</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">reg save hklm\sam c:\sam
+reg save hklm\system c:\system
+reg save hklm\software c:\software
+reg save hklm\security c:\security</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-KhTSbG8BQ9I/Xy2WaVmyBoI/AAAAAAAAmzg/gmH7HAbUCy4yWXOo0vOIb9sCKxwf_3eqgCLcBGAsYHQ/s1600/1.png"/></p>
+<p><span style="color: #000000;">After saving all these Hive files, we can launch the RegRipper software.</span></p>
+<p><span style="color: #000000;">In the <strong>Hive file</strong> tab, we need to select the location where we saved our Registry hive file. In the <strong>Report file</strong> tab, select that location where we want our report and log file both saved. Then click on a rip button to get the report and log file.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/--nyKI0ZM9y0/Xy2We1aB0eI/AAAAAAAAmzk/7Hsa1reQlqoj4i4JXL5QH9wfYbTIQbpIQCLcBGAsYHQ/s1600/2.png"/></p>
+<p><span style="color: #000000;">Now let us learn about all this file information.</span></p>
+<h3><span style="color: #800000;">SAM Hive</span></h3>
+<p><span style="color: #000000;">SAM stands for the <strong>S</strong>ecurity <strong>A</strong>ccount <strong>M</strong>anager is a database file in windows that <strong>stores user’s information</strong>. The user passwords are stored in a hashed format in a Registry hive either as an LM hash or as an NTLM hash. This file can be found in “%SystemRoot%/system32/config/SAM” and is mounted on HKLM/SAM.</span></p>
+<p><span style="color: #000000;"><em>In an attempt to improve the security of the SAM database against offline software cracking, Microsoft introduced the SYSKEY function in Windows NT 4.0. When SYSKEY is enabled, the on-disk copy of the SAM file is partially encrypted, so that the password hash values for all local accounts stored in the SAM are encrypted with a key.</em></span></p>
+<p><span style="color: #000000;">Now, open RegRipper and select the location of the <strong>Hive file</strong> and <strong>Report file</strong>. Then click on the <strong>Rip</strong>! Button to start the Investigation process.</span></p>
+<p><img fetchpriority="high" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-VnIwydBT9FU/Xy2Wkz4MdBI/AAAAAAAAmzo/QZu9IZURIQU6LjYwsDH9iYGuNmgkYwH3QCLcBGAsYHQ/s1600/3.png" alt="Windows Registry Analysis for Forensic Investigation" width="480" height="406"/></p>
+<p><span style="color: #000000;">After some time, it will showcase the message on the screen that our work for this investigation process is completed with zero plugins completed with errors.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-yHP_aKwSbzs/Xy2Wrz22oqI/AAAAAAAAmzw/za0-x6zkQOk8T2VWCMpzbSntqJSz21D-ACLcBGAsYHQ/s1600/4.png"/></p>
+<p><span style="color: #000000;">It will <strong>create</strong> <strong>two files</strong> one with <strong>logs</strong> of the investigation and Second with a <strong>Report</strong> of the investigation.</span></p>
+<h4><span style="color: #000000;">Analyzing Log: SAM</span></h4>
+<p><span style="color: #000000;">Now check the <strong>log</strong> <strong>file</strong> with this command.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">type samreport.log</pre>
+<p><span style="color: #000000;">It will only tell about the environment of this hive file.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-1KqpfS_H7L0/Xy2W2CcQ9II/AAAAAAAAmz4/kyq-RaTLuT0pcg-vF0KCCa4NfxBezPEiwCLcBGAsYHQ/s1600/5.png"/></p>
+<h4><span style="color: #000000;">Analyzing Report: SAM</span></h4>
+<p><span style="color: #000000;">Secondly now its Report time. we can access this file with the following commands.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">type samreport.txt</pre>
+<p><span style="color: #000000;">As we can see in the below screenshot it will tell about <strong>SAM version</strong> and <strong>User information</strong>.</span></p>
+<p><img decoding="async" class="alignnone" src="https://1.bp.blogspot.com/--gnfCCQ2N2Q/Xy2W9BY-5xI/AAAAAAAAm0A/DRvN4ePkR4s2RL60j10uq-CLm8UqNgXEwCLcBGAsYHQ/s1600/6.png" alt="Windows Registry Analysis for Forensic Investigation" width="612" height="638"/></p>
+<p><span style="color: #000000;">Now, as we can see the main user account got spotted with its major details like.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Username: SKS19 [1001]
+Full Name: SHUBHAM KUMAR SHARMA
+Account Created: 2020-06-27 14:00:47Z
+Name: SHUBHAM KUMAR SHARMA
+InternetName: S******.SK@outlook.com
+Pwd Reset Date: 2020-06-27 14:01:10Z
+Embedded RID: 1001</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-DOCRrw_ulok/Xy2XEYfYjnI/AAAAAAAAm0E/eo0F5PX-BBYlniZI5rHoT7ANeJ06wvsqwCLcBGAsYHQ/s1600/7.png"/></p>
+<p><span style="color: #000000;">Next, we have spotted <strong>Group Membership Information. </strong>With its group name Guests and its details.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-zX_82RWPqY4/Xy2XLYn8XxI/AAAAAAAAm0I/B0TCo55j8xYB8WWgTrhrr_CSks2J4fHTQCLcBGAsYHQ/s1600/8.png"/></p>
+<p><span style="color: #000000;">Some more group membership information, the group’s name like Users, System Managed Accounts Group, and Administrators. Their details revel Lastwrite, Group Comment, and Its Users.</span></p>
+<p><img decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-tiCmBCyl6fQ/Xy2XWUbcdSI/AAAAAAAAm0U/3aoHvP0R4iM87XAMtSwatZF4G_nv_ujPgCLcBGAsYHQ/s1600/9.png" alt="Windows Registry Analysis for Forensic Investigation" width="735" height="533"/></p>
+<p><span style="color: #000000;">Lastly, RDP and some Analysis tips which would be handy for us in the Investigation.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-_XgZH2-Rlrg/Xy2XdJtFEjI/AAAAAAAAm0c/TLk67H3Cpek2sIrvFE-yLpBEtLdhrtV3wCLcBGAsYHQ/s1600/10.png"/></p>
+<h3><span style="color: #800000;">System Hive</span></h3>
+<p><span style="color: #000000;">The system hive file consists of all basic information regarding the system information. Now, repeat the same steps for RegRipper and select the location of the <strong>Hive file</strong> and <strong>Report file</strong>. Then click on the <strong>Rip</strong>! Button to start the Investigation process.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-FW0lHiqw6Mg/Xy2Xj-UpXCI/AAAAAAAAm0g/XEDv2iic3QcU0Nh6h6h4oUpZDM_dZnA4wCLcBGAsYHQ/s1600/11.png"/></p>
+<p><span style="color: #000000;">After some time, it will showcase the message on the screen that our work for this investigation process is completed with zero plugins completed with errors. As we mentioned earlier it will create two files: Log and Report.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-TjEh595-KiE/Xy2XqOpmalI/AAAAAAAAm0o/FY0-onnTxmQqXDe9wG-vqGH4pjp0WewhACLcBGAsYHQ/s1600/12.png"/></p>
+<h4><span style="color: #000000;">Analyzing Log: System</span></h4>
+<p><span style="color: #000000;">The first file is the <strong>log file</strong> regarding gathering information from that directory. After seeing the logs regarding system information.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">type systemreport.log</pre>
+<p><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-dOu23YvWel4/Xy2XwwakgII/AAAAAAAAm0w/xL5jOt_NWR88s-2MBcQXce5eCbjCNhT_wCLcBGAsYHQ/s1600/13.png" alt="Windows Registry Analysis for Forensic Investigation" width="559" height="562"/></p>
+<h4><span style="color: #000000;">Analyzing Report: System</span></h4>
+<p><span style="color: #000000;">we have opened its <strong>report </strong>with these commands.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">type systemreport.txt</pre>
+<p><span style="color: #000000;">The below screenshot tells about all the <strong>software installed</strong> with their default directory along with its path.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-JQgiGe8pIMQ/Xy2X4fxydnI/AAAAAAAAm04/owYrcBX50P4qmaKDpCuLZQdK_XDr43fCgCLcBGAsYHQ/s1600/14.png"/></p>
+<p><span style="color: #000000;">After that, we found out control set <strong>backups</strong> details in the victim’s system. Along with <strong>temp</strong> file details.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-iUPgPYqcyuk/Xy2X_qL2K7I/AAAAAAAAm1A/btZvfqXdf4EFgoW26ZHSZi8BKThviVWTwCLcBGAsYHQ/s1600/15.png"/></p>
+<p><span style="color: #000000;">Now, this result is showing us about the HKLM [ HKEY_LOCAL_MACHINE] user’s BAM. It is a user-specific application.</span></p>
+<p><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-77UpnsmZqDE/Xy2YHPsQKtI/AAAAAAAAm1I/reSxzWvQ_DQ0_aOQfN3I4Kl3khmGzQfrgCLcBGAsYHQ/s1600/16.png" alt="Windows Registry Analysis for Forensic Investigation" width="678" height="757"/></p>
+<p><span style="color: #000000;">Now it shows, Some device details, Computer name on diff-diff instances and crash control information.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-sNaRM2dcWk4/Xy2YOoXqrHI/AAAAAAAAm1Q/fMTrPPaq8U8ObHDhfD7FFfc-LJu3Y9LpQCLcBGAsYHQ/s1600/17.png"/></p>
+<p><span style="color: #000000;">Now the network media streaming devices connected with the system. In our case, it is from a Sony corporation. We can get along some interesting details with its hardware ID. It also gets some details regarding the connected USB devices no matter their currently connected or not.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-Qthvy-cQCD8/Xy2YV8nHkHI/AAAAAAAAm1Y/WB66DEdncw83kWm6hxjgQP5k7rSpyTCBwCLcBGAsYHQ/s1600/18.png"/></p>
+<p><span style="color: #000000;">After this, it will cover the hardware details along with NTFS disable the last access update. Like, ControlSet001\Control\Session Manager\Environment, <strong>Hardware details</strong>.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-M8enGr7IyS0/Xy2YcVotUhI/AAAAAAAAm1g/KCzBk_W-fJobWdl0-4W2CkxdokSNbR_SACLcBGAsYHQ/s1600/19.png"/></p>
+<p><span style="color: #000000;">After this <strong>IP address</strong> and <strong>Domain name</strong> details with Hint. Analysis Tips and Mounted devices.</span></p>
+<p><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-WJw85SZxlIo/Xy2YpaNiFTI/AAAAAAAAm1w/dsmb7BUK0y0oD7l3JYRDMDfWoUR5aDGGACLcBGAsYHQ/s1600/20.png" alt="Windows Registry Analysis for Forensic Investigation" width="654" height="630"/></p>
+<p><span style="color: #000000;">Now Finally in the System file, we got details regarding mounted devices details. It gets all details whether they are currently mounted or not.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-HtU04bJeYlQ/Xy2YwTYjC9I/AAAAAAAAm14/QRovlS9llZYZ0XXfeOGEE3VywCXwT89TwCLcBGAsYHQ/s1600/21.png"/></p>
+<h3><span style="color: #800000;">Software Hive</span></h3>
+<p><span style="color: #000000;">Software Hive file consists, all the information regarding the software installed in this system.</span></p>
+<p><span style="color: #000000;">Now, follow the previous steps for RegRipper and select the location of the <strong>Hive file</strong> and <strong>Report file</strong>. Then click on the <strong>Rip</strong>! Button to start the Investigation process.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-yFXjNgLY7NI/Xy2Y5ZM5H2I/AAAAAAAAm2E/PwEzLYDZsyIhpaOWIyNHBm_EfEvUCbW2ACLcBGAsYHQ/s1600/22.png"/></p>
+<p><span style="color: #000000;">After some time, it will showcase the message on the screen that our work for this investigation process is completed with zero plugins completed with errors.</span></p>
+<p><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-wu70-OKP_Us/Xy2Y_3ZaVCI/AAAAAAAAm2I/mqMheKvqJoMJQsfjglYe4FqYoDeha1SQgCLcBGAsYHQ/s1600/23.png" alt="Windows Registry Analysis for Forensic Investigation" width="475" height="414"/></p>
+<h4><span style="color: #000000;">Analyzing Log: Software </span></h4>
+<p><span style="color: #000000;">As usual, we opened the <strong>logfile</strong> first to check its log to understand through which file it is detecting to create an Investigation report for this file. Now run this command to view this file.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">type softwarereport.log</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-oycRkbVPLcg/Xy2ZG_Fm5DI/AAAAAAAAm2M/SPAKW-hXjmIsShMwyrnSVydw8A9enMUXgCLcBGAsYHQ/s1600/24.png"/></p>
+<h4><span style="color: #000000;">Analyzing Report: Software</span></h4>
+<p><span style="color: #000000;">Now we need to view the <strong>report file</strong> of the software hive file. So, run this command to get this file.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">type softwarereport.txt</pre>
+<p><span style="color: #000000;">In this <strong>report</strong>, the first page shows details regarding AppInit DLLs values. AppInit DLLs is a mechanism that allows an arbitrary list of DLLs to be loaded into each user-mode process on the system.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-Sr3e1yosLs4/Xy2ZMzJ3FCI/AAAAAAAAm2U/sg5fwwCuMfQzAHkRYlHBupGzJaGzB59UACLcBGAsYHQ/s1600/25.png"/></p>
+<p><span style="color: #000000;">The next page shows us the details regarding <strong>application details</strong> and the <strong>App Paths subkeys</strong>.</span></p>
+<p><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-V2GOlRZIEzs/Xy2ZUfjElgI/AAAAAAAAm2c/m9RjYuPcLK0tdO4x6Ip--rRbV0UfQTqmQCLcBGAsYHQ/s1600/26.png" alt="Windows Registry Analysis for Forensic Investigation" width="683" height="853"/></p>
+<p><span style="color: #000000;">After this, it will showcase all the drivers regarding <strong>Input and output devices</strong> installed in the victim’s system. It will show us <strong>Bluetooth driver</strong> details and the system doesn’t have a webcam in the system.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-16tubG93iMg/Xy2Zb3XyuPI/AAAAAAAAm2k/NMdar6ASQ0IbGlSP2mPGiMeWbAiaPBwiQCLcBGAsYHQ/s1600/27.png"/></p>
+<p><span style="color: #000000;">Last page of this report regarding the <strong>CLSID</strong> key. Where CLSID is a globally unique identifier that identifies a COM class object. If your server or container allows linking to its embedded objects, you need to register a CLSID for each supported class of objects.</span></p>
+<p><span style="color: #000000;">The CLSID key contains information used by the default COM handler to return information about a class when it is running. The CLSID is a 128-bit number, in hex, within a pair of curly braces.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-VcYrozCDKdg/Xy2ZnhB_CRI/AAAAAAAAm2w/tnTeEiZCR14N5stZZvBKFVPMoqglMdoWACLcBGAsYHQ/s1600/28.png"/></p>
+<h3><span style="color: #800000;">Security Hive</span></h3>
+<p><span style="color: #000000;">Security hive helps us to understand the security measures of the victim’s system in the Forensic Investigation process.</span></p>
+<p><span style="color: #000000;">Now, follow the previous steps for RegRipper and select the location of the <strong>Hive file</strong> and <strong>Report file</strong>. Then click on the <strong>Rip</strong>! Button to start the Investigation process.</span></p>
+<p><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-VlVzZ5YPio4/Xy2ZtljAQiI/AAAAAAAAm24/oSQNsTqyPws-BFeVuFpKNFHfaq-av0XIQCLcBGAsYHQ/s1600/29.png" alt="Windows Registry Analysis for Forensic Investigation" width="479" height="395"/></p>
+<p><span style="color: #000000;">After some time, the system will showcase the message on the screen that we have completed our work for this investigation process with zero plugins encountering errors.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-pLFQkfZU94U/Xy2ZzuIF8bI/AAAAAAAAm28/FU82KJsI-pQX4b2R7Nh0YWCe5NUKFnNPACLcBGAsYHQ/s1600/30.png"/></p>
+<h4><span style="color: #000000;">Analyzing Log: Security</span></h4>
+<p><span style="color: #000000;">Now we checked its <strong>log file</strong> to deeply understand our Investigation report. Run these commands to view the log file in the command prompt.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">type securityreport.log</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-fzA2HRY3dsA/Xy2Z8w2vvOI/AAAAAAAAm3E/HL9eeoZpHRk3mJJ3VwK7J-zG4iGfOz7kgCLcBGAsYHQ/s1600/31.png"/></p>
+<h4><span style="color: #000000;">Analyzing Report: Security</span></h4>
+<p><span style="color: #000000;">To view, the security hive file <strong>report</strong> follows this command.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">type securityreport.txt</pre>
+<p><span style="color: #000000;">This report page is all about the security hive file audit policy. An audit policy specifies account limits of one or multiple resources for a group of users.</span></p>
+<p><span style="color: #000000;">This contains guidelines that establish policy limitations and workflows for processing breaches after they occur.</span></p>
+<p><span style="color: #000000;">Where <strong>N </strong>means No audit, <strong>S </strong>means Success, and <strong>F </strong>means failure.</span></p>
+<p><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-QAcC6HX2nBs/Xy2aEVrIADI/AAAAAAAAm3M/fvGKGrIqLRsfL1JLn8PAgPJjmnB0KYFBgCLcBGAsYHQ/s1600/32.png" alt="Windows Registry Analysis for Forensic Investigation" width="441" height="900"/></p>
+<h3><span style="color: #800000;">Conclusion</span></h3>
+<p><span style="color: #000000;">The Windows Registry is a hierarchical database that stores low-level settings for the operating system of Microsoft Windows and for programs choosing to use the registry. The register also offers access to counters for results in profiling systems. In other terms, on all models of Microsoft Windows operating systems, the registry or Windows registry contains information, settings, options, and other values for programs and hardware installed.</span></p>
+<p><span style="color: #000000;">You can extract these details with RegRipper to get a better result in the Forensic Investigation.</span></p>
+<p><span style="color: #000000;">To learn more about Cyber Forensics. Follow this</span> <strong><a href="https://www.hackingarticles.in/category/cyber-forensics-tricks/">Link</a></strong></p>
+<p><span style="color: #000000;"><strong>Author</strong>: Shubham Sharma is a Pentester and Cybersecurity Researcher, Contact <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.linkedin.com/in/shubham-sharma-626964153/">Linkedin</a> </strong></span>and <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://twitter.com/Shubham_pen">twitter</a></strong></span>.</span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

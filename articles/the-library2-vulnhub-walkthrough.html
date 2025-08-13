@@ -1,0 +1,94 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">The Library:2 Vulnhub Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/the-library2-vulnhub-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2019-08-15T17:08:29+00:00">August 15, 2019</time><time class="updated" datetime="2025-06-10T20:11:21+00:00">June 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today we are going to take another challenge Library2 which is a 2nd lab of the series Library. The credit for making this VM machine goes to “Avraham Cohen” and it is a boot2root challenge where we have to root the server to complete the challenge. You can download this VM <strong><a style="color: #000000;" href="https://www.vulnhub.com/entry/the-library-2,335/">here</a></strong>.</span></p>
+<p><span style="color: #000000;"><strong>Security Level</strong>: Beginner</span></p>
+<h3><span style="color: #800000;"><strong>Penetrating Methodology:</strong></span></h3>
+<p><span style="color: #000000;"><strong>Scanning</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Netdiscover</span></li>
+<li><span style="color: #000000;">NMAP</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Enumeration</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Web Directory Search</span></li>
+<li><span style="color: #000000;">Burpsuite </span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Exploitation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Sqlmap</span></li>
+<li><span style="color: #000000;">FTP</span></li>
+<li><span style="color: #000000;">Shell Upload</span></li>
+<li><span style="color: #000000;">Netcat</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Privilege Escalation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Obtaining root password</span></li>
+</ul>
+<h3><span style="color: #000000;">Walkthrough:</span></h3>
+<h3><span style="color: #000000;"><strong><span style="color: #800000;">Scanning</span>:</strong></span></h3>
+<p><span style="color: #000000;">Let’s start off with the scanning process. This target VM took the IP address of 192.168.1.107 automatically from our local Wi-Fi network<strong>.</strong></span></p>
+<p><span style="color: #000000;">We used Nmap for port scanning. We found that port 21 and 80 are open.</span></p>
+<pre class="lang:default decode:true">nmap -A 192.168.1.107</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-YnN0Z42Rye4/XVWO7pyPG7I/AAAAAAAAgCk/yuYVEmvuhcMZS8x9JJc6R4bNU2QqtJKtwCLcBGAs/s1600/1.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Enumeration:</strong></span></h3>
+<p><span style="color: #000000;">As we can see port 80 is open, we opened the IP address in our browser, but we didn’t find anything useful on the webpage.</span></p>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://1.bp.blogspot.com/-zRQwKSWQbFc/XVWO-Cc2IiI/AAAAAAAAgC8/o_aBYFHKa-grGvgFISrb8xtdugDf49SpQCLcBGAs/s1600/2.png"/></strong></span></p>
+<p><span style="color: #000000;">Firstly, we tried <strong>dirb </strong>in default mode but didn’t find any directory. Then we looked with <strong>.php </strong>extension and got one directory <strong>/library.php</strong></span></p>
+<pre class="lang:default decode:true">dirb http://192.168.1.107 -X .php</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-HKTIZji9N_k/XVWO-JXtfYI/AAAAAAAAgDA/3QvQ5QXMvnoiAsGuUiWp_o3Xly95KmpvwCLcBGAs/s1600/3.png"/></span></p>
+<p><span style="color: #000000;">After accessing the URL <strong>http://192.168.1.107/library.php</strong>  we got a webpage listing the name of few countries.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-D5FbR-KGggM/XVWO_IciX_I/AAAAAAAAgDE/X2GBjos3Y90nEfAtoLOvl5umBe8118PugCLcBGAs/s1600/4.png"/></span></p>
+<p><span style="color: #000000;">We just clicked on Netherlands and it didn’t give any information.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-x48hUy3DatY/XVWO_vyQCxI/AAAAAAAAgDI/jUMNXkr151k5zeK9txn9L0v0-t2TTVG5ACLcBGAs/s1600/5.png"/></span></p>
+<p><span style="color: #000000;">We captured the request in burpsuite and thought country parameter might be vulnerable to SQL injection, so we copied the raw request of burp into a text file <strong>sql </strong>and used an asterisk (<strong>*</strong>) to pinpoint our point of the target but we didn’t get anything.</span></p>
+<p><span style="color: #000000;">Then we took a little help of the hint given by the creator of this machine on Vulnhub and changed the request from <strong>GET </strong>to <strong>POST.</strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-hoEpBwWoJ2o/XVWO_qMzIWI/AAAAAAAAgDM/oRUNn23PDxQsfRdb9r8jlKz6VLeKd33mgCLcBGAs/s1600/7.png"/></span></p>
+<p><span style="color: #000000;">You can see in the image below the request has been changed from GET to POST. Copy this request in a text file on your attacking machine. </span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-O4HBWTVgzhc/XVWO_11iMbI/AAAAAAAAgDQ/1bagQAth4Qo-cW4ACuc66ZqocL4uBNqAgCLcBGAs/s1600/8.png"/></span></p>
+<h3><span style="color: #000000;"><strong><span style="color: #800000;">Exploitation</span>:</strong></span></h3>
+<p><span style="color: #000000;">Now let’s use <strong>sqlmap</strong> on the file where we have copied the POST request in a text file.</span></p>
+<pre class="lang:default decode:true">sqlmap -r sql --dbs --batch --risk 3 --level 5</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-90Z0NiUpJ0M/XVWPAnTe7gI/AAAAAAAAgDU/IVN6bEAiyUUDFmQQI3_WM-cJzmgw3R2gACLcBGAs/s1600/9.png"/></span></p>
+<p><span style="color: #000000;">From the results, we found a directory named <strong>library.</strong></span></p>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://1.bp.blogspot.com/-RUR9PfeNHMY/XVWO7ojMZ5I/AAAAAAAAgCg/-AyGwHEUA4gUucS2iDKoAr7hp00pkYxkwCLcBGAs/s1600/10.png"/></strong></span></p>
+<p><span style="color: #000000;">Further enumerating the library database for usernames and passwords.</span></p>
+<pre class="lang:default decode:true">sqlmap -r sql -D library --dump-all --batch --risk 3 --level 5</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://1.bp.blogspot.com/-P5oes-SpsYc/XVWO7oBpLdI/AAAAAAAAgCc/Q_olNAb3mDI9yG2ldCWsy3rANkAw-GSBgCLcBGAs/s1600/11.png"/></strong></span></p>
+<p><span style="color: #000000;">We found a username <strong>globus </strong>and password <strong>AroundTheWorld </strong>for the <strong>ftp </strong>service.</span></p>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://1.bp.blogspot.com/-SGfLwLMajMg/XVWO8aYe-7I/AAAAAAAAgCo/DigZhQ8asV8hj0EWMvD8UhJ1gu5D_9S7ACLcBGAs/s1600/12.png"/></strong></span></p>
+<p><span style="color: #000000;">We connected to the target system through ftp using the above-found credentials. We looked here and there but couldn’t find anything useful, so what we did is we grabbed a php-reverse-shell from /usr/share/webshells/php and modified the listener IP as ours and named it as <strong>shell.php</strong>.</span></p>
+<p><span style="color: #000000;">Then we tried to upload it in the target machine using <strong>PUT </strong>command but we got access denied error.</span></p>
+<pre class="lang:default decode:true">ftp 192.168.1.107
+ls
+cd html
+ls
+put shell.php</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-CiHtATlKwDs/XVWO83beebI/AAAAAAAAgCs/4Fz51lrOApwdJ6edfrfxCJ5VVBAw20I4QCLcBGAs/s1600/16.png"/></span></p>
+<p><span style="color: #000000;">It seemed there was some sort of file format filtering happening in the backend, we found a work around for this filter by changing the name of the script file from <strong>shell.php </strong>to <strong>shell.PHP</strong></span></p>
+<pre class="lang:default decode:true">put shell.PHP
+ls
+chmod 777 shell.PHP</pre>
+<p><span style="color: #000000;"><strong><img decoding="async" src="https://1.bp.blogspot.com/-LEpivY8OMMI/XVWO88oc9qI/AAAAAAAAgCw/zTlA5tauweABl23oCoLcqhB_HHUBf43UACLcBGAs/s1600/18.png"/></strong></span></p>
+<p><span style="color: #000000;">Now we executed the shell by just browsing to the URL <strong>http://192.168.1.107/shell.PHP </strong>and at the same time started a netcat listener on our Kali machine.</span></p>
+<p><span style="color: #000000;"><strong><img decoding="async" src="https://1.bp.blogspot.com/-S4xir1YxskY/XVWO8wf4oWI/AAAAAAAAgC0/Z25hyxiLIMovJ4u2Qi6gxO9Tkg78Va56wCLcBGAs/s1600/19.png"/></strong></span></p>
+<h3><span style="color: #800000;"><strong>Privilege Escalation:</strong></span></h3>
+<p><span style="color: #000000;">We successfully got the netcat session with a limited user privilege. And after a little bit of directory traversing, we found the password of a <strong>root</strong> inside a file named <strong>welcome </strong>located in the <strong>/var/mail </strong>directory.</span></p>
+<p><span style="color: #000000;">Then we finally switched to the <strong>root </strong>shell using <strong>su </strong>command and successfully completed the challenge.</span></p>
+<pre class="lang:default decode:true">nc –lvp 1234
+python -c 'import pty; pty.spawn("/bin/sh")'
+cd /var/mail
+ls
+cat welcome
+su root
+id</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Fkfn0ZLIQL0/XVWO-NOQnuI/AAAAAAAAgC4/GX1PvoSYAPQ1jOcJ4OiSmjVD9jwbXuf9wCLcBGAs/s1600/20.png"/></span></p>
+<p><span style="color: #000000;"><strong>Author</strong>: Auqib Wani is a Certified Ethical Hacker, Penetration Tester and a Tech Enthusiast with more than 5 years of experience in the field of Network &amp; Cyber Security. Contact <strong><a style="color: #000000;" href="https://www.linkedin.com/in/auqib-wani-14210a71/">Here</a></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

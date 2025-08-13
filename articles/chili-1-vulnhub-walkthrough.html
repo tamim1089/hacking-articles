@@ -1,0 +1,67 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">Chili: 1 Vulnhub Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/chili-1-vulnhub-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2020-09-19T09:02:56+00:00">September 19, 2020</time><time class="updated" datetime="2025-07-10T18:51:07+00:00">July 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today we are going to solve another boot2root challenge called “<strong>Chili: 1</strong>“.  It’s available at VulnHub for penetration testing and you can download it from <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.vulnhub.com/entry/chili-1,558/">here</a></strong></span>. </span><span style="color: #000000;">The credit for creating this lab is given to <strong>SunCSR Team</strong>. Let’s start and learn how to break it down successfully.</span></p>
+<p><span style="color: #000000;">Level: <strong>Easy</strong></span></p>
+<h3><span style="color: #800000;"><strong>Penetration Testing Methodology</strong></span></h3>
+<p><span style="color: #000000;"><strong>Reconnaissance</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Netdiscover</span></li>
+<li><span style="color: #000000;">Nmap</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Enumeration</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Bruteforce FTP with Hydra</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Exploiting</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Weak password abuse FTP</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Privilege Escalation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Abuse of permissions in /etc/passwd</span></li>
+<li><span style="color: #000000;">Capture the flag</span></li>
+</ul>
+<h3><span style="color: #000000;"><strong>Walkthrough</strong></span></h3>
+<h3><span style="color: #800000;"><strong>Reconnaissance</strong></span></h3>
+<p><span style="color: #000000;">The first step is to identify the target IP in the network and for that, we will use netdiscover command as shown in the image below:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">netdiscover -i ethX</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-CCE0sKP2Cak/X2XHRlmphkI/AAAAAAAAolA/flh-zWAOymgTDiwfhkwekWbs8ea1jHGoQCLcBGAsYHQ/s16000/1.png"/></span></p>
+<p><span style="color: #000000;">The target IP is 192.168.10.182 which confirmed by matching the MAC address of the Machine. Now that we have target IP, our next step is to scan it for possible ports and services to be known. Through the network scan we will also uncover any OS information that will be available. Therefore, to do the said we will use nmap with the following parameters:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -A –p- 192.168.10.182</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-rn4AUsWB1Xw/X2XHZYZPFeI/AAAAAAAAolE/5L1bx7YqG0UoRC-Su0Nl-fqO7EsrQg-dgCLcBGAsYHQ/s16000/2.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Enumeration</strong></span></h3>
+<p><span style="color: #000000;">With the result of nmap, we know that port 80 and 21 is open with the services of HTTP and FTP respectively. We access the <strong>port 80 web service</strong> and find a single page with an image of a chili. After checking the image with several stegnographical tools, we did not find anything that could be useful. Even ont he source copde, there was nothing to be found.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-L-DS46tyvHo/X2XHe-ojHRI/AAAAAAAAolM/xOEyS5teVM0RdirpbcK20WY0IPUVTYMWACLcBGAsYHQ/s16000/3.png"/></span></p>
+<p><span style="color: #000000;">Let’s go back and remember the clue given to us in the description by the creators of the box:</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-iuWVuwKfxus/X2XHpnLWf3I/AAAAAAAAolc/YVtZ_7o3anEPt1HLmPsT3tmlBHt198LvACLcBGAsYHQ/s16000/4.png"/></span></p>
+<p><span style="color: #000000;">This time the fuzzing will not help us, so surely the method of exploitation is through FTP. Then, w</span><span style="color: #000000;">e <strong>brute-force</strong> the <strong>FTP</strong> service with the “<strong>Kaonashi</strong>” dictionary and use “<strong>chili</strong>” as our username. </span><span style="color: #000000;">We observe here that it uses an insecure password.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/--2Ny1nU20Dk/X2XHxUtDeUI/AAAAAAAAol4/t5CGs_B-XaErgnQDlLaFXDUYml0osnLUACLcBGAsYHQ/s16000/5.png"/></span></p>
+<p><span style="color: #000000;">We now connect to the FTP service and can see that we have access to the user’s folder. There goes our chance to upload any SSH key as there wasn’t a SSH service running to begin with.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-K-tFJfmWOAs/X2XH4oSJt1I/AAAAAAAAol8/GfP9LDD_LBw3lYanVNIbVWot3c8VXA6aACLcBGAsYHQ/s16000/6.png"/></p>
+<h3><span style="color: #800000;">Exploiting</span></h3>
+<p><span style="color: #000000;">After reviewing all the files, we notice that we can list files recursively. Then we will go to the service and upload our webshell (I used <strong>Pentestmonkey</strong>) to access the machine. </span><span style="color: #000000;">Once uploaded, we will give it the necessary permissions to work properly.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-noWDRhB81MY/X2XH-5VBd-I/AAAAAAAAomM/VvbwBsgIOKcEEVZ4_3ubW3AfsPMv3NyJgCLcBGAsYHQ/s16000/7.png"/></span></p>
+<p><span style="color: #000000;">Then, we will put a netcat to the listening, we will execute our shell from the browser and we will obtain the access to the machine.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-KK_UEroL8kQ/X2XIEnnsO6I/AAAAAAAAomU/pfhUHtvyw1U3yZE2B3xx94BIYChmYPT5wCLcBGAsYHQ/s16000/8.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Privilege Escalation (root)</strong></span></h3>
+<p><span style="color: #000000;">We do our classic recognition, we will not take long to list that we have to write permissions in the file <strong>/etc/passwd</strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-x6wfbsIDA-k/X2XIKrL__yI/AAAAAAAAomc/fsOY1AiRnWca9gtdpmhh-SkGbuJvfLDHwCLcBGAsYHQ/s16000/9.png"/></span></p>
+<p><span style="color: #000000;">Given this, the climb will be very simple:</span></p>
+<ol>
+<li><span style="color: #000000;">We will create a user and a password.</span></li>
+<li><span style="color: #000000;">We will insert a new line with the new user, adding the structure of the root user.</span></li>
+<li><span style="color: #000000;">We will authenticate ourselves as the new user.</span></li>
+<li><span style="color: #000000;">We will have permissions as root and we will have achieved the privilege scale in the system.</span></li>
+</ol>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-hphRVjojtSo/X2XIQ10LIqI/AAAAAAAAomk/IpDou_zTmX0c55697rIMHzrCOWWoNks-ACLcBGAsYHQ/s16000/10.png"/></span></p>
+<p><span style="color: #000000;">Thank you for giving your precious time to read this walkthrough. If you want to read more VulnHub Write-ups. Follow this</span> <strong><a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/">Link.</a></strong> <span style="color: #000000;">Happy Hacking!</span></p>
+<p><span style="color: #000000;"><strong>Author</strong>: <strong>David Utón</strong> is Penetration Tester and security auditor for Web applications, perimeter networks, internal and industrial corporate infrastructures, and wireless networks. Contacted on <span style="color: #0000ff;"><strong>LinkedIn</strong> </span>and <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://twitter.com/David_Uton">Twitter</a></strong></span>.</span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

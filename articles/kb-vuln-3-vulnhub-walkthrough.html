@@ -1,0 +1,81 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">KB-Vuln: 3 Vulnhub Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/kb-vuln-3-vulnhub-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2020-10-30T12:23:24+00:00">October 30, 2020</time><time class="updated" datetime="2025-07-10T15:23:25+00:00">July 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today we are going to solve another boot2root challenge called “KB-VULN: 3”.  It’s available at VulnHub for penetration testing and you can download it from <span style="color: #0000ff;"><a style="color: #0000ff;" href="https://www.vulnhub.com/entry/kb-vuln-3,579/"><strong>here</strong></a></span>.</span></p>
+<p><span style="color: #000000;">The merit of making this lab is due to <a style="color: #000000;" href="https://kernelblog.org/"><strong>Machine</strong></a>. Let’s start and learn how to break it down successfully.</span></p>
+<p><span style="color: #000000;">Level: Eas</span></p>
+<h3><span style="color: #800000;">Penetration Testing Methodology</span></h3>
+<p><span style="color: #000000;"><strong>Reconnaissance</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Netdiscover</span></li>
+<li><span style="color: #000000;">Nmap</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Enumeration</strong></span></p>
+<ul>
+<li><span style="color: #000000;">SMBClient</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Exploiting</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Cracking backup zip2john &amp; john the ripper</span></li>
+<li><span style="color: #000000;">SiteMagic CMS – Arbitrary File Upload</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Privilege Escalation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Abuse uncommon setuid binary <strong>systemctl</strong></span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Capture the flag</strong></span></p>
+<h3><span style="color: #800000;">Walkthrough</span></h3>
+<h3><span style="color: #800000;">Reconnaissance</span></h3>
+<p><span style="color: #000000;">We are looking for the machine with netdiscover</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">netdiscover -i ethX</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-9dlZictlcG0/X5v_ZrI865I/AAAAAAAAp5M/E208JljyyTYeKTBxdxWvYfNF0uuY62CAwCLcBGAsYHQ/s16000/1.png"/></span></p>
+<p><span style="color: #000000;">So, we put the IP address in our “/etc/hosts” file and start by running the map of all the ports with operating system detection, software versions, scripts and traceroute.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -A –p- 192.168.10.167</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-lVo3WN0ZYxA/X5wCXBcGymI/AAAAAAAAp5U/67uqQoHhAKcD5hyLvxaIVWfxfxFktPrbQCLcBGAsYHQ/s16000/2.png"/></span></p>
+<h3><span style="color: #800000;">Enumeration</span></h3>
+<p><span style="color: #000000;">We accessed the website but found a 404 error.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-als53yFCvlo/X5wCbqXfkkI/AAAAAAAAp5Y/DKcdhocj8-805A-2Bd02fZM2V3gkSlc8QCLcBGAsYHQ/s16000/3.png"/></span></p>
+<p><span style="color: #000000;">We check if the site is vulnerable to null SMB connections and list two shares. One of them draws our attention to your comment.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-8qfvjsPQ6Gw/X5wCqlGGVvI/AAAAAAAAp5g/LQItTcI6C0UZpj84ufYyP8WlFSqBITwNwCLcBGAsYHQ/s16000/4.png"/></span></p>
+<p><span style="color: #000000;">We enter the “Files” share and list a backup of the website, download it and unzip it, but it is password protected.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/--4FDIApXQQ0/X5wCvsJLZpI/AAAAAAAAp5o/WbesVFGZ5Sgu7KdVjDpJxvXdXOVr_93oQCLcBGAsYHQ/s16000/5.png"/></span></p>
+<h3><span style="color: #800000;">Exploiting</span></h3>
+<p><span style="color: #000000;">We will use zip2john to get the zip password hash.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-ed_yOWR9DG0/X5wC2Pg2NXI/AAAAAAAAp5s/zI0_F216chQdo0XjIEZZTmkrxLtTjp9jQCLcBGAsYHQ/s16000/6.png"/></span></p>
+<p><span style="color: #000000;">Then we check the content of the “pass-zip.hash” file and launched john with the rockyou dictionary.</span></p>
+<p><span style="color: #000000;">We wait a bit and get the password for the zip.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-MARb8FV1rlw/X5wC7GQNCvI/AAAAAAAAp50/PlzP7PijKgM9qfpWBIh0RDsJ_YERggHGwCLcBGAsYHQ/s16000/7.png"/></span></p>
+<p><span style="color: #000000;">We unzip the zip and see the content of a SiteMagic CMS.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-N1HKMYDW5mY/X5wC_9SdLHI/AAAAAAAAp54/uir28-uXo7gdjw5e3UT5wHXSNjyN2adSgCLcBGAsYHQ/s16000/8.png"/></span></p>
+<p><span style="color: #000000;">Then, we reviewed the configuration file “config.xml.php” and enumerated the CMS administrator credentials.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-C2S7Y-H7N9I/X5wDG_92KxI/AAAAAAAAp6A/6Ha6Am8dEdgcexmLIrI4wFeFrRTS7v5gACLcBGAsYHQ/s16000/9.png"/></span></p>
+<p><span style="color: #000000;">This CMS is vulnerable to Arbitrary File Upload: <a style="color: #000000;" href="https://www.exploit-db.com/exploits/48788"><strong>https://www.exploit-db.com/exploits/48788</strong></a></span></p>
+<p><span style="color: #000000;">Manually it can also be done in the following way:</span></p>
+<p><span style="color: #000000;">We access the site’s login, authenticate ourselves with the obtained credentials, go to Content and upload a webshell (I used <a style="color: #000000;" href="https://github.com/pentestmonkey/php-reverse-shell"><strong>pentestmonkey’s webshell</strong></a>)</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Xfw2S1PlyQ4/X5wDN3YtYpI/AAAAAAAAp6I/TGc_Z2NCUWcYXG8_nIL_C0iG7p7QxR0RACLcBGAsYHQ/s16000/10.png"/></span></p>
+<p><span style="color: #000000;">We access the directory and see that our webshell has been uploaded.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-6I-YBEQ-hqo/X5wDV-ZvT2I/AAAAAAAAp6Q/GTFXvxyXvFw3BHEge5fQI5f-BEibx4ULACLcBGAsYHQ/s16000/11.png"/></span></p>
+<p><span style="color: #000000;">Then we put a netcat on the wire and run our webshell. We will get access to the machine, now we will execute our two favorite commands to get an interactive shell.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-ZbgPxW42e08/X5wDad_JPlI/AAAAAAAAp6Y/fXV_yRiE3BYFEj22td819Td_F4N_j_l4ACLcBGAsYHQ/s16000/12.png"/></span></p>
+<p><span style="color: #000000;">We access the home page of the user “<strong>heisenberg</strong>” and have access to read the file “<strong>user.txt</strong>”.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-X9YlIqs3mb0/X5wDhotnzjI/AAAAAAAAp6c/BFXtqfpMu6UeihGk1coag5iK2fJ68g6WgCLcBGAsYHQ/s16000/13.png"/></span></p>
+<h3><span style="color: #800000;">Privilege Escalation (root)</span></h3>
+<p><span style="color: #000000;">After reviewing the contents of the user’s home page without anything useful, we execute the “find” command to obtain a list of binaries that we have permission to execute.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-YMPwimCN9zk/X5wDmqudgnI/AAAAAAAAp6g/jvuLjCYdAWsfG57jK3gjhwBEbscJUQOSQCLcBGAsYHQ/s16000/14.png"/></span></p>
+<p><span style="color: #000000;">Among these binaries, we find “systemctl”. We searched for information about it in Google and found very similar methods, although only this one worked for me. Then, w</span><span style="color: #000000;">e create a file “name.service” with the following content:</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-m9iB_QoLlmI/X5wDsoUMuXI/AAAAAAAAp6o/piFn98PhXck0cEa6VmTpOq258ap_u_VtwCLcBGAsYHQ/s16000/15.png"/></span></p>
+<p><span style="color: #000000;">We downloaded in the victim machine our “m3.service” in the directory “/dev/shm” (in the user we don’t have permissions and in /tmp/ it didn’t work).</span></p>
+<p><span style="color: #000000;">We put a netcat to the listening and we initiate our service.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-bCMCBvZEIqc/X5wDyU3GmrI/AAAAAAAAp6w/MVVKg7VoUE4Ml0PwEy8loCv0CV7m5_EygCLcBGAsYHQ/s16000/16.png"/></span></p>
+<p><span style="color: #000000;">If everything went well, we will get a shell as root. Now we read the root flag.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-bILe44N9RoA/X5wD4Q7rthI/AAAAAAAAp64/hmlcX9uFr4U1NBxV1G4Lo8H1SFMQ5mr3QCLcBGAsYHQ/s16000/17.png"/></span></p>
+<p><span style="color: #000000;">Thank you for giving your precious time to read this walkthrough. If you want to read more VulnHub Write-ups. Follow this</span> <strong><a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/">Link.</a></strong> <span style="color: #000000;">Happy Hacking!</span></p>
+<p><span style="color: #000000;"><strong>Author</strong>: <strong>David Utón</strong> is Penetration Tester and security auditor for Web applications, perimeter networks, internal and industrial corporate infrastructures, and wireless networks. Contacted on <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.linkedin.com/in/david-uton">LinkedIn</a></strong> </span>and <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://twitter.com/David_Uton">Twitter</a></strong></span>.</span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

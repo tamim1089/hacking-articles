@@ -1,0 +1,94 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/" rel="category tag">HackTheBox</a></span>            </div>
+            <h1 class="post-title entry-title">SwagShop HackTheBox Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/swagshop-hackthebox-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2021-02-05T13:09:23+00:00">February 5, 2021</time><time class="updated" datetime="2025-06-10T20:18:19+00:00">June 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today we are going to crack a machine called Admirer. It was created by ch4p. This is a Capture the Flag type of challenge. This machine is hosted on HackTheBox. Let’s get cracking!</span></p>
+<h3><span style="color: #800000;"><strong>Penetration Testing Methodology</strong></span></h3>
+<ul>
+<li><span style="color: #000000;"><strong>Network Scanning</strong></span>
+<ul>
+<li><span style="color: #000000;">Nmap Scan</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Enumeration</strong></span>
+<ul>
+<li><span style="color: #000000;">Browsing HTTP Service</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Exploitation</strong></span>
+<ul>
+<li><span style="color: #000000;">Exploiting RCE for Admin Access</span></li>
+<li><span style="color: #000000;">Allow Symlinking</span></li>
+<li><span style="color: #000000;">Exploiting File Upload for shell</span></li>
+<li><span style="color: #000000;">Reading User Flag</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Privilege Escalation</strong></span>
+<ul>
+<li><span style="color: #000000;">Enumerating Sudo Permissions</span></li>
+<li><span style="color: #000000;">Exploiting sudo permission on vi</span></li>
+<li><span style="color: #000000;">Reading Root Flag</span></li>
+</ul>
+</li>
+</ul>
+<h3><span style="color: #800000;"><strong>Walkthrough</strong></span></h3>
+<h3><span style="color: #800000;"><strong>Network Scanning</strong></span></h3>
+<p><span style="color: #000000;">To Attack any machine, we need the IP Address. Machine hosted on HackTheBox have a static IP Address.</span></p>
+<p><span style="color: #000000;">IP Address assigned: 10.129.1.182</span></p>
+<p><span style="color: #000000;">Now that we have the IP Address. We need to enumerate open ports on the machine. For this, we will be running an Aggressive nmap scan.</span></p>
+<pre class="lang:default decode:true">nmap -A 10.129.1.182</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-3PbSJkNlofA/YB1Az9kqJAI/AAAAAAAAteQ/b6ZaNysFQ6c6UzKn7JomZS0vzPVdb-P_wCLcBGAsYHQ/s16000/1.png"/></span></p>
+<p><span style="color: #000000;">The nmap scan told us that the following services are running: 22 (SSH) and 80 (HTTP). It also gave us the version of Apache httpd service used. Amongst other things it threw an error that the redirect didn’t follow to http://swagshot.htb/ means that we might need to make an entry in our /etc/hosts/ file to proceed further.</span></p>
+<h3><span style="color: #800000;"><strong>Enumeration</strong></span></h3>
+<p><span style="color: #000000;">So, we add swagshop.htb with its IP address into the /etc/hosts file as shown below.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-XN0icTLiKwo/YB1A4RAr4-I/AAAAAAAAteU/6tJBcMy7_68f5Gd6ucGyVp4QXuopBm6SACLcBGAsYHQ/s16000/2.png"/></span></p>
+<p><span style="color: #000000;">Now, we decide to enumerate the HTTP service on the target machine. As soon as we open it, we see that it is an E-commerce based template on Magento Framework.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-3HCRaH8Amy0/YB1A8BvrFpI/AAAAAAAAteY/wHVC7qVKYW8I9CKcYxj1k2QBLC07fUdpwCLcBGAsYHQ/s16000/3.png"/></span></p>
+<p><span style="color: #000000;">During our past experiences, we have found that there are a bunch of vulnerabilities on the Magento Framework. So, we searched for some probable exploits.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-ZIPs0BoirRc/YB1BAidR7iI/AAAAAAAAtec/ATuRJxZ-vEcQPq73xXqJgiGjb7VPId7JgCLcBGAsYHQ/s16000/4.png"/></span></p>
+<p><span style="color: #000000;">One of the vulnerabilities we found on ExploitDB was Remote Code Execution. Get the RCE Script from <a style="color: #000000;" href="https://www.exploit-db.com/exploits/37977">here</a>. We download the script from ExploitDB and edit it to add the Target IP Address.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-8ROgNyIIOXU/YB1BI3DCI2I/AAAAAAAAteo/2nc8fPt8wx42yGl4ny2U0FLtAt3t0wokgCLcBGAsYHQ/s16000/5.png"/></span></p>
+<p><span style="color: #000000;">This script basically checks is the Magneto is vulnerable and if it is vulnerable it exploits the Remote Code Execution Vulnerability to create an Administrator level user by the name of forme. We ran the script and it was successful.</span></p>
+<pre class="lang:default decode:true">python exploit.py</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-A9PEPH3K2-I/YB1BPvGkRzI/AAAAAAAAtew/xbhU8V01tUkO41mim2HTs8ONHTD1LJGqwCLcBGAsYHQ/s16000/6.png"/></span></p>
+<p><span style="color: #000000;">Let’s login into Magneto using the following credentials:</span></p>
+<pre class="lang:default decode:true">http://swagshop.htb/index.php/admin
+Username: forme
+Password: forme</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-R_cGuTJ3Woo/YB1BURvzGMI/AAAAAAAAte4/-tSeqjV22xAfCoeLxUZ0vf63b7Ulhx37ACLcBGAsYHQ/s16000/7.png"/></span></p>
+<p><span style="color: #000000;">Now, we are in the Magento Admin Panel. There are a bunch of different methods in which we can get the shell but we decided to use the “Froghopper” Attack. It is a File Upload attack. It got its name from the pepe frog image that was used as a meme to get the shell by the author of the exploit. The files uploaded are not accessible in their raw form which will prevent us from executing them. This can be bypassed by allowing Symlinks in Developer Settings (System &gt; Configuration &gt; developer &gt; Template Settings)</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Nv4wjEHFXbc/YB1BaG2RPAI/AAAAAAAAte8/BorG5jIBNDY0iJEeNTSOupou97kx_jkxQCLcBGAsYHQ/s16000/9.png"/></span></p>
+<p><span style="color: #000000;">Magneto have built-in feature to restrict the malicious extensions of the files that can cause harm. Hence all it allows are PNG, JPG, GIF etc.  The protection mechanism checks for the header and the extension but not for the contents of the file being uploaded. This means that we can craft payload in such a way that we are able to upload it to the target system. Hence, we took the reverse shell script and added GIF98 on top of it to be able to upload it.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-oUS-AqBe-MU/YB1Bf6tLIlI/AAAAAAAAtfE/8ysoVRGzaZUPbR2GDmO90QJ8oFbHY-NlgCLcBGAsYHQ/s16000/10.png"/></span></p>
+<p><span style="color: #000000;">Now we create a new category, named Demo. It needs to be active for the payload to work. Then upload the reverse shell script with double extension as shown in the image below.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/--9_xjf4UTNk/YB1BoPVZKsI/AAAAAAAAtfM/-7-epUCHdvA5mce9Zb4hglveL7dwyytPACLcBGAsYHQ/s16000/12.png"/></span></p>
+<p><span style="color: #000000;">Now proceed to the Newsletter Section and Click on Add New Template.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-O9J7VwkYTnM/YB1BuRRSMfI/AAAAAAAAtfU/HQcqH90wCU8gleqR2iDSfdrRSHRKUcL5ACLcBGAsYHQ/s16000/13.png"/></span></p>
+<p><span style="color: #000000;">In the Newsletter Template fill in the form with dummy details and then in the text filed add the path of template i.e., the reverse shell script as shown below.</span></p>
+<pre class="lang:default decode:true">{{block type='core/template' template='../../../../../../media/catalog/category/ignite.php.png'}}</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-gWYm5-jG6g0/YB1BzwDg4qI/AAAAAAAAtfc/D2JGe_6M2bcpU6fBXLMxUZlkzFSRZqnwACLcBGAsYHQ/s16000/14.png"/></span></p>
+<p><span style="color: #000000;">Now getting back to the Newsletter Template Section, we see that our newly created newsletter is visible. Before executing it, we run a listener on the port mentioned in the reverse shell. After that, we proceed to Preview the Newsletter template as shown in the image below.</span></p>
+<pre class="lang:default decode:true">nc -lvp 1234</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-mM4Bkf0Mk9o/YB1B5kf3K7I/AAAAAAAAtfk/_zdwuGFpCOEf1jIrmH4tPSmiivveJCPbACLcBGAsYHQ/s16000/15.png"/></span></p>
+<p><span style="color: #000000;">As soon as the reverse shell file gets executed, we get a session on the netcat listener we started earlier. We convert the shell into a TTY shell using python one-liner.  Since we have the session, let’s enumerate for the User Flag. We got the user flag inside the user ‘haris’.</span></p>
+<pre class="lang:default decode:true">python3 -c 'import pty; pty.spawn("/bin/bash")'
+cd /home
+cd haris
+cat user.txt</pre>
+<h3><span style="color: #000000;"><strong><span style="color: #800000;">Privilege Escalation</span> </strong></span></h3>
+<p><span style="color: #000000;">We checked the sudo permissions and found that we can run vi with root privileges but inside /var/www/html/. We use the vi for editing the index.php inside the /var/www/html.</span></p>
+<pre class="lang:default decode:true">sudo /usr/bin/vi /var/www/html/index.php</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-PBZNQ26LQNo/YB1CACGwkrI/AAAAAAAAtfs/LKSwUHe-dBwYpQW_Cv8DVPX7ivRpDtedwCLcBGAsYHQ/s16000/17.png"/></span></p>
+<p><span style="color: #000000;">We executed the shell as shown in the image below and got the root shell. All that’s left is to read the root flag. We found it /root. This concludes the machine.</span></p>
+<pre class="lang:default decode:true">:sh
+cd /root
+cat root.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-v_tMRxnU9IU/YB1CFNYCCxI/AAAAAAAAtf0/do2iWlZMzjYQYZiNjvNnzPTGCXYTrRq_wCLcBGAsYHQ/s16000/18.png"/></span></p>
+<p><span style="color: #000000;"><strong>Author: Pavandeep Singh</strong> is a Technical Writer, Researcher, and Penetration Tester. Can be Contacted on <span style="color: #0000ff;"><strong>Twitter</strong> </span>and <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.linkedin.com/in/pavan2318/">LinkedIn</a></strong></span></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

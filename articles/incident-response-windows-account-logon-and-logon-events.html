@@ -1,0 +1,134 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/cyber-forensics-tricks/incident-response/" rel="category tag">Incident Response</a></span>            </div>
+            <h1 class="post-title entry-title">Incident Response: Windows Account Logon and Logon Events</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/incident-response-windows-account-logon-and-logon-events/" rel="bookmark"><time class="entry-date published" datetime="2020-09-02T18:35:53+00:00">September 2, 2020</time><time class="updated" datetime="2025-05-13T07:59:46+00:00">May 13, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">When a user authenticates a Windows endpoint, the system generates an Account Logon event and records it. Meanwhile, the system records these account logon events in its Security event log, which is responsible for authenticates the user.</span></p>
+<p><span style="color: #000000;">In addition, when a user accesses an account for a resource, the system records a Logon event. Consequently, the system records these logon events in its own Security event log.</span></p>
+<p><span style="color: #000000;">As an incident responder, if you spot account logon events on a machine other than the Domain Controller, it could be a sign of local user account usage.</span></p>
+<p><span style="color: #000000;">Local user account usage is abnormal on domain environments and can indicate a compromise</span></p>
+<h3><span style="color: #800000;">Table of Contents</span></h3>
+<ul>
+<li><span style="color: #000000;"><strong>Introduction</strong></span></li>
+<li><span style="color: #000000;"><strong>Logon Events</strong></span></li>
+<li><span style="color: #000000;"><strong>Account Logon Events</strong></span></li>
+<li><span style="color: #000000;"><strong>Event ID’s</strong></span>
+<ul>
+<li><span style="color: #000000;"><strong>Event ID 4624</strong></span></li>
+<li><span style="color: #000000;"><strong>Event ID 4625</strong></span></li>
+<li><span style="color: #000000;"><strong>Event ID 4634</strong></span></li>
+<li><span style="color: #000000;"><strong>Event ID 4647</strong></span></li>
+<li><span style="color: #000000;"><strong>Event ID 4648</strong></span></li>
+<li><span style="color: #000000;"><strong>Event ID 4672</strong></span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Kerberos Authentication Protocol</strong></span>
+<ul>
+<li><span style="color: #000000;"><strong>Event ID 4768</strong></span></li>
+<li><span style="color: #000000;"><strong>Event ID 4769</strong></span></li>
+<li><span style="color: #000000;"><strong>Event ID 4776</strong></span></li>
+<li><span style="color: #000000;"><strong>Event ID 4778</strong></span></li>
+<li><span style="color: #000000;"><strong>Event ID 4779</strong></span></li>
+</ul>
+</li>
+</ul>
+<h3><span style="color: #800000;">Introduction</span></h3>
+<p><span style="color: #000000;">A windows system has various authentication and logon methods to establish remote sessions between different systems over a network. In this article, we will be learning about different account logon events and authentication protocols like Kerberos.</span></p>
+<p><span style="color: #000000;">The methods of Windows authentication range from a simple logon-based thing depending on the user’s knowledge like a password, tokens, public key certificates, and biometrics, etc.</span></p>
+<p><span style="color: #000000;">An authentication protocol like Kerberos defines rules and conventions and serves the authentication of users, computers, and services. The process of authentication allows an authorized user and services and gives access to resources in a much secure way.</span></p>
+<h3><span style="color: #000000;"><span style="color: #800000;">Logon Events</span> </span></h3>
+<p><span style="color: #000000;">The Audit logon events are usually settings in the policy that records all attempts to log on to the local computer, whether by using a domain account or a local account. Audit Logon/Logoff events generate on the creation and destruction of logon sessions.  These events occur on the machine that was accessed. </span></p>
+<h3><span style="color: #000000;"><span style="color: #800000;">Account Logon Events</span></span></h3>
+<p><span style="color: #000000;">Account Logon policy setting generates events for any type of credential validation. These events occur on the machine that is authoritative for the credentials. For domain accounts, the domain controller is authoritative. For local accounts, the local machine is authoritative.</span></p>
+<p><span style="color: #000000;">So, let’s see these event IDs one by one across the Windows server.</span></p>
+<h3><span style="color: #800000;">Event ID’s</span></h3>
+<h4><span style="color: #800000;">Event ID 4624</span></h4>
+<p><span style="color: #000000;">This event usually is generated for a successful logon. This event will contain information about the host and the name of the account involved. For remote logons, an incident responder should focus on the Network Information section of the event description for remote host information.</span></p>
+<p><span style="color: #000000;">The fields Caller Process Name and Caller Process ID in the Process Information section of this event description provides more details about the process of initiating the logon.</span></p>
+<p><span style="color: #000000;"><img fetchpriority="high" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-pRJwCD16A14/X0_fg5xoTMI/AAAAAAAAoFE/mTEx88RQxzcpYIGwxd4yaV7P9rXp06WNwCLcBGAsYHQ/s1600/4624.0.png" alt="Windows Account Logon and Logon Events" width="580" height="286"/></span></p>
+<p><span style="color: #000000;">When a user successfully logs on to a computer, this event will be generated.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-WUmg5aV3OKM/X0_foW0tuBI/AAAAAAAAoFI/317Z2bANJqY_6bclp0HAHDPUgppQeSr6ACLcBGAsYHQ/s1600/4624.png"/></span></p>
+<h4><span style="color: #800000;">Event ID 4625</span></h4>
+<p><span style="color: #000000;">This event is created on a failed logon attempt. Usually, these logs in a network may indicate password guessing attacks. The Network Information of this event can provide valuable information if a remote host is attempting to log on to the system.</span></p>
+<p><span style="color: #000000;">As an incident responder, you can determine more about the reason for the failure by going through the description.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-qQGFvWKNx4c/X0_fvbMQTqI/AAAAAAAAoFM/uobV8TAq4sQqJujAW6pMFTk9g3gniknXACLcBGAsYHQ/s1600/4625.0.png"/></span></p>
+<p><span style="color: #000000;">When a user has a failed login attempt on to a computer, this event will be generated.</span></p>
+<p><span style="color: #000000;"><img decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-rRwf389bH_8/X0_f5X-iV-I/AAAAAAAAoFY/VVqhxHJw-CsHnaYs2w82cQ4-06uZzITHwCLcBGAsYHQ/s1600/4625.png" alt="Windows Account Logon and Logon Events" width="683" height="599"/></span></p>
+<h4><span style="color: #800000;">Event ID 4634</span></h4>
+<p><span style="color: #000000;">When a user logs off from their system, the system records the event with Event ID 4634. Meanwhile, as an incident responder, you should not consider the absence of a logoff event overly suspicious if a system does not show one.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-hiHhYalTFu8/X0_gCTOP99I/AAAAAAAAoFg/PEHJwVx2Ta4qyZeBQ8UfT3UVezS7sFfpgCLcBGAsYHQ/s1600/4634.0.png"/></span></p>
+<p><span style="color: #000000;"><img decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-QSm0jMO1Q2M/X0_gHT7_bzI/AAAAAAAAoFk/d5mKn-6jWDw5Ph2DVikEPL07wsiJFbboQCLcBGAsYHQ/s1600/4634.png" alt="Windows Account Logon and Logon Events" width="673" height="597"/></span></p>
+<h4><span style="color: #800000;">Event ID 4647</span></h4>
+<div class="scrollbar-custom h-full overflow-y-auto svelte-18d89uy">
+<div class="mx-auto flex h-full max-w-3xl flex-col gap-6 px-5 pt-6 sm:gap-8 xl:max-w-4xl xl:pt-10 svelte-18d89uy">
+<div class="flex h-max flex-col gap-8 pb-52 svelte-18d89uy">
+<div class="group relative -mb-4 flex items-start justify-start gap-4 pb-4 leading-relaxed" role="presentation" data-message-role="assistant" data-message-id="2b2a11fa-f4e4-4ecd-a591-073de1daada1">
+<div class="relative flex min-h-[calc(2rem+theme(spacing[3.5])*2)] min-w-[60px] flex-col gap-2 break-words rounded-2xl border border-gray-100 bg-gradient-to-br from-gray-50 px-5 py-3.5 text-gray-600 prose-pre:my-2 dark:border-gray-800 dark:from-gray-800/40 dark:text-gray-300">
+<div>
+<div class="prose max-w-none dark:prose-invert max-sm:prose-sm prose-headings:font-semibold prose-h1:text-lg prose-h2:text-base prose-h3:text-base prose-pre:bg-gray-800 dark:prose-pre:bg-gray-900">
+<p>In addition, the system typically triggers this event when it no longer detects user-initiated activities. Furthermore, this event differs from event 4634, which administrators generally generate when they terminate a session, causing it to no longer exist. Alternatively, the system generates event 4634 when a user intentionally ends their session, whereas this event occurs when the system automatically detects inactivity.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="pointer-events-none absolute inset-x-0 bottom-0 z-0 mx-auto flex w-full&#10;&#9;&#9;&#9;max-w-3xl flex-col items-center justify-center bg-gradient-to-t from-white&#10;&#9;&#9;&#9;via-white/100 to-white/0 px-3.5 pt-2 dark:border-gray-800&#10;&#9;&#9;&#9;dark:from-gray-900 dark:via-gray-900/100&#10;&#9;&#9;&#9;dark:to-gray-900/0 max-sm:py-0 sm:px-5 md:pb-4 xl:max-w-4xl [&amp;&gt;*]:pointer-events-auto svelte-18d89uy" style="box-sizing: border-box; scrollbar-color: initial; scrollbar-width: initial; --tw-border-spacing-x: 0; --tw-border-spacing-y: 0; --tw-translate-x: 0; --tw-translate-y: 0; --tw-rotate: 0; --tw-skew-x: 0; --tw-skew-y: 0; --tw-scale-x: 1; --tw-scale-y: 1; --tw-scroll-snap-strictness: proximity; --tw-ring-offset-width: 0px; --tw-ring-offset-color: #fff; --tw-ring-color: rgb(59 130 246 / .5); --tw-ring-offset-shadow: 0 0 #0000; --tw-ring-shadow: 0 0 #0000; --tw-shadow: 0 0 #0000; --tw-shadow-colored: 0 0 #0000; pointer-events: none; position: absolute; left: 0px; right: 0px; bottom: 0px; z-index: 0; margin-left: auto; margin-right: auto; display: flex; width: 483.939px; max-width: 48rem; flex-direction: column; align-items: center; justify-content: center; background-image: linear-gradient(to top, #111827, #111827, rgba(17, 24, 39, 0)); --tw-gradient-from: #111827; --tw-gradient-to: rgb(17 24 39 / 0); --tw-gradient-stops: #111827 , rgb(17 24 39 / 1) , rgb(17 24 39 / 0); padding: 0.5rem 1.25rem 1rem; --tw-border-opacity: 1; border: 0px solid #1f2937;">
+<div class="w-full svelte-18d89uy">
+<div class="flex w-full *:mb-3 svelte-18d89uy"/>
+<form class="relative flex w-full max-w-4xl flex-1 items-center rounded-xl border bg-gray-100 dark:border-gray-600 dark:bg-gray-700&#10;             svelte-18d89uy" tabindex="-1" aria-label="file dropzone">
+<div class="flex w-full flex-1 rounded-xl border-none bg-transparent svelte-18d89uy"/>
+</form>
+</div>
+</div>
+<p><span style="color: #000000;">This event generates when a user logon is of remote type and the logoff was with some standard method. </span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-xMyUxUaWRbw/X0_gPmpLCGI/AAAAAAAAoFo/UVQ0Ja_-m-gcitqiaEaO_i4dzTkrFSGvgCLcBGAsYHQ/s1600/4647.0.png"/></span></p>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-V1pL25S4H5w/X0_gW4J-bTI/AAAAAAAAoFw/_U13TxHTY8IYVnuEIFfh-wwNoKMR62rPQCLcBGAsYHQ/s1600/4647.png" alt="Windows Account Logon and Logon Events" width="693" height="598"/></span></p>
+<h4><span style="color: #800000;">Event ID 4648</span></h4>
+<p><span style="color: #000000;">A logon was attempted using explicit credentials. When a user attempts to use credentials that are of other than his, or if there is a user account control bypass to open a process with administrator permissions, this event is logged.</span></p>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-GHKAMJv3C-c/X0_gh9Zzb3I/AAAAAAAAoF4/albHu_T-lzwPhcUoAYsZsfz1cbysas82wCLcBGAsYHQ/s1600/4648.0.png" alt="Windows Account Logon and Logon Events" width="587" height="322"/></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-a4ZcWoFWS7o/X0_gxTN02eI/AAAAAAAAoGA/EAxbTj1gtpkbFk839qYncBuqy8T6TdnwwCLcBGAsYHQ/s1600/4648.png"/></span></p>
+<h4><span style="color: #800000;">Event ID 4672</span></h4>
+<p><span style="color: #000000;">When a set of sensitive privileges are assigned to a new logon session, this event is generated for that particular new logon. This event is usually recorded in the event viewer as and when a single local system account logon triggers this event.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-vlHDteeq7AU/X0_g-ONkn4I/AAAAAAAAoGM/LcMXJL0hymQIXqWR19aLOtPlc9LvsY47QCLcBGAsYHQ/s1600/4672.0.png"/></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-iBzNfVTfGU8/X0_hE3em3fI/AAAAAAAAoGU/iifU0MoJ4_gKZU4K1a7V7yVVKFrV_9i9wCLcBGAsYHQ/s1600/4672.png"/></span></p>
+<h3><span style="color: #800000;">Kerberos Authentication Protocol</span></h3>
+<p><span style="color: #000000;">Kerberos is an<strong><span style="color: #0000ff;"> <a style="color: #0000ff;" href="https://en.wikipedia.org/wiki/Authentication">authentication</a> <a style="color: #0000ff;" href="https://en.wikipedia.org/wiki/Cryptographic_protocol">protocol</a> </span></strong>that works on the basis of tickets that allows the <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://en.wikipedia.org/wiki/Node_(networking)">nodes</a> </strong></span>to communicate over a non-secure network to prove their identity to each other in a secure manner. </span></p>
+<p><span style="color: #000000;">So, let us understand the basics of Kerberos and then go ahead with Kerberos authentication protocol and the proceed with the event logs.</span></p>
+<p><span style="color: #000000;"><strong>Client</strong>: A user that requests communication service request.</span></p>
+<p><span style="color: #000000;"><strong>Resource Server</strong>: The server with the service the user wants to access.</span></p>
+<p><span style="color: #000000;"><strong>Authentication Sever</strong>: It performs client authentication, issues TGS on successful authentication.</span></p>
+<p><span style="color: #000000;"><strong>Key Distribution Centre:</strong> Database, Authentication Server and Ticket Granting Server collectively is called Key Distribution Centre.</span></p>
+<p><span style="color: #000000;"><strong>Ticket Granting Server: </strong> It is an application server that provides the issuing of service tickets as a service.</span></p>
+<p><span style="color: #000000;"><strong> <img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-q60P6MR0LJQ/X0_hKhb1QCI/AAAAAAAAoGc/ePCg4INnhaIjWPx70fpZZ0iGR3RHPTdwQCLcBGAsYHQ/s1600/4700.png" alt="Windows Account Logon and Logon Events" width="920" height="777"/></strong></span></p>
+<h4><span style="color: #800000;">Event ID 4768</span></h4>
+<p><span style="color: #000000;">On successful issuance of a TGT, it will show that a user account was authenticated by the domain controller. The Keywords field would indicate whether the authentication attempt was successful or failed.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-1-OsiH7qsV8/X0_hUPdhlrI/AAAAAAAAoGk/F4cN2Xh3joMZ0LlLg_7WyHLUeiYQxvyoACLcBGAsYHQ/s1600/4768.0.png"/></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-upex2z4uhx8/X0_hatXmFII/AAAAAAAAoGw/cumxfHfFcg4c4A9XNDntLuTF0dvfn-mHQCLcBGAsYHQ/s1600/4768.png"/></span></p>
+<h4><span style="color: #800000;">Event ID 4769</span></h4>
+<p><span style="color: #000000;">Once the client successfully receives a ticket-granting ticket from the KDC, it will store that TGT and send it to the TGS with the Service Principal Name (SPN) of the resource that the client wants to access. TGTs are valid for a certain period of time only.</span></p>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-eL0wos1vlcU/X0_hhGm0zkI/AAAAAAAAoG0/hChSTMSDw7czppVh9OlTbxJBpYUClD83ACLcBGAsYHQ/s1600/4769.0.png" alt="Windows Account Logon and Logon Events" width="515" height="232"/></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-b2fR6AD_LQo/X0_ho13KKRI/AAAAAAAAoG8/fWRBVnyiNQoPOacmWr5aneWcksnU5L7XwCLcBGAsYHQ/s1600/4769.png"/></span></p>
+<h4><span style="color: #800000;">Event ID 4776</span></h4>
+<p><span style="color: #000000;">When the computer logon is to be verified, this even is created. It contains additional information about the remote host in the event of a remote logon attempt. The Keywords field indicates whether the authentication attempt succeeded or failed</span></p>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-B1ISl1O_KVU/X0_hx9YOp7I/AAAAAAAAoHI/IDGgfR1e8t4U6e30IB3F8eYxNJN38P6mQCLcBGAsYHQ/s1600/4776.0.png" alt="Windows Account Logon and Logon Events" width="666" height="392"/></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-L1zBSB78m3M/X0_h4Y0EtyI/AAAAAAAAoHM/mhSSOxETn4MjKOYdRX2-QrCk-F_C8mlqgCLcBGAsYHQ/s1600/4776.png"/></span></p>
+<h4><span style="color: #800000;">Event ID 4778</span></h4>
+<p><span style="color: #000000;">Furthermore, the system creates this event when a user reconnects a session to a Windows station. For instance, the user triggers event 4778 by reconnecting to an existing Terminal Services session, or by switching to an existing desktop using Fast User Switching. Similarly, the user also triggers this event by reconnecting to a virtual host.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-2dmqqmHpsR4/X0_h_S7FPII/AAAAAAAAoHU/gG_poECtozIdwB65nrUhRsqoBGRhduuqwCLcBGAsYHQ/s1600/4778.0.png"/></span></p>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-la2EUbwnXcg/X0_jFHXSByI/AAAAAAAAoH0/D_y6979XqA8sljjon7QrX1kg7fR3ZHOxACLcBGAsYHQ/s1600/4778.png" alt="Windows Account Logon and Logon Events" width="677" height="609"/></span></p>
+<h4><span style="color: #800000;">Event ID 4779</span></h4>
+<p><span style="color: #000000;">Moreover, the system generates this event when a user disconnects from an existing Terminal Services session, or switches away from an existing desktop using Fast User Switching. Additionally, the user causes this event to be created by disconnecting from a virtual host.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-zeRWSCAOp5Q/X0_iXKWswBI/AAAAAAAAoHs/pCWR2GUUXlkl-ImeG-eH3vDl4zzYU_TnQCLcBGAsYHQ/s1600/4779.0.png"/></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-tXId8rjvJRo/X0_jODM8COI/AAAAAAAAoH4/tL3rNwee3MoallLeSVe7-CaY9QUlyFQXwCLcBGAsYHQ/s1600/4779.png"/></span></p>
+<p><span style="color: #000000;">You can also try out some other event ID’s from below.</span></p>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-l2VNE22VF6Q/X0_jUVF_B0I/AAAAAAAAoH8/aQ0FZyCMySIQIwG-NkiW3xGSWSa0xdNCACLcBGAsYHQ/s1600/5000.png" alt="Windows Account Logon and Logon Events" width="672" height="328"/></span></p>
+<p>To learn more on Incident Response follow this <strong><a href="https://www.hackingarticles.in/tag/incident-response/"><span style="color: #0000ff;">Link</span>.</a></strong></p>
+<p><span style="color: #000000;"><strong>Author: </strong>Jeenali Kothari is a Digital Forensics enthusiast and enjoys technical content writing. You can reach her on<strong><a style="color: #000000;" href="https://www.linkedin.com/in/jeenali-kothari"> <span style="color: #0000ff;">Here</span></a></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

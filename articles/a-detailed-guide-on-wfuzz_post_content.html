@@ -1,0 +1,278 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/penetration-testing/" rel="category tag">Penetration Testing</a></span>            </div>
+            <h1 class="post-title entry-title">A Detailed Guide on Wfuzz</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/a-detailed-guide-on-wfuzz/" rel="bookmark"><time class="entry-date published" datetime="2022-03-05T18:16:26+00:00">March 5, 2022</time><time class="updated" datetime="2025-06-19T13:23:45+00:00">June 19, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000">Many tools now create an <strong data-start="191" data-end="207">HTTP request</strong> and let users <strong data-start="222" data-end="232">modify</strong> its contents. Similarly, fuzzing works by sending the same type of <strong data-start="300" data-end="311">request</strong> multiple times to a <strong data-start="332" data-end="342">server</strong>, changing a specific section each time. When users replace that section with a variable from a <strong data-start="438" data-end="446">list</strong> or <strong data-start="450" data-end="463">directory</strong>, they perform <strong data-start="478" data-end="489">fuzzing</strong>.</span></p>
+<p><span style="color: #000000">In this article, we will learn how we can use <strong>wfuzz</strong>, which states for “<strong>Web Application Fuzzer</strong>”, which is an interesting open-source web fuzzing tool. Since its release, many people have gravitated towards wfuzz, particularly in the bug bounty scenario. So, let’s dive into this learning process.</span></p>
+<h3><span style="color: #800000">Table of Content</span></h3>
+<ul>
+<li><span style="color: #000000"><strong>Introduction to wfuzz</strong></span></li>
+<li><span style="color: #000000"><strong>Setup</strong></span></li>
+<li><span style="color: #000000"><strong>Wfpayload and Wfencode</strong></span></li>
+<li><span style="color: #000000"><strong>Docker run wfuzz</strong></span></li>
+<li><span style="color: #000000"><strong>Payloads</strong></span></li>
+<li><span style="color: #000000"><strong>Subdomain Fuzzing</strong></span></li>
+<li><span style="color: #000000"><strong>Directory Fuzzing</strong></span></li>
+<li><span style="color: #000000"><strong>Saving fuzzing output</strong></span></li>
+<li><span style="color: #000000"><strong>Basic wordlist filters</strong></span></li>
+<li><span style="color: #000000"><strong>Double fuzzing</strong></span></li>
+<li><span style="color: #000000"><strong>Login bruteforce</strong></span></li>
+<li><span style="color: #000000"><strong>Cookie fuzzing</strong></span></li>
+<li><span style="color: #000000"><strong>Header fuzzing</strong></span></li>
+<li><span style="color: #000000"><strong>HTTP OPTIONS fuzzing</strong></span></li>
+<li><span style="color: #000000"><strong>Fuzzing through Proxy</strong></span></li>
+<li><span style="color: #000000"><strong>Authentication fuzz</strong></span></li>
+<li><span style="color: #000000"><strong>Recursive fuzz</strong></span></li>
+<li><span style="color: #000000"><strong>Printers and output</strong></span></li>
+<li><span style="color: #000000"><strong>Encoders</strong></span></li>
+<li><span style="color: #000000"><strong>Storing and restoring fuzz from recipes</strong></span></li>
+<li><span style="color: #000000"><strong>Ignoring exceptions and errors</strong></span></li>
+<li><span style="color: #000000"><strong>Filtering results</strong></span></li>
+<li><span style="color: #000000"><strong>Sessions in wfuzz</strong></span></li>
+<li><span style="color: #000000"><strong>Conclusion</strong></span></li>
+</ul>
+<h3><span style="color: #800000">Introduction to Wfuzz</span></h3>
+<p><span style="color: #000000">Wfuzz provides a <strong data-start="509" data-end="525">Python-coded</strong> solution to fuzz <strong data-start="543" data-end="563">web applications</strong> with a wide array of <strong data-start="585" data-end="596">options</strong>. Moreover, it offers various <strong data-start="249" data-end="260">filters</strong> that allow you to replace a simple web request with a required word, substituting it with the variable “FUZZ.”</span></p>
+<h3><span style="color: #800000">Setup</span></h3>
+<p><span style="color: #000000">To install wfuzz using pip, we can:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">pip3 install wfuzz</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEiNtimNpNWYyqjsIgyqKdnkiQtBUZZVLFmNVEVTGJUawPDmZo_fTSmHrldgoUaAKsW1TeLQP1BOH2LHk_BfBBoPhU-6BLxuSS7nZP9MFnvV_ZlaCPj7baUxLsxW6bmkhQP6QZKcBhuVn1DRamxenMcgodhavZkkpQYaiqdiptkjomg3CGZ63j6oplFC2Q=s16000"/></span></p>
+<p><span style="color: #000000">Alternatively, users can achieve the same result by <strong data-start="651" data-end="677">installing from source</strong> using <strong data-start="684" data-end="691">Git</strong>.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">git clone https://github.com/xmendez/wfuzz.git</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEibwjNr9tIFE7UnFpttVMQdE8mmHE_4FL-kxIXyy3roCcSDm1Unf9CXqphA6Cjk1XC5rH8Q2-wUspCpDm4NEbXjEdqDKA3XjNGMGUN1Ce3uu4-UOrR3WeBXzwGp8gdtoFve4U5VJV84DmaPA6fFtqzVSrUqeUd_0n3Zp5kg2A96K-mbdkJOB0eGjTi3KA=s16000"/></span></p>
+<p><span style="color: #000000">The help menu to see all the working options is as follows:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">wfuzz -h
+wfuzz --help</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhujNJyqVzJJhKvvC0OCowqjlHUIvNRz9BHV-ZrUZ2Eo8WRR70rpxpWrWhyx3UR8awBM-CTgXGLvjRDbrfmfFj2CbzMN5_LuTe_9icB4HJrsfrb5cGgW77A-hwxPVsxxGhNwYrhkAlhPQY8VoNrUfnv7frInrD1vhtozHJo49kWv38D7oIH81VRP6XNcA=s16000"/></span></p>
+<p><span style="color: #000000">You can use a module by using “-z”</span></p>
+<h3><span style="color: #800000">Wfpayload and Wfencode</span></h3>
+<p><span style="color: #000000">When you install the tool from the source, compiled executables called wfpayload and wfencode are available. These are responsible for payload generation and encoding. They can be individually used. For example, the command to generate digits from 0 to 15 is as follows:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">./wfpayload -z range,0-15</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhyEj6pgrzNFjgW2gtePPSS31QKt-1nKoWgJILHMC3wrWO47VP50IzNqvmOw7gRG9vq_gz4zlWjsVBdGvCpKy__SOzxGnNXMbe_Mdx34-RWn3tP-EBD99szQJX7S7EQsVzU_fNqAvN8xHgN7K9Kjvw9-ibEVRrIIN8_PehPJ2i_TO0W9sUe85nxa3NVOQ=s16000"/></span></p>
+<p><span style="color: #000000">As you can see, there is a pycurl error. It can go away like so:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">apt --purge remove python3-pycurl &amp;&amp; apt install libcurl4-openssl-dev libssl-dev</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhcn9hy9RQgOerD3nzbhmdPpfgUWBDRHo9MorvLHvgUmi6x4eogEABZPL5MjPGelRtxtkdvGv0c1yYBFyxkh7Vz7m6d1XMEMiDKBhKeN7EwaNQu8nlxcYt4dpCTEmP6Hr-AvQ5oQZSqeX11fNuh9P8K41nNHfljQk0Yn-nzImLTpmhcgpJXBLX9SiWGbA=s16000"/></span></p>
+<p><span style="color: #000000">Now, when you run wfencode, which is a module to encode a supplied input using a hash algorithm, there is no pycurl error now.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">./wfencode -e md5 ignite</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjqq1FwUhY9pU7KsVeFgWVFEjx59GhZuspGzktfo74ogT826NthLSqwqKgrI2Z3Wn0t8mmsRA4j6-kX0aN9XcJHCzVmPhkElkWZH5HXBny2DTnVDnqXGkwHtJXS_U6bq8XLNb-5bLXupSYc8tht9dlnIrWm9jwUMziB7KK6Pj0kAFp5Ped_2uEKS5W5IA=s16000"/></span></p>
+<h3><span style="color: #800000">Docker run wfuzz</span></h3>
+<p><span style="color: #000000">Users can also launch <strong data-start="716" data-end="736">Wfuzz via Docker</strong> with the method below, using the <strong data-start="770" data-end="786">ghcr.io repo</strong>. After replacing the last variable with <strong data-start="827" data-end="836">wfuzz</strong>, they can run it without issues.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">docker run -v $(pwd)/wordlist:/wordlist/ -it ghcr.io/xmendez/wfuzz wfuzz</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgxN-5qgJ8JhMkpln3CRAF21JsgTt8Iub04WmjKxnPQXFIE3_xyEL_38AN0GbXGMROHeUc-hZ5iUUYmZH7GHCc7Cf4AvRvJN0AHYQVFVkkMDybENICGCaw7zTQ8STg4yWmQC6rdKuBFtFyUxgqAXDBn3Wk8GIWZfP8o9cwpZnOCv4GzfDyofyupoKYHnA=s16000"/></span></p>
+<h3><span style="color: #800000">Payloads</span></h3>
+<p data-start="871" data-end="965"><span style="color: #000000">In Wfuzz, a <strong data-start="883" data-end="894">payload</strong> serves as the input source. To view available payloads, users can run:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">wfuzz -e payloads</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjxSHorx2LSzijihZhysIWIyUCGXO7Bm1NAoMP23LtCnoZIPr2GG75BLSta6_G4Pr3GfQdXrfWMP99vMPLtrGfEsZ7Uu65GxKrfqBjJobrLh74VNnc2uTSt1_OPHid2AbpqkSG1ESy6zxm8y8O7-u0MsEytQdHkesKPoMgz4eXNbI00m8ZJovP5WG-TLQ=s16000"/></span></p>
+<p><span style="color: #000000">For a more detailed view, they can apply the <strong data-start="1043" data-end="1059">slice filter</strong> to the output.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">wfuzz -z help --slice "list"</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEj57YLfIEglB5sRT5_R1SoxlFy00YdmwJ7ufXBui_Pjx1DPDORjwwBE4VN9pLLs8GKjAQ71TYwSrQEPg2NHmB7cu_bv_B5PA06CQaeVYS87NW7-MjU8ilwgRs1ciYUPz6s_8RRWEJ7R4WN4XsOO4ZftO5OPtD-xZJ-HOJUgRTVA9kTxJlBRajce1EdoUA=s16000"/></span></p>
+<h3><span style="color: #800000">Subdomain Fuzzing</span></h3>
+<p><span style="color: #000000">Subdomain discovery plays a crucial role in <strong data-start="1120" data-end="1144">pentesting scenarios</strong>. Often, <strong data-start="1153" data-end="1166">attackers</strong> target <strong data-start="1174" data-end="1188">subdomains</strong> instead of the <strong data-start="1204" data-end="1219">main domain</strong>. Users can fuzz subdomains like this:</span></p>
+<p><span style="color: #000000">Here, -c color codes the output response codes</span><br/>
+<span style="color: #000000">-Z specifies a URL to be input in scan mode and ignores any connection error</span><br/>
+<span style="color: #000000">-w specifies the wordlist use while subdomain bruteforce.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">wfuzz -c -Z -w subdomains.txt http://FUZZ.vulnweb.com</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhPJCIfwcLimqxxX3yX4CS1QzKhxKvBuWpO4wXfcz1t4PryHAeWgXf3_7g9Wt7noSF2HHXXgQ3Z_cuvQK1ZIP9pYhCbIpIMqR3lgAX5qWeFvOp7U3iKBUfMxiEd9SaEiKBzessAWoF7kUPNKqDU35oEhPFK3_r7sRj2WxR5uMhOLzuiFd0-jexIIO0nww=s16000"/></span></p>
+<p>You can achieve the same by providing the subdomain list inline too. Only, you should supply the payload (-z option) with “list” as an input. You supply the list in the format ITEM1-ITEM2-ITEM3 like so</p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">wfuzz -z list,CVS-testphp-admin-svn http://testphp.vulnweb.com/FUZZ
+wfuzz -z list,CVS-testphp-admin-svn http://FUZZ.vulnweb.com/</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhOwqYT4IkngKI82XpByDIwUBwu54BiTytw0DtdOBdMlGF53oTswXa39LoQixpreYfNWpCYWHSP7cP_qMsNGbt8y80TdaoavjC620hFA_wJ3euabHB1aMaV7P4-J2tnw0K75VkF8z0th73r_EmXGP9LLfIi3boGWSGptzXJuGexIS9rSOcXEycjqsw9RQ=s16000"/></span></p>
+<h3><span style="color: #800000">Directory Fuzzing</span></h3>
+<p><span style="color: #000000">You can enumerate <strong data-start="780" data-end="795">directories</strong> using <strong data-start="802" data-end="811">wfuzz</strong>, just like with <strong data-start="828" data-end="840">gobuster</strong>, by employing a supplied wordlist. To do this, use the <strong data-start="896" data-end="907">-w flag</strong> and input the path to the wordlist.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">wfuzz -w wordlist/general/common.txt http://testphp.vulnweb.com/FUZZ</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEj277p_KR8uFWmQOoWgkoPe8K3Yi-BaZzkIUqp1idoIohFKozd6qk8pni1piFESdqhkwEaCxxlJ8peBlPOqapXjqQeP6y_PETEsE31YfCaJY8f0qn4WkrEnFUWnzzSa8dZfATrcxCrM7LnouCYktvGmW5yEgwvnC-4gAIDMCh2WM1ccYprIbRXEsI0Jhg=s16000"/></span></p>
+<p><span style="color: #000000">As you can see in the above screenshot, all the results, including “page not found,” have been dumped. This makes it tedious to go through the output and find a <strong data-start="338" data-end="359">pin in a haystack</strong>. <strong data-start="361" data-end="374">Therefore</strong>, to sort the results, we can use the <strong data-start="412" data-end="425">–sc flag</strong> (show code). Other useful <strong data-start="452" data-end="461">flags</strong> include:</span></p>
+<ul>
+<li><span style="color: #000000">–hc/sc CODE #Hide/Show by code in response</span></li>
+<li><span style="color: #000000">–hl/sl NUM #ide/Show by number of lines in response</span></li>
+<li><span style="color: #000000">–hw/sw NUM #ide/Show by number of words in response</span></li>
+<li><span style="color: #000000">–hc/sc NUM #ide/Show by number of chars in response</span></li>
+</ul>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">wfuzz -w wordlist/general/common.txt --sc 200,301 http://testphp.vulnweb.com/FUZZ</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjbd1usP52L5gE8UCIrKbnb4kSVQxslqSJNaJVfzZFfwqUodwFFq93w7yzWOd164u2FFj7vchCQ-gdurk911fsPnAprJ-atzCAUlSFPhlB5xOsEX8BFES5YhzJyaQ3QecicBOal6ZqKtqgd8hnby0_g5qshU6TlapzXmg5Po5eu0dAqridZvZsIk6soUQ=s16000"/></span></p>
+<h3><span style="color: #800000">Saving fuzzing output</span></h3>
+<p><span style="color: #000000">You can also save <strong data-start="490" data-end="506">Wfuzz output</strong> in multiple <strong data-start="519" data-end="530">formats</strong> by using the <strong data-start="544" data-end="557">-f option</strong>.</span></p>
+<p><span style="color: #000000">-f option allows a user to input a file path and specify a printer (which formats the output) after a comma.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">wfuzz -w wordlist/general/common.txt -f /tmp/output,csv --sc 200,301 http://testphp.vulnweb.com/FUZZ
+cat /tmp/output</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEi0XfulNz7-1u_3z3R0lPIQRB-GtUf1MJv8KUMCyxJjAVDkc2siw5NPUuy6a_A5MK2p-L-4A9WCyqJ9C2_mxiX1Nz0p4Gv29bYt2f6kI5Bkjf7jeuBR2VlQMpvS5ni7cmObudPw9zjtG2jz_WRAZH7G3HgkZB4SxoNVaVbNh4ZZx9m8K2DFrN0b_qBBWw=s16000"/></span></p>
+<p><span style="color: #000000">In place of csv, you can specify any one of the printers</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">wfuzz -e printers</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjdPFYA5HkCHc_leeKZz-f-z_TxEP3RcVetp4PRzOZBjtAUJFEbZZiGH55Ds0gUAorwp8Ewe6Z04YwzHSX7fHr5pC8f-GGg40S_6yTb-qLyI89_OdltKLnrT2Fzl3vEwNUS90sKAwwG8VrOQFU-F1SgQ0TFXAmksDdBdCxW8DWIR0u_iDWVbAJL3mS3Sg=s16000"/></span></p>
+<h3><span style="color: #800000">Basic wordlist filters</span></h3>
+<p><span style="color: #000000">Certain sub-arguments can be preceded by -z or -w filter to play around more with. These filters are:</span></p>
+<p><span style="color: #000000">–zP &lt;params&gt;: Arguments for the specified payload</span></p>
+<p><span style="color: #000000">–zD &lt;default&gt;: Default parameter for the specified payload</span></p>
+<p><span style="color: #000000">–zE &lt;encoder&gt;: Encoder for the specified payload</span></p>
+<p><span style="color: #000000">So, to specify a wordlist with the payload, we can do it like so:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">wfuzz -z file --zD wordlist/general/common.txt --sc 200,301 http://testphp.vulnweb.com/FUZZ</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgXc7ppDQbYu3IiYF9XF2vIr6M9QJtOt7CkOqEZW_1OOPmojA6pDOOI44mk8vC9C8DmnIMobsv9Il5xGwUXSA7BMOZ2UdNJ-XeoTq94cVQg6fORFzHWUFWtPLy4TZfmsjJ9DOt4x8FqZLH2BY9vUYHGOyw1tHtaQFJ1UgkiS2LRR_uI6UgOtCcrZ8vRBg=s16000"/></span></p>
+<p><span style="color: #000000">To hide the HTTP response code 404, the same can be obtained like so:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">wfuzz -z file --zD wordlist/general/common.txt --hc 404 http://testphp.vulnweb.com/FUZZ</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhGro9rtqkBf95ZAAdQZl_BDAWrD8Bx3k0sbPTCo_vD6Sm8TitrqCB1yeb5y2ghBlYG5Jio-4BtOlmLuSom5-j-pfv26XuoXguv-6WQHPfY1WYOQMyjriLCkOkL6Z346lhVNxoI6XBTNkOXKiXCEhYdd1JZEFHBymAMMXG9vKrjxOGiGO8Jlf1dsbT5ow=s16000"/></span></p>
+<h3><span style="color: #800000">Double fuzzing</span></h3>
+<p><span style="color: #000000">Just like a parameter in a <strong data-start="591" data-end="602">payload</strong> can be fuzzed using the keyword “FUZZ”, <strong data-start="643" data-end="663">multiple fuzzing</strong> is also possible by specifying multiple <strong data-start="704" data-end="716">keywords</strong>.</span></p>
+<ul>
+<li><span style="color: #000000">FUZ2Z – 2nd parameter</span></li>
+<li><span style="color: #000000">FUZ3Z – 3rd parameter</span></li>
+<li><span style="color: #000000">FUZ4Z – 4th parameter</span></li>
+</ul>
+<p><span style="color: #000000">And each parameter can be allotted its own wordlist. The first “-w” stands for first FUZZ. Second “-w” holds for the second FUZ2Z and so on.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">wfuzz -w wordlist/general/common.txt -w wordlist/general/common.txt --hc 404 http://testphp.vulnweb.com/FUZZ/FUZ2Z</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjBI2VSfPDC_CUAs_HbkjxZj0qRLWIMBx0iJeUoZyaz0Nt6ufIEPyDnp1MoiRyI4oEGnflOtmVYqgJD4vTPB1mCFd2jI6kfdoiH3i2tJrVbNA7jbuJl4H14Q_MIWrqRswRjxFusedPrVkCBnXjZ4SiT3zrzQk9afw3g4n2JXgEDpEaaKoZ81OpruJPwcQ=s16000"/></span></p>
+<h3><span style="color: #800000">Login bruteforce</span></h3>
+<p><span style="color: #000000"><strong data-start="719" data-end="737">HTTP responses</strong> can be brute-forced using <strong data-start="764" data-end="773">wfuzz</strong>. <strong data-start="775" data-end="791">For instance</strong>, <strong data-start="793" data-end="814">testphp’s website</strong> makes a POST request to the backend, passing “uname” and “pass” as arguments to the <strong data-start="899" data-end="915">userinfo.php</strong> page.</span></p>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhr3yrCTyid_S5Es9Iubhi8sQ88tlSfmOiNce3KtLJaLdanm5a4qOhIyuzn3hxTNoJem4xuMCWTTJRlyA1rfR631FFPcqtKb5lpmCWNR1cLHq8fI7QE2MHmc7-kvXSOqlubgmM2OHSplvaxCSQF5jn_JUmVtlyEGlpl85ft8qOp5OqfzqI6_sjfKfWJJA=s16000"/></span></p>
+<p><span style="color: #000000">Similarly, you can implement the same attack using <strong data-start="978" data-end="987">wfuzz</strong> like so:</span></p>
+<p><span style="color: #000000">The <strong data-start="1002" data-end="1017">-d argument</strong> specifies the <strong data-start="1032" data-end="1045">POST data</strong> to send along with the <strong data-start="1069" data-end="1080">request</strong>:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">wfuzz -z file,wordlist/others/common_pass.txt -d "uname=FUZZ&amp;pass=FUZZ"  --hc 302 http://testphp.vulnweb.com/userinfo.php</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhuLfheEAnnjVp-dUFpDUnz5flnvDZgcjk1gUK0VA2f06ywDgkJLoDddIlyUIpTwx0JAa4h1qdIo_D6o9GjUk8CiJyu2iIaIUA7tJnaCj_oeCDQPhk9xZY0JV0pKsuoyCg3D2qoWqqRcDhiq4NEWyNtcprKTQjoNwf17l7UsuI9xgG_czVxNzlYq83PEA=s16000"/></span></p>
+<p><span style="color: #000000">As you can see, we found the correct <strong data-start="1254" data-end="1269">credentials</strong> — “test-test.” We used a common <strong data-start="1302" data-end="1310">file</strong> for both <strong data-start="1320" data-end="1332">username</strong> and <strong data-start="1337" data-end="1349">password</strong>. Alternatively, you can provide different <strong data-start="1392" data-end="1401">files</strong> for each, like so:</span></p>
+<p><span style="color: #000000">Finally, the <strong data-start="1435" data-end="1448">-c option</strong> color codes the <strong data-start="1465" data-end="1484">output response</strong>, though you can skip it if preferred.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">wfuzz -z file,users.txt -z file,pass.txt --sc 200 -d "uname=FUZZ&amp;pass=FUZ2Z" http://testphp.vulnweb.com/userinfo.php</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEidjYanb-YRNHfEvkqFCl_FS0tX8yJyPJVM_fAYHy1AaIV7YiSaWLthhrf_SHlmE5U-mMzIwzjsji41-37ckAzcrfuG3_jTv6rMoUifjDe_xxUfttjpCB2U76KlIbULN987nH9-rZ_4UfYI6bntW4KUsSKzzzPIHnHcvQYBOvBRYyiDXeBVpL61jMM0eg=s16000"/></span></p>
+<h3><span style="color: #800000">Cookie fuzzing</span></h3>
+<p><span style="color: #000000">To send a custom cookie along a request to different fuzzed directories we can use the “-b” plug. This would add a cookie to the sent HTTP request.</span></p>
+<p><span style="color: #000000">Scenario useful:</span></p>
+<ul>
+<li><span style="color: #000000">Cookie poisoning</span></li>
+<li><span style="color: #000000">Session hijacking</span></li>
+<li><span style="color: #000000">Privilege Escalation</span></li>
+</ul>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">wfuzz -z file,wordlist/general/common.txt -b cookie=secureadmin -b cookie2=value2 --hc 404 http://testphp.vulnweb.com/FUZZ</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEg5FcQAVag5_Vi12nW-N-jmvuo9ixifgydlaGwRZKV90t-hrcYtO6UwAMYjQ0wwiKDjhjsQrKQIz7WpMjfpctTw-XZ4i-YTFz6E0g6FM30jldlE5jQbsYSk4e35rLjtg3USRMX8Pl3dvKMzjejtBHUSl-bqM3LGnDWFjSMmDFzBL94PiZOCeoYBUxjuTA=s16000"/></span></p>
+<p><span style="color: #000000">In the above scenario, we have added 2 static cookies on multiple directories. Now, we can also fuzz the cookie parameter too like so:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">wfuzz -z file,wordlist/general/common.txt -b cookie=FUZZ http://testphp.vulnweb.com/</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhfprPFK37CLoJybfULVYiJum1RU9OcpSlNKzobdaEA1ZaTWbNsEzjQduPqrGuQKWNonC4slt370i2qgS5i2APRF64oWBmMbQJkFJZb6zbsgljka-HoMM9QIGwCOKWAcQiDiJHulAq0RMQjehWUQ5VlK_s8KibM1SlDqHTTHMYFN-DVvIZvj0QcPD0afQ=s16000"/></span></p>
+<h3><span style="color: #800000">Header fuzzing</span></h3>
+<p><span style="color: #000000">HTTP header can be added in a request being sent out by wfuzz. HTTP headers can change the behaviour of an entire web page. Custom headers can be fuzzed or injected in an outgoing request</span></p>
+<p><span style="color: #000000">Scenarios useful:</span></p>
+<ul>
+<li><span style="color: #000000">HTTP Header Injections</span></li>
+<li><span style="color: #000000">SQL Injections</span></li>
+<li><span style="color: #000000">Host Header Injections</span></li>
+</ul>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">wfuzz -z file,wordlist/general/common.txt -H "X-Forwarded-By: 127.0.0.1" -H "User-Agent: Firefox" http://testphp.vulnweb.com/FUZZ</pre>
+<p><span style="color: #000000"><strong> <img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhx3w1G28mcic7xy98Yv5PkaLJwMuqAHqRpeznFRiO4CeolH0tkPkktLpqtzCyXBN1zr5vLlNJ8vIfUY9G9tT424SDffxqHGyA-L0KHkalR2FdmixeIlJ__tI77v--4MQswXdLwBntYrDPGyrdfVBOIrz2BQudJHuOvOkneyl3248iQS0esmwByFOP85g=s16000"/></strong></span></p>
+<h3><span style="color: #800000">HTTP OPTIONS fuzzing</span></h3>
+<p><span style="color: #000000">There are various HTTP Request/Options methods available that can be specified by using the “-X” flag. In the following example, We have inserted the following options in a text file called options.txt</span></p>
+<ul>
+<li><span style="color: #000000">GET</span></li>
+<li><span style="color: #000000">HEAD</span></li>
+<li><span style="color: #000000">POST</span></li>
+<li><span style="color: #000000">PUT</span></li>
+<li><span style="color: #000000">DELETE</span></li>
+<li><span style="color: #000000">CONNECT</span></li>
+<li><span style="color: #000000">OPTIONS</span></li>
+<li><span style="color: #000000">TRACE</span></li>
+<li><span style="color: #000000">PATCH</span></li>
+</ul>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">wfuzz -c -w options.txt --sc 200 -X FUZZ “http://testphp.vulnweb.com”</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEh7rVvcqsW9LiyOsX7vTYxwe5ExQdaYsfVM0KZ-L2Y8V0Nl4YI6yS35sYH13-E6NKrH_Bye9LGzn1ntGofqu6cBRJ45eWgKixrQOSO5Hr1y3SfH4vpGcQb_iDpDYiMRRB9tV0GKJavyznLJSr9ef-9M6EMYzdJw3y6LiLWGAA6KFX6TSsGC82tvjas4_A=s16000"/></span></p>
+<p><span style="color: #000000">As you could see, three valid options returned a 200 response code.</span></p>
+<p><span style="color: #000000">The same can be input inline using the “list” payload like so:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">wfuzz -z list,GET-HEAD-POST-TRACE-OPTIONS -X FUZZ http://testphp.vulnweb.com/</pre>
+<p><span style="color: #000000"><strong> <img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEi3L4sPuzrvwGbTF2PQ54kA7LIlpRUmwsu2mLZOIZO2jx45632tsJdAPHACj_Ij3cREw3qcZmEh9FAzcVdMU6zLw8J8JaskU-gWUMW9dwxxN_rTbfYvuhYdLlYXDmhjbq4zxhfjgRTtQ4fkBANkcZumFayyAPuI-lKMwjFAECoMM2RBkaJUVg9zoo8dzw=s16000"/></strong></span></p>
+<h3><span style="color: #800000">Fuzzing through Proxy</span></h3>
+<p><span style="color: #000000">Wfuzz can also route the requests through a proxy. In the following example, a Burp proxy is active on port 8080 and the request intercepted in the burp intercept as you can see.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">wfuzz -z file,wordlist/general/common.txt -p localhost:8080 http://testphp.vulnweb.com/FUZZ</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhmW3QkG3hSsg50RJrbMZTQ-SkDFbk89p6clAzif81GIyYShwMeUfGnaPD87O58JSeXKVw3tYTgkSbsYSKIZS76MXdWotK6lA65uHZB3o8snI5o5DYsl00TsVDeo7d-sIxylo6TEwlQzZaE9SZdMHDgSTatGDdBFPdXlMGbin_uUElpUEhyzoW06A3slQ=s16000"/></span></p>
+<p><span style="color: #000000">The same can also be achieved with SOCKS proxy like so:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">wfuzz -z file,wordlist/general/common.txt -p localhost:9500:SOCKS5 http://testphp.vulnweb.com/FUZZ</pre>
+<p><span style="color: #000000"><strong> <img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEi2qZaOzLJ6sJXzkyfyMXnWPt2aVbU_1DiDm64SyqcG8-qM4oymKdoTRNPQdMjYwAIQnhzZOjORhl4ob57-m3_6xuMGTXR3j5pKSlKqdBZO6MwLz1Wn066L1XghEk5f69q0JXx91FA6ASmanaUlVZU1vs8wqJ8Vkir3qp1VWL18eaBOEtpvRsmJ4jVbow=s16000"/></strong></span></p>
+<h3><span style="color: #800000">Authentication fuzz</span></h3>
+<p><span style="color: #000000">Wfuzz can also set authentication headers and provide means of authentication through HTTP requests.</span></p>
+<p><span style="color: #000000">Flags:</span></p>
+<ul>
+<li><span style="color: #000000">–basic: provides basic Username and Password auth</span></li>
+<li><span style="color: #000000">–ntlm: windows auth</span></li>
+<li><span style="color: #000000">–digest: webserver negotiation through digest access</span></li>
+</ul>
+<p><span style="color: #000000">In the following example, I am providing a list inline with two variables and –basic input to bruteforce a website httpwatch.com</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">wfuzz -z list,nonvalid-httpwatch --basic FUZZ:FUZZ https://www.httpwatch.com/httpgallery/authentication/authenticatedimage/default.aspx</pre>
+<p><span style="color: #000000"><strong> <img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhws5prlUy-bp3BP3GYM0bmFwKclxvcpNeStoQ3QqnfVchRH_rJHOzvu6iDqRaL3UxJNn1SHlsHTyv2uV28GzDFRtMIXMf0Mp7k1Je0jQPpH3VHwa4aCMV7ymtC5MrRHR9TNitWvsAKA2lW13rpJgczib30_nve3B3RlDigj6sEFrnAjm0VgKaZ1WPclQ=s16000"/></strong></span></p>
+<h3><span style="color: #800000">Recursive fuzz</span></h3>
+<p><span style="color: #000000">-R switch can specify the levels of recursion while fuzzing directories or parameters. Recursion in simple terms means fuzzing at multiple different levels of directories like /dir/dir/dir etc</span></p>
+<p><span style="color: #000000">In the following example, we are recursing at level 1 with a list inline containing 3 directories: admin, CVS and cgi-bin. Note how a directory with – in its name can be supplied inline</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">wfuzz -z list,"admin-CVS-cgi-bin" -R1 http://testphp.vulnweb.com/FUZZ</pre>
+<p><span style="color: #000000"><strong> <img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjCEM9ckW-_O_us6Y2I7eHdBpDkkMT9ZkwVbGDQNgN2t4sqnCo7PY6FQN8WOAVN03YD1sjqBGudOoNBshDvBpjBExFF_uq-we_9cJU3_hJ5VVCDZik-KeZZ7SoDV0t_VmeyIda0JrTG57LhTklKwJdOhFeMVcTL0qiP5V7sUoBbBtkEr6XTGGe92Mm0AQ=s16000"/></strong></span></p>
+<h3><span style="color: #800000">Printers and output</span></h3>
+<p><span style="color: #000000">WFuzz identifies all the formats that printers can use to process a payload’s output. You can view it using -e succeeded by the printer’s argument. Furthermore, the “-o” flag can specify the format of the output too</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">wfuzz -e printers
+wfuzz -o json -w wordlist/general/common.txt http://testphp.vulnweb.com/FUZZ</pre>
+<p><span style="color: #000000"><strong> <img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEiOyEwpslOs6tMoVZ586D64PfgvCf00Ddl3Zi9-ohn0i9cKy6jDenBDzPJMspJCT_jmOaPpN-zodrcpAZDy5PfCN_2v1l9ioV6BcD3_yOAF6fSWnRX9I6n7qkvYFavA1irCUz0_W6UTWZ4ZcrdoQitTgy8nW-STDDdM_M6U6J7pessZLeER2fXO_VNndw=s16000"/></strong></span></p>
+<h3><span style="color: #800000">Encoders</span></h3>
+<p><span style="color: #000000">Various encoders are available in wfuzz. One such encoder we saw earlier was md5. Other encoders can be viewed by using “-e” flag with encoders argument.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">wfuzz -e encoders</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhvBbuwsPZ7vGQjR1QqtVQZvP8I2C4t_At9RrJbn3iCvwu2H-H8LPHSqM3YG2UYKTYl39p2B2RPzelveFVXcVtNcu04VknQnDC-tNoxDaBnQPLSxiPuyfEZJ2V26s4BuhrA4kv35gaMohPSk1xaY44Recwha7DCDuo0ejU1ocOz3jfFIHqc0h9x9juIHA=s16000"/></span></p>
+<p><span style="color: #000000">One can fuzz a website for directories by using MD5 output like so:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">wfuzz -z file,wordlist/general/common.txt,md5 http://testphp.vulnweb.com/FUZZ</pre>
+<p><span style="color: #000000"><strong> <img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEi75p7YlEtq-1FPh1JSxhMA7fbf5DX-PP3AU2BtavHxJANYh7usbjRJGPtGJk7rp7m5zzoMLImklbUwdlVakSijfC_LLFvsbiDecaLk2AAAnkNAsRLy_liLUF5EbipyO6NtwQa2iI8-hyXh1MI-ssddpfBE2sp_NWs0l6NNRTd5bhyCvkl02dJt_CoKuQ=s16000"/></strong></span></p>
+<h3><span style="color: #800000">Storing and restoring fuzz from recipes</span></h3>
+<p><span style="color: #000000">To make scanning easy, wfuzz can save and restore sessions using the “–dump-recipe” and “–recipe” flag.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">wfuzz -w wordlist/general/common.txt --dump-recipe /tmp/recipe --sc 200,301 http://testphp.vulnweb.com/FUZZ
+wfuzz --recipe /tmp/recipe</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEj7LUElLYhpYB9IZ4t7QhgYkW_TOSbV22webF-TPlRT3jFGSVl0ohMuHHvSKaEC-VrmM-bo9uUIBwvIrtkXyWEln6wdUT4JDQtiUbSytm4t1EbWytLtZ6MAt2iZt-qnSvHoLSORsQhZ8v2Zv31s9FPesOa5UZCnk4gY7EzIH-50Cdch55GYkrWL2I_Pag=s16000"/></span></p>
+<h3><span style="color: #800000">Ignoring exceptions and errors</span></h3>
+<p><span style="color: #000000">Often while fuzzing, there are various errors and exceptions that a website can throw. “-Z” option can make wfuzz ignore these errors and exceptions. First, we run a normal subdomain fuzzing routine and then with -Z option:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">wfuzz -z list,support-web-none http://FUZZ.google.com/
+wfuzz -z list,support-web-none -Z http://FUZZ.google.com/</pre>
+<p><span style="color: #000000">As you could see, -Z ignores that error on the bottom. Further, any invalid response can also be hidden like so:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">wfuzz -z list,support-web-none -Z --hc “XXX” http://FUZZ.google.com/</pre>
+<p><span style="color: #000000"><strong><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEiD9jm1E8_cStPYZPaulqoSi2Y8nJdokCNIwpEWEom0sRkfGSpc2PozAZIkw9C2cUwyj8DfG0i9-Jd3Cqbo0F2cO4ZvuHKiWEAyfRUS8d5ThiUk5qBHe9GN6wjWZmbCJJ4p6dM2RavBQgRT2_8ig-Mok3YuX9Xs_EIuXb1aGKPD-2_znEeQhVYOrZGKkg=s16000"/> </strong></span></p>
+<h3><span style="color: #800000">Filtering results</span></h3>
+<p><span style="color: #000000">There are many filters available to manipulate a payload or output.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">wfuzz --filter-help</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjVyvyB69OSItJOJD2LS0sLdjnnchl5EcJsbNvbUgl3vjodEfcwf_OpsaGIGhC48VqEBXLAU9qsiWOf7hxTvyoQcfy7_bs46GIct9FZFJbbEfGWZc-1mTwRrSZqaYIDx-_hD3Vnal4JDxR9OcCAnnXyTvpWYN3KsDU2vGRylvnrOCiFY0nEXYccHiBvbg=s16000"/></span></p>
+<p><span style="color: #000000">These can be manipulated using “–filter, –slice, –field and –efield” arguments.</span></p>
+<p><span style="color: #000000">For example, to view raw responses of the payload sent and the complete HTTP request made, you can use “–efield r” option</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">wfuzz -z range --zD 0-1 -u http://testphp.vulnweb.com/artists.php?artist=FUZZ --efield r</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhKTOILk3-hpuhZPLV_hi8Ql8uqYFTORWbtX9oSjW3_f3fVLA1ngVjYua7ageWS6JZMFUybo0u0tpw7kyxu5cRFyKdW7qNXvVgX5I68WUYrKPsytSa5xc7Ka5TTbv8o_McTFvWHtG6PjTIjs_nXRcYXkOEvC3wgQvscNrfKYmWGNx3yjLUD-Hwrs5riKg=s16000"/></span></p>
+<p><span style="color: #000000">However, if only the intended URL is needed, one can do it by providing –efield url input.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">wfuzz -z range --zD 0-1 -u http://testphp.vulnweb.com/artists.php?artist=FUZZ --efield url --efield h</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhJ_FwFIQmIWvrijOnnHH-0_M_7CuRXhQiXN_z0aD5hwkAhQ8ZwP5HlTVAqK4ClcZOlcRCMO3QEqpMT9Q7FnKxv-clGApz2TWArzPOL1S1N8LhzT-cD2lSEIktD7ybr19dFkPMqQdt4HWnQjKKdIrjKLXsFG3i1U6vyq1vWggdV5TYJxUHLVHdStfEN4A=s16000"/></span></p>
+<p><span style="color: #000000">Similarly, to filter out results based on the response code and the length of the page (lines greater than 97), you can do it like:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">wfuzz -z range,0-10 --filter "c=200 and l&gt;97" http://testphp.vulnweb.com/listproducts.php?cat=FUZZ</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhTz9IW7TuDaGR2gHYJka_pc2JkQmPAQriH1MDM5o1RXMoZAEvu9thHupG7bVCbcEGAnRU1L8PLB9q-Z-FTKDk4t7WMvMrkKF-kpoXymmlSX6370ORwRDDaP5YQxjkqq5IINGyVBM8D2CFw1oebJTy-18UQmVFZMTNgNxAk4O2HER2u6xIUBzfSPRQ_PQ=s16000"/></span></p>
+<p><span style="color: #000000">A detailed table of all the filters for the payloads can be found <a style="color: #000000" href="https://wfuzz.readthedocs.io/en/latest/user/advanced.html">here</a>.</span></p>
+<h3><span style="color: #800000">Sessions in wfuzz</span></h3>
+<p><span style="color: #000000">A user can save a session in wfuzz as a temporary file and later pick it up, re-process it, and post-process it. This is helpful in situations where one result saved already needs alterations, or an analyst needs to look for something in the results. “–oF” filter can save the session output to a file.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">wfuzz --oF /tmp/session -z range,0-10 http://testphp.vulnweb.com/listproducts.php?cat=FUZZ</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEiQiKQ7sXGQnyi9B1aFwMPZyKYurNtxp-Bs8Ld3mb80cTOkw2Q6zYN5Pq2rmGaeW-mu7nuQ1_g0f4BGGz0BAug5hUspnVSUYAaDZi3z1myhncY1vKv-rpICqdTZGBt9dfM8vDjAJ9nXyi9FEHcGsgRSiQ2nQdKZKOFH0cwDHQI5uOINnzD-72oz2g9gPQ=s16000"/></span></p>
+<p><span style="color: #000000">You can now open up this session file again and consume it using the “wfuzzp” payload like so:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">wfuzz -z wfuzzp,/tmp/session FUZZ</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEikpddZ5GSmzRSbZmabTMNgyDR7kcrU-8LyZHru3ejhiey3fU5a_DimxLoe0Dut9A8O81m8q1oQF_f2o7rxLIHTDVx_oNOA0xdwdtu8_62OYY85Lqd21Edx2NukpaQigPIHL3dm38r2HbFaut3FWGtOwXH-QBD2aQOanQfKHhuwNQepwwrepNOnJWpYEg=s16000"/></span></p>
+<p><span style="color: #000000">One such example of this filteration from a previously saved session is as follows where we find an SQL injection vulnerability by utilizing a Python regex designed to read responses after a request modifies a parameter by adding an apostrophe (‘) and fuzzing again. “-A” displays a verbose output.</span></p>
+<p><span style="color: #000000">The regex r.params.get=+’’  adds apostrophe (‘) in the get parameter. r stands for a raw response.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">wfuzz -z range,1-5 --oF /tmp/session http://testphp.vulnweb.com/artists.php?artist=FUZZ
+wfuzz -z wfuzzp,/tmp/session --prefilter "r.params.get=+'''" -A FUZZ</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjMhBuzyEJE4W7udyMkHvrKivAHo9h9WmGjeTdm5FJLUDkGBx53kEt7fY3pCs58J9e46QwbXyvw1dSHmG3HNx0CXZNIycUYlbDYcJwH9fqjnhLc9iEfzcX3vUE2FtVVcZ2dA_CDLJOAZ5juV-3vDyNXv7R-KA6HtgTv8N5bPyJkVREFwGG7YApGynJhJw=s16000"/></span></p>
+<p><span style="color: #000000">As you can see, request number 4 throws an SQL error which indicates SQL injection. For more regex operations refer <span style="color: #0000ff"><strong><a style="color: #0000ff" href="https://wfuzz.readthedocs.io/en/latest/library/guide.html">here</a></strong></span>.</span></p>
+<h3><span style="color: #800000">Conclusion</span></h3>
+<p><span style="color: #000000">Wfuzz is a versatile tool that can perform more than just directory enumeration and truly help a pentester in his analyses. It’s a fast scanner that is easy to use and coded in python for portability. Hope you liked the article. Thanks for reading.</span></p>
+<p><span style="color: #000000"><strong>Author: Harshit Rajpal </strong>is an InfoSec researcher and left and right brain thinker. Contact</span><strong> <a class="broken_link" href="https://in.linkedin.com/in/harshit-rajpal-79bb43103">here</a></strong></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">
+<!-- YARPP Thumbnails -->
+<h3>Related posts:</h3>
+<div class="yarpp-thumbnails-horizontal">
+<a class="yarpp-thumbnail" rel="norewrite" href="https://www.hackingarticles.in/a-detailed-guide-on-log4j-penetration-testing/" title="A Detailed Guide on Log4J Penetration Testing">
+<span class="yarpp-thumbnail-default"><img src="https://www.hackingarticles.in/wp-content/plugins/yet-another-related-posts-plugin/images/default.png" alt="Default Thumbnail" data-pin-nopin="true"/></span><span class="yarpp-thumbnail-title">A Detailed Guide on Log4J Penetration Testing</span></a>
+<a class="yarpp-thumbnail" rel="norewrite" href="https://www.hackingarticles.in/a-detailed-guide-on-responder-llmnr-poisoning/" title="A Detailed Guide on Responder (LLMNR Poisoning)">
+<span class="yarpp-thumbnail-default"><img src="https://www.hackingarticles.in/wp-content/plugins/yet-another-related-posts-plugin/images/default.png" alt="Default Thumbnail" data-pin-nopin="true"/></span><span class="yarpp-thumbnail-title">A Detailed Guide on Responder (LLMNR Poisoning)</span></a>
+</div>
+</div>
+            </div><!-- .entry-content -->
+            <footer class="post-footer entry-footer">
+                                                
+            </footer><!-- .entry-footer -->
+            
+	<nav class="navigation post-navigation" aria-label="Posts">
+		<h2 class="screen-reader-text">Post navigation</h2>
+		<div class="nav-links"><div class="nav-previous"><a href="https://www.hackingarticles.in/file-transfer-filter-bypass-exe2hex/" rel="prev">File Transfer Filter Bypass: Exe2Hex</a></div><div class="nav-next"><a href="https://www.hackingarticles.in/linux-privilege-escalation-dirtypipe-cve-2022-0847/" rel="next">Linux Privilege Escalation: DirtyPipe (CVE 2022-0847)</a></div></div>
+	</nav>        </div>

@@ -1,0 +1,194 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/penetration-testing/" rel="category tag">Penetration Testing</a></span>            </div>
+            <h1 class="post-title entry-title">A Detailed Guide on Crunch</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/crunch-wordlist-generation-guide/" rel="bookmark"><time class="entry-date published" datetime="2022-03-23T18:26:47+00:00">March 23, 2022</time><time class="updated" datetime="2025-06-23T19:25:57+00:00">June 23, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Often times attackers have the need to generate a wordlist based on certain criteria which are required for pentest scenarios like password spraying/brute-forcing. Other times it could be a trivial situation like directory enumeration. Crunch is a tool developed in C by <strong>bofh28</strong> that can create custom, highly modifiable wordlists that may aid an attacker in the situations mentioned above. It takes in min size, max size and alphanumeric character sets as input and generates any possible combination of words with or without meaning and writes it out in a text file. In this article, we’ll demonstrate crunch filters in detail.</span></p>
+<h3><span style="color: #800000;">Table of Content</span></h3>
+<ul>
+<li><span style="color: #000000;">Installation and first run</span></li>
+<li><span style="color: #000000;">Different character sets</span>
+<ul>
+<li><span style="color: #000000;">Default alphanumeric wordlist</span></li>
+<li><span style="color: #000000;">Defined alphanumeric wordlist</span></li>
+<li><span style="color: #000000;">Space character wordlist</span></li>
+<li><span style="color: #000000;">View character sets available</span></li>
+<li><span style="color: #000000;">Using codename character sets</span></li>
+<li><span style="color: #000000;">Startblock in wordlists</span></li>
+<li><span style="color: #000000;">Creating patterns</span>
+<ul>
+<li><span style="color: #000000;">Case 1: Fixed word + 3 numbers</span></li>
+<li><span style="color: #000000;">Case 2: Fixed word + 3 uppercase alphabets</span></li>
+<li><span style="color: #000000;">Case 3: Fixed word + 3 lowercase alphabets</span></li>
+<li><span style="color: #000000;">Case 4: Fixed word + 3 symbols</span></li>
+<li><span style="color: #000000;">Case 5: Placeholder fixed pattern</span></li>
+<li><span style="color: #000000;">Case 6: Lowercase alphabet (a,b or c) + number (1,2 or 3) + symbol (ANY)</span></li>
+<li><span style="color: #000000;">Case 7: Two number (1,2 or 3) + lowercase alphabet (ANY) + symbol (ANY)</span></li>
+<li><span style="color: #000000;">Case 8: Treating symbols as literals</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;">Inverting wordlist</span></li>
+<li><span style="color: #000000;">Limit duplicate patterns</span></li>
+<li><span style="color: #000000;">Putting early stop on wordlists</span></li>
+<li><span style="color: #000000;">Word permutations</span></li>
+<li><span style="color: #000000;">Splitting wordlist based on word count</span></li>
+<li><span style="color: #000000;">Splitting wordlist based on size</span></li>
+<li><span style="color: #000000;">Compressing wordlist</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;">Conclusion</span></li>
+</ul>
+<h3><span style="color: #800000;">Installation and first run</span></h3>
+<p><span style="color: #000000;">Crunch is installed by default on Kali Linux but can be installed using apt package manager using</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">apt install crunch</pre>
+<p><span style="color: #000000;">After it is installed, we can run crunch to generate a wordlist. When we input the min and max size of the word to be generated and just the output file, it automatically takes in small case alphabets as character sets and generates words.</span></p>
+<p><span style="color: #000000;">For example, here 1 character to 3 characters per word is being generated in smallcase and stored in file dict.txt</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">crunch 1 3 -o dict.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh2ixE2u5rPTTOiED4SWZQiX4Li-U3ylaOKOX-2ypO2749cxmDqf0aqayrIRsm1iAxK7vQ9udUimuEhQx3Y_tSU8hcuK8LuA1W8bf7la1kNGZv3s6-xF-oUVTF4sfSziLMQslAz2uLA4IDT-DmIjZ4T5OZOGlKStLPK4x4DMzASGR0onGak8kA30e18Qw/s16000/1.png"/></span></p>
+<h3><span style="color: #800000;">Defined Alphanumeric Characters</span></h3>
+<p><span style="color: #000000;">A user can also define the selected characters to be used while generating a wordlist. Here, min size 5 and max size 7 characters per words is being generated while using the characters “p, a, s, s, 1, 2, and 3” as input. Hence the dictionary starts with “ppppp, ppppa ….” And ends with “3333333” and contains combinations like pass213, pass1 etc.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">crunch 5 7 pass123 -o dict.txt</pre>
+<p><span style="color: #000000;"><img fetchpriority="high" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgqlN7kjagoFQz8WB6S94xYoOlmyCxoEieqQYeCqJlTnLxZ0VpplZ1GteUBmJvSoU65WCrwNAZwoqS6By9YWyT0WaGHs89knGd29B8cXg8evv0jyS4E_0RxbUuw9_P0v4mmnrSiQY2TxiSsApObb3IqMH1qg651JhN-xRGPjMlWJD0ySShuYEaNRBnhdA/s16000/2.png" alt="Crunch wordlist generation" width="613" height="426"/></span></p>
+<h3><span style="color: #800000;">Space character wordlist</span></h3>
+<p><span style="color: #000000;">One neat trick is to include space in the wordlist. Often times we need spaces in scenarios for passwords and many generic wordlists or tools don’t have this feature. In crunch, we can define space as a character by putting space after the characterset to be used. For 1 to 3 characters per word including space we can do this:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">crunch 1 3 "raj " -o space.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjB5ogkH174nxijeee10ucNhI65nNArSP5AS5N9d3RvBso0bOKpg3HTn0vPo2zDaHloB9j_41nzv5qErsk-gkO8mRXW48y1OalBi4qdz1YZ6D1jzSDaJ7fC9UES_t045v1T1tL16QQuXa6DaFA6pNyJUNO6eJOxK7IOYo0kd8kn5l9JHr23MqYCG7Onyg/s16000/3.png"/></span></p>
+<h3><span style="color: #800000;">View character sets available</span></h3>
+<p><span style="color: #000000;">In the <strong>/usr/share/crunch</strong> directory, one may find a list file (charset.lst) mentioning all the different character sets supported by crunch. This is highly useful as a ready reference. One may manually specify character sets or can even use the codenames written on the left. It is quite simple to understand though. Description of each charset is given below:</span></p>
+<p><span style="color: #000000;"><img decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiEvgRSwWrQRNlM-Iavx70I_hwryGIL-ucFT1LiBh9WqJ-yHHoVn_pOfDQy-nyMxXT39mm26wHwN04yNDtJwpL_GiSVPXjF2aL8uxI2ELmX0H_9hvhVoQvaYWspG_3k1M1Nb0UEFaNay-Aj0Lh9gr00PLLKIzjgpC6ZXyCHSADTb2w4_sVxdS_nPV8Blw/s16000/4.1.png" alt="Crunch wordlist generation" width="850" height="440"/></span></p>
+<p><span style="color: #000000;">To view the charset file:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cat /usr/share/crunch/charset.lst</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgd-MHS44HpJ9gh16ouBo1GJX037H0htYD-I40156CHliJb_2cLtgrVy4v1BZ411kREu5Dsu_9chAgUlB9dj0zW_mg8znIG_P0ZI0J4btsWOrIJ0GGRPUHrW6SXpMB7ZKcO408rLd3gd-p1hosc2Pp0-52UVGUpvUkrb5XcErrHoIeifIoyTbmjpNaxbw/s16000/4.png"/></span></p>
+<h3><span style="color: #800000;">Using codename character sets</span></h3>
+<p><span style="color: #000000;">These codenames can be used while creating dictionary files. For example, to create a wordlist of 4 characters per word using a mixture of alphabets, numeric and special characters, one can specify the charset.lst file using the “-f” option and then specify code word “mixalpha-numeric-all”</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">crunch 4 4 -f charset.lst mixalpha-numeric-all -o wordlist.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEinLz3zYNUUVEHshfIMR2SxarC7GF2ZcpD46kuoyU7Bw7AQawouo9MUeSjhfcFOIVJPhwrIasjUQIs75_i8GRFrlE-12GUxsvPdb03XNgUiyIvAG5RhuqSAXll3PIXcgSXVuNun07KiGdIc2SP3MNO5f4pdi9zzsC4bs_qRIsv9Uemrek8uRmRmibbJrA/s16000/5.png"/></span></p>
+<h3><span style="color: #800000;">Startblock in wordlists</span></h3>
+<p><span style="color: #000000;">A startblock can be defined using the “-s” filter. By using this, we can define from where a wordlist should start generating. This is helpful in discarding unwanted combinations. For example, to start a wordlist from abc1, and having 4 characters per word including alphanumeric and special characters can be created like below. This way, the dictionary starts with “abc1, abc2,..abd1, abd2…” and ends at “////”</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">crunch 4 4 -f charset.lst mixalpha-numeric-all -o wordlist.txt -s abc1</pre>
+<p><span style="color: #000000;"><img decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhialpoDPiVkOv2fn2yB3ezfytUqFqlI8xbDfAX8i0niU7Q8qOVtRzOXKgf1CNPFqslalJKvpyoFDGNFlFHDWHhhBWs5EdLdDYhuqzyWqh1ZneXWUFL6fCJ0cen3r1i6I6CP8m8paNZXZk8ajhYNkektRU64Clt1HJBrywJit79l3dklOSuFVSP-cmXSg/s16000/6.png" alt="Crunch wordlist generation" width="662" height="457"/></span></p>
+<h3><span style="color: #800000;">Creating Dictionary with various patterns</span></h3>
+<p><span style="color: #000000;">Please note that the following symbols when defined as input in character sets mean the following:</span></p>
+<p><span style="color: #000000;">@ will insert lower case characters</span></p>
+<p><span style="color: #000000;">, will insert upper case characters</span></p>
+<p><span style="color: #000000;">% will insert numbers</span></p>
+<p><span style="color: #000000;">^ will insert symbols</span></p>
+<p><span style="color: #000000;">Now, if a user wants to create a word with 3 characters with first character lowercase, number as second character and symbol as third, he can specify this:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">crunch -t @%^ -o dict.txt</pre>
+<p><span style="color: #000000;">With “-t” as the flag to provide the symbols. If you aren’t going to use a particular character set you use a plus sign as a placeholder.</span></p>
+<p><span style="color: #000000;"><strong>+ operator positioning: </strong>The + operator can be used where no specific character sets are used and any value can be replaced for the same. But this is in the following order:</span></p>
+<p><span style="color: #000000;">Lowercase alphabets, uppercase alphabets, numbers, symbols</span></p>
+<p><span style="color: #000000;">For example,</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">crunch 3 3 + + 123 +</pre>
+<p><span style="color: #000000;">This would take in the following input:</span></p>
+<p><span style="color: #000000;">Lowercase: abcdefghijklmnopqrstuvwxyz</span></p>
+<p><span style="color: #000000;">Uppercase: ABCDEFGHIJKLMNOPQRSTUVWXYZ</span></p>
+<p><span style="color: #000000;">Numbers: 123</span></p>
+<p><span style="color: #000000;">Symbols: !@#$%^&amp;*()-_+=~`[]{}|\:;”‘&lt;&gt;,.?/</span></p>
+<h4><span style="color: #000000;">Case 1: Fixed word + 3 numbers</span></h4>
+<p><span style="color: #000000;">Lets say if we want to fix first 3 letters as “raj” and insert random combinations of digits at the last 3 places in a 6 character per word wordlist, it can be done by specifying the pattern without the use of commas like above in “-t” filter.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">crunch 6 6 -t raj%%% -o num.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjaD6OyQD1X9TWM7EYtj76tJdde6DhWohHBJQ_PRhXdQIu2XUL0ZZBmwzTCcXCph707_zHlamCk86tU5t3IrOfkL_qbc1cQgvvz9pxh8rsQ05KrDpMFCvevjq_ECMG2wR7sjasThFNYVU_JR3pfHJHHkjiYr-kX2V5I2bzxWkwqHpxEpbdzZQNn66_NeA/s16000/9.png"/></span></p>
+<h4><span style="color: #000000;">Case 2: Fixed word + 3 uppercase alphabets</span></h4>
+<p><span style="color: #000000;">Let’s say if we want to fix first 3 letters as “raj” and insert random combinations of uppercase alphabets at the last 3 places in a 6 character per word wordlist, it can be done by</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">crunch 6 6 -t raj,,, -o upper.txt</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhEvP9CTUQndeYEoiFwv7wYXefutEQUxV7rRoq6C8Sneg0TFEB_u-5llyGwlA6v88wGpC1_dhk8Sfpy4DxtIwg5_O3yfynfrSEpdXtdWQW_5wePZqoTt7HF_z1cZ-fz4vD4aPwCYINRflkHgRmvgBDTX-MZDvtwOKRDBSmTenVFolHGT9jj_bMEthB4CQ/s16000/10.png" alt="Crunch wordlist generation" width="547" height="396"/></span></p>
+<h4><span style="color: #000000;">Case 3: Fixed word + 3 lowercase alphabets</span></h4>
+<p><span style="color: #000000;">Let’s say if we want to fix first 3 letters as “raj” and insert random combinations of smallcase alphabets at the last 3 places in a 6 character per word wordlist, it can be done by</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">crunch 6 6 -t raj@@@ -o lower.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjWvidexiIjtrrN7kmfJcCwYCsKI5qAEBI8KKt_VPVQfPdzn5s-cA8j5QJY8YFR1y75CnnlLC1E1lcKlM6L-0fGInu1WEuqLaOBinH5xRgNkm0R506Cu_w-n1hXPQvS2IgJd3PzFLQ13_CB0xRwuczdK42uCw7tNemBPSEl2YpEejf1m5-oBHkhKxEqNQ/s16000/11.png"/></span></p>
+<h4><span style="color: #000000;">Case 4: Fixed word + 3 symbols</span></h4>
+<p><span style="color: #000000;">Let’s say if we want to fix first 3 letters as “raj” and insert random combinations of special characters at the last 3 places in a 6 character per word wordlist, it can be done by</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">crunch 6 6 -t raj^^^ -o symbol.txt</pre>
+<p><span style="color: #000000;"><strong> <img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgziHJmBoFt6oShpFX0KTYrKcQLVRDVaizLECFLK-YtQe2YT_KqYRZbbm0d-QNGK_W9LEVd5kYefyupaoBnuoWjgSIzkaEkhdr2mywF7UZPZqXhDW_O2NbZGNZZ8_QZ-rkOAzasaDkWK3YOXDYRUOb7fUAcgHg7XwVm50ipqeWznw7_wuOiaUUKmigh7Q/s16000/12.png" alt="Crunch wordlist generation" width="551" height="398"/></strong></span></p>
+<h4><span style="color: #000000;">Case 5: Placeholder fixed pattern</span></h4>
+<p><span style="color: #000000;">Let’s say in place of the lowercase placeholder we input abc12 and with “-t” we supply in @ then the pattern shall also contain 1 and 2 even though we just gave “@” indicator. See the following example:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">crunch 5 5 abc12 -t @@@@@ -o dict.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjISgYD8tctOmJ5q-DMChRizzkfvInTXpwZJFFWQtpMn-5eXEZRLx25bBa5JRkVXmA5NJHCDekmuKQNh0lVgoR0OOvFpNYMQxB88N8h9mUyHKeQyrXAT2cYXqE658uzEFYljVxRxeD5YUdr79YjqeMMvu6N-2wYjgXBPFw0ApoZi3NDCdzs131nDofcyg/s16000/13.png"/></span></p>
+<h4><span style="color: #000000;">Case 6: Lowercase alphabet (a,b or c) + number (1,2 or 3) + symbol (ANY)</span></h4>
+<p><span style="color: #000000;">Now, a user can also provide character set from which a pattern is to be created. In the following example, abc and 123 have been used. A “+” operator is also used indicating that the pattern indicator for which charset is not supplied, shall be treated as “ANY” value.</span></p>
+<p><span style="color: #000000;">So, if a user wants to create a dictionary with first character lowercase, number as second character and symbol as third but only “a,b or c” as characters, “1,2 or 3” as numbers and any random symbol on last position respectively, he can do the following:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">crunch 3 3 abc + 123 -t @%^ -o pattern.txt</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiuYzsEznH9AVVtrkRrgQKkF3gwjBlizebIcp5ckd26xS82iFIpHBdTWu0iAhlq3p4bQHn3WOsB1j6yzVawsTj7Sm-o8H9OcaP9oEk_HXp6HiQOuTqwZW_i2qUj7dpiUWtECWEXY3ku3X_nVqEb00yEuAR5pxB2v15AkQAb4XmO3iG65J9DaQUQyC0spQ/s16000/14.1.png" alt="Crunch wordlist generation" width="583" height="713"/></span></p>
+<h4><span style="color: #000000;">Case 7: Two number (1,2 or 3) + lowercase alphabet (ANY) + symbol (ANY)</span></h4>
+<p><span style="color: #000000;">Similarly, to create a 4 character per word pattern of 2 digits (containing only 1,2, or 3)+lowercase alpha+symbol we can do this:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">crunch 4 4  + + 123 + -t %%@^ -O pattern2.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhVW-YSu8l_hOb4uZUjuaWx2jJ1eJH2jeM3nw5rJZ7ugQk2j80I68M2YFWfQXUOYmS_RgyYtnIx8Hk6eEUJSv-T8UZEdS8tRT3abC5neRsYY0sMmmc1YWjcUE80aiYEysUt500r5HBcleMVsCx7kfoywlasNSNV4oDXrZv-H5_soqDUfAVlnNXt8kEVCQ/s16000/14.2.png"/></span></p>
+<h4><span style="color: #000000;">Case 8: Treating symbols as literals</span></h4>
+<p><span style="color: #000000;">When you use “-l” in accordance with the “-t” filter, you tell crunch which symbols you want to treat as literals. For example, we know that @ denotes a lowercase letter. So, if we want to generate a 7 character per word wordlist using the fixed word “p@ss,” it considers @ as a pattern indicator of lowercase alphabets. Thereafter, you can use the -l filter to define which character you want to treat as literal and not convert as a pattern. You can do this like:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">crunch 7 7 -t p@ss,%^ &gt; dict.txt
+crunch 7 7 -t p@ss,%^ -l a@aaaaa &gt; 1.txt</pre>
+<p><span style="color: #000000;"><strong> <img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiW_4eRvaZkHeQYft4nyUJ1et6K6aXOycmyMwSuLfH5vL65_60K7i-mRGMevLhMLPJjA1a93GBHZUHVM-4CMj5gC5_izuIw17U-zXbrkuL4PzwPxpRK4ZJtMcV7tctXkNbNHxcm1CbAzkWIg2cHWv9rxJWMSpRAQ02TRkjqMBcTn92Dlq8Q0xuGRXMf5Q/s16000/14.png" alt="Crunch wordlist generation" width="608" height="902"/></strong></span></p>
+<h3><span style="color: #800000;">Inverting Wordlist</span></h3>
+<p><span style="color: #000000;">A generated wordlist fixes, by default, first characters and creates combinations on the last character. For example, a wordlist containing “a,b and c” has</span></p>
+<p><span style="color: #000000;">aaa</span><br/>
+<span style="color: #000000;">aab</span><br/>
+<span style="color: #000000;">aac</span><br/>
+<span style="color: #000000;">aba</span><br/>
+<span style="color: #000000;">abb</span><br/>
+<span style="color: #000000;">abc</span><br/>
+<span style="color: #000000;">aca</span><br/>
+<span style="color: #000000;">…</span></p>
+<p><span style="color: #000000;">But this can be inverted using the “-i” option. Crunch would fix the last letter first and make combinations out of first letters. For example, a dictionary of 5 characters per word having 3 alphabets,2digits and inverted looks like following:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">crunch 5 5 abc12 -t @@@%% -o dict.txt
+crunch 5 5 abc12 -t @@@%% -i -o invert.txt</pre>
+<p><span style="color: #000000;"><strong><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjKbw83wrdjlQbTPHB7CVy7ot_xkdIEsMN1X0c34ELDZbQ9TdlfPrf1jv9lGROZIDXy_2icMJNaKSZYzcDDf0-tJLoQKU5FkW2o-tO6CDK9VIFDL4329ID23JXvgsaFtONHjotcarET9fV4RdxKjq-vn46x8-HPomB7sa7Qwu3sSnj-EZVpYrgjows2sw/s16000/15.png"/><br/>
+</strong></span></p>
+<h3><span style="color: #800000;">Limit duplicate patterns</span></h3>
+<p><span style="color: #000000;">A user can place a limit on the number of characters that can occur together. For example, you can create a wordlist of 5 characters per word using 3 lowercase alphabets, 1 number, and 1 symbol like the first command. But if a user wants to limit the occurrence of duplicate characters together to only 2 places, he can use the “-d” operator. Note how the first command allowed 3 “a”s to occur, but in the second command, the user limited duplicates to only 2, so only 2 “a”s occurred.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">crunch 5 5 abc + 123 -t @@@%^ -o 1.txt
+crunch 5 5 abc + 123 -t @@@%^ -o 2.txt -d 2@</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh7bPu9dRp3eH79-Ced5BIQfthpdPQ_XPityTvOgC_b9VqXMPz6TMbTCSPPvYpbhxm7Khkg0Z40E2V-Qx0afuKTenGswe3i7bpPjvOtBuJ4Li87KC10aWj5-fZlTH7yQqnSk_jxo375FyxkFTMO5jTUgC5jZm-_GG1GifcmffG1CYM2jIbaUCk5eTmGTQ/s16000/16.png" alt="Crunch wordlist generation" width="619" height="765"/></span></p>
+<h3><span style="color: #800000;">Putting early stops on wordlists</span></h3>
+<p><span style="color: #000000;">As per user requirements, there may also be a possibility when a user wants to cut short a list to certain combination. For example, if a user wants to create a wordlist with 3 characters per word using “a, b and c” as characters but wants to cut it as soon as they generate the combination ”acc,” they can do it like so:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">crunch 3 3 abc -o 1.txt
+crunch 3 3 abc -e acc -o 2.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgKlSZXF4zoZhO1UOTmSaQBhn02My6u8hIS2Qzzajzlf3vFQ8zp6PmbY90PlUZH4zi-CX3Vhv1bNwHEZsXTqDQPcq1jcKGe7byBck_HLXZmoIzQmgp7pyAIhqD0iD0y7Wyz4cCkK-NS7EeAPQtVZjaHLnc3_N-Yg7ScNyZOam8zCCZRTwOacLYN4TqCVg/s16000/17.png"/></span></p>
+<h3><span style="color: #800000;">Word permutations</span></h3>
+<p><span style="color: #000000;">In mathematics, permutations stand for non-repeating combinations of certain events. So, to generate non-repeating wordlists by permutations we can use the “-p” filter. Here, we supply 3 words as input none of which shall repeat even if the maximum size of the wordlist is 6.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">crunch 3 6 -p raj chandel hackingarticles</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiTnCaRrJbbtju7x_zvoGE5EmQxtaxwC1BSzKP7JAHbb1FKXjq95B9BPS5ECGmWfSAZn0VZilgApQyA9fYA-0PaLiq65hVEpOW-gqt-ahq5SOYKSDhTtzM0z9SbvbzCL0D3ggb5B4lyTlXUubx4qNvesZW9tDNtS_d3IDRCfQ50tEzWBocCgqYBgfSEJQ/s16000/18.png" alt="Crunch wordlist generation" width="653" height="236"/></span></p>
+<h3><span style="color: #800000;">Wordlist Permutations</span></h3>
+<p><span style="color: #000000;">Just like you can permute words, you can permute wordlists. Using the “-q” option, crunch takes input from a wordlist and does permutations on what it reads in the file. For example, if the file list is:</span></p>
+<p><span style="color: #000000;">A</span></p>
+<p><span style="color: #000000;">B</span></p>
+<p><span style="color: #000000;">C</span></p>
+<p><span style="color: #000000;">Then, <strong>crunch -q list.txt</strong> would output:</span></p>
+<p><span style="color: #000000;">ABC</span></p>
+<p><span style="color: #000000;">ACB</span></p>
+<p><span style="color: #000000;">BAC</span></p>
+<p><span style="color: #000000;">BCA</span></p>
+<p><span style="color: #000000;">CAB</span></p>
+<p><span style="color: #000000;">CBA</span></p>
+<p><span style="color: #000000;">Similarly, we can do permutations on 3 char per word wordlist like so:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">crunch 3 3 abc -e acc -o 2.txt
+crunch 3 3 abc -q 2.txt -o 3.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiHQvjpZOa8v6NxHVEikycR1FbZ-vDA0DFSHLxf3Gpdh5-OzDj4RmuXLWzVfe9Gbhl6Rq61jFArdGTffpjuJXxSHlYb4ih6U678sMNXtwcpQhscbctCrKdugDjbiIiz-uP1MHuhChsNPKskPRpgtMvE3FXUfUxfjOIu0iL-dLUMLBgciKlCMf8GFHpeEg/s16000/19.png"/></span></p>
+<h3><span style="color: #800000;">Splitting wordlist based on word count</span></h3>
+<p><span style="color: #000000;">You can cut short a wordlist using the “-c” option. Here, someone has generated a file with 94 words. Now, you can split that into multiple files, each containing a maximum of 60 words, like so. Note, that this only works with “-o START” which will autoname the files in the format:</span></p>
+<p><span style="color: #000000;">Starting character – Ending character.txt</span></p>
+<p><span style="color: #000000;">Here, start and ending are a,7 and for next file, 8 and /(space)</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">crunch 1  1 -f charset.lst mixalpha-numeric-all-space -o file.txt
+crunch 1  1 -f charset.lst mixalpha-numeric-all-space -o START -c 60</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjKlr7PxajjE3TcAv7oy1xLLsfSji4iAPPK2Y88YLV4GqqEQLRnuibJksTBbF6gTIQi8Qn4NkUwsOW76nI_KsuYMilvUiLdHf3fxT4gcitIeaCLZZCrBwAGBr-7lFV2vmNJhziO1TK6rZXsHevVsL89hPeKAshy3Qidut8iIHqZw7tbxWGOJG_wLI4DaA/s16000/20.png" alt="Crunch wordlist generation" width="657" height="678"/></span></p>
+<h3><span style="color: #800000;">Splitting wordlist based on size</span></h3>
+<p><span style="color: #000000;">To cut short a file based on the size, we can use “-b” filter. For example, to split a wordlist into multiple files each of a maximum 1 MB we can do:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">crunch 4 7  Pass123 -b 1mb -o START</pre>
+<p><span style="color: #000000;">Remember, -o START is compulsory as it will automatically split the file in the format:</span></p>
+<p><span style="color: #000000;">Starting character – Ending character.txt</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEg6pC3hJ9h4cQXqN8zkbo3Ez2uMIuoYvcZFJwtRk-5pXjnknKFWlovT1cY4DVCM9z-M2nvBvr-hcPBeVXf_kb6Htss_Pqft3beLquaGNjh4YwgjNk1AWKGqp7IeRgAvj-qbA-GktsTU6NiZPsgcIfQiO4tVplOXb-RgVxlZMpgjIG47TfyQfs6viK503A/s16000/21.png"/></span></p>
+<h3><span style="color: #800000;">Compressing wordlist</span></h3>
+<p><span style="color: #000000;">Oftentimes, wordlists are too large in size while in text format and gzip can be used to compress them to over 60-70%. For example, to compress a file of max 7 mixalpha-numeric charset and autoname using START we can do this:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">crunch 4 7  Pass123 -z gzip -o START
+gunzip PPPP-3333333.txt.gz</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiMl9bMOff2HU2R7UIYeOJCdTq0OvAQkOYRdKeZtaKh9_a6Dn9pwo-N2YvMlcCW2n18friKbshFHpg_su6DDJEAfxXUFs9_AfLbRFHfTeMKBc9OmZq52QzqwHh3kZwlfQ7T6Iy_c7StkGI86ZF2J1s4tuH1LvQXGvBSJ5cn3bVQBuhpSXFr8Cfd0BQBEw/s16000/22.png" alt="Crunch wordlist generation" width="629" height="550"/></span></p>
+<h3><span style="color: #800000;">Conclusion</span></h3>
+<p><span style="color: #000000;">The article aims to serve as a ready reference for quick and dirty wordlist generation using crunch. Crunch acts as a powerful and very fast tool written in C that defaults in Kali Linux and users can employ in competitive security certification exams. Hope you liked the article and thanks for reading it.</span></p>
+<p><span style="color: #000000;">To learn more about Penetration Testing. Follow this <strong><a href="https://www.hackingarticles.in/category/penetration-testing/">Link</a></strong>.</span></p>
+<p><span style="color: #000000;"><strong>Author: Harshit Rajpal </strong>is an InfoSec researcher and left and right brain thinker. Contact<strong> <span style="color: #0000ff;"><a class="broken_link" style="color: #0000ff;" href="https://in.linkedin.com/in/harshit-rajpal-79bb43103">here</a></span></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

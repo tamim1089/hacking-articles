@@ -1,0 +1,131 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">HA: Narak: Vulnhub Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/ha-narak-vulnhub-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2020-10-01T11:24:53+00:00">October 1, 2020</time><time class="updated" datetime="2025-07-10T17:06:59+00:00">July 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today we are going to crack this vulnerable machine called HA: Narak. This is a Capture the Flag type of challenge.  Overall, it was an Intermediate machine to crack.</span></p>
+<p><span style="color: #000000;">Download Lab from <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.vulnhub.com/entry/ha-narak,569/">here</a></strong></span>.</span></p>
+<h3><span style="color: #800000;">Penetration Testing Methodology</span></h3>
+<ul>
+<li><span style="color: #000000;"><strong>Network Scanning</strong></span>
+<ul>
+<li><span style="color: #000000;">Netdiscover</span></li>
+<li><span style="color: #000000;">Nmap</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Enumeration</strong></span>
+<ul>
+<li><span style="color: #000000;">Browsing HTTP Service</span></li>
+<li><span style="color: #000000;">Directory Bruteforce</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Exploitation</strong></span>
+<ul>
+<li><span style="color: #000000;">Exploiting PUT Vulnerability using cadaver</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Post-Exploitation</strong></span>
+<ul>
+<li><span style="color: #000000;">Enumerating SUID permission</span></li>
+<li><span style="color: #000000;">Decrypting BrainFuck Encryption</span></li>
+<li><span style="color: #000000;">Reading User Flag</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Privilege Escalation</strong></span>
+<ul>
+<li><span style="color: #000000;">Logging as Inferno user using SSH</span></li>
+<li><span style="color: #000000;">Appending the motd file</span></li>
+<li><span style="color: #000000;">Reconnecting the SSH session</span></li>
+<li><span style="color: #000000;">Enumerating the permission on nano</span></li>
+<li><span style="color: #000000;">Adding User with Root Privileges</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Getting the Root Flag</strong></span></li>
+</ul>
+<h3><span style="color: #800000;">Walkthrough</span></h3>
+<h3><span style="color: #800000;">Network Scanning</span></h3>
+<p><span style="color: #000000;">To attack any machine, we need to find the IP Address of the machine. This can be done using the netdiscover command. Firstly, to find the IP Address, we need to co-relate the MAC Address of the machine that can be obtained from the Virtual Machine Configuration Setting. The IP Address of the machine was found to be 192.168.0.136.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-qssg89vIwhU/X3W21sOGU1I/AAAAAAAAo9k/cCQnWxpBXhIb4ZsivB6e0v6CLOWhJtO2wCLcBGAsYHQ/s16000/1.png"/></span></p>
+<p><span style="color: #000000;">Following the netdiscover scan, we need a Nmap scan to get the information about the services running on the virtual machine. A version Nmap scan reveals that 2 services: SSH (22), HTTP (80) are running on the applicat<strong>ion.</strong></span></p>
+<pre class="lang:default decode:true">nmap -A 192.168.0.136</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-oi2tB9KgjzA/X3W3V8qsHrI/AAAAAAAAo9s/PHMzg2IFWP00mQKywSqjFVAUgOCxu2zeACLcBGAsYHQ/s16000/2.png"/></span></p>
+<h3><span style="color: #800000;">Enumeration</span></h3>
+<p><span style="color: #000000;">Since we have the HTTP service running on the virtual machine, let’s take a look at the webpage hosted.</span></p>
+<pre class="lang:default decode:true">http://192.168.0.136</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-2IOvHbE4YCA/X3W3pacZ4sI/AAAAAAAAo90/XeZpBbNWggwmEepvYWUfJRvGN8AGlZL9QCLcBGAsYHQ/s16000/3.png"/></span></p>
+<p><span style="color: #000000;">Just a basic webpage with some exciting images of hell. Since there weren’t any new clues, we went back to some more enumeration. Time for some Directory Bruteforce. Just in a few seconds and dirb gives us a /webdav directo<strong>ry.  </strong></span></p>
+<pre class="lang:default decode:true">dirb http://192.168.0.136/</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Gq3fDPTv2Ms/X3W3xXRfXmI/AAAAAAAAo94/ABIETTtxzEwoBzWB-5nD2zzAip3qj9FnACLcBGAsYHQ/s16000/4.png"/></span></p>
+<p><span style="color: #000000;">We open the WebDAV directory in the web browser to find ourselves an Authentication Panel. Since we don’t have any credentials. We can’t proceed. Bruteforcing without any information is not that useful. We will get back to it in a few moments. </span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-pmHeaybkIxU/X3W36XmPsyI/AAAAAAAAo-A/fjUuOdbOzvgvSYh4MlG0LkIEJswO86QWwCLcBGAsYHQ/s16000/5.png"/></span></p>
+<p><span style="color: #000000;">Now, that we didn’t find any new directories in the normal dirb scan. We tried an extension filter dirb scan. Now we try a bunch of other extensions but we got a new result with the .txt extension. We have tips.txt. Let’s take a look at it.</span></p>
+<pre class="lang:default decode:true">dirb http://192.168.0.136/ -X .txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Xolerq3OC2g/X3W4C-xMacI/AAAAAAAAo-I/LtGSRSvD4sw9bAJjWMi_cETroBU_0eUMwCLcBGAsYHQ/s16000/6.png"/></span></p>
+<p><span style="color: #000000;">It says that to open the door to Narak can be found in creds.txt. Another text files. Let’s try to find this creds.txt.</span></p>
+<pre class="lang:default decode:true">http://192.168.0.136/tips.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-57uHjPXguEA/X3W4J79f1kI/AAAAAAAAo-M/pqgWPAbW_VQ7ExmiuPcSzk7DkY8E6Jf0wCLcBGAsYHQ/s16000/7.png"/></span></p>
+<p><span style="color: #000000;">Since directory bruteforce any more didn’t give us any more clues regarding the creds.txt. We went back to the port scan. This time we tried a UDP scan. This gave us the port 69. Noice. The service running on TFPT.</span></p>
+<pre class="lang:default decode:true">nmap -sU -p69 192.168.0.136</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-lJLPKHuZg94/X3W4XXA4tSI/AAAAAAAAo-Y/1LzKlrNf1i4VarMg0IwiiyfcwSfLEOe9ACLcBGAsYHQ/s16000/8.png"/></span></p>
+<p><span style="color: #000000;">We access the TFTP service and see that there is the creds.txt that was mentioned earlier. It contains some encoded text. Looked like Base64. Let’s decode it. After decoding we found that there are some credentials. Nice.</span></p>
+<pre class="lang:default decode:true">tftp 192.168.0.136
+get creds.txt
+echo "eWFtZG9vdDpTd2FyZw==" | base64 -d</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-OvTJ1m1_5nc/X3W4gPfb8GI/AAAAAAAAo-c/E8aheTX2ojclIsnNbQnBkPdXccM_lc7owCLcBGAsYHQ/s16000/9.png"/></span></p>
+<h3><span style="color: #800000;">Exploitation</span></h3>
+<p><span style="color: #000000;">Now, we had the /webdav directory to access this set of credentials. Firstly, we enumerated and found that WebDAV is used to upload and download files on the apache server. A quick search can tell us that it suffers from PUT Vulnerability. We decided to use this vulnerability and gain a shell on the machine. To do this we used the cadaver tool. After using the credentials, we use put to upload a php reverse shell to the target machine.</span></p>
+<pre class="lang:default decode:true">cadaver http://192.168.0.136/webdav
+put /root/shell.php</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-TA377z2ZCfM/X3W4txvBMKI/AAAAAAAAo-k/Xe9v05uj5X8to_sREmzWbXEHKhQ_KewuwCLcBGAsYHQ/s16000/11.png"/></span></p>
+<p><span style="color: #000000;">Since, we have uploaded a php shell on the target machine, we creat a listener targeting the port that was in the php shell on our local system to capture the session that will get created after we execute it. On the browser, after entering the credentials we can see the uploaded shell.</span></p>
+<pre class="lang:default decode:true">nc -lvp 1234</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-p2fjhY1m2ek/X3W4zjhhpHI/AAAAAAAAo-s/k_otAUotVZE2PFtCG4Qw9UZxG5pJ-YvdACLcBGAsYHQ/s16000/12.png"/></span></p>
+<h3><span style="color: #800000;">Post-Exploitation</span></h3>
+<p><span style="color: #000000;">When we clicked the php shell, our payload gets executed and we have a session on the target machine. We can use the python one-liner to convert the shell into a TTY shell. After getting TTY we work on elevating the privileges on the session that we just generated. We check the SUID permissions and find that there is a custom script named hell.sh. Let’s take a look at the script. There is some encryption inside the script. It seems to be brainfuck encryption.</span></p>
+<pre class="lang:default decode:true">find / -type f -perm -ug=rwx 2&gt;/dev/null
+cat /mnt/hell.sh</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-ceme4MU8djo/X3W4-q1Nl8I/AAAAAAAAo-0/nEOsOCz_ZbEJ7kwZTQQ4FJ_523r8t6zUACLcBGAsYHQ/s16000/13.png"/></span></p>
+<p><span style="color: #000000;">We decode the encryption and find the word “chitragupt”</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-rmQQh9W7E5A/X3W5JiZC6kI/AAAAAAAAo-8/_8jms4NNnmkNUoPHihtF5qIf3mguXfNegCLcBGAsYHQ/s16000/14.png"/></span></p>
+<p><span style="color: #000000;">Before moving on further, let’s take some time and look for the user flag. As the flag will be in one of the user’s home directory. Time to look for the users in the machine. There are 3 users named inferno, Narak, and yamdoot. Yamdoot seems to be the TFPT user. We were not able to access the Narak directory that means that it is the high privilege user. We enumerate the inferno user and found ourselves the user flag.</span></p>
+<pre class="lang:default decode:true">cd /home
+ls
+cd inferno
+ls -la
+cat user.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-70FuxQxIlx4/X3W5R04ZixI/AAAAAAAAo_E/vMQbu4R8UcM-fxwEBHxy7yJdBT9oi_nWQCLcBGAsYHQ/s16000/15.png"/></span></p>
+<h3><span style="color: #800000;">Privilege Escalation</span></h3>
+<p><span style="color: #000000;">Earlier we saw that there are special permissions on the motd file. That means we need to navigate our way to root using the motd privilege escalation. As we found the chitragupt keyword earlier, we used it like a password and logged in to an SSH session as the inferno user.</span></p>
+<pre class="lang:default decode:true">Username: inferno
+Password: chitragupt</pre>
+<p><span style="color: #000000;">Now as we know that to escalate privileges from the motd files, we need to add the nano editor into the motd header file. So, we used the echo command to do that as shown in the image below.</span></p>
+<pre class="lang:default decode:true">ssh inferno@192.168.0.136
+which nano
+ls -la /bin/nano
+echo "sudo chmod u+s /bin/nano" &gt;&gt; /etc/update-motd.d/00-header</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-9ngHcgAQQxk/X3W5ZXr7TjI/AAAAAAAAo_I/_DGxBuN3NLIaPWMqeCjEB0U83EjhKXZXgCLcBGAsYHQ/s16000/16.png"/></span></p>
+<p><span style="color: #000000;">As we know that to execute the motd files, we need to exit the current SSH session and connect it again. After doing so we check if the nano binary now has the privileges, we set to it in the previous step. Then we will use this nano to edit the /etc/passwd and create ourselves a user that has the root privileges.</span></p>
+<pre class="lang:default decode:true">ssh inferno@192.168.0.136
+ls -al /bin/nano
+nano /etc/passwd</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-fSmFWbQwvDc/X3W5lKfAPsI/AAAAAAAAo_U/kFbuoZ7AUzElxysM7nAf9g8pGu8kjMeuwCLcBGAsYHQ/s16000/17.png"/></span></p>
+<p><span style="color: #000000;">To add a user entry, we will be needing a password hash. You can generate this using the OpenSSL command.</span></p>
+<pre class="lang:default decode:true">openssl passwd -1 -salt user3 pass123</pre>
+<p><span style="color: #000000;"><strong><img decoding="async" src="https://1.bp.blogspot.com/-HfQkfrPwNTk/X3W5r48lXfI/AAAAAAAAo_c/wNDDzLMhL_AnRR8BKR99Jyw-4KFScB1UACLcBGAsYHQ/s16000/18.png"/></strong></span></p>
+<p><span style="color: #000000;">Now, we created a user by the name of Jeenali, gave it root privileges, and added the hash that we generated earlier as shown in the image below.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-fgIp3QwY42o/X3W5_Rda5PI/AAAAAAAAo_o/6mdTTdZP7YoSsyJ6Lllwl0_iqu8Wo6mZACLcBGAsYHQ/s16000/19.png"/></span></p>
+<p><span style="color: #000000;">Now, all that left is to log in as the jeenali aka newly created user, and read the root flag.</span></p>
+<pre class="lang:default decode:true">tail  -n 3 /etc/passwd
+su jeenali
+cd /root
+ls
+cat root.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-h1jVEiMfANk/X3W6FFY2q7I/AAAAAAAAo_s/-tGQ-V0d2j4YwPCEVa3aI3ndxOlf3OAagCLcBGAsYHQ/s16000/20.png"/></span></p>
+<p><span style="color: #000000;">Thank you for giving your precious time to read this walkthrough. If you want to read more VulnHub Write-ups. Follow this</span> <strong><a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/">Link.</a></strong> <span style="color: #000000;">Happy Hacking!</span></p>
+<p><span style="color: #000000;"><strong>Author: Pavandeep Singh</strong> is a Technical Writer, Researcher, and Penetration Tester. Contact on <strong>Twitter</strong> and <strong><a style="color: #000000;" href="https://www.linkedin.com/in/pavan2318/">LinkedIn</a></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

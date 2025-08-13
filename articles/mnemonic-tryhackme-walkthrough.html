@@ -1,0 +1,181 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/tryhackme/" rel="category tag">TryHackME</a></span>            </div>
+            <h1 class="post-title entry-title">Mnemonic TryHackMe Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/mnemonic-tryhackme-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2021-03-30T15:13:17+00:00">March 30, 2021</time><time class="updated" datetime="2025-06-25T12:14:42+00:00">June 25, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today we’re going to solve another boot2root challenge called “Mnemonic “. It’s available at TryHackMe for penetration testing practice. This lab is of medium difficultly if we have the right basic knowledge to break the labs and are attentive to all the details we find during the reconnaissance. The credit for making this lab goes to <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://tryhackme.com/p/villwocki">villwocki</a></strong></span>. Let’s get started and learn how to break it down successfully.</span></p>
+<p><strong><span style="color: #000000;">Level: Medium</span></strong></p>
+<h3><span style="color: #800000;">Penetration Testing Methodology</span></h3>
+<ul>
+<li><span style="color: #000000;"><strong>Network Scanning</strong></span>
+<ul>
+<li><span style="color: #000000;">Nmap</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Enumeration</strong></span>
+<ul>
+<li><span style="color: #000000;">Enumerating Robots.txt</span></li>
+<li><span style="color: #000000;">Directory Bruteforce using Dirb</span></li>
+<li><span style="color: #000000;">Cracking ZIP Password using John the Ripper</span></li>
+<li><span style="color: #000000;">Bruteforcing FTP Login</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Exploitation</strong></span>
+<ul>
+<li><span style="color: #000000;">Extracting id_rsa file from FTP</span></li>
+<li><span style="color: #000000;">Enumerating James User</span></li>
+<li><span style="color: #000000;">Cracking SSH Password using John the Ripper</span></li>
+<li><span style="color: #000000;">Enumerating Condor User</span></li>
+<li><span style="color: #000000;">Reading User Flag</span></li>
+<li><span style="color: #000000;">Getting Mnemonic Image</span></li>
+<li><span style="color: #000000;">Downloading Mnemonic Project</span></li>
+<li><span style="color: #000000;">Decoding Mnemonic encoded Password</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Privilege Escalation</strong></span>
+<ul>
+<li><span style="color: #000000;">Enumerating Sudo Permissions</span></li>
+<li><span style="color: #000000;">Enumerating Source Code of Python Script</span></li>
+<li><span style="color: #000000;">Exploiting Sudo Permission to root</span></li>
+<li><span style="color: #000000;">Reading Root Flag</span></li>
+</ul>
+</li>
+</ul>
+<h3><span style="color: #800000;">Walkthrough</span></h3>
+<p><span style="color: #000000;">We will start with booting up the machine from the <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://tryhackme.com/room/mnemonic">TryHackMe: Mnemonic Page</a>,</strong></span> we will be provided with a Target IP Address.</span></p>
+<p><span style="color: #000000;"><strong>IP Address: </strong>10.10.169.103</span></p>
+<p><span style="color: #000000;">This room has some specified tasks that we need to fulfil to complete the Machine. There are a total of 4 Tasks with 3 Questions in Task 2, 5 Questions in Task 3, 2 Question in Task 4 that we are supposed to answer. Task 1 is a YouTube link to watch a fun video.</span></p>
+<h3><span style="color: #800000;">Network Scanning</span></h3>
+<p><span style="color: #000000;">We will start with a nmap scan with -sC for Default Scripts and -sV for Scanning Versions.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -sC -sV -p- 10.10.169.103</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-QMjs-PzpcwM/YGM7mvc9LaI/AAAAAAAAvIw/3s71cAhQm_wjlEuJbQcxYs96cxhrCF-wACLcBGAsYHQ/s16000/1.png"/></span></p>
+<p><span style="color: #000000;">The Nmap Scan gives us some services to enumerate. It gave us the FTP service on port 21 but unfortunately, we don’t have a set of credentials to access the machine and Anonymous Login is Disabled. Next, we had the HTTP Service on port 80, which we will take a look at. We will also see the entry inside the robots.txt that nmap crawled. Then came the SSH service on port 1337, which we don’t have credentials for yet.</span></p>
+<h4><span style="color: #000000;"> <strong><em>Q.2: How many open ports?</em></strong></span></h4>
+<p><span style="color: #000000;"><strong><em>Ans: 3</em></strong></span></p>
+<h4><span style="color: #000000;">Q.3: what is the ssh port number?</span></h4>
+<p><span style="color: #000000;"><strong><em>Ans: 1337</em></strong></span></p>
+<h3><span style="color: #800000;">Enumeration</span></h3>
+<p><span style="color: #000000;">As we have the HTTP Service Running, it is a good thing to check out the webpage that is hosted using a Web Browser. We know from nmap that there is a robots.txt file on the server. Let’s take a look at it first.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://10.10.169.103/robots.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-sZ5kbYytqUg/YGM70SbtjiI/AAAAAAAAvI0/ZiHQrjaWFjAArUnDFAXTzRTxosh5kwsWgCLcBGAsYHQ/s16000/2.png"/></span></p>
+<p><span style="color: #000000;">We have an entry inside the robots.txt. It says to disallow /webmasters/. Let’s see what’s inside this directory that the author wants to hide from us.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://10.10.169.103/webmasters/</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-U2w8be6eEXU/YGM73yPjibI/AAAAAAAAvI8/8XR9duKW80AkOzCI21fBtu9OP5iZ8D0CgCLcBGAsYHQ/s16000/3.png"/></span></p>
+<p><span style="color: #000000;">That’s quite disappointing. It is blank. We checked the source code too if something is commented but no the file was completely empty. Moving on, we perform a Directory Bruteforce using dirb to enumerate further.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">dirb http://10.10.169.103</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-DS_41vRY4II/YGM770hXSnI/AAAAAAAAvJA/GHlqhpaq2ukirjVCHoDAG5DUOxEuWSl5wCLcBGAsYHQ/s16000/4.png"/></span></p>
+<p><span style="color: #000000;">This led us straight to the backups directory. It seemed interesting enough to check. If we browse it directly, there is a chance that we might not able to see anything unless Directory Listing is enabled (It isn’t). So, we modified our dirb command to search for php, png and zip files inside the backups directory.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">dirb http://10.10.169.103/webmasters/backups/ -X .php,.png,.zip</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-jbmvH9q5g_8/YGM7_T9ELoI/AAAAAAAAvJE/jE4LBvKjNHM1PaVQCOO0OfEYZP2u6UidACLcBGAsYHQ/s16000/5.png"/></span></p>
+<p><span style="color: #000000;">This gave us the backups.zip file. This also serves as the answer to the question.</span></p>
+<h4><span style="color: #000000;">Q.4 What is the name of the secret file?</span></h4>
+<p><span style="color: #000000;"><strong><em>Ans. backups.zip</em></strong></span></p>
+<p><span style="color: #000000;">We used the wget command to download the backups.zip file to our local machine. Here, we tired to extract the contents of the compressed file to find that it is password protected. To crack the password using John the Ripper, we need to use the zip2john binary. It is located inside the /usr/share/zip2john. This gave us a hash to crack. When ran John the Ripper against the hash using rockyou as a wordlist. We found the password to be 00385007.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">wget http://10.10.169.103/webmasters/backups/backup.zip
+/usr/sbin/zip2john backups.zip &gt; hash
+john --wordlist=/usr/share/wordlists/rockyou.txt hash</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-pK7iYPp6cH0/YGM8Esth5nI/AAAAAAAAvJI/nuwIIYLTgPMcYB2mnIghEpaJxwwn3PZVgCLcBGAsYHQ/s16000/6.png"/></span></p>
+<p><span style="color: #000000;">Now that we have the password for the compressed file, let’s extract the contents of it. We found a note inside. It tells us that the FTP service can be accessed using ftpuser username.</span></p>
+<h4><span style="color: #000000;">Q.5 FTP user name?</span></h4>
+<p><span style="color: #000000;"><strong><em>Ans. ftpuser</em></strong></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">unzip backups.zip
+cat backups/note.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-ZIYtN0FE_p4/YGM8IIxNG2I/AAAAAAAAvJQ/4x75OjHj1MwGb8-GGJFf0QBiYn_0gfZ5QCLcBGAsYHQ/s16000/7.png"/></span></p>
+<p><span style="color: #000000;">Now that we have the username, we can use the THC-Hydra to Bruteforce the password using the rockyou wordlist. After running for a while, we got the password “love4ever”.</span></p>
+<h4><span style="color: #000000;">Q.6 FTP Password?</span></h4>
+<p><span style="color: #000000;"><strong><em>Ans. love4ever</em></strong></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">hydra -l ftpuser -P /usr/share/wordlists/rockyou.txt 10.10.169.103 ftp</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-gYaXtNdnmqI/YGM8Mc4Q4nI/AAAAAAAAvJY/5_ZfNnutXj8xldklCWxr1i_k2zbTOAOtQCLcBGAsYHQ/s16000/8.png"/></span></p>
+<p><span style="color: #000000;">Let’s log in and enumerate now that we have the FTP service credentials. We can observe that the data4 directory has distinct permissions after listing the contents of the directory. It is authorized to be executed. We were curious to check it out. Within the directory, we discovered an id_rsa key. We discovered a note as well. on have a better view, we downloaded both on our local computer.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ftp 10.10.169.103
+ftpuser
+love4ever
+ls
+cd data-4
+get id_rsa
+get not.txt
+bye</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-iAJfxyHc6IQ/YGM8QEKIIqI/AAAAAAAAvJc/tld7yPlUkgIUKWj8zQMx5-oIAa8jkHbVQCLcBGAsYHQ/s16000/9.png"/></span></p>
+<h3><span style="color: #800000;">Exploitation</span></h3>
+<p><span style="color: #000000;">We read the note to find that a user by the name of james has changed the ftp password. It is possible that james is a user that has SSH access and id_rsa key would help us to login as james user via SSH.</span></p>
+<h4><span style="color: #000000;">Q.7 What is the ssh username?</span></h4>
+<p><span style="color: #000000;"><strong><em>Ans. james</em></strong></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cat not.txt
+james
+cat id_rsa</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-wKI-Q4s4nhs/YGM8TgFF0SI/AAAAAAAAvJg/jasV5TIRbfoDh7w6WpgfWhWrbPHflFHuQCLcBGAsYHQ/s16000/10.png"/></span></p>
+<p><span style="color: #000000;">We changed the permission of the key to using it. We then tried to login as james user on the SSH service. The id_rsa file didn’t work. The SSH still asks us for a password.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-3JpH2M2bmIQ/YGM82W-ZEBI/AAAAAAAAvJ0/7jYCWdnqnGU6xR4DSkztYBN-OmaqjI28QCLcBGAsYHQ/s16000/11.png"/></span></p>
+<p><span style="color: #000000;">So, now we will try to extract a password from this encrypted id_rsa key. For this, we have to use the ssh2john python script. It is located inside /usr/share/john/ directory. We used this python script to get a crackable hash from the id_rsa file. Then we used the John the Ripper to crack that hash. The password turned out to be bluelove.</span></p>
+<h4><span style="color: #000000;">Q.8 What is the ssh password?</span></h4>
+<p><span style="color: #000000;"><strong><em>Ans. bluelove</em></strong></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">/usr/share/john/ssh2john.py id_rsa &gt; hash
+john hash --wordlist-/usr/share/wordlists/rockyou.txt
+bluelove</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-JJSe2KOThPA/YGM86-2GevI/AAAAAAAAvJ4/FApf6od4vJo8S2G7-rsjQSg5UPcWzbM9gCLcBGAsYHQ/s16000/12.png"/></span></p>
+<p><span style="color: #000000;">Since we have the ssh credentials for the james user, we used it to gain the ssh session on the machine. Remember to use port 1337 to login.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ssh james@10.10.169.103 -p 1337</pre>
+<h4><span style="color: #000000;">bluelove</span></h4>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-VuD6Cw45XIc/YGM8_LdkP1I/AAAAAAAAvJ8/-IaxRyvFv9kCpD3ILq4EsW1vLmRbuGXtwCLcBGAsYHQ/s16000/13.png"/></span></p>
+<p><span style="color: #000000;">After listing the directory’s contents, we discovered a note file and a text file called 6450.txt. As we examine the notes, we discover that a novel form of encryption is being used. Additionally, we observe that a user condor has a newly established password. When we examine the 6450-text file, we discover arbitrary numerical strings that don’t seem to make sense. That Mnemonic Encryption is what we must look for.  </span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-pZImrn_KMY0/YGM9D1_LMQI/AAAAAAAAvKA/wv9aIBbkfMk9fcpKArlQKzY_nUbO2OP8gCLcBGAsYHQ/s16000/14.png"/></span></p>
+<p><span style="color: #000000;">We began manually listing all of the users that provided us with condor. That note reminds us of Condor User. When we attempted to list the files in the condor user’s home directory, we saw that access was blocked; nonetheless, the directory names appeared to be base64 encoded.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ls /home
+ls /home/condor</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-YqtaO1yYHDY/YGM9HIL3aKI/AAAAAAAAvKE/2HWDZNhx1hkbtcmSyVeIiMeOwX3HAeEfwCLcBGAsYHQ/s16000/15.png"/></span></p>
+<p><span style="color: #000000;">We copy both the file names and put them inside text files as shown in the image below. Then we used the cat command to read the file contents with concurrently using the base64 -d command to decode the encoding. Here, we find a THM Flag and a link for an image by the name of maxresdefault.jpg.</span></p>
+<h4><span style="color: #000000;">Q.9 User.txt?</span></h4>
+<p><span style="color: #000000;"><strong><em>Ans. THM{#############################}</em></strong></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nano text
+cat text | base64 -d
+nano text2
+cat text2 | base64 -d</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-BydlSR5-Rg4/YGM9K07HTQI/AAAAAAAAvKM/AJFt2kuhmGgsXREaPhb2o702Txda1g32QCLcBGAsYHQ/s16000/16.png"/></span></p>
+<p><span style="color: #000000;">We download the image. Now we read about Mnemonic Image encryption online. A simple google search gave us a <a style="color: #000000;" href="https://github.com/MustafaTanguner/Mnemonic">GitHub project</a>. It is based on the Pixel position of an image.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-aTs8ARD01Y0/YGM9PAeTtII/AAAAAAAAvKQ/-a5L7g9N00UY9nk2BKCjBGSHnsLS0GBLQCLcBGAsYHQ/s16000/17.png"/></span></p>
+<p><span style="color: #000000;">We clone the repository to our local machine. Then we move into the cloned directory and tried to run the python script.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">git clone https://github.com/MustafaTanguner/Mnemonic.git
+cd Mnemonic
+python3 Mnemonic.py</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-RqVVPM8BILU/YGM9S77s8XI/AAAAAAAAvKU/U-BBckrjnWUs64GaVgOK8FkmBpmPc4B1ACLcBGAsYHQ/s16000/18.png"/></span></p>
+<p><span style="color: #000000;">We provided it 2 files. First was the image file named maxresdefault that we just downloaded. Then it asked us the action to perform. We chose decryption. Then it asked us for the decryption file. This is where the 6450.txt file that we found earlier comes into picture. We provide the path for it as well. It decodes the password as pasificbell1981.</span></p>
+<h4><span style="color: #000000;">Q.10 What is the condor password?</span></h4>
+<p><span style="color: #000000;"><strong><em>Ans. pasificbell1981</em></strong></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">/root/maxresdefault.jpg
+2
+/root/6450.txt
+pasificbell1981</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-SX1mWFD90aw/YGM9XMEBMkI/AAAAAAAAvKc/qpWK1B-ok9IMsbPEbiAfQxAuvT5f5gq0ACLcBGAsYHQ/s16000/19.png"/></span></p>
+<h3><span style="color: #800000;">Privilege Escalation</span></h3>
+<p><span style="color: #000000;">We used the credentials for condor to login via SSH. Since we have already found the user flag, instead of enumerating for it, we decided to enumerate for ways to elevate this access to root. We began with checking the sudo permissions using sudo -l command. This gave us a python script by the name of examplecode.py. To understand what this script does, we tried to read the code.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ssh condor@10.10.169.103 -p 1337
+pasificbell1981
+sudo -l
+cat /bin/examplecode.py</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Hio9x8hL4nM/YGM9c1P7pOI/AAAAAAAAvKk/AkkbdkOtokYZ_Amhu63e9MoS8x7benfkwCLcBGAsYHQ/s16000/20.png"/></span></p>
+<p><span style="color: #000000;">Upon close inspection, we observe 2 things. First that it prints a list in front of the user. The number 5 entry on the list says “#Root Shell Spawn” But if we take a closer look, we can see that it is a rabbit hole placed very nicely. If the user selects number 5 it shutdowns the machine and terminating the access of the user. Option 0 asks the user if they want to quit? It asks the user for confirmation. If the answer is a dot (.), the program will display a “Running…..” message. But it is not running anything but actually waiting for input. That will execute system commands.  </span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-wKNbgOJJb8U/YGM9kfifveI/AAAAAAAAvKs/sfEWao2-LZERjWpaxixHTaECPnyRPks_ACLcBGAsYHQ/s16000/21.png"/></span></p>
+<p><span style="color: #000000;">Time to run the script using sudo.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">sudo python3 /bin/examplecode.py</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-bcYSWNgTut8/YGM9nsAPbjI/AAAAAAAAvK0/j4BV_5bJ8Agt1vgA3IXg5OB2XYmgm28eACLcBGAsYHQ/s16000/22.png"/></span></p>
+<p><span style="color: #000000;">We get the list of choices that we talked about. We choose 0 option. When asked for confirmation, we provided dot (.). It displayed the Running message. This is where we executed the shell command to get the root shell. Immediately we got the root shell. All that is left is to read the root flag and conclude this machine.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">sudo python3 /bin/examplecode.py
+0
+.
+/bin/bash
+id
+cat /root/root.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-KaDiz0hTO9k/YGM9rQyma-I/AAAAAAAAvK4/Hw3MXqpP9H0lJvcuNQbca9vbDPTiTcvLwCLcBGAsYHQ/s16000/23.png"/></span></p>
+<h4><span style="color: #000000;">Q.11 root.txt</span></h4>
+<p><span style="color: #000000;"><strong><em>Ans. THM{###############################}</em></strong></span></p>
+<p><span style="color: #000000;">This machine was quite interesting and We had quite fun while solving it.</span></p>
+<p><span style="color: #000000;">Things that we learned, A quick recap.</span></p>
+<p><span style="color: #000000;">Enumerating robots.txt, Extension based Directory Bruteforce, Cracking ZIP file Password, Bruteforcing FTP Login, Cracking SSH Password from id_rsa, Decrypting Mnemonic Encoding, Escalating Privilege using Sudo permissions on a script.</span></p>
+<p><span style="color: #000000;">Hope you have enjoyed this TryHackMe Write-up. Follow this</span> <strong><a href="https://www.hackingarticles.in/category/ctf-challenges/tryhackme/">Link</a> </strong><span style="color: #000000;">for more TryHackMe CTF’s.</span></p>
+<p><span style="color: #000000;"><strong>Author: Pavandeep Singh</strong> is a Technical Writer, Researcher, and Penetration Tester. Can be Contacted on <span style="color: #0000ff;"><strong>Twitter</strong> </span>and <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.linkedin.com/in/pavan2318/">LinkedIn</a></strong></span></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

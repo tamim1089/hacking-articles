@@ -1,0 +1,79 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/penetration-testing/" rel="category tag">Penetration Testing</a></span>            </div>
+            <h1 class="post-title entry-title">Port Scanning using Metasploit with IPTables</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/port-scanning-using-metasploit-iptables/" rel="bookmark"><time class="entry-date published" datetime="2018-03-05T06:52:33+00:00">March 5, 2018</time><time class="updated" datetime="2025-05-27T12:03:22+00:00">May 27, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Scanning port is a technique used by penetration tester for identifying the state of computer network services associated with the particular port number. For example, port 80 is available for HTTP service and port 22 is available for SSH service.  We suggest using Nmap for enumerating port state, for best practice click <strong><a style="color: #000000;" href="http://www.hackingarticles.in/category/nmap/">here</a></strong> and learn Nmap working in detail.</span></p>
+<p><span style="color: #000000;">Moreover, Metasploit also serves port scanning for enumerating computer network services and make it easier as compare to Nmap.</span></p>
+<p><span style="color: #000000;"><strong>Let’s start!!</strong></span></p>
+<p><span style="color: #000000;"><strong>Requirement</strong></span></p>
+<p><span style="color: #000000;"><strong>Attacker:  Kali Linux (192.168.1.103)</strong></span></p>
+<p><span style="color: #000000;"><strong>Target: Ubuntu (192.168.1.105)</strong></span></p>
+<p><span style="color: #000000;">Open the terminal and add given below iptables rules for incoming packet traffic in target’s network which will drop the tcp ACK packet on port 80 and SYN packet on port 22 respectively.</span></p>
+<pre class="lang:default decode:true">sudo iptables -I INPUT -p tcp --tcp-flags ALL ACK --dport 80 -j DROP
+sudo iptables -I INPUT -p tcp --tcp-flags ALL SYN --dport 22 -j DROP</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-gWA0OIK_r4g/WpzjgPikQoI/AAAAAAAAU9A/7ABh-YYewhwCPFYf2drZYx0IIceYvS6dACEwYBhgL/s1600/1.png"/></span></p>
+<h3><span style="color: #800000;"><strong>ACK Scan</strong></span></h3>
+<p><span style="color: #000000;">Now open the terminal in your Kali Linux and <strong>type msfconsole</strong> to load Metasploit framework and execute given below auxiliary command to run the specific module.</span></p>
+<p><span style="color: #000000;">This module will Map out firewall rulesets with a raw ACK scan. Any unfiltered ports found means a stateful firewall is not in place for them.</span></p>
+<p><span style="color: #000000;">Now as specified in given below command this module will send ack packet on port 21, 22, 80,443 to enumerate state of the firewall for these ports. If it receives reset packet as a reply from destination port then it will display <strong>unfiltered state</strong> for that particular port and if does not receive reset packet from destination port then it will not show any comment for that particular port which means the port is protected by the firewall.</span></p>
+<pre class="lang:default decode:true">use auxiliary/scanner/portscan/ack
+msf auxiliary(ack) &gt; set rhosts 192.168.1.105
+msf auxiliary(ack) &gt; set ports 21,22,80,443
+msf auxiliary(ack) &gt;exploit</pre>
+<p><span style="color: #000000;">From given below image you can observe that it is showing <strong>TCP unfiltered </strong>for<strong> port 21,22,443</strong> and did not comment for port 80 hence port 80 is filtered. This scan can be only used for identifying the state of the firewall in terms of port filter or unfiltered.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-A50kvhLg23s/WpzjgF41S1I/AAAAAAAAU9s/xfSVM7V6rT4PRgmh48xdvCxhAnYzpAZIACEwYBhgL/s1600/2.png"/></span></p>
+<p><span style="color: #000000;">We had used Wireshark for demonstrating ack scan and here you can observe that port 80 doesn’t reply with RST packet which means ack packet for port 80 has been blocked by the network administrator.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-g7KUQk6JRwg/WpzjgBX8gqI/AAAAAAAAU9o/frzYyYKVm1AiyzsF-4zOULvt7aGjytbAACEwYBhgL/s1600/3.png"/></span></p>
+<h3><span style="color: #800000;"><strong>SYN Scan</strong></span></h3>
+<p><span style="color: #000000;">This module enumerates open TCP services using a raw SYN scan, the here syn packet will be sent on port 21, 22, 80,443 to enumerate state open/closed for these ports. If it receives syn, ack packet as a reply from destination port then it will display <strong>OPEN state</strong> for that particular port and if does not receives syn, ack packet from destination port then it will not show any comment for that particular port which indicates <strong>filtered</strong> or <strong>Closed state</strong> for that particular port.</span></p>
+<pre class="lang:default decode:true">use auxiliary/scanner/portscan/syn
+msf auxiliary(syn) &gt; set rhosts 192.168.1.105
+msf auxiliary(syn) &gt; set ports 21,22,80,443
+msf auxiliary(syn) &gt;exploit</pre>
+<p><span style="color: #000000;">From given below image you can observe that it is showing <strong>TCP OPEN </strong>for<strong> port 21,80,443</strong> and did not comment for port 22 hence port 22 is filtered or closed.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-_E_1DuUCGYo/WpzjhFjFk6I/AAAAAAAAU9k/oTItA35drcMWJJD5BVHZwagf-oaf-iqDQCEwYBhgL/s1600/4.png"/></span></p>
+<p><span style="color: #000000;">Again we had used Wireshark for demonstrating syn scan and here you can observe that port 22 doesn’t reply with SYN, ACK packets which mean SYN packet for port 22 has been blocked by the network administrator.</span></p>
+<p><span style="color: #000000;">Moreover, you can observe the following packet communication between the source and destination port.</span></p>
+<ul>
+<li><span style="color: #000000;">Source port sends SYN packet to the destination port</span></li>
+<li><span style="color: #000000;">Source port receives SYN, ACK packet from the destination port</span></li>
+<li><span style="color: #000000;">Source port sends RST packet to the destination port</span></li>
+</ul>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-1H-KwASz83w/Wpzjhcp-LpI/AAAAAAAAU9s/9nKwI58MriAR63t6-zG33bKVb-OmmdAZwCEwYBhgL/s1600/5.png"/></span></p>
+<h3><span style="color: #800000;"><strong>TCP Scan</strong></span></h3>
+<p><span style="color: #000000;">Enumerate open TCP services by performing a full TCP connect on each port. This does not need administrative privileges on the source machine, which may be useful if pivoting.</span></p>
+<pre class="lang:default decode:true">use auxiliary/scanner/portscan/tcp
+msf auxiliary(tcp) &gt; set rhosts 192.168.1.105
+msf auxiliary(tcp) &gt; set ports 21,22,80,443
+msf auxiliary(tcp) &gt;exploit</pre>
+<p><span style="color: #000000;">This scan is similar as SYN scan only the difference is that it follows TCP full communication i.e. 4-way handshake and SYN scan is followed half TCP communication.</span></p>
+<p><span style="color: #000000;">From given below image you can observe that it is showing <strong>TCP OPEN </strong>for<strong> port 21,80,443</strong> and did not comment for port 22 hence <strong>port 22 is filtered or closed</strong>.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-sbds1gTqSdo/WpzjhVf1d6I/AAAAAAAAU9k/f5UHq3ITLZw0hL9iMIL8BlZCYetO3hngwCEwYBhgL/s1600/6.png"/></span></p>
+<p><span style="color: #000000;">Here you can observe that port 22 doesn’t reply with SYN, ACK packets which mean SYN packet for port 22 has been blocked by the network administrator.</span></p>
+<p><span style="color: #000000;">Moreover, you can observe the following packet communication between the source and destination port.</span></p>
+<ul>
+<li><span style="color: #000000;">Source port sends SYN packet to the destination port</span></li>
+<li><span style="color: #000000;">Source port receives SYN, ACK packet from the destination port</span></li>
+<li><span style="color: #000000;">Source port sends ACK packet to the destination port</span></li>
+<li><span style="color: #000000;">Source port sends FIN, ACK packet to the destination port</span></li>
+</ul>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-GlqTs_xus30/WpzjiQldVNI/AAAAAAAAU9s/NsT3ZBsruYM8q19_WLju4i6wk2hIlWFhACEwYBhgL/s1600/7.png"/></span></p>
+<h3><span style="color: #800000;"><strong>XMAS Scan</strong></span></h3>
+<p><span style="color: #000000;">Enumerate open|filtered TCP services using a raw “Xmas” scan; this sends probes containing the FIN, PSH, and URG flags.</span></p>
+<p><span style="color: #000000;">Instead of using TCP 3-way handshake communication this scan uses other tcp flags for TCP communication for enumerating state of ports.</span></p>
+<pre class="lang:default decode:true ">use auxiliary/scanner/portscan/xmas
+msf auxiliary(xmas) &gt; set rhosts 192.168.1.105
+msf auxiliary(xmas) &gt; set ports 21,22,80,443
+msf auxiliary(xmas) &gt;exploit</pre>
+<p><span style="color: #000000;">From given below image you can observe that, this time it has shown <strong>TCP OPEN| FILTERED </strong>for all ports i.e.<strong>  21,22,80,443</strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-ohgJ7NMYUD8/WpzjiRAKW-I/AAAAAAAAU9o/mjTaX2eVeNc5qs8wQ4NE9WKrcsd0FiHzgCEwYBhgL/s1600/8.png"/></span></p>
+<p><span style="color: #000000;">If you notice given below image here source port sends FIN, PUSH and URG packets to the destination and destination port didn’t send any reply to source port which indicates above specified port are open and if any destination port sends RST, ACK packet to source port then it indicated that particular port is closed.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-sOEDd0Qu6e0/WpzjiiyHIuI/AAAAAAAAU9o/1RQ83jQQ6xMTKrkKbPiXKfidbIvSegEFQCEwYBhgL/s1600/9.png"/></span></p>
+<p><span style="color: #000000;"><strong>Author: </strong>AArti Singh is a Researcher and Technical Writer at Hacking Articles an Information Security Consultant Social Media Lover and Gadgets. Contact</span><strong><a href="https://www.linkedin.com/in/aarti--singh/"> here</a></strong></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-related-none yarpp-template-thumbnails">

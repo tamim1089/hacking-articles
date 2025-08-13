@@ -1,0 +1,111 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/red-teaming/" rel="category tag">Red Teaming</a></span>            </div>
+            <h1 class="post-title entry-title">Abusing AD Weak Permission Pre2K Compatibility</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/pre2k-active-directory-misconfigurations/" rel="bookmark"><time class="entry-date published" datetime="2025-02-08T19:37:24+00:00">February 8, 2025</time><time class="updated" datetime="2025-06-19T13:23:03+00:00">June 19, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000"><strong>Pre2K</strong> <strong>Active Directory misconfigurations </strong><strong>(short for “Pre-Windows 2000”)</strong> often stem from overlooked legacy settings in Windows environments. Common issues include enabling <strong>NTLM</strong> or <strong>SMBv1</strong> for backward compatibility, leaving <strong>Pre-Windows 2000 accounts</strong> active, and neglecting proper account cleanup. These misconfigurations, when combined with weak permissions, can expose domains to privilege escalation and unauthorized access.</span></p>
+<p><span style="color: #000000">In this article, we will show how a misconfiguration can set the password of Computer Accounts to match the hostname in lowercase, allowing an attacker to take over a domain controller.</span></p>
+<h3><span style="color: #800000"><strong>Table of Contents</strong></span></h3>
+<ul>
+<li><strong><span style="color: #000000">Prevalence of Pre2K AD Misconfigurations</span></strong></li>
+<li><strong><span style="color: #000000">Prerequisites</span></strong></li>
+<li><strong><span style="color: #000000">Lab Setup</span></strong></li>
+<li><span style="color: #000000"><strong>Enumeration</strong></span>
+<ul>
+<li><span style="color: #000000">Method #1: Using the tool:- pre2k</span></li>
+<li><span style="color: #000000">Method #2: Using the tool:- nxc</span></li>
+</ul>
+</li>
+<li><strong><span style="color: #000000">Exploitation</span></strong></li>
+<li><strong><span style="color: #000000">Mitigation</span></strong></li>
+</ul>
+<h3><span style="color: #800000">Prevalence of Pre2K AD Misconfigurations</span></h3>
+<p><span style="color: #000000">While many organizations have moved to newer technologies, Pre2K (short for “Pre-Windows </span><span style="color: #000000">2000″) misconfigurations can still found in many environments, especially where legacy applications or systems require continued support. A few prominent surveys across the industry confirm</span></p>
+<ul>
+<li><span style="color: #000000"><strong>40-60%</strong> of organizations are still using legacy systems that require <strong>Pre2K compatibility</strong>.</span></li>
+<li><span style="color: #000000">Around <strong>30-40% of Active Directory environments</strong> have lingering <strong>unused Pre2K accounts</strong> that remain improperly configured.</span></li>
+<li><span style="color: #000000"><strong>57% of businesses</strong> rely on outdated or unsupported operating systems with legacy configurations, which often involve Pre2K AD misconfigurations.</span></li>
+<li><span style="color: #000000">Approximately <strong>30%</strong> of data breaches stem from <strong>mismanaged Active Directory settings</strong>, including legacy configurations like Pre2K.</span></li>
+</ul>
+<p><span style="color: #000000"><strong>Keynotes:</strong></span></p>
+<ul>
+<li><span style="color: #000000">UAC 4128 indicates legacy settings where accounts may be enabled for authentication without the usual security checks (e.g., passwords).</span></li>
+<li><span style="color: #000000">LogonCount of 0 suggests that the account might not be used for typical logons but could still be exploited for other purposes.</span></li>
+<li><span style="color: #000000">Post-password change authentication: When a user changes their password, the system normally requires the new password for authentication.</span></li>
+</ul>
+<h3><span style="color: #800000">Prerequisites</span></h3>
+<ul>
+<li><span style="color: #000000">Windows Server 2019 as Active Directory Domain Controller</span></li>
+<li><span style="color: #000000">Tools<u>:</u> pre2k, nxc, impacket, evil-winrm</span></li>
+<li><span style="color: #000000">Kali Linux</span></li>
+</ul>
+<h3><span style="color: #800000">Lab Setup</span></h3>
+<p><span style="color: #000000">In this lab set up, we will create a Computer Account and provide backward compatibility to interact with legacy systems or services that are particularly prior to Windows 2000.</span></p>
+<p><span style="color: #000000"><strong>Create the AD Environment:</strong></span></p>
+<p><span style="color: #000000">To simulate an Active Directory environment, you will need a Windows Server 2019 as a Domain Controller (DC) and a client/attacker machine (Kali Linux) where you can run enumeration and exploitation tools.</span></p>
+<p><span style="color: #000000"><strong>Domain Controller:</strong></span></p>
+<ul>
+<li><span style="color: #000000">install Windows Server (2016 or 2019 recommended).</span></li>
+<li><span style="color: #000000">Promote it to a Domain Controller by adding the “<strong>Active Directory Domain Services</strong>” role.</span></li>
+<li><span style="color: #000000">Set up the domain (e.g., “<strong>local</strong>”).</span></li>
+<li><span style="color: #000000">Create a domain user with username “<strong>raj</strong>” and password “<strong>Password@1</strong>”.</span></li>
+</ul>
+<p><span style="color: #000000"><strong>Create a Computer (Account) and assign Pre2K Compatibility:</strong></span></p>
+<p><span style="color: #000000">Once the AD environment is setup, open “<strong>Active Directory Users and Computers</strong> (ADUC)” on the Domain Controller. Then, right-click on “Computers” and add a New Computer.</span></p>
+<p><img fetchpriority="high" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhRjeuMbA4KfCA8XaRguG95kUnwt18jPJ7BPqaJJ6DYxkKO4Q0NEJivY760vvnQyZGVUYH0fshLoRjJGII8wre5PfwWQtDLDrfsqNXd78L1N4pYwZKwznGKUNkRwmjW6eU2J1Vuh4kER5UZ4VjWOLoD2BcEXfwLZsLzrwQxoDmkOftTv9znlWsBErt2ltRS/s16000/1.png" alt="Pre2K Active Directory Misconfigurations" width="794" height="541"/></p>
+<p><span style="color: #000000">Provide the computer name as “demo”, “DEMO” for “pre-Windows 2000 Computer Name” and ensure to select the checkbox that enables this computer to support/act as a Pre2K computer.</span></p>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjn6hR8erjYsJBzS1sb8IalIQKvKeXwjkG5T497QuERdhTrl7OdlIxLms55lYFiuvplcdR-hwmRxKO_FDMfwxblLGJhmX4HMcR0PsL_R8VeigijL6YuAgXjYmyQh1jTWIowXj8WZziTWiLm1dqvVaPNoVxIU0hcUdqvBdLh1Q2VRc7d6W4Fqv7Fwnka7_b-/s16000/2.png"/></p>
+<p><span style="color: #000000">Click on “OK” button and confirm that a computer with name “demo” is created within “ignite.local” domain.</span></p>
+<p><img decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgLu0hpKIiz92-N1wzv_gjiEFShN8JMSUEVwOz2XRYmn-_TDSu4Tuk2R9FZ1DJh-uHhN-3DXhqqJ6KeYFcTEPQYYM_-mu8sZlZTOXqLOMuNL8Ow7oUX_RMmibyL-tbP87c329YO5lEPimkM_v4HWgzgfzm-bTMF-gUp16dqItTcRS-HMUR6nyA_ILhs0_27/s16000/3.png" alt="Pre2K Active Directory Misconfigurations" width="614" height="453"/></p>
+<p><span style="color: #000000"><strong>Note:</strong> Ensure to have SMB &amp; WINRM services enabled on the Domain Controller.</span></p>
+<h3><span style="color: #800000">Enumeration</span></h3>
+<p><span style="color: #800000"><span style="color: #000000">Tools like </span></span><span style="color: #000000">pre2k </span><span style="color: #800000"><span style="color: #000000">and </span></span><span style="color: #000000">nxc </span><span style="color: #800000"><span style="color: #000000">are commonly used to enumerate <strong data-start="932" data-end="1037">Pre2K Active Directory Misconfigurations and abuse weak AD permissions related to Pre2K compatibility</strong>, which can expose computer accounts with default passwords.</span><strong><br/>
+</strong></span></p>
+<h4><span style="color: #800000">pre2k</span></h4>
+<p><span style="color: #000000">Use the commands below to download and install pre2k tool in Kali Linux.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">git clone https://github.com/garrettfoster13/pre2k.git
+cd pre2k
+ls
+pipx install .</pre>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiCEYp0LFPYoYveUIgoAJvqBZDtJomMIpgbULWfNFeaQCz6PKBJgqqojP0pWyi2g6vf8TGxevWQXHATFmvZ_uR8r5LARm4uVlhrkezvxl_B7D0E8oJGkgscFxH41_1oB1E4RtvS-bfZb5bFb_yrtZ4Bg1WTsrPWT69tel23xAhyyiM3OvujnPU5uBRk-Wjw/s16000/4.png"/></p>
+<p><span style="color: #000000">Now, let’s enumerate valid Computer Accounts that act as pre-windows 2000 computers by performing password spraying attack using pre2k tool in an authenticated mode.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">pre2k auth -u raj -p Password@1 -dc-ip 192.168.1.48 -d ignite.local</pre>
+<p><img decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgB7kWNzTF62lHpFpTjwyxXTHnWdpLOw6gurGBJF9UxoixabRqtxTn4CJuWlLpEwfFUUMcY9h5D3pM0d3_PxTAAuRkkkRi7Vc6cQ_ARyRy2wwhPKHXUM62MP2MFTmSGIY8uMWz_Y2MbxivZinBUm06w1Y8ffn-jLJyDzi2CPLByln3y-7Vgs-qtyotEoAlm/s16000/5.png" alt="Pre2K Active Directory Misconfigurations" width="781" height="418"/></p>
+<p><span style="color: #000000">Based on the output from pre2k tool, we can confirm that “DEMO” computer account is enabled with default password.</span></p>
+<h4><span style="color: #800000">nxc</span></h4>
+<p><span style="color: #000000">Run the below NetExec (nxc) command from Kali Linux on the same network to enumerate Computer Accounts that are either created or configured to support pre-windows 2000 systems or services.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nxc ldap 192.168.1.48 -u raj –p Password@1 -M pre2k</pre>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhyfTBsD5PCk7C250KVopQAXgTM7VGPtWGz-D2YVuj3b_arA2MUTp7XJ_7FvKL0hQvCpukT8o8zm2G5EBeZuVeK2aSk0cB8vBtQ68G2wQyfQQvLbDcpWHWyDFfwZKNo4yVYZkrs1wcy_NU4HtIPgfLmLs8Wbo0aDKug2yVyp6grBJ5K4r1Svxf1iPSDBDjl/s16000/6.png"/></p>
+<p><span style="color: #000000">“nxc” tool has successfully enumerated “DEMO” computer account that supports pre-windows 2000 computers.</span></p>
+<h3><span style="color: #800000">Exploitation</span></h3>
+<p><span style="color: #000000">We have successfully enumerated a pre-Windows 2000 computer account “<strong>DEMO</strong>” and we are already aware that such accounts’ password could be the same as the Computer Name but with all characters in lower-case.</span></p>
+<p><span style="color: #000000">Let’s confirm if the default password “<strong>demo</strong>” for the computer account “<strong>DEMO</strong>” is still valid by running the below command.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nxc smb ignite.local -u DEMO$ -p demo</pre>
+<p><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjopIto4FECk5O0OxLbOoAJMrlufo2qRc10EHrRAF_amEClRf3Tjttpi7P_qbYPV-UzxDCerRDoAVS97PoiBqFsQxwMngiYQH-jDISY3vds5FmTNaEMG8Tvg0msx0btHYsX8RmSq31lF7QXxYBdIuaGEFtdlynkC9YgL6xs-WCtVK7rIfd_j97T6VpTSB1M/s16000/7.png" alt="Pre2K Active Directory Misconfigurations" width="1225" height="110"/></p>
+<p><span style="color: #000000">The error “STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT” indicates a <strong>computer</strong> is unable to log on to the domain because it does not have the necessary <strong>trust relationship</strong> set up with the <strong>Active Directory domain</strong>. This issue usually occurs when the system misconfigures the computer account, deactivates it, or allows the password to fall out of sync with the domain controller.<br/>
+</span></p>
+<p><span style="color: #000000">Therefore, we can change the password and reattempt to connect with the new password.</span></p>
+<p><span style="color: #000000">We shall change “DEMO” computer account’s password to “Password@987” using “impacket” tool and below command.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">impacket-changepasswd ignite.local/DEMO$@192.168.1.48 -newpass 'Password@987' -p rpc-samr</pre>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiZTzJq5qiRYbk8aETM1LbGdhgbDakvqGosxNVI52e6gBtsCCcIOjPntTWC-_0RkzTJmuAjX4z5fq-fFt637z7_RnS7lcZotto5yjBqzXU8ebhRiDjVaRxQd989fRdwVvvP0Ht-s-8XL_OHue2tJWRaPFaZ8kOYxUQRzzN6pRGKTY3_h5OWLzz3R5mXDozu/s16000/8.png"/></p>
+<p><span style="color: #000000">Since we successfully changed the password, let’s use the “evil-winrm” tool and the command below to connect to the domain controller and gain remote access.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">evil-winrm –i 192.168.1.48 -u DEMO$ -p Password@987
+whoami</pre>
+<p><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhPYbqJm4jYRBbFF7YqoIiJcJQHH7qK0O6lccHwpFnPWnxaXano1J5oxy-hen0Noin2y3QRB8738gqEE9ERFMVqf86EKPQ-f3YMn1kjDYUdFrRvP5bQ7IVv6M7Sj5TAd45lKxaKuhVqPZpoRN405dNW7i6E9jz1607280st6nphxsrmgUg9J_RqU_LXc3tT/s16000/9.png" alt="Pre2K Active Directory Misconfigurations" width="649" height="276"/></p>
+<p><span style="color: #000000">This confirms how <strong data-start="1412" data-end="1456">Pre2K Active Directory Misconfigurations</strong> can lead to domain-level compromise if left ignored.</span></p>
+<h3><span style="color: #800000">Mitigation</span></h3>
+<ul>
+<li><span style="color: #000000">Disable out of date protocols (e.g., SMBv1, NTLM) and enforce Kerberos where possible.</span></li>
+<li><span style="color: #000000"> Patch and update all systems to fix known vulnerabilities and eliminate dependence on old authentication protocols.</span></li>
+<li><span style="color: #000000">Regularly audit Active Directory for no longer used accounts and outdated settings to minimize the attack surface.</span></li>
+<li><span style="color: #000000">Migrate legacy applications to newer and secure platforms.</span></li>
+</ul>
+<p><span style="color: #000000">Regular audits can help identify Pre2K Active Directory Misconfigurations and harden your AD environment against such legacy threats, making sure better security and reducing vulnerability.</span></p>
+<h4><strong>Credit</strong>: <strong><span style="color: #0000ff">https://trustedsec.com/blog/diving-into-pre-created-computer-accounts</span></strong></h4>
+<p><span style="color: #000000"><strong>Author</strong>: Srikrishna is a Cybersecurity leader driving security excellence and mentoring teams to enhance security across products, networks, and organizations. Contact </span><a href="https://www.linkedin.com/in/srikrishna-chodisetty/"><strong>Here</strong></a></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

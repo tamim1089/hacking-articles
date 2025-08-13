@@ -1,0 +1,192 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">CLAMP 1.0.1 Vulnhub Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/clamp-1-0-1-vulnhub-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2019-08-07T09:33:59+00:00">August 7, 2019</time><time class="updated" datetime="2025-06-10T20:11:23+00:00">June 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">In this article, we are going to take a new challenge CLAMP 1.0.1. The credit for making this VM machine goes to “Mehmet Kelepçe” and it’s another boot2root challenge where we have to root the server and capture the flag to complete the challenge. You can download this VM <a style="color: #000000;" href="https://www.vulnhub.com/entry/clamp-101,320/">here</a>.</span></p>
+<p><span style="color: #000000;"><strong>Security Level:</strong> Intermediate</span></p>
+<h3><span style="color: #993300;"><strong>Penetrating Methodology:</strong></span></h3>
+<ol>
+<li><strong>Scanning</strong></li>
+</ol>
+<ul>
+<li>Netdiscover</li>
+<li>NMAP</li>
+</ul>
+<ol start="2">
+<li><strong>Enumeration</strong></li>
+</ol>
+<ul>
+<li>OWASP-Dirbuster</li>
+</ul>
+<ol start="3">
+<li><strong>Exploitation</strong></li>
+</ol>
+<ul>
+<li>SQL Injection</li>
+<li>Encryption</li>
+<li>Modifying Webpages</li>
+</ul>
+<ol start="4">
+<li><strong>Privilege Escalation</strong></li>
+</ol>
+<ul>
+<li>Exploiting Sudo rights</li>
+</ul>
+<h3><span style="color: #993300;">Walkthrough:</span></h3>
+<p><strong><span style="color: #000000;">Scanning:</span></strong></p>
+<p><span style="color: #000000;">Let’s start with the scanning process. This target VM took the IP address of 192.168.1.101 automatically from our local Wi-Fi network.</span></p>
+<pre class="lang:default decode:true">netdiscover</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-lYQotNkhA7I/XUqBfD0319I/AAAAAAAAf4k/S7ng30X-XbMsfF1VNmL3l22KsN5elrQDQCLcBGAs/s1600/1.png"/></p>
+<p><span style="color: #000000;">We have used Nmap for port scanning. Here, you can see that port 22 and 80 are open and both are important to us.</span></p>
+<pre class="lang:default decode:true">nmap -A 192.168.1.101</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-jDFicDfQUGQ/XUqBl1Bjk8I/AAAAAAAAf5E/UCUsXFiFvrkhzj_ftJ0m4c2FDLJooOzkwCLcBGAs/s1600/2.png"/></p>
+<p><span style="color: #000000;">As port 80 is open, we will open the IP in our browser as shown below:</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-ZiRTAEpsQcI/XUqBpm_a8WI/AAAAAAAAf5s/2FuTeLriqxcDy1MeqvFRku_vGv82jFSHACLcBGAs/s1600/3.png"/></p>
+<h3><span style="color: #993300;"><strong>Enumeration:</strong></span></h3>
+<p><span style="color: #000000;">Upon opening the IP in the browser, it says “you have found this. But you need more patience” both in English and in Turkish which means we need to find more things. Therefore, further we used DirBuster and we had the following results:</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-lsu9KQD8AiM/XUqBqHi11PI/AAAAAAAAf5w/NFNGz3cpJ_0zo5G_85yg4QrsBybFUzhmACLcBGAs/s1600/4.png"/></p>
+<p><span style="color: #000000;">From the result of OWASP DirBuster, the one directory which I found useful is <strong>/nt4stopc/</strong>. And when you open this directory in the browser you will see the following page:</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-sNfrPhOJZiM/XUqBrLWjUII/AAAAAAAAf54/jHss76ytF6AH0_6yLrPnOivl9AgAm9dXACLcBGAs/s1600/5.png"/></p>
+<p><span style="color: #000000;">On this page, it asks you questions in the form of true and false, which here is equivalent of 0 and 1 of binary.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-BckDAnNy85g/XUqBrFiJsYI/AAAAAAAAf50/SDnHdbheg5gFdV_2uDMHZ37kdHJZl3dgwCLcBGAs/s1600/6.png"/></p>
+<table>
+<tbody>
+<tr>
+<td width="271">
+<p style="text-align: center;"><span style="color: #000000;">Question</span></p>
+</td>
+<td style="text-align: center;" width="230"><span style="color: #000000;">True/False</span></td>
+<td style="text-align: center;" width="251"><span style="color: #000000;">Bit</span></td>
+</tr>
+<tr>
+<td width="271">
+<p style="text-align: center;"><span style="color: #000000;">Baku is the capital of Turkey?</span></p>
+</td>
+<td style="text-align: center;" width="230"><span style="color: #000000;">False</span></td>
+<td width="251">
+<p style="text-align: center;"><span style="color: #000000;">0</span></p>
+</td>
+</tr>
+<tr>
+<td width="271">
+<p style="text-align: center;"><span style="color: #000000;">The beginning of the French revolution is 1798.</span></p>
+</td>
+<td style="text-align: center;" width="230"><span style="color: #000000;">True</span></td>
+<td width="251">
+<p style="text-align: center;"><span style="color: #000000;">1</span></p>
+</td>
+</tr>
+<tr>
+<td width="271">
+<p style="text-align: center;"><span style="color: #000000;">Istanbul was conquered in 1435?</span></p>
+</td>
+<td style="text-align: center;" width="230"><span style="color: #000000;">True</span></td>
+<td style="text-align: center;" width="251"><span style="color: #000000;">1</span></td>
+</tr>
+<tr>
+<td style="text-align: center;" width="271"><span style="color: #000000;">Fatih Sultan Mehmet is the founder of the Ottoman Empire?</span></td>
+<td style="text-align: center;" width="230"><span style="color: #000000;">False</span></td>
+<td width="251">
+<p style="text-align: center;"><span style="color: #000000;">0</span></p>
+</td>
+</tr>
+<tr>
+<td width="271">
+<p style="text-align: center;"><span style="color: #000000;">The founder of robot science is Al-Cezeri?</span></p>
+</td>
+<td style="text-align: center;" width="230"><span style="color: #000000;">True</span></td>
+<td style="text-align: center;" width="251"><span style="color: #000000;">1</span></td>
+</tr>
+<tr>
+<td style="text-align: center;" width="271"><span style="color: #000000;">Dennis Ritchie, who developed the C language?</span></td>
+<td style="text-align: center;" width="230"><span style="color: #000000;">True</span></td>
+<td width="251">
+<p style="text-align: center;"><span style="color: #000000;">1</span></p>
+</td>
+</tr>
+<tr>
+<td width="271">
+<p style="text-align: center;"><span style="color: #000000;">The function definition belongs to the C89 standard?</span></p>
+</td>
+<td style="text-align: center;" width="230"><span style="color: #000000;">True</span></td>
+<td style="text-align: center;" width="251"><span style="color: #000000;">1</span></td>
+</tr>
+<tr>
+<td width="271">
+<p style="text-align: center;"><span style="color: #000000;">The other element of the array is 1?</span></p>
+</td>
+<td style="text-align: center;" width="230"><span style="color: #000000;">False</span></td>
+<td width="251">
+<p style="text-align: center;"><span style="color: #000000;">0</span></p>
+</td>
+</tr>
+<tr>
+<td style="text-align: center;" width="271"><span style="color: #000000;">Is the maximum 32-but value 2,147,482646?</span></td>
+<td style="text-align: center;" width="230"><span style="color: #000000;">False</span></td>
+<td width="251">
+<p style="text-align: center;"><span style="color: #000000;">0</span></p>
+</td>
+</tr>
+<tr>
+<td style="text-align: center;" width="271"><span style="color: #000000;">Is there an undefined behaviour in the following code?</span></td>
+<td style="text-align: center;" width="230"><span style="color: #000000;">True</span></td>
+<td width="251">
+<p style="text-align: center;"><span style="color: #000000;">1</span></p>
+</td>
+</tr>
+</tbody>
+</table>
+<p><span style="color: #000000;">So, if you keep answering these questions you will have ‘0110111001’ binary string. Now add that binary string after the name of the directory as shown below:</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-8ObPNiiQ1Qs/XUqBrejpq2I/AAAAAAAAf58/o2LuEaxvuT0mxt9fpKK1oLw3HO3v2yAAQCLcBGAs/s1600/7.png"/></p>
+<p><span style="color: #000000;">Once the above step is done, the page that opens will show a message saying “I think you need a vacation. Don’t worry, I’m directing” again both in English and Turkish. This page then redirects to a webpage showing turkey as a holiday spot as shown in the image below:</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-ylXHHNyQDmg/XUqBtbKiOfI/AAAAAAAAf6A/HPnrDzsHIK88QHstSU4PkvigjO78pRT_QCLcBGAs/s1600/8.png"/></p>
+<p><span style="color: #000000;">This link is vulnerable to SQL injection. We found this by simply adding ‘after id=1. And our doubt was confirmed when an error was returned.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-GPWroPvqznY/XUqBtYdmwEI/AAAAAAAAf6E/KT8LSZmXMlM5N8w0VEU7yQ7NIo78MFJHwCLcBGAs/s1600/9.png"/></p>
+<p><span style="color: #000000;">So, to exploit SQL’s vulnerability we will use sqlmap and following will be the command:</span></p>
+<pre class="lang:default decode:true">sqlmap -u http://192.168.1.101/nt4stopc/011011101/sumertimesummertime/go.php?id=1 --dbs --batch</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/--LLzCY2SQUM/XUqBebJ1DdI/AAAAAAAAf4g/KewDwfAOGlEmxlenhDFwPFH99GHd4K6jQCLcBGAs/s1600/10.png"/></p>
+<p><span style="color: #000000;">Executing the above command will provide the following result. And that’s how we got the database name i.e. tatil as shown in the image below:</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-1ANpeoD675U/XUqBeWLnV5I/AAAAAAAAf4c/-H_w79RXq_s73TntpE8aj47yW40I_tfjQCLcBGAs/s1600/11.png"/></p>
+<p><span style="color: #000000;">In the database, we found a string of Caesar Encryption which will lead us to upload our malware.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-F9QCj1FA-CY/XUqBfeHmGEI/AAAAAAAAf4o/g_eJfs7NgscKfPKQObOohzE0avfa25qcQCLcBGAs/s1600/12.png"/></p>
+<p><span style="color: #000000;">We decrypted the encrypted string online and it was the 13<sup>th</sup> formula of the encryption as shown in the image below:</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-fEqBqziSs4U/XUqBfU5sKbI/AAAAAAAAf4s/5x0KqvEM3tsRmmzzn8eL5Kdjn89zptmgwCLcBGAs/s1600/13.png"/></p>
+<p><span style="color: #000000;">When we add this decrypted string to the URL we are redirected to the following page:</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-lKqHAvtAWVk/XUqBhDiBxmI/AAAAAAAAf44/zNlm1zeJiVoDyPnpF1fBVRXnRcBXXX5HQCLcBGAs/s1600/14.png"/></p>
+<p><span style="color: #000000;">Then we opened the upload.php page to upload our malware where we found an option to browse our malware but the problem is that there is no submit button as you can see in the following image:</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-_b3p2t8y9sE/XUqBg2pXw0I/AAAAAAAAf4w/WZsc7vpQvO4ro7rzWGRgO1yClu77TljlwCLcBGAs/s1600/15.png"/></p>
+<p><span style="color: #000000;">So firstly, we will make changes of IP and port in the php shell so that we can have the session. The changes that we made can be seen in the following image:</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-2iP5n6v7tRk/XUqBg5AWr1I/AAAAAAAAf40/YL8-siLxAbMIqjxt0OcnxVsf0jO8X38UgCLcBGAs/s1600/16.png"/></p>
+<p><span style="color: #000000;">Now, you can browse the shell and select it.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-ZaGgJc3uT4w/XUqBkqiyG2I/AAAAAAAAf48/IhjfDcdaEicJ6VuF1m0QgvM-Ix0_FbjbgCLcBGAs/s1600/17.png"/></p>
+<p><span style="color: #000000;">Once the previous step is completed, it will pop a message for you telling you to try again. Now that we don’t have a submit button, it will seem like one is stuck in a pickle. But there is a simple solution to it. Right-click on the page and select ‘Inspect Element’ a window will open, from this window click on the form tag. Here, add the following line:</span></p>
+<pre class="lang:default decode:true">&lt;input name='up' type='submit'&gt;</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-QEM3tI22Xfw/XUqBlwo7TNI/AAAAAAAAf5I/wAUVSAuLePMUHeVAwJKnRwjvTIRx01unwCLcBGAs/s1600/19.png"/></p>
+<p><span style="color: #000000;">Doing the above changes will provide you with a ‘submit query’ button and it this button that will let us upload your shell.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-M3IuW6a2YUc/XUqBl_iwjlI/AAAAAAAAf5M/7_t0SQ1aCiAz13Rom6OWG-M8uRSSW4BNACLcBGAs/s1600/20.png"/></p>
+<p><span style="color: #000000;">Now, once the file is upload, it will show you the message that ‘The file osas/md5(php-reverse-shell.php.php has been uploaded’. Here, please observe that the shell is being uploaded in md5 hash.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-Vg8vBoAGRYc/XUqBnH1CxDI/AAAAAAAAf5U/4Q68En7PWPkC2OhSwA3Fy0fI5yzRTid3gCLcBGAs/s1600/21.png"/></p>
+<p><span style="color: #000000;">So, we calculated the md5 hash of the name of the file with the following command:</span></p>
+<pre class="lang:default decode:true ">echo -n "php-reverse-shell.php" | md5sum</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-Uks-yBSvFE0/XUqBnAtV5xI/AAAAAAAAf5Q/eHA3Suj7HcoOlXBGXKl02rUj10fwNzDWwCLcBGAs/s1600/22.png"/></p>
+<p><span style="color: #000000;">Then turn on the netcat using the following command:</span></p>
+<pre class="lang:default decode:true">nc -lvp 1234</pre>
+<p><span style="color: #000000;">And once the is executed, you will have your session. Now with the help of further enumeration, we found <strong>important.pcapng</strong>.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-CY7tjcNucEw/XUqBndl4EOI/AAAAAAAAf5Y/RhjnMRj8wXMCH-kgZ__J-5ybqj-3t-iTACLcBGAs/s1600/23.png"/></p>
+<p><span style="color: #000000;">Now let us download the file to inspect it. To download the file simply add its name to URL and press Enter</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-8eueId5sm64/XUqBoIbsR4I/AAAAAAAAf5c/TX8ZuW-xtBUUWtS0LmKqESG8hOXwYQvQgCLcBGAs/s1600/24.png"/></p>
+<p><span style="color: #000000;">As this file is in pcapng format, open the file in Wireshark. Now if you follow the TCP Stream of the HTTP request packet, you will find password there. That too in cleartext.</span><img decoding="async" src="https://1.bp.blogspot.com/-Bb5iFPiDEl8/XUqBozpwxAI/AAAAAAAAf5g/MW3Nxi8J9iwQgp9DPtWWTKR50Jyivd78ACLcBGAs/s1600/25.png"/></p>
+<h3><span style="color: #993300;"><strong> Privilege Escalation</strong></span></h3>
+<p><span style="color: #000000;">Now that we have the password, we can directly login using SSH with the following command:</span></p>
+<pre class="lang:default decode:true">ssh mkelepc@192.168.1.101</pre>
+<p><span style="color: #000000;">Once you are logged on, go into the root directory, there you will find a flag. When you read the flag, it says that the challenges are done.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-cHhuVLJm3fQ/XUqBpMvc6XI/AAAAAAAAf5k/azx8_2oe-Wo3-EywAHYFXfWrUAR-r57OQCLcBGAs/s1600/26.png"/></p>
+<p><span style="color: #000000;">Hurray! Another CTF solved. This is a great lab with a strong focus on enumeration.</span></p>
+<p><strong>Author: Pavandeep Singh</strong> is a Technical Writer, Researcher and Penetration Tester Contact <a href="https://www.linkedin.com/in/pavandeep-singh-6b1074132"><strong>here</strong></a></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

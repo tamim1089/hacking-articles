@@ -1,0 +1,218 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/red-teaming/domain-enumeration/" rel="category tag">Domain Enumeration</a>, <a href="https://www.hackingarticles.in/category/red-teaming/" rel="category tag">Red Teaming</a></span>            </div>
+            <h1 class="post-title entry-title">Active Directory Enumeration: RPCClient</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/active-directory-enumeration-rpcclient/" rel="bookmark"><time class="entry-date published" datetime="2021-05-09T15:47:35+00:00">May 9, 2021</time><time class="updated" datetime="2025-05-13T08:28:43+00:00">May 13, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">In this article, we are going to focus on the enumeration of the Domain through the SMB and RPC channels. The tool that we will be using for all the enumerations and manipulations will be rpcclient. The article is focused on Red Teamers but Blue Teamers and Purple Teamers can also use these commands to test the security configurations they deployed.</span></p>
+<h3><span style="color: #800000;"><strong>Table of Content</strong></span></h3>
+<ul>
+<li><span style="color: #000000;"><strong>Introduction</strong></span></li>
+<li><span style="color: #000000;"><strong>Logging and Server Information</strong></span></li>
+<li><span style="color: #000000;"><strong>Domain Information Query</strong></span></li>
+<li><span style="color: #000000;"><strong>Enumerating Domain Users</strong></span></li>
+<li><span style="color: #000000;"><strong>Enumerating Domain Groups</strong></span></li>
+<li><span style="color: #000000;"><strong>Group Queries</strong></span></li>
+<li><span style="color: #000000;"><strong>User Queries </strong></span></li>
+<li><span style="color: #000000;"><strong>Enumerating Privileges </strong></span></li>
+<li><span style="color: #000000;"><strong>Get Domain Password Information</strong></span></li>
+<li><span style="color: #000000;"><strong>Get User Domain Password Information</strong></span></li>
+<li><span style="color: #000000;"><strong>Enumerating SID from LSA</strong></span></li>
+<li><span style="color: #000000;"><strong>Creating Domain User</strong></span></li>
+<li><span style="color: #000000;"><strong>Lookup Names</strong></span></li>
+<li><span style="color: #000000;"><strong>Enumerating Alias Groups</strong></span></li>
+<li><span style="color: #000000;"><strong>Delete Domain User</strong></span></li>
+<li><span style="color: #000000;"><strong>Net Share Enumeration</strong></span></li>
+<li><span style="color: #000000;"><strong>Net Share Get Information</strong></span></li>
+<li><span style="color: #000000;"><strong>Enumerating Domains</strong></span></li>
+<li><span style="color: #000000;"><strong>Enumerating Domain Groups</strong></span></li>
+<li><span style="color: #000000;"><strong>Display Query Information </strong></span></li>
+<li><span style="color: #000000;"><strong>Change Password of User</strong></span></li>
+<li><span style="color: #000000;"><strong>Create Domain Group</strong></span></li>
+<li><span style="color: #000000;"><strong>Delete Domain Group</strong></span></li>
+<li><span style="color: #000000;"><strong>Domain Lookup</strong></span></li>
+<li><span style="color: #000000;"><strong>SAM Lookup</strong></span></li>
+<li><span style="color: #000000;"><strong>SID Lookup</strong></span></li>
+<li><span style="color: #000000;"><strong>LSA Query</strong></span></li>
+<li><span style="color: #000000;"><strong>LSA Create Account</strong></span></li>
+<li><span style="color: #000000;"><strong>Enumerating LSA Group Privileges</strong></span></li>
+<li><span style="color: #000000;"><strong>Enumerating LSA Account Privileges</strong></span></li>
+<li><span style="color: #000000;"><strong>LSA Query Security Objects</strong></span></li>
+<li><span style="color: #000000;"><strong>Conclusion</strong></span></li>
+</ul>
+<h3><span style="color: #800000;"><strong>Introduction</strong></span></h3>
+<p><span style="color: #000000;">RPC or Remote Procedure Call is a service that helps establish and maintain communication between different Windows Applications. The RPC service works on the RPC protocols that form a low-level inter-process communication between different Applications. In this communication, the child process can make requests from a parent process. The child-parent relationship here also represents a client and server relation. Additionally, RPC builds on Microsoft’s COM and DCOM technologies. In general, rpcclient connects to the SMB protocol as well. Moreover, rpcclient exists as part of the Samba suite on Linux distributions.</span></p>
+<p><span style="color: #000000;">Originally, the developers designed rpcclient to perform debugging and troubleshooting tasks on a Windows Samba configuration. During that time, the designers of the rpcclient might be clueless about the importance of this tool as a penetration testing tool. There are multiple methods to connect to a remote RPC service. However, for this particular demonstration, we are using rpcclient</span></p>
+<h3><span style="color: #800000;"><strong>Logging and Server Information</strong></span></h3>
+<p><span style="color: #000000;">To begin the enumeration, the user must establish a connection. This process involves providing the Username and Password followed by the target IP address of the server. After the connection establishes, the user can run the help command to get a grasp of various usable commands. For instance, one of the first enumeration commands demonstrated here is the srvinfo command. The user can run it on the rpcclient shell that was generated to enumerate information about the server. It becomes evident that the OS version seems to be 10.0. Therefore, that narrows the version the attacker might target to Windows 10, Windows Server 2016, and Windows Server 2019. Learn more about the OS Versions.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">rpcclient -U Administrator%Ignite@123 192.168.1.172</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-se_FrNTX7RM/YJf-catNsrI/AAAAAAAAv5s/ACYZ33G7A_YfoIgaYPrZpqtwKJx_bAUjACLcBGAsYHQ/s16000/1.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Domain Information Query</strong></span></h3>
+<p><span style="color: #000000;">The next command that can be used via rpcclient is querydominfo. This command retrieves the domain, server, users on the system, and other relevant information. From the demonstration, it can be observed that the domain that is being enumerated is IGNITE. It has a total of 67 users. There was a Forced Logging off on the Server and other important information.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">querydominfo</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-AjxqKwDuYaU/YJf-thVouYI/AAAAAAAAv50/IdYg9lIhB7IE1xRdCBnHXMZvhtKxZo1XACLcBGAsYHQ/s16000/2.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Enumerating Domain Users</strong></span></h3>
+<p><span style="color: #000000;">Another command to use is the enumdomusers. The name is derived from the enumeration of domain users. Upon running this on the rpcclient shell, it will extract the usernames with their RID. RID is a suffix of the long SID in a hexadecimal format. In this specific demonstration, there are a bunch of users that include Administrator, yashika, aarti, raj, Pavan, etc.  </span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">enumdomusers</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-lk9Wwvcv3yY/YJf-xoowcUI/AAAAAAAAv54/rYj4tRr0S7cItyt3YmkAjHYu0e60XSPNQCLcBGAsYHQ/s16000/3.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Enumerating Domain Groups</strong></span></h3>
+<p><span style="color: #000000;">Since the attacker already performed enumeration on different users, they should also extend this to various groups. Group information helps attackers plan their route to Administrator or elevated access. Additionally, various groups dictate the policies applied on a Domain. Admins often create many groups for specific services. So, attackers can also enumerate the services running on the server using enumdomgroup. The name derives from the enumeration of domain groups. When the user runs this on the rpcclient shell, the output includes the groups with their RID.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">enumdomgroups</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-EMrQ9f6nHtU/YJf-2eXvw2I/AAAAAAAAv58/87cL5NJLqR8BJt6fTC9lRJeg9IJF-YUagCLcBGAsYHQ/s16000/5.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Group Queries</strong></span></h3>
+<p><span style="color: #000000;">After enumerating groups, the user can extract details about a particular group from the list. This information includes the Group Name, Description, Attributes, and the number of members in that group. The user can target the group using the RID that was extracted while running enumdomgroup. For the demonstration here, RID 0x200 was used to find that it belongs to the Domain Admin groups. This group constitutes 7 attributes and 2 users who are members of this group.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">querygroup 0x200</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-zeliFMeK6aQ/YJf-6-H9BrI/AAAAAAAAv6A/cv1Ut6_rOnc4jsHHjoJ-MNcfU1YQAWFAwCLcBGAsYHQ/s16000/6.png"/></span></p>
+<h3><span style="color: #000000;"><strong><span style="color: #800000;">User Queries</span> </strong></span></h3>
+<p><span style="color: #000000;">The ability to enumerate individually doesn’t limit to the groups but also extends to the users. In order to enumerate a particular user from rpcclient, the user must use the queryuser command. When the username is provided, rpcclient extracts information such as the username, Full name, Home Drive, Profile Path, Description, Logon Time, Logoff Time, Password set time, Password Change Frequency, RID, Groups, etc. In the demonstration, it can be observed that the user has stored their credentials in the Description. Hence, the credentials were successfully enumerated and the account can now be taken over. </span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">queryuser yashika</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-HiGf_498lXk/YJf--vb8WWI/AAAAAAAAv6E/ane3KkgoaUwgYwuGjTstON7bA4eFDWB8ACLcBGAsYHQ/s16000/7.png"/></span></p>
+<h3><span style="color: #000000;"><strong><span style="color: #800000;">Enumerating Privileges</span> </strong></span></h3>
+<p><span style="color: #000000;">After the user details and the group details, another information that can help an attacker that has retained the initial foothold on the domain is the Privileges. These privileges can help the attacker plan for elevating privileges on the domain. The privileges can be enumerated using the enumprivs command on rpcclient. In the demonstration, it can be observed that the current user has been allocated 35 privileges.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">enumprivs</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-JtR5AvmzAbs/YJf_CYXTyCI/AAAAAAAAv6M/3AlVsp_I43Ez-ccw6K6fQ4_eMoUgu6ndACLcBGAsYHQ/s16000/8.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Get Domain Password Information</strong></span></h3>
+<p class="" data-start="193" data-end="712"><span style="color: #000000;">To enumerate the password properties on the domain, the user can use the getdompwinfo command. The name originates from the phrase “get domain password information.” Furthermore, this command helps the user obtain details about the password policies enforced by the Administrator in the domain. The user can also enumerate the minimum password length and check whether complex password rules are enforced. However, if the domain lacks these security features, then attackers can brute force the credentials more easily.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">getdompwinfo</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Q9jET0j5TIQ/YJf_Hd1tNCI/AAAAAAAAv6U/beixuSFT6psvUMqwXZdPxmjnsflnn0aywCLcBGAsYHQ/s16000/9.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Get User Domain Password Information</strong></span></h3>
+<p><span style="color: #000000;">In the previous command, the user ran getdompwinfo to retrieve the password properties of the domain managed by the policies. However, you can also retrieve the password properties of individual users by using the getusrdompwinfo command with the user’s RID. In the demonstration, you enumerated the password properties of the user with RID 0x1f4.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">getusrdompwinfo 0x1f4</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-cGebo_qzLNY/YJf_Lj2GoHI/AAAAAAAAv6Y/Rf5v_Ggw4ikm2UhmVEnzbKjjL-tNQOr_QCLcBGAsYHQ/s16000/10.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Enumerating SID from LSA</strong></span></h3>
+<p><span style="color: #000000;">As you explore various compromises possible with Mimikatz, you will understand that a SID (Security Identifier) uniquely identifies a user. Attackers can exploit this identifier for privilege escalation and ticket attacks. You can enumerate SIDs through rpcclient using the lsaenumsid command. In the demonstration, you observed that lsaenumsid enumerated 20 SIDs within the Local Security Authority (LSA).</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">lsaenumsid</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-6NSlHffEkS0/YJf_QOfF2lI/AAAAAAAAv6g/1b1o08Ph_oc9rq_oFXpmGTm9VXi0kxK1QCLcBGAsYHQ/s16000/11.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Creating Domain User</strong></span></h3>
+<p><span style="color: #000000;">With some privileges, you can create a user within the domain using rpcclient. You run the createdomuser command with the username you want to create as a parameter. In the demonstration, you create a user named hacker using createdomuser and then set its password with the setuserinfo2 command. Finally, you verify the user creation using the enumdomusers command.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">createdomuser hacker 
+setuserinfo2 hacker 24 Password@1 
+enumdomusers</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-1epWE2O-fnQ/YJf_UFu0RII/AAAAAAAAv6o/PVsFph5QzuQ_3tnRvF3q9bYpzQDyXIGDACLcBGAsYHQ/s16000/12.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Lookup Names</strong></span></h3>
+<p><span style="color: #000000;">You can also check whether the user you created has been assigned a SID using the lookupnames command on rpcclient. While lsaenumsid extracts SIDs, it cannot identify the corresponding user. You solve this problem with lookupnames, which extracts the SID for a specific user when you provide the username, making the process straightforward.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">lookupnames hacker</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-gf58a9abEHU/YJf_ZDjROqI/AAAAAAAAv6w/F_HaXWb9vkIVjfe2DQaU5v-_5uKK6K53QCLcBGAsYHQ/s16000/13.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Enumerating Alias Groups</strong></span></h3>
+<p><span style="color: #000000;">The next command that can be used is enumalsgroups. It enumerates alias groups on the domain. The alias is an alternate name that can be used to reference an object or element. When used with the builtin parameter, it shows all the built-in groups by their alias names as demonstrated below.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">enumalsgroups builtin</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-bAEzB-ynX0A/YJf_eXKrY6I/AAAAAAAAv64/059dbu7ViE4aX7-i2KipZNsrvgYbUMcNwCLcBGAsYHQ/s16000/14.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Delete Domain User</strong></span></h3>
+<p><span style="color: #000000;">The ability to manipulate a user doesn’t end with creating a user or changing the password of a user. If proper privileges are assigned it also possible to delete a user using the rpcclient. The deletedomuser command is used to perform this action.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">deletedomuser hacker</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-JsrbYlUxNgc/YJf_h7vUtRI/AAAAAAAAv7A/Rl_MBMc5JLototNw8HSpTY8oj6iBhAhWQCLcBGAsYHQ/s16000/15.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Net Share Enumeration</strong></span></h3>
+<p><span style="color: #000000;">When dealing with SMB an attacker is bound to be dealt with the Network Shares on the Domain. Most of the Corporate offices don’t want their employees to use USB sticks or other mediums to share files and data among themselves. Hence, they usually set up a Network Share. There are times where these share folders may contain sensitive or Confidential information that can be used to compromise the target. To enumerate these shares the attacker can use netshareenum on the rpcclient. If you want to enumerate all the shares then use netshareenumall.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">netshareenum 
+netshareenumall</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-TZMdaTEeaw0/YJf_lbQeIUI/AAAAAAAAv7E/64JXrvk6wLgHf6HkgEtrf_5fQrHdHa-4wCLcBGAsYHQ/s16000/16.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Net Share Get Information</strong></span></h3>
+<p><span style="color: #000000;">As with the previous commands, the share enumeration command also comes with the feature to target a specific entity. The command netsharegetinfo followed by the name of the share you are trying to enumerate will extract details about that particular share. This detail includes the path of the share, any remarks, whether the share has a password for access, the number of users accessing it, and the type of access allowed.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">netsharegetinfo Confidential</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-wZRtUu-z03U/YJf_peuUQOI/AAAAAAAAv7M/QboIu63tNmct9sXq2DNmvB1Gl4f3Wds0ACLcBGAsYHQ/s16000/17.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Enumerating Domains</strong></span></h3>
+<p><span style="color: #000000;">In the scenarios where there is a possibility of multiple domains in the network, there the attacker can use enumdomains to enumerate all the domains that might be deployed in that network. In the demonstration presented, there are two domains: IGNITE and Builtin.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">enumdomains</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-1mH-laEJ7zc/YJf_tuY2jnI/AAAAAAAAv7Q/Lv4bOtlym7sfZlNO081tKZ7a2_ncJN_lQCLcBGAsYHQ/s16000/18.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Enumerating Domain Groups</strong></span></h3>
+<p><span style="color: #000000;">Next, we have two query-oriented commands. These commands can enumerate the users and groups in a domain. Since we already performed the enumeration of such data before in the article, we will enumerate using enumdomgroup and enumdomusers and the query-oriented commands in this demonstration. When using the enumdomgroup we see that we have different groups with their respective RID and when this RID is used with the queryusergroups it reveals information about that particular holder or RID. In the case of queryusergroups, the group will be enumerated. When using querygroupmem, it will reveal information about that group member specific to that particular RID.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">enumdomgroups 
+enumdomusers 
+queryusersgroups 0x44f 
+querygroupmem 0x201</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Ak5_vlFJFO8/YJf_xoloZ2I/AAAAAAAAv7c/eQb9ZZRJVrQh-fXamN9xyQw-CWxoyKamwCLcBGAsYHQ/s16000/19.png"/></span></p>
+<h3><span style="color: #000000;"><strong><span style="color: #800000;">Display Query Information</span> </strong></span></h3>
+<p><span style="color: #000000;">From the enumdomusers command, it was possible to obtain the users of the domain as well as the RID. This information can be elaborated on using the querydispinfo. This will extend the amount of information about the users and their descriptions.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">querydispinfo</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-9i7Z9iM9Umc/YJf_1IvidKI/AAAAAAAAv7k/fIGuSWwqIEQj0o7MFL6xvF42iCESVNZxQCLcBGAsYHQ/s16000/20.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Change Password of User</strong></span></h3>
+<p><span style="color: #000000;">As from the previous commands, we saw that it is possible to create a user through rpcclient. Depending on the user privilege it is possible to change the password using the chgpasswd command.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">chgpasswd raj Password@1 Password@987</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Lyp2HmB-Gqc/YJf_5jrUTJI/AAAAAAAAv7o/NPNr9boD_gcSs-bvPsCHq4tCAPaevdaXQCLcBGAsYHQ/s16000/21.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Create Domain Group</strong></span></h3>
+<p><span style="color: #000000;">After creating the users and changing their passwords, it’s time to manipulate the groups. Using rpcclient it is possible to create a group. The createdomgroup command is to be used to create a group. It accepts the group name as a parameter. After creating the group, it is possible to see the newly created group using the enumdomgroup command.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">createdomgroup newgroup 
+enumdomgroups</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-OhQ1kwDBXag/YJf_9tSXA4I/AAAAAAAAv7w/3gnbyuHKCmUm-2rfmMF5qNE170uWpbqLACLcBGAsYHQ/s16000/22.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Delete Domain Group</strong></span></h3>
+<p><span style="color: #000000;">The manipulation of the groups is not limited to the creation of a group. If the permissions allow, an attacker can delete a group as well. The command to be used to delete a group using deletedomgroup. This can be verified using the enumdomgroups command.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">deletedomgroup newgroup 
+enumdomgroups</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-CStJ5gmeOwA/YJgAES2Hr4I/AAAAAAAAv74/Zy-kcgooozkrgV0umTjoac718NMfInNbQCLcBGAsYHQ/s16000/23.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Domain Lookup</strong></span></h3>
+<p><span style="color: #000000;">We have enumerated the users and groups on the domain but not enumerated the domain itself. To extract information about the domain, the attacker can provide the domain name as a parameter to the command lookupdomain as demonstrated.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">lookupdomain ignite</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-mMxOp9Xjz-o/YJgAJNhxlqI/AAAAAAAAv8A/dFvmqORy3eYnkT1p4vRgdid4tmDoI-s4QCLcBGAsYHQ/s16000/24.png"/></span></p>
+<h3><span style="color: #800000;"><strong>SAM Lookup</strong></span></h3>
+<p><span style="color: #000000;">Since the user and password-related information is stored inside the SAM file of the Server. It is possible to enumerate the SAM data through the rpcclient as well. When provided with the username to the samlookupnames command, it can extract the RID of that particular user.  If used the RID is the parameter, the samlookuprids command can extract the username relevant to that particular RID.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">samlookupnames domain raj 
+samlookuprids domain 0x44f</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-T_eVagTSni0/YJgAOU8_EQI/AAAAAAAAv8I/SkNLrIfkQNwjEaKfnS3TLm6c7ctJ9w7tACLcBGAsYHQ/s16000/25.png"/></span></p>
+<h3><span style="color: #800000;"><strong>SID Lookup</strong></span></h3>
+<p><span style="color: #000000;">The next command to demonstrate is lookupsids. This command can be used to extract the details regarding the user that the SID belongs. In our previous attempt to enumerate SID, we used the lsaenumsid command. That command reveals the SIDs for different users on the domain. To extract further information about that user or in case during the other enumeration the attacker comes into the touch of the SID of a user, then they cause to use the lookupsids command to get more information about that particular user. In the demonstration, it can be observed that the SID that was enumerated belonged to the Administrator of the Builtin users.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">lsaenumsid</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-R7U5PURv2RM/YJgAScxYMLI/AAAAAAAAv8M/iHJbBIUvRzMzDI4x2lLX5KOBOM7mrMtOQCLcBGAsYHQ/s16000/26.png"/></span></p>
+<h3><span style="color: #800000;"><strong>LSA Query</strong></span></h3>
+<p><span style="color: #000000;">The next useful command for enumeration is lsaquery. This command helps the user enumerate the LSA Policy for the specific domain. In the demonstration, the user generated an LSA query and retrieved information such as the Domain Name and SID. Similarly, to enumerate the Primary Domain Information—like the machine’s role or the Domain’s native mode—the user can run the dsroledominfo command, as demonstrated.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">lsaquery 
+dsroledominfo</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-hW5gmQ3MjT8/YJgAXwKBv-I/AAAAAAAAv8Q/mPVaYIPlT10JIfBlr9VB0ObmsxljkbBGQCLcBGAsYHQ/s16000/27.png"/></span></p>
+<h3><span style="color: #800000;"><strong>LSA Create Account</strong></span></h3>
+<p><span style="color: #000000;">An attacker can create an account object based on the SID of that user. For this particular demonstration, we will first need a SID. This can be extracted using the lookupnames command used earlier. Passing the SID as a parameter in the lsacreateaccount command will enable us as an attacker to create an account object as shown in the image below.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">lookupnames raj 
+lsacreateaccount S-1-5-21-3232368669-2512470540-2741904768-1103</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-7yuNvgzPhWY/YJgAcOHOsDI/AAAAAAAAv8Y/m-rEjd1eRwMY4xKqmDLZoDsgvJwsG20YgCLcBGAsYHQ/s16000/28.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Enumerating LSA Group Privileges </strong></span></h3>
+<p><span style="color: #000000;">During our previous demonstrations, we were able to enumerate the permissions and privileges of users and groups based on the RID of that particular user. It is possible to perform enumeration regarding the privileges for a group or a user based on their SID as well. To do this first, the attacker needs a SID. This can be obtained by running the lsaenumsid command. </span></p>
+<p><span style="color: #000000;">In the demonstration below, the attacker chooses S-1-1-0 SID to enumerate. When you pass it as a parameter in the lookupsids command, you can identify that it belongs to the group Everyone. Further, when the attacker used the same SID as a parameter for lsaenumprivaccount, they were able to enumerate the levels of privileges such as high, low, and attribute. Then the attacker used the SID to enumerate the privileges using the lsaenumacctrights command. This command was able to enumerate two specific privileges such as SeChangeNotiftyPrivielge and SeNetworkLogonRight privilege.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">lsaenumsid 
+lookupsids S-1-1-0 
+lsaenumacctrights S-1-1-0</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/--zEOJppIXBY/YJgAhU2ruyI/AAAAAAAAv8c/D8fIaKRhiEIBI27hdEOgS4Ziq1WtY2NVwCLcBGAsYHQ/s16000/29.png"/></span></p>
+<p><span style="color: #000000;">The ability to interact with privileges doesn’t end with the enumeration regarding the SID or privileges. It is also possible to manipulate the privileges of that SID to make them either vulnerable to a particular privilege or remove the privilege of a user altogether. To demonstrate this, the attacker first used the lsaaddpriv command to add the SeCreateTokenPrivielge to the SID and then used the lsadelpriv command to remove that privilege from that group as well. All this can be observed in the usage of the lsaenumprivaccount command.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">lsaaddpriv S-1-1-0 SeCreateTokenPrivilege 
+lsaenumprivsaccount S-1-1-0 
+lsadelpriv S-1-1-0 SeCreateTokenPrivilege 
+lsaenumprivsaccount S-1-1-0</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-y4cq5O3rnw0/YJgAmpztdYI/AAAAAAAAv8k/J59BmlCiMOIvB9zpz16EFmZn3FNW4mRJwCLcBGAsYHQ/s16000/30.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Enumerating LSA Account Privileges</strong></span></h3>
+<p><span style="color: #000000;">In the previous demonstration, the attacker successfully provided and removed privileges from a group. Likewise, they can add and remove privileges for a specific user as well. To add privileges, the attacker can use the lsaaddacctrights command based on the user’s SID. They previously retrieved this SID using the lookupnames command. Afterward, they verified the privilege assignment with the lsaenumprivaccount command and finally removed the privileges using the lsaremoveacctrights command.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">lookupnames raj 
+lsaaddacctrights S-1-5-21-3232368669-2512470540-2741904768-1103 SeCreateTokenPrivilege 
+lsaenumprivsaccount S-1-5-21-3232368669-2512470540-2741904768-1103 
+lsaremoveacctrights S-1-5-21-3232368669-2512470540-2741904768-1103 SeCreateTokenPrivilege 
+lsaenumprivsaccount S-1-5-21-3232368669-2512470540-2741904768-1103</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-kbEVtw7SfM0/YJgAtWwJfiI/AAAAAAAAv8s/OnjtDji6enMPVkErkd32t2xCFie86YYJgCLcBGAsYHQ/s16000/31.png"/></span></p>
+<p><span style="color: #000000;">After manipulating the Privileges on the different users and groups it is possible to enumerate the values of those specific privileges for a particular user using the lsalookupprivvalue command.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">lsalookupprivvalue SeCreateTokenPrivielge</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-WvJguZrqGTE/YJgAxp5qGDI/AAAAAAAAv80/OcK4uxKw_9kZCGNUxriCH6HFxQjJ3HEVwCLcBGAsYHQ/s16000/32.png"/></span></p>
+<h3><span style="color: #800000;"><strong>LSA Query Security Objects</strong></span></h3>
+<p><span style="color: #000000;">Then, the next command to observe is the lsaquerysecobj command. This command is made from LSA Query Security Object. This command helps the attacker enumerate the security objects or permissions and privileges related to the security as demonstrated below.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">lsaquerysecobj</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-_OJ1CIi7jtU/YJgA1ESIJYI/AAAAAAAAv84/VrO9LxG9Vd89tnPHn9gzsYaV_SS91KCUgCLcBGAsYHQ/s16000/33.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Conclusion</strong></span></h3>
+<p><span style="color: #000000;">In this article, we were able to enumerate a wide range of information through the SMB and RPC channel inside a domain using the rpcclient tool. This article can serve as a reference for Red Team activists for attacking and enumerating the domain but it can also be helpful for the Blue Team to understand and test the measures applied on the domain to protect the Network and its users.</span></p>
+<p><span style="color: #000000;"><strong>Author: Pavandeep Singh</strong> is a Technical Writer, Researcher, and Penetration Tester. Contact <span style="color: #0000ff;"><strong>Twitter</strong> </span>and <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.linkedin.com/in/pavan2318/">LinkedIn</a></strong></span></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">
+<!-- YARPP Thumbnails -->
+<h3>Related posts:</h3>
+<div class="yarpp-thumbnails-horizontal">
+<a class="yarpp-thumbnail" rel="norewrite" href="https://www.hackingarticles.in/active-directory-pentesting-using-netexec-tool-a-complete-guide/" title="Active Directory Pentesting Using Netexec Tool">
+<span class="yarpp-thumbnail-default"><img src="https://www.hackingarticles.in/wp-content/plugins/yet-another-related-posts-plugin/images/default.png" alt="Default Thumbnail" data-pin-nopin="true"/></span><span class="yarpp-thumbnail-title">Active Directory Pentesting Using Netexec Tool</span></a>
+<a class="yarpp-thumbnail" rel="norewrite" href="https://www.hackingarticles.in/credential-dumping-active-directory-reversible-encryption/" title="Credential Dumping – Active Directory Reversible Encryption">
+<span class="yarpp-thumbnail-default"><img src="https://www.hackingarticles.in/wp-content/plugins/yet-another-related-posts-plugin/images/default.png" alt="Default Thumbnail" data-pin-nopin="true"/></span><span class="yarpp-thumbnail-title">Credential Dumping – Active Directory Reversible Encryption</span></a>
+</div>
+</div>
+            </div><!-- .entry-content -->
+            <footer class="post-footer entry-footer">
+                                                
+            </footer><!-- .entry-footer -->
+            
+	<nav class="navigation post-navigation" aria-label="Posts">
+		<h2 class="screen-reader-text">Post navigation</h2>
+		<div class="nav-links"><div class="nav-previous"><a href="https://www.hackingarticles.in/a-beginners-guide-to-buffer-overflow/" rel="prev">A Beginner’s Guide to Buffer Overflow</a></div><div class="nav-next"><a href="https://www.hackingarticles.in/windows-privilege-escalation-dnsadmins-to-domainadmin/" rel="next">Windows Privilege Escalation: DnsAdmins to DomainAdmin</a></div></div>
+	</nav>        </div>

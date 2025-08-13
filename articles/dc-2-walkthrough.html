@@ -1,0 +1,94 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">DC-2 Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/dc-2-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2019-05-04T14:07:56+00:00">May 4, 2019</time><time class="updated" datetime="2025-06-10T20:12:04+00:00">June 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Hello friends! Today we are going to take another boot2root challenge known as “DC-2”. The credit for making this VM machine goes to “DCAU” and it is another boot2root challenge in which our goal is to get root access to complete the challenge. You can download it from <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.vulnhub.com/entry/dc-2,311/">here</a></strong></span>.</span></p>
+<p><span style="color: #000000;"><strong>Security Level</strong>: Beginner</span></p>
+<h3><span style="color: #800000;"><strong>Penetrating Methodology:</strong></span></h3>
+<ul>
+<li><span style="color: #000000;">Discovering Targets IP</span></li>
+<li><span style="color: #000000;">Network scanning (Nmap)</span></li>
+<li><span style="color: #000000;">Adding the Domain name to Host file</span></li>
+<li><span style="color: #000000;">Surfing HTTP service port</span></li>
+<li><span style="color: #000000;">Using WPscan for Username enumeration</span></li>
+<li><span style="color: #000000;">Using cewl for creating wordlist</span></li>
+<li><span style="color: #000000;">Logging into WordPress</span></li>
+<li><span style="color: #000000;">Logging in through SSH </span></li>
+<li><span style="color: #000000;">Escaping restricted shell</span></li>
+<li><span style="color: #000000;">Finding binary in the sudoers list</span></li>
+<li><span style="color: #000000;">Getting root access and Reading final flag</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Walkthrough</strong></span></p>
+<p><span style="color: #000000;">Let’s start off with scanning the network to find our target.</span></p>
+<pre class="lang:default decode:true">netdiscover</pre>
+<p><span style="color: #000000;"><img decoding="async" src="//3.bp.blogspot.com/-xp1ab3tghds/XM2ZsJ9R3sI/AAAAAAAAeNc/ZB7_fIK6d6ocy9eVu-rzmFMy_h6P5jw3gCLcBGAs/s1600/1.png"/></span></p>
+<p><span style="color: #000000;">We found our Targets IP Address 192.168.1.101. Our next step is to scan our targets IP Address with nmap.</span></p>
+<pre class="lang:default decode:true">nmap -p- -A 192.168.1.101</pre>
+<p><span style="color: #000000;">OKAY!! With the following result of nmap scan, I found here port 7744 is used for SSH and port 80 for HTTP service, moreover there all it shows all http services are made to redirect on //dc-2.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="//2.bp.blogspot.com/-1hjdxv_ffjI/XM2Zuzkt7OI/AAAAAAAAeOA/aW4ACNWuFH8e09-ezharzct9LCEFOpLMwCLcBGAs/s1600/2.png"/></span></p>
+<p><span style="color: #000000;">Therefore, we thought of adding the Domain Name into our Host file, so that we will be able to access http services.</span></p>
+<pre class="lang:default decode:true">cat /etc/hosts</pre>
+<p><span style="color: #000000;"><img decoding="async" src="//3.bp.blogspot.com/-FetcFiuFOZs/XM2ZvbAmvsI/AAAAAAAAeOE/aiampwEVHToXFrqwqYtlhFsAZF2NS2HmwCLcBGAs/s1600/3.png"/></span></p>
+<p><span style="color: #000000;">Since <strong>port 80</strong> is open, we explored the Domain Name on the browser. We discovered the webpage got a WordPress CMS installed on it.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="//3.bp.blogspot.com/-fx0lIESGzhI/XM2ZwhOzWGI/AAAAAAAAeOI/MP9ie0UrB3Ie0Ys9oIhM53GNB7OAELROgCLcBGAs/s1600/4.png"/></span></p>
+<p><span style="color: #000000;">The Flag option on the webpage clearly got our attention. Let’s check what hint it has for us. So from this page, we got a really good hint to move ahead.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="//4.bp.blogspot.com/-boov8X8FBeA/XM2Zw29kdSI/AAAAAAAAeOQ/iCVjSxxuwMo5aZEkJI3ogADJ1X1h6jh-wCLcBGAs/s1600/5.png"/></span></p>
+<p><span style="color: #000000;">So, the first idea that came to us was to run a wpscan on the webpage and see what the scan enumerates.</span></p>
+<pre class="lang:default decode:true">wpscan --url //dc-2 --enumerate p --enumerate t --enumerate u</pre>
+<p><span style="color: #000000;"><img decoding="async" src="//4.bp.blogspot.com/-NLRNz7vDIq4/XM2ZwiwrBkI/AAAAAAAAeOM/CsBOs648X1opFZbln61RAcnpx7sQRxX1gCLcBGAs/s1600/6.png"/></span></p>
+<p><span style="color: #000000;">I found three user names: admin, jerry and Tom and as said above we need to use cewl which is used for generating a dictionary by spidering website.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="//3.bp.blogspot.com/-8NTAC9OGr_U/XM2ZxkHYXvI/AAAAAAAAeOU/D2rr2ZH_M6whX3CyDbnj-ntrXRI-vGeBQCLcBGAs/s1600/7.png"/></span></p>
+<p><span style="color: #000000;">Therefore, we have used cewl to build a wordlist for passwords from inside //dc-2 as shown in the image.</span></p>
+<pre class="lang:default decode:true">cewl //dc-2/ &gt; password
+cat password</pre>
+<p><span style="color: #000000;"><img decoding="async" src="//2.bp.blogspot.com/-iSO5Nz8itP0/XM2ZxiJN_wI/AAAAAAAAeOY/wyjSablzIus-CuNwjNsWf4JByLOuTf3ewCLcBGAs/s1600/8.png"/></span></p>
+<p><span style="color: #000000;">So, we have a dictionary for passwords which we have generated using cewl and saved WordPress usernames in a text file.</span></p>
+<pre class="lang:default decode:true">cat users</pre>
+<p><span style="color: #000000;"><img decoding="async" src="//2.bp.blogspot.com/-IA2C43VwGnM/XM2ZxnVHY2I/AAAAAAAAeOc/XnvIZE3rQjILI4f6MXMcHM6OdVBrEzwtwCLcBGAs/s1600/9.png"/></span></p>
+<p><span style="color: #000000;">Time to fire up wpscan with our username &amp; password list to valid user login combination.</span></p>
+<pre class="lang:default decode:true">wpscan --url //dc-2 -U users -P password</pre>
+<p><span style="color: #000000;"><img decoding="async" src="//1.bp.blogspot.com/-CKm6w7Hy0kI/XM2ZsZ84XkI/AAAAAAAAeNg/N1P5ZH9GYBYdNZpPYWBKCtPNO7-luCZpwCLcBGAs/s1600/10.png"/></span></p>
+<p><span style="color: #000000;">We have successfully found the password for Tom &amp; Jerry. Let’s make good use of them.</span></p>
+<pre class="lang:default decode:true">jerry: adipiscing
+tom: parturient</pre>
+<p><span style="color: #000000;"><img decoding="async" src="//2.bp.blogspot.com/-VF1FSKzIVyM/XM2ZsIUCgJI/AAAAAAAAeNY/F3XffAWksQkMgUNfXlhs5h7uV8fbVLQwQCLcBGAs/s1600/11.png"/></span></p>
+<p><span style="color: #000000;">Further, we login to WordPress using Jerry credentials. It was holding another clue for us in Flag 2.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="//3.bp.blogspot.com/-ceShUuXfL4w/XM2Zsx7fbTI/AAAAAAAAeNk/WESx1m_KCHU3vGK7mWdXJ30kIYGWmq82wCLcBGAs/s1600/12.png"/></span></p>
+<p><span style="color: #000000;">Since the clue was telling us to find another entry point to reach our final flag. Suddenly we thought to make an SSH Login running on port 77454 by using Tom credentials.</span></p>
+<p><span style="color: #000000;">We successfully got logged in but we have a restricted shell in which some commands are not found. But few commands are available.</span></p>
+<pre class="lang:default decode:true">ssh tom@192.168.1.101 -p 7744
+ls
+cat flag3.txt
+echo $PATH
+ls /home/tom/usr/bin</pre>
+<p><span style="color: #000000;">As you can observe that cat program is not present inside /bin and tom can run only five programs present inside /bin directory.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="//4.bp.blogspot.com/-Ov4jgHsDUT0/XM2ZtW1kdfI/AAAAAAAAeNo/-vY-pPDS6jUTYrhp6HngJCyc62t3TrenQCLcBGAs/s1600/13.png"/></span></p>
+<p><span style="color: #000000;">Since we had a restricted shell, we found that we can use the Vi editor. Therefore, we use Vi editor to escape the restricted shell.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="//4.bp.blogspot.com/-YEMlSox6utA/XM2Ztp2eT3I/AAAAAAAAeNs/WwJTgHOmNY8leZwZRx1dz9GCx9iaPzthwCLcBGAs/s1600/14.png"/></span></p>
+<p><span style="color: #000000;">After escaping the restricted shell, we export “/bin/bash” as our SHELL environment variable and “/usr/bin” as our PATH environment variable so that we can run Linux commands properly.</span></p>
+<pre class="lang:default decode:true">export PATH=/bin:/usr/bin:$PATH
+export SHELL=/bin/bash:$SHELL</pre>
+<p><span style="color: #000000;">After that, we try to open flag3.txt again using cat command and luckily found next hint to move ahead.</span></p>
+<pre class="lang:default decode:true">ls
+cat flag3.txt</pre>
+<p><span style="color: #000000;">According to hint, now we need to switch user from tom to jerry but we don’t have jerry’s login credential. Then checked the sudoers list and found that tom can run “/usr/bin/git” as root without a password.</span></p>
+<pre class="lang:default decode:true">sudo -l</pre>
+<p><span style="color: #000000;"><img decoding="async" src="//1.bp.blogspot.com/-UIHAPOOSnSs/XM2ZtjdqguI/AAAAAAAAeNw/xS7cqYWEnVYwJ91p0ghebOali6bmPHzrgCLcBGAs/s1600/15.png"/></span></p>
+<p><span style="color: #000000;">Having the root permission on git was like the cherry on the cake, because through this I can try to escalate low privilege shell to high privilege shell.</span></p>
+<pre class="lang:default decode:true">sudo git help add</pre>
+<p><span style="color: #000000;"><img decoding="async" src="//1.bp.blogspot.com/-VQNidlL98xM/XM2ZuGztwdI/AAAAAAAAeN0/e-GGbAM80k423k1IoOMXwOBDzrgj6EVYQCLcBGAs/s1600/16.png"/></span></p>
+<p><span style="color: #000000;">Since the help console of git opens with an editor where we can run below command. And for spawning root shell type <strong>!/bin/bash</strong> and hit enter.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="//4.bp.blogspot.com/-sTrNFfpDiRg/XM2ZuxmDE9I/AAAAAAAAeN4/WfouQZT8Mr80bBRC8MaWYZ7RDhwmSWB0gCLcBGAs/s1600/17.png"/></span></p>
+<p><span style="color: #000000;">Boom!!! We got the root access, then we switch to the root directory and found our final flag.</span></p>
+<pre class="lang:default decode:true ">cd /root
+ls
+cat final-flag.txt</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="//4.bp.blogspot.com/-uTx5mbjY4tU/XM2Zu2Ta2jI/AAAAAAAAeN8/7gBbXd9aq5MhUoUVtxhBrzv53NQlmdD8wCLcBGAs/s1600/18.png"/></strong></span></p>
+<p><span style="color: #000000;"><strong>Author:</strong> Ashray Gupta is a Security Researcher and Technical Writer at Hacking Articles. Contributing his 2 years in the field of security as a Penetration Tester and Forensic Computer Analyst. Contact <strong><a style="color: #000000;" href="https://www.linkedin.com/in/ashray-gupta-b77221b6/">Here</a></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

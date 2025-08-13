@@ -1,0 +1,105 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/tryhackme/" rel="category tag">TryHackME</a></span>            </div>
+            <h1 class="post-title entry-title">Retro TryHackMe Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/retro-tryhackme-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2021-07-05T07:09:31+00:00">July 5, 2021</time><time class="updated" datetime="2025-06-25T09:14:59+00:00">June 25, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today it is time to solve another challenge called “Retro”. It was created by <a style="color: #000000;" href="https://tryhackme.com/p/DarkStar7471"><span style="color: #0000ff;"><strong>DarkStar7471</strong></span></a>. It is available at TryHackMe for penetration testing practice. The challenge presents hard difficulty even if you have the right basic knowledge and pay attention to the little details that the enumeration process requires. The breakdown of the Machine with redacted flags is as follow:</span></p>
+<p><span style="color: #000000;"><strong>Level: Hard</strong></span></p>
+<h3><span style="color: #800000;">Penetration Testing Methodology</span></h3>
+<ul>
+<li><span style="color: #000000;"><strong>Network Scanning</strong></span>
+<ul>
+<li><span style="color: #000000;">Nmap Scanning</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Enumeration</strong></span>
+<ul>
+<li><span style="color: #000000;">Browsing HTTP service</span></li>
+<li><span style="color: #000000;">Directory Bruteforce using dirb</span></li>
+<li><span style="color: #000000;">Enumerating user Wade</span></li>
+<li><span style="color: #000000;">Enumerating password for Wade</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Exploitation</strong></span>
+<ul>
+<li><span style="color: #000000;">Connecting RDP service</span></li>
+<li><span style="color: #000000;">Reading User Flag</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Privilege Escalation</strong></span>
+<ul>
+<li><span style="color: #000000;">Enumerating Bookmarks in Chrome</span></li>
+<li><span style="color: #000000;">Enumerating Recycle Bin</span></li>
+<li><span style="color: #000000;">Exploiting CVE-2019-1388</span></li>
+<li><span style="color: #000000;">Getting Administrator Access</span></li>
+<li><span style="color: #000000;">Reading Root Flag</span></li>
+</ul>
+</li>
+</ul>
+<p><span style="color: #000000;"><strong>Walkthrough</strong></span></p>
+<p><span style="color: #000000;">There are two flags in this machine to discover. After Booting up the target machine from the<span style="color: #0000ff;"><strong> <a style="color: #0000ff;" href="https://tryhackme.com/room/retro">TryHackMe: Retro Page</a></strong></span>, an IP will be assigned to the machine and will be visible on that page as well.</span></p>
+<p><span style="color: #000000;"><strong>IP Address: 10.10.167.18</strong></span></p>
+<h3><span style="color: #800000;">Network Scanning</span></h3>
+<p><span style="color: #000000;">We will start a Nmap scan with the -sV for performing a Version Scan and -sC for default scripts on the target machine.    </span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -sV -sC 10.10.167.18</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-aUMfFQ6IJoY/YOKs0qobd2I/AAAAAAAAxS0/xRmFtHVUBYsqaB8YaS9Fvb3GNpepaqUrwCLcBGAsYHQ/s16000/1.png"/></span></p>
+<p><span style="color: #000000;">We have two services running on the target machine. Specifically, we have 80 (HTTP) and 3389 (RDP). Since we don’t have the credentials for accessing the RDP service at this moment, therefore, we will be enumerating with the HTTP Service.</span></p>
+<h3><span style="color: #800000;">Enumeration</span></h3>
+<p><span style="color: #000000;">To enumerate the HTTP service, we open the IP address of the target machine in the Web Browser and found the default page for the IIS Deployment.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://10.10.167.18/</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-aSwBLdxwmPw/YOKs8HtTImI/AAAAAAAAxS4/krRFrfuwSks2EFo9asKdbw4R-Xmw2zFJQCLcBGAsYHQ/s16000/2.png"/></span></p>
+<p><span style="color: #000000;">Since we were not able to get any information from the IIS page, we decided to perform a Directory Bruteforce. We tried to use the dirb tool with its default wordlist, but we were not able to extract any information. Hence, we moved onto the big.txt wordlists and after running for a while we were able to get the /retro/ directory. Inside the /retro/ directory we were able to find the /wp-admin/ page. This confirms that the website hosted on the /retro/ is a WordPress Deployment.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">dirb http://10.10.167.18/ /usr/share/dirb/wordlists/big.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-W2dxc9yQwVU/YOKtAQfWfoI/AAAAAAAAxS8/SVw2sNpCwfAC3j1wjLUnlGBI1lVtYfWoACLcBGAsYHQ/s16000/3.png"/></span></p>
+<p><span style="color: #000000;">We opened the retro webpage on our web browser. From the outset, the presence of the /wp-admin/ made it clear that this is a WordPress deployment, and it seems like a blog for old arcade-based games. Moreover, there appears to be a kind of theme that has been added to this website. On the home page, we have a blog post by the title of Tron Arcade Cabinet. Notably, we can see that it was written by a user named Wade. This user can be helpful down the road.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://10.10.167.18/retro/</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-WsyTQqMHHDY/YOKtEJZNhFI/AAAAAAAAxTA/ez0Zw-FF_KUPO2b688ZzwpdKY7Lt0b8pACLcBGAsYHQ/s16000/4.png"/></span></p>
+<p><span style="color: #000000;">Clicking on the User Wade, we were redirected to the author section that has the collection of blog posts by Wade. We checked them out but there didn’t seem any hints or secrets. This is when our attention was shifted from blogs to comments. We found that Wade has commented on the blog post regarding Ready Player One.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://10.10.167.18/retro/index.php/author/wade/</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-1imPBLY4a3c/YOKtIJTunbI/AAAAAAAAxTE/eh-ESDbNIf0jhyLeoCt-8sxfjMxEHpYGACLcBGAsYHQ/s16000/5.png"/></span></p>
+<h3><span style="color: #800000;">Exploitation</span></h3>
+<p><span style="color: #000000;">Browsing the Ready Player One blog post we saw that Wade has commented a word to remember parzival. This seems an interesting word, there may exist a user by the name of Wade and password parzival.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://10.10.167.18/retro/index.php/2019/12/09/ready-player-one/#comment-2</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-DuW4ROUKuyI/YOKtLpgowgI/AAAAAAAAxTI/zpUw9R9SJFIJO0Xce3J9elodPzjinw7MACLcBGAsYHQ/s16000/6.png"/></span></p>
+<p><span style="color: #000000;">We were not able to enumerate the RDP service due to the lack of credentials before. Now that we suspect that we have a set of credentials, let’s try to connect to the service. We will be using xfreerdp for accessing the RDP service. There exist many other tools that you can use for the same. We provided the username wade and password parzival.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">xfreerdp /u:wade /p:parzival /v:10.10.167.18</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-cy3zsqqk4hc/YOKtPpHXF9I/AAAAAAAAxTQ/0wL9bvrVjTEV6VDVnJnbJyRM5MYJKoSwwCLcBGAsYHQ/s16000/7.png"/></span></p>
+<p><span style="color: #000000;">We were able to connect to the RDP service with the credentials we suspected. As soon as we connect, we see that we have the user.txt file on the Desktop. We open the file to find the user flag as demonstrated below.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-unS2vJ3DE44/YOKtTgJO8cI/AAAAAAAAxTY/8_VNOzKXa4k2yizk86BO0SxA3HvN0XAGACLcBGAsYHQ/s16000/8.png"/></span></p>
+<h3><span style="color: #000000;"><span style="color: #800000;">Privilege Escalation</span> </span></h3>
+<p><span style="color: #000000;">Now that we have the user flag and the access of the Wade user, we need to figure out the method for elevating access to the Administrator. Other than the text file we had two other icons on the Desktop. We opened Google Chrome and found a link bookmarked. It was for the Vulnerability CVE-2019-1388. Since we don’t have Internet Access on the target machine, we copied the link and opened it on our local machine. We found that it is a privilege escalation vulnerability inside the Windows Certificate Dialog.  We read a couple of articles about it online to understand the vulnerability.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-rADNMbV9BOw/YOKtXxMFE5I/AAAAAAAAxTc/WHbh-4DIbl04hJzcEhozFqiKXq9fKXcJACLcBGAsYHQ/s16000/9.png"/></span></p>
+<p><span style="color: #000000;">To exploit the vulnerability, we require an HTML help control file. We were about to download and transfer the file to the target machine when it came to us that we haven’t checked the Recycle Bin. During our previous assessment, we saw that there exist some files inside the Recycle Bin. We opened it to find the exploit file that is required to elevate privileges. We dragged and dropped it on the desktop.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-nGX8EFum2Lo/YOKtbaMbwRI/AAAAAAAAxTk/aPHYbzB1N5wuEhf8-vV7nyzkeQvHj2JXQCLcBGAsYHQ/s16000/10.png"/></span></p>
+<p><span style="color: #000000;">To exploit, we need to run the hhupd file as Administrator and when asked for the password, we will open the certificate linked to the file. Opening the certificate will open an Internet Explorer session with elevated access. We will then use that to get a command prompt with elevated access.</span></p>
+<h5><span style="color: #000000;"><strong>Note: </strong></span></h5>
+<p><span style="color: #000000;">During our assessment, there were times where we were not able to open Internet Explorer. We contacted the author of the machine and we were told that this occurs because of creating the vulnerability. He suggested that we restart the machine and open an instance of Internet Explorer before running the hhupd file.</span></p>
+<p><span style="color: #000000;">After getting the hhupd file to the Desktop, we right-click on the file and choose the Run As Administrator option. We are presented with a dialogue box asking for the password Administrator. Since we don’t have the password, we click on the Show more details option as demonstrated below.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-_wYbKB7J-Ik/YOKtfhX3gxI/AAAAAAAAxTo/u3RggOy6iD4EoMFSxw8XSCnK8b_Lw8WTACLcBGAsYHQ/s16000/11.png"/></span></p>
+<p><span style="color: #000000;">Clicking on the Show more details option will expand the dialog box to show another option Show information about the publisher’s certificate. Click on that option as shown in the image below.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-zwj0QvghlD8/YOKtk9gqITI/AAAAAAAAxTw/P2kwBgSL4Rs6gpCeUp9SIU602lkGm1t0ACLcBGAsYHQ/s16000/12.png"/></span></p>
+<p><span style="color: #000000;">As soon as we click on the Show information about the publisher’s certificate option, we see a new window pop up. It has the properties for the certificate. Under the General tab, we see that this certificate was issued by VeriSign Commercial Software Publishers CA. There is a link to see the information about the Issuer. Click on the link as shown in the image below.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-pKglz4IEsOA/YOKto3OHWkI/AAAAAAAAxT0/dringkKRhYwdfSVZN56cJltVPkjYJFnDACLcBGAsYHQ/s16000/13.png"/></span></p>
+<p><span style="color: #000000;">They ask us which software we want to use for opening this link. We have the options to choose from Google Chrome and Internet Explorer. We can run the exploit using Google Chrome, but it is not reliable. There might be times when you will get the session, but it will not be an elevated one. So, we choose Internet Explorer.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-uTEL77Yp9i4/YOKtsgKyEGI/AAAAAAAAxT8/aqZj3Xd1VgcLpWXcfBAs72fWU5iVeFFhgCLcBGAsYHQ/s16000/14.png"/></span></p>
+<h4><span style="color: #000000;">Gaining SYSTEM Access</span></h4>
+<p><span style="color: #000000;">This opens an Internet Explorer as the SYSTEM. Close the other windows and wait for the Internet Explorer to finish loading. You will get the This page can’t be displayed error since the machine is not connected to the internet. After it has finished loading click on the Cog icon on the right-hand side as shown in the image below.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-CUVikEN7WKw/YOKtw6LC6OI/AAAAAAAAxUE/qqMW01Byqnk-m4DU9fP5ulJo70jZoy2IQCLcBGAsYHQ/s16000/15.png"/></span></p>
+<p><span style="color: #000000;">Clicking the Cog icon, a drop-down menu will appear, choose the File option. It will open another menu. Choose the Save as an option as demonstrated below.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-vtwCAgasK_A/YOKt0k6xEWI/AAAAAAAAxUM/_uNv-Yr-muQN-d-fADCbM3auTi-o4JBpACLcBGAsYHQ/s16000/16.png"/></span></p>
+<p><span style="color: #000000;">Clicking on the Save as an option will open a window where we must provide the location where we want to save the webpage. Browse the following location:</span></p>
+<h5><span style="color: #000000;">C:\Windows\System32</span></h5>
+<p><span style="color: #000000;">And type *.* in the File name as demonstrated below. This will allow for listing all the files and not just the .mht format file. We need to do this because we need the cmd.exe file listed here.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-BZvGyWQT9WI/YOKuHl-2m-I/AAAAAAAAxUk/hT0G_7VyywI8su-nLZCVIeZcyJBT1JUnACLcBGAsYHQ/s16000/17.png"/></span></p>
+<p><span style="color: #000000;">Scroll through the System32 directory and look for cmd.exe. Upon locating cmd, right-click on the file and choose the Open option from the drop-down menu. Don’t choose Run as Administrator here.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-G9nvpbjRaQM/YOKuDPMUQCI/AAAAAAAAxUg/RdjzlC6Z3PAZcvMFlsuzT7ckh5rGG9SxACLcBGAsYHQ/s16000/18.png"/></span></p>
+<p><span style="color: #000000;">Clicking the Open option will open an instance of Command Prompt with elevated access. We can now move into the Administrator directory and browse the root.txt.txt file on its Desktop. Reading the flag contents using type command and conclude this machine.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-PLk9lxXVFPQ/YOKt_dXnXUI/AAAAAAAAxUc/fkYd8Y-DoLIb_WDIhv0OoA9Gh6-keVJ8gCLcBGAsYHQ/s16000/19.png"/></span></p>
+<p><span style="color: #000000;">Hope you have enjoyed this TryHackMe Write-up. Follow this</span> <strong><a href="https://www.hackingarticles.in/category/ctf-challenges/tryhackme/">Link</a> </strong><span style="color: #000000;">for more TryHackMe CTF’s.</span></p>
+<p><span style="color: #000000;"><strong>Author: Pavandeep Singh</strong> is a Technical Writer, Researcher, and Penetration Tester. Contact on <span style="color: #0000ff;"><strong>Twitter</strong> </span>and <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.linkedin.com/in/pavan2318/">LinkedIn</a></strong></span></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

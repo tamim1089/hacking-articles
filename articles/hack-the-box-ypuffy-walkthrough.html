@@ -1,0 +1,71 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/" rel="category tag">HackTheBox</a></span>            </div>
+            <h1 class="post-title entry-title">HacktheBox Ypuffy Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/hack-the-box-ypuffy-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2019-02-16T09:20:25+00:00">February 16, 2019</time><time class="updated" datetime="2025-06-29T19:40:09+00:00">June 29, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today we are going to solve another CTF challenge “Ypuffy”. It is a retired vulnerable lab presented by Hack the Box for helping pentester’s to perform online penetration testing according to your experience level; they have a collection of vulnerable labs as challenges, from beginners to Expert level.</span></p>
+<p><span style="color: #000000;"><strong>Level</strong>: Intermediate</span></p>
+<p><span style="color: #000000;"><strong>Task</strong>: To find user.txt and root.txt file</span></p>
+<p><span style="color: #000000;">Note: Since these labs are online available therefore they have a static IP. The IP of Ypuffy is 10.10.10.107</span></p>
+<h3><span style="color: #800000;"><strong>Penetrating Methodology</strong></span></h3>
+<ul>
+<li><span style="color: #000000;">Network scanning (Nmap)</span></li>
+<li><span style="color: #000000;">Scanning port 389 using LDAP script</span></li>
+<li><span style="color: #000000;">Fetching shared directory using smbclient and finding the</span> private<span style="color: #000000;"> key</span></li>
+<li><span style="color: #000000;">Connecting to VM with SSH using </span>the private<span style="color: #000000;"> key</span></li>
+<li><span style="color: #000000;">Enumerating files with SUID bit set</span></li>
+<li><span style="color: #000000;">Discovering that alice1978 can run ssh-keygen as </span>userca</li>
+<li><span style="color: #000000;">Discovering authorized commands at ssh login</span></li>
+<li><span style="color: #000000;">Fetching principal using </span>the curl<span style="color: #000000;"> command</span></li>
+<li><span style="color: #000000;">Enumerating public certificate in system</span></li>
+<li><span style="color: #000000;">Signing RSA key with </span>ca<span style="color: #000000;"> certificate using doas command and previously found </span>the principal</li>
+<li><span style="color: #000000;">Logging into ssh using new private key pair</span></li>
+<li><span style="color: #000000;">Snagging the flag</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Walkthrough</strong></span></p>
+<p><span style="color: #000000;">Let’s start off with our basic nmap command to find out the open ports and services.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -sV -sC 10.10.10.107</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-qp5SqvzmNlQ/XGfPttr-dEI/AAAAAAAAcoo/ufQuVmRDzyQ944h_g3tG7N4Gvcm1hUC6wCLcBGAs/s1600/1.png"/></span></p>
+<p><span style="color: #000000;">The nmap scan shows us that there are 5 ports open: 22(SSH), 80(HTTP), 139(SMB), 389(LDAP), 445(SMB)</span></p>
+<p><span style="color: #000000;">As LDAP service is running on port 389, we use nmap script called “</span>ldap<span style="color: #000000;">-search” to enumerate the target machine and we find the password hash for user “alice1978”.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -p389 --script=ldap-search 10.10.10.107</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-tx5auBokK7s/XGfPtIhMHQI/AAAAAAAAcok/6KPE20CB5qMeMM8O_J4-6Oo-msmuQBhXgCLcBGAs/s1600/2.png"/></span></p>
+<p><span style="color: #000000;">Now as we find the password hash and username, we can </span>login<span style="color: #000000;"> through using SMB using smbclient.</span></p>
+<p>First<span style="color: #000000;">, we check the shared directory available on the target machine and find a directory called “</span>alice<span style="color: #000000;">”. We then access the shared directory and find a file called “my_private_key.ppk”, we download the file to our local system.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">smbclient –L \\\\10.10.10.107\\ -U alice1978%&lt;hash&gt; --pw-nt-hash
+smbclient \\\\10.10.10.107\\alice -U alice1978%&lt;hash&gt; --pw-nt-hash</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-Mu1I2izjicc/XGfPtwYOurI/AAAAAAAAcos/-GLim0ZyFZEk6t8HBdV6OoI0rfKnzvKmQCLcBGAs/s1600/3.png"/></span></p>
+<p><span style="color: #000000;">The file we downloaded was a “Putty Private Key” file, so we use </span>puttygen<span style="color: #000000;"> to convert the file into RSA private key. After converting it into RSA key, we change the permission of the </span>RSA<span style="color: #000000;"> key and use it to </span>login<span style="color: #000000;"> through SSH.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">puttygen my_private_key.ppk -O private-openssh -o id_rsa
+chmod 600 id_rsa
+ssh -i id_rsa alice1978@10.10.10.107</pre>
+<p><span style="color: #000000;">After logging in through SSH, we find a file called “user.txt”. We take a look at the contents of the file and find the first flag.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-ffc6I38x0hQ/XGfPt3yb7-I/AAAAAAAAcow/e8tfrQgIHWEeoFNmN6ik7jrhimIBgJwFwCLcBGAs/s1600/4.png"/></span></p>
+<p><span style="color: #000000;">Now we check the files with </span>suid<span style="color: #000000;"> bit enabled and find that “doas” is available on the target machine. It is a command utility similar to </span>the “<span style="color: #000000;">sudo” command. Now we check “/etc/doas.conf” to find what commands we can run. We find that we can run “/usr/bin/ssh-keygen” as user “</span>userca<span style="color: #000000;">”.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">find / -perm -4000 2&gt;/dev/null
+cat /etc/doas.conf</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-HRLz5zBJ7cs/XGfPuZ4m0qI/AAAAAAAAco0/smsh08KK20Y7kaIy1M_mmS92ipnERsUkgCLcBGAs/s1600/5.png"/></span></p>
+<p><span style="color: #000000;">To further enumerate the target machine, we </span>open<span style="color: #000000;"> the ssh configuration file at “/etc/ssh/sshd_config” and find we can run the command “/usr/bin/curl http://127.0.0.1/sshauth?type=key&amp;username=%u” and “/usr/bin/curl http://127.0.0.1/sshauth?type=principals&amp;username=%u”.  </span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-UxEykZAsNzI/XGfPuhlvx1I/AAAAAAAAco4/2KhRHXmYK3MwTxVViCLNDq5KXH79hsU2gCLcBGAs/s1600/6.png"/></span></p>
+<p><span style="color: #000000;">Further enumerating the web application, we find that we can request keys from “http://127.0.0.1/sshauth?type=key&amp;username=%u” and principals from “http://127.0.0.1/sshauth?type=principals&amp;username=%u”, we requested keys for root user and get no response but we are successfully able to get root user’s principal.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">curl "http://127.0.0.1/sshauth?type=key&amp;username=root"
+curl "http://127.0.0.1/sshauth?type=principals&amp;username=root"</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-j_b1AvcNZhA/XGfPuzcl--I/AAAAAAAAco8/yprhDGEzEhMZuA8aawHeZj-De-nLGXRKwCLcBGAs/s1600/7.png"/></span></p>
+<p><span style="color: #000000;">As we have the root user’s principal, we can generate SSH keys and sign them with </span>root’s<span style="color: #000000;"> principal. Doing so will allow us to </span>login<span style="color: #000000;"> through SSH as root. Now we know we can run ssh-keygen to generate SSH keys but </span>first<span style="color: #000000;">, we need </span>a certificate<span style="color: #000000;"> to sign the SSH key. Therefore, we enumerate the machine to find a certificate and find one inside /home/</span>userca<span style="color: #000000;"> directory.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-UXEr3TMa2o4/XGfPuyz32xI/AAAAAAAAcpA/hX5Why6JU6wKLCU_9lc85-HLfZSp5oFzgCLcBGAs/s1600/8.png"/></span></p>
+<p><span style="color: #000000;">Firstly, we generate SSH keys and move them into the /tmp directory. Then we sign the keys as userca to read the certificate inside /home/userca/ca.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ssh-keygen
+mv .ssh/id_rsa* /tmp/
+doas -u userca /usr/bin/ssh-keygen -s /home/userca/ca -n 3m3rgencyB4ckd00r -I root /tmp/id_rsa.pub</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-aKPMDPHhi_0/XGfPvOQ7AZI/AAAAAAAAcpE/pjhSuaNK8m0qRMzo8z3oAA8soTd8VeiIACLcBGAs/s1600/9.png"/></span></p>
+<p><span style="color: #000000;">After signing the RSA keys, we use the RSA key to </span>login<span style="color: #000000;"> through SSH as </span>the root<span style="color: #000000;"> user. After logging in we find a file called “root.txt”. Finally, we take a look inside the content of the file and find the final flag.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ssh -i /tmp/id_rsa root@localhost</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-_qIKG6iKVKk/XGfPtD7F10I/AAAAAAAAcog/sDdNpWt_tCM86RyNrBgX08KRrRHBr_ykQCLcBGAs/s1600/10.png"/></span></p>
+<p><span style="color: #000000;">Thank you for giving your precious time to read this walkthrough. If you want to read more HTB Write-ups. Follow this</span> <strong><a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/">Link.</a></strong> <span style="color: #000000;">Happy Hacking!</span></p>
+<p><span style="color: #000000;"><strong>Author</strong>: Sayantan Bera is a technical writer at hacking articles and </span>cybersecurity<span style="color: #000000;"> enthusiast. Contact</span> <a href="https://www.linkedin.com/in/sayantan-bera-2098a613b/"><strong>Here</strong></a></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

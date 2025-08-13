@@ -1,0 +1,254 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/penetration-testing/" rel="category tag">Penetration Testing</a></span>            </div>
+            <h1 class="post-title entry-title">Android Hooking and SSLPinning using Objection Framework</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/android-hooking-and-sslpinning-using-objection-framework/" rel="bookmark"><time class="entry-date published updated" datetime="2020-12-17T16:06:27+00:00">December 17, 2020</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <h3><span style="color: #800000;"><strong>Introduction</strong></span></h3>
+<p><span style="color: #000000;">Objection is runtime mobile exploration toolkit built on top of frida which is used in Android and iOS pentesting. We can use Objection to perform numerous functions like <strong>SSLPinning</strong> <strong>bypass, root detection bypass, performing memory tasks, heap tasks and more without even being root/ jailbroken.</strong> However, it is to be noted that to take full advantage of all the functions it is recommended for the device to be root. In this article, some of the functions demonstrated will require root and some may not. It is recommended to test the application on a root device. Let’s begin.</span></p>
+<h3><span style="color: #800000;"><strong>Table of Content</strong></span></h3>
+<ul>
+<li><span style="color: #000000;">Setting up Objection</span></li>
+<li><span style="color: #000000;">Attaching Agent and Help Menu</span></li>
+<li><span style="color: #000000;">SSLPinning Bypass</span></li>
+<li><span style="color: #000000;">Android Hooking</span></li>
+<li><span style="color: #000000;">Shell Execution</span></li>
+<li><span style="color: #000000;">FLAG_SECURE Bypass</span></li>
+<li><span style="color: #000000;">Launching Activity Using Objection</span></li>
+<li><span style="color: #000000;">Root Detection Bypass</span></li>
+<li><span style="color: #000000;">Memory Related Tasks</span></li>
+<li><span style="color: #000000;">Conclusion</span></li>
+</ul>
+<h3><span style="color: #800000;"><strong>Setting up Objection</strong></span></h3>
+<p><span style="color: #000000;">Frida is a dynamic instrumentation toolkit that is used to deploy scripts into the testing process of apk. Frida provides APIs for developers to make tools on top of it. One such tool is objection. Before setting up objection, we’ll have to deploy Frida server in the android system.</span></p>
+<p><span style="color: #000000;">So, to do that we’d go over to <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://github.com/frida/frida/releases/tag/14.1.3">this</a> </strong></span>location and download the latest release for android available:</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-q4pLC3J7CrU/X9s4anPxLNI/AAAAAAAArvk/4-NmS-yFJ18XVm0RoBNT2uMCsW3wumLLQCLcBGAsYHQ/s16000/Screenshot_0.png"/></span></p>
+<p><span style="color: #000000;">Now we need to deploy this in android system. First, extract the file in the downloaded location and then we type in the following command:</span></p>
+<pre class="lang:default decode:true">adb connect 192.168.27.101:5555
+chmod 777 frida-server-14.1.3-android-x86_64 &amp;&amp; adb push frida-server-14.1.3-android-x86_64 /tmp/frida-server</pre>
+<p><span style="color: #000000;"><strong><img decoding="async" src="https://1.bp.blogspot.com/-6GTFb4Fgocs/X9s6J-8rw-I/AAAAAAAArvs/h2DV6ztQwKIFnfzsxBJOc6VMUIvQN4WzACLcBGAsYHQ/s16000/Screenshot_0_1.png"/></strong></span></p>
+<p><span style="color: #000000;">To be able to run objection we’ll have to launch the frida server first by doing:</span></p>
+<pre class="lang:default decode:true">adb shell "./tmp/frida-server &amp;"</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-vgtk8TuDAjM/X9s6TkiuYcI/AAAAAAAArvw/H54jGUsIRBEFxdUaC01JhfZoLbhAzfPAwCLcBGAsYHQ/s16000/Screenshot_1.png"/></span></p>
+<p><span style="color: #000000;">And finally, we need to install objection using pip3:</span></p>
+<pre class="lang:default decode:true">pip3 install objection</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-5faev6x3Fdk/X9s6br_ArMI/AAAAAAAArv4/o2xRc4va2_Ivum21m-GmW2SG6fSe5hl5ACLcBGAsYHQ/s16000/Screenshot_1_1.png"/></span></p>
+<p><span style="color: #000000;">And now we are good to go. Now, the packages (apps) installed in an android device are referred to as <strong>gadget </strong>in objection and to interact with an application to test, we’ll have to inject our objection agent in the app. To do so:</span></p>
+<pre class="lang:default decode:true">objection –gadget jakhar.aseem.diva explore
+ping</pre>
+<p><span style="color: #000000;">Pinging rechecks if the agent is successfully attached to the app or not.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-NA7JspKvYVg/X9s6nKtL6mI/AAAAAAAArwA/Vpw8LNj5zFc3SF4Eyx8ShPkiG9GbaprtQCLcBGAsYHQ/s16000/Screenshot_2.png"/></span></p>
+<p><span style="color: #800000;"><strong>Help Menu</strong></span></p>
+<p><span style="color: #000000;">To open the help menu in objection:</span></p>
+<pre class="lang:default decode:true">objection --help</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-6ZLx680UTpo/X9s7GMtesdI/AAAAAAAArwM/OHn6fmzvqScN7gnYwE5YDV81jgN5j4fxwCLcBGAsYHQ/s16000/Screenshot_2_1.png"/></span></p>
+<p><span style="color: #000000;">To launch a help menu in a gadget in Objection, we have two commands:</span></p>
+<pre class="lang:default decode:true">&lt;tab&gt;</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-7t78DN29yhc/X9s7O3ioX0I/AAAAAAAArwQ/JPfjter0ohQorQsv4hhGBOEH99LcN9v0wCLcBGAsYHQ/s16000/Screenshot_2_2.png"/></span></p>
+<p><span style="color: #000000;">Then further, to elaborate about a specific module:</span></p>
+<pre class="lang:default decode:true">help android</pre>
+<p><span style="color: #000000;"><strong><img decoding="async" src="https://1.bp.blogspot.com/-wtMWelXV5MQ/X9s7Y1SLI8I/AAAAAAAArwY/74oF4J0Oi_0q_8dkBHLuot0SBmUkztflgCLcBGAsYHQ/s16000/Screenshot_3.png"/></strong></span></p>
+<h3><span style="color: #800000;"><strong>SSL Pinning Bypass</strong></span></h3>
+<p><span style="color: #000000;">To understand pinning bypass, we’ll first look at what SSL pinning is.</span></p>
+<ol>
+<li><span style="color: #000000;"><strong> <u>Traditional Certificates and self-signed certificate</u></strong><u>:</u> In traditional server-client architecture, a client validates a connection using a certificate presented by a server during handshake. <strong>Certificate is the proof of the identity of a server</strong>. This certificate is proved to be valid only if it is signed by a trusted Certificate Authority (eg: RapidSSL, Symantec, digicert). After the certificate is validated, the data transmission begins which is encrypted based on the cipher suite the certificate has been configured to provide.</span></li>
+</ol>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-1icQ6Ma1snY/X9s7fZg0HFI/AAAAAAAArwg/bYwDhlu37nIN9qzF2DrKUj8dNXIW-MflwCLcBGAsYHQ/s16000/Screenshot_3_1.png"/></span></p>
+<p><span style="color: #000000;">This can be abused by installing a <strong>self-created root CA</strong> certificate on the client system. A common example is Burp Suite’s Portswigger CA. Burp is sort of like a Man in the Middle in this situation and traffic coming from server passes through burp, it intercepts it and tries to forward it to browser but the browser doesn’t trust the burp’s certificate, so it throws an error (ERR_CERT_AUTHORITY_INVALID). Some message is also shown like this:</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-90imViszztA/X9s7m5RJ4RI/AAAAAAAArwk/oxWuo7PYLK0RIgvG3ykg8A66oV1zhQ-wACLcBGAsYHQ/s16000/Screenshot_3_1_1.png"/></span></p>
+<p><span style="color: #000000;">So, to make browser trust burp’s server certificate, a tester installs <strong>cacert.der</strong> in his own system and adds Burp’s certificate as<strong> trusted </strong>so that browser starts trusting Burp’s server certificate and the website accessed through burp’s proxy. This way, the attacker is able to read, modify and send requests originating from his system.</span></p>
+<ol start="2">
+<li><span style="color: #000000;"><strong><u> SSL Pinning</u></strong><u>:</u> Most commonly used in Android APK and iOS IPA, it is a technique deployed by developers in their code at client side to prevent MiTM attacks. It validates server certificates again even after SSL handshaking. <strong>The developers adds or pins a list of trusted certificates to the client application’s code itself and uses it to compare against the server certificates during run time.</strong></span></li>
+</ol>
+<p><span style="color: #000000;">Hence, there is a problem for an attacker now as even if there is a self-generated cert installed on the client device, the communication is still not being intercepted due to the developer embedded certificate pinning code that is within the application. These are generally an <strong>x509 cert</strong> or a public key.</span></p>
+<p><span style="color: #000000;">So, now if there is a mismatch, the connection will be disrupted, and no further communication will take place.</span></p>
+<p><span style="color: #000000;">This can be understood as diagrammatically as follows:</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-X0StZNn81gU/X9s7t-9fFxI/AAAAAAAArws/YPZulv3djVsnjExI4TZCLSnmk0mRCmnEQCLcBGAsYHQ/s16000/Screenshot_3_2.png"/></span></p>
+<p><span style="color: #000000;">More about it can be read on OWASP’s website <span style="color: #0000ff;"><a style="color: #0000ff;" href="https://owasp.org/www-community/controls/Certificate_and_Public_Key_Pinning"><strong>here</strong></a></span><strong>.</strong></span></p>
+<ol start="3">
+<li><span style="color: #000000;"><strong><u> SSL Pinning Bypass</u></strong><u>:</u> To bypass SSL pinning there are further two methods</span></li>
+</ol>
+<p><strong><span style="color: #000000;"><em><u>Method 1:</u></em></span></strong></p>
+<p><span style="color: #000000;">In Android applications, code having some strings like “<strong>checkClientTrusted</strong>” or “<strong>checkServerTrusted</strong>” is generally the code with pinning. It could be some other as well. So, one way to bypass SSL pinning is to decompile the source code, search for this, remove these lines of code, recompile and sign using apktool. More on this would be covered in a further article on reverse engineering Android applications.</span></p>
+<p><strong><span style="color: #000000;"><em><u>Method 2:</u></em></span></strong></p>
+<p><span style="color: #000000;">To bypass SSL pinning we will <strong>inject a custom code</strong> into the application, <strong>while it is running</strong>, so that it adds our self-generated certificate as a trusted certificate for the application. The process of injecting a code while an application is running is called <strong>hooking</strong>. Frida allows a user to create hooks and change an application’s behavior while run time. Hooking also allows a person to intercept software to hardware calls and modify it.</span></p>
+<p><span style="color: #000000;"><strong>Frida hooking</strong>: Now, Frida alone is very much capable of hooking into android apps using javascript. But the knowledge of javascript is essential to coding this manually. There are various scripts available to do this on github like <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://gist.github.com/cubehouse/56797147b5cb22768b500f25d3888a22">here</a> </strong></span>but to avoid this hassle altogether with just a few clicks, is where objection comes in the picture.</span></p>
+<ol start="4">
+<li><span style="color: #000000;"><strong> SSLPinning bypass using Objection</strong>: As stated above, Objection is based over Frida’s API. It also has handsome tools to bypass SSL pinning by generating javascript code and hooking it into the application.</span></li>
+</ol>
+<p><span style="color: #000000;">Let’s see how it is done but before that, we’ll set up burpsuite on our android to intercept the communication from an SSLpinned application.</span></p>
+<p><span style="color: #000000;"><strong>Step 1:</strong> Open burp and add an interface.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-K8hUmy6N_Ro/X9s8CesFW3I/AAAAAAAArw8/nXXso1K-Ik4-mcFVmni353EXG65-nWyTQCLcBGAsYHQ/s16000/Screenshot_4.png"/></span></p>
+<p><span style="color: #000000;"><strong>Step 2:</strong> Add some other port than already being used, say, port 8082. Change the bind to address option to All interfaces and click ok.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-2HOiiEpzm4Q/X9s8Nwj_eAI/AAAAAAAArxA/l4IkJzb_E9M-LELcwsAuNpDHLhy_F1lUQCLcBGAsYHQ/s16000/Screenshot_5.png"/></span></p>
+<p><span style="color: #000000;"><strong>Step 3:</strong> Head over to your android Wi-Fi and click on edit connection (pencil icon)</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-ZxJCQyIgDLw/X9s8fomAe7I/AAAAAAAArxM/8GmH2jZA6GgqXg2SY06ZPGwQJd63D0UewCLcBGAsYHQ/s16000/Screenshot_6.png"/></span></p>
+<p><span style="color: #000000;"><strong>Step 4:</strong> Change proxy to manual and add the hostname as your IP on which burp is being run. Also, change your port to 8082 and click save.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-dRP_DG3awxs/X9s8tMrqFjI/AAAAAAAArxQ/pzh_CDW5nmk2tu78BR1cmd05FpUOYazwACLcBGAsYHQ/s16000/Screenshot_7.png"/></span></p>
+<p><span style="color: #000000;"><strong>Step 5:</strong> Move over to your android device and type “http://burp:8082” and download the burp’s cacert.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Fd9-FNK54cs/X9s8199QhwI/AAAAAAAArxY/5mfIkgOWkikX4qwuETOzdt_yB2vzbrqJQCLcBGAsYHQ/s16000/Screenshot_8.png"/></span></p>
+<p><span style="color: #000000;"><strong>Step 6:</strong> Once the certificate is downloaded, head over to Wi-Fi preferences and down at the bottom you’ll find an option “<strong>install certificates</strong>.” Click on it and choose the certificate you just downloaded. But you’ll note that the downloaded certificate is <strong>in *.der format</strong> and android doesn’t recognise it as a valid certificate. So, we’ll pull the certificate and rename it as “<strong>cert-der.crt</strong>”</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-pXdGa8bQJWI/X9s9Jr8jdAI/AAAAAAAArxk/voVhrHww5CcXbpC4xu0jJJSG6rkJbutGACLcBGAsYHQ/s16000/Screenshot_8_1.png"/></span></p>
+<p>To rename this, we type in the following command:</p>
+<pre class="lang:default decode:true">adb pull /sdcard/Download/cacert.der
+adb push cacert.der /tmp/cert-der.crt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-x3BN4sng8a0/X9s9TfDFPHI/AAAAAAAArxo/QZHlWp0CKu0M86nJb5UXhszW4MqQcr-bgCLcBGAsYHQ/s16000/Screenshot_8_1_1.png"/></span></p>
+<p><span style="color: #000000;"><strong>Step 7:</strong> Once you have downloaded, you’ll find an option to rename the cert. Just type in “cacert” and make sure in credential use apps is selected.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-zoCJ3IrAk38/X9s9eKVeFmI/AAAAAAAArxw/6GHO6BA4GxwBSX_UXBY9HbLDfdmY94GUQCLcBGAsYHQ/s16000/Screenshot_8_2.png"/></span></p>
+<p><span style="color: #000000;"><strong>Step 8:</strong> cacert would now have been successfully installed and you should note that burp has now started capturing all the traffic from the browser and some apps as well. Note that these are only the apps which don’t have SSL pinning enabled.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-6XAQ6Ga0-LA/X9s9mFtEP_I/AAAAAAAArx4/ygJzKcd4wDYbOQ7-l2q6swAheFdJwdK8ACLcBGAsYHQ/s16000/Screenshot_8_3.png"/></span></p>
+<p><span style="color: #000000;">Head over to an HTTPS website and you’ll note the requests are now getting captured. You can verify installed certificate by going in <strong>Settings-&gt;trusted credentials-&gt;users</strong>.</span></p>
+<p><span style="color: #000000;">After installing it, SSL connections are also getting captured now. For example, portswigger.net</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-tZM9lOtgqwQ/X9s9tOxozNI/AAAAAAAArx8/kWOQFyIW4hsU76wyROyH9JVVwbVJp2OTACLcBGAsYHQ/s16000/Screenshot_8_4.png"/></span></p>
+<p><span style="color: #000000;"><strong>Step 9:</strong> Now that everything is set up, we’ll need an application to test SSL Pinning. There is an application in playstore by the name “<strong>Certificate Pinning Demo</strong>.” This app would help us demonstrate SSL pinning bypass using objection. So, install this on the device.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-V86L81FkNaE/X9s-Ad1LJ3I/AAAAAAAAryM/2E9VebeA-LMEtNStUcDYaqrE3vbmNVJpgCLcBGAsYHQ/s16000/Screenshot_10.png"/></span></p>
+<p><span style="color: #000000;"><strong>Step 10:</strong> Head over to the app and pin the HttpURLConnection.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-0INAMhTXV-g/X9s-JM4zMmI/AAAAAAAAryQ/Oc2Ci_J9JUsAAy3ceE25ZW8Xg5XJSRnQgCLcBGAsYHQ/s16000/Screenshot_11.png"/></span></p>
+<p><span style="color: #000000;">Now, when you submit the request for the sample URL already provided by default, i.e, ssllabs.com, we’d note that request has failed due to certificate error even after we have installed our cacert in the device.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-tjonBtAgj2I/X9s-X7ZZE9I/AAAAAAAAryY/6lAvwLWIAjwvIiuPVl3ygxMbLCTZpTFvQCLcBGAsYHQ/s16000/Screenshot_12.png"/></span></p>
+<p><span style="color: #000000;">Heading over to burp, we’d see that no request has been captured. Now, here comes the <strong>interesting part. Bypassing SSLPinning using objection.</strong></span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-fo-hvSDpuX0/X9uAahAc62I/AAAAAAAAr1U/CGKYm3lIGuAFkQBfPxIX8ct-qcR1kK5UgCLcBGAsYHQ/s16000/Screenshot_13.png"/></p>
+<p><span style="color: #000000;"><strong>Step 11:</strong> Attach the package to objection and run explore command:</span></p>
+<pre class="lang:default decode:true">objection –gadget com.osfg.certificatepinning explore</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-iCwZ0bVs5lU/X9s_jI-GGWI/AAAAAAAArys/ez-l5FEHqUM3xNK7C7waDkpGkd27ylUSwCLcBGAsYHQ/s16000/Screenshot_13_1.png"/></span></p>
+<p><span style="color: #000000;"><strong>Step 12:</strong> we’ll use the module android sslpinning to disable SSLPinning while the package is running. Objection is injecting a JavaScript code or “hooking” it using Frida’s agent to do so.</span></p>
+<pre class="lang:default decode:true">android sslpinning disable</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-vyct8PUXYLM/X9s_oZGjLnI/AAAAAAAAryw/IWVKA9YYgVImCPamfiNvGO8NeiG-GBtPwCLcBGAsYHQ/s16000/Screenshot_14.png"/></span></p>
+<p><span style="color: #000000;">Once it is done, click on submit again in the app and check burp for any possible communication it has intercepted.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-qzBsi1-yXsg/X9s_xun7ldI/AAAAAAAAry0/BdP4Aw_ZVvY8ZcX2qQZb9Ozm-huPujh6gCLcBGAsYHQ/s16000/Screenshot_15.png"/></span></p>
+<p><span style="color: #000000;">Now, we see a status code of 200, i.e., connection successfully established with no certificate error. Hence, we have bypassed SSLPinning!</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-TxWcZ4z-Oo8/X9uAlO5riTI/AAAAAAAAr1Y/c-raP1RcRvsQm0BLq18Qo7fQpu0wluaBQCLcBGAsYHQ/s16000/Screenshot_15_1.png"/></p>
+<h3><span style="color: #800000;"><strong>Android Hooking</strong></span></h3>
+<p><span style="color: #000000;">As explained briefly in the SSLPinning Bypass method above, hooking is the process of inserting our code (or hook) while the application is running to modify its behaviour. Hooking enables a client to see the software to hardware communications, modify output/ functions of the methods being used. Frida uses javascript to hook into methods of the application running, so we’ll demonstrate hooking as a concept for a small android application we wrote and use javascript to hook into methods.</span></p>
+<p><span style="color: #000000;">Here, I have written a small code in Java to calculate sum of 10 and 50.</span></p>
+<pre class="lang:default decode:true">package com.example.harshitrajpal;
+import androidx.appcompat.app.AppCompatActivity;
+import android.os.Bundle;
+import android.view.View;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.TextView;
+public class MainActivity extends AppCompatActivity {
+    Button add_button;
+    TextView a,b,sum;
+    double add=0;
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+        a=(TextView)findViewById(R.id.num1);
+        b=(TextView)findViewById(R.id.num2);
+        add_button=(Button) findViewById(R.id.add_button);
+        sum=(TextView)findViewById(R.id.sum);
+        add_button.setOnClickListener(new View.OnClickListener(){
+            public void onClick(View v){
+                sum.setText(Double.toString(returnValue()));
+            }
+        });
+    }
+    double returnValue(){
+        double a1 = 10;
+        double b1 = 50;
+        add= a1 + b1;
+        return add;
+    }
+}</pre>
+<p><span style="color: #000000;">As you can see it is taking two numbers as input and displaying its result.</span></p>
+<p><span style="color: #000000;"><strong>Note: </strong>You can download the source code of the application from <strong><span style="color: #0000ff;"><a style="color: #0000ff;" href="https://github.com/harshitrajpal/sample_android_hooking">here</a></span></strong>.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-ZRknrbmcfPM/X9tALA5mcyI/AAAAAAAArzE/pEngkUHsDiUYz4c-maCKcEZ2fieJSejIwCLcBGAsYHQ/s16000/Screenshot_17.png"/></span></p>
+<p><span style="color: #000000;">Now we’ll create a hook in javascript and try to tamper with the output of the two numbers! As you can see the app is using a function called returnValue to calculate. Maybe we can tamper it.</span></p>
+<p><span style="color: #000000;">Following is the hook that I have created in javascript for the above program in which I have changed the return value to 100:</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-b-NLWZ3D2II/X9tAT1K3mOI/AAAAAAAArzM/EPuFRkWSCfshb2ozR7BEALaeOysjmd3OwCLcBGAsYHQ/s16000/Screenshot_18.png"/></span></p>
+<p><span style="color: #000000;">You can download the code for this javascript file from <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://gist.github.com/harshitrajpal/e5512a58c65e9db2f24b9c79732795ad">here</a></strong></span>.</span></p>
+<p><span style="color: #000000;">Now, when we manually run this code using frida we see the following:</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-hSNaO2kOw84/X9tAbgE1X_I/AAAAAAAArzU/-yO79UwsHjcFSQBn21UDUXvJS6Q6t4loQCLcBGAsYHQ/s16000/Screenshot_18_1.png"/></span></p>
+<p><span style="color: #000000;">And sure enough, when we click on add we see that hook has worked!</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-olzi1vgwF94/X9tAke-XDOI/AAAAAAAArzc/3mllB_ethHQ2wQxrLvgAaQ_lW_SfMzdZgCLcBGAsYHQ/s16000/Screenshot_18_2.png"/></span></p>
+<p><span style="color: #000000;">To make javascript hook code creation easy objection can automate this process. Let’s explore what all options do objection have for hooking. Let’s attach the gadget in objection and explore all related hooking options:</span></p>
+<pre class="lang:default decode:true">objection --gadget com.example.harshitrajpal explore
+android hooking generate simple com.example.harshitrajpal.MainActivity</pre>
+<p><span style="color: #000000;">Now, this code needs to be modified only at the places of comments and we can perform whichever function we’d like the code to do so, while at run time! Interesting isn’t it?</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-ljWAm-9aSWA/X9tAr4TpLWI/AAAAAAAArzk/Nj7xYlxIXXgmH8PA9M6FPVfcdESDN671ACLcBGAsYHQ/s16000/Screenshot_18_2_1.png"/></span></p>
+<p><span style="color: #000000;">It is worth exploring some other related functions in objection which can make our life easy. For example, exploring all the methods in the application which won’t be normally visible unless we decompile the app. This goes like:</span></p>
+<pre class="lang:default decode:true">android hooking list class_methods com.example.harshitrajpal.MainActivity</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-hnCZYJSHa0A/X9tAzqTmbBI/AAAAAAAArzo/1FG91cRLnGEKPz1lfetP9lTpNVuxbcrSQCLcBGAsYHQ/s16000/Screenshot_18_3.png"/></span></p>
+<p><span style="color: #000000;">Similarly, we can also search for all the classes that start have the word “main” in them via the following command:</span></p>
+<pre class="lang:default decode:true">android hooking search classes main</pre>
+<p><span style="color: #000000;">Now, if we want to monitor a particular activity to see what all functions the activity calls and in what logical sequence to better understand how to create hooks, we’d type the following command:</span></p>
+<pre class="lang:default decode:true">android hooking watch class com.example.harshitrajpal.MainActivity --dump-args --dump-backtrace –dump-return</pre>
+<p><span style="color: #000000;"><strong><img decoding="async" src="https://1.bp.blogspot.com/-g3fvV1BDZx0/X9tA57Ae5FI/AAAAAAAArzw/Sjsvbx-WO0cWqznZcNRJsFxHAXq3yjHmwCLcBGAsYHQ/s16000/Screenshot_19_1.png"/></strong></span></p>
+<h3><span style="color: #800000;"><strong>Shell Execution</strong></span></h3>
+<p><span style="color: #000000;">Objection is also able to execute a local shell within its own interface. It’s a handy little trick that saves the hassle of opening new tabs.</span></p>
+<pre class="lang:default decode:true">android shell_exec ls
+android shell_exec whoami</pre>
+<p><span style="color: #000000;"><strong><img decoding="async" src="https://1.bp.blogspot.com/-va5ahVX73kc/X9tBK8A5jxI/AAAAAAAAr0A/opy5UknuDMgh3ZU5rWN-9Red2ADemfSMgCLcBGAsYHQ/s16000/Screenshot_20.png"/> </strong></span></p>
+<h3><span style="color: #800000;"><strong>FLAG_SECURE Bypass</strong></span></h3>
+<p><span style="color: #000000;">Often times android developers set a check-in their code known as “FLAG_SECURE” that prevents users to watch contents of an application while it is minimized. This is a critical function as a lot of apps don’t allow users to view materials while the app is minimized. Switching this flag would toggle that security. Objection has the ability to toggle this flag in run time. First, let’s set the flag to true and see what happens:</span></p>
+<pre class="lang:default decode:true">android ui FLAG_SECURE
+android ui FLAG_SECURE true</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-hjF0iY1Jrgc/X9tBReL9x2I/AAAAAAAAr0E/I_iqtR96QsAqa_FlBDysF4OJeO8J0Yk1wCLcBGAsYHQ/s16000/Screenshot_21.png"/></span></p>
+<p><span style="color: #000000;">Now let’s minimize the app to the drawer and see what this has done. Pretty obvious that we are not able to watch any content while it is minimized</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-vYaNWmu4MMQ/X9tBY0lCS-I/AAAAAAAAr0I/5u5eBVYzACEQqgjZ9q1ZthIPoPsomQLWACLcBGAsYHQ/s16000/Screenshot_22.png"/></span></p>
+<p><span style="color: #000000;">Now let’s turn the flag off</span></p>
+<pre class="lang:default decode:true">android ui FLAG_SECURE false</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-NlTvtwtFIMg/X9tBjyp_usI/AAAAAAAAr0U/K_re6j7mWBwTdhloGaRkFcPxjBWzUMQmQCLcBGAsYHQ/s16000/Screenshot_23.png"/></span></p>
+<p><span style="color: #000000;">Let’s see what happens to the app now when it is minimized. Sure enough, now we are able to see the contents!</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-njowgVR5wdM/X9tBr-044tI/AAAAAAAAr0c/rLyrnGieEU419o6WnU-9wZ1RkZgd0hlGACLcBGAsYHQ/s16000/Screenshot_24.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Launching Activity Using Objection</strong></span></h3>
+<p><span style="color: #000000;">Objection can also be used to launch an activity from within its interface. This is the same as gdb’s am tool with -n option as we saw in the <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.hackingarticles.in/android-pentest-lab-setup-adb-command-cheatsheet/">previous</a> </strong></span>article. To start an activity, we type:</span></p>
+<pre class="lang:default decode:true">android intent launch_activity
+android intent launch_activity jakhar.aseem.diva.APICredsActivity</pre>
+<p><span style="color: #000000;">Note, to launch DIVA’s activity, please attach its gadget first</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-DDfc04uFeRM/X9tBzCw55rI/AAAAAAAAr0g/zNIRtiziDNgT2EcZ2hnBNXerpMLdgQ0EACLcBGAsYHQ/s16000/Screenshot_25.png"/></span></p>
+<p><span style="color: #000000;">And sure enough, the activity has now started</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Ks8KQinuhhA/X9tB5Lp0bOI/AAAAAAAAr0o/ww-yzEiWZtoV4190GHb-lSgx8ZQl-Ey2wCLcBGAsYHQ/s16000/Screenshot_26.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Root Detection Bypass</strong></span></h3>
+<p><span style="color: #000000;">Root detection is a feature that developers code in their application to restrict their apps from running on rooted devices for security purposes. There are again two methods to bypass root detection, one is through reverse-engineering the application and the other is to use a tool like objection.</span></p>
+<p><span style="color: #000000;">To do this in objection, I’ll be using the following commands:</span></p>
+<pre class="lang:default decode:true">android root disable</pre>
+<p><span style="color: #000000;">To simulate root detection again:</span></p>
+<pre class="lang:default decode:true">android root simulate</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-UR_OsFmIrhs/X9tCDTpWueI/AAAAAAAAr0w/dr8NM6iC21kEMjq9_4PY0WVgTGq_IHESgCLcBGAsYHQ/s16000/Screenshot_30.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Memory Related Tasks</strong></span></h3>
+<p><span style="color: #000000;">To play with low-level memory, objection has a handy tool called memory module that allows a person to see what a process is exporting to memory, where it is writing and more!</span></p>
+<p><span style="color: #000000;">Here, let’s see what all modules are loaded into the memory while the gadget is attached</span></p>
+<pre class="lang:default decode:true">memory list modules</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-qGdtuKtJ9RI/X9tCI4xrfDI/AAAAAAAAr04/Va8fYOL8HzEamp8RZaqaRQYrtog_Geh-ACLcBGAsYHQ/s16000/Screenshot_31.png"/></span></p>
+<p><span style="color: #000000;">At the bottom, we would see a Frida module as well.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-XnnFLb89WH8/X9tChgwEWHI/AAAAAAAAr1E/e-sauWBNPo0olQHyIcWiztjJ66-xUELdgCLcBGAsYHQ/s16000/Screenshot_32.png"/></span></p>
+<p><span style="color: #000000;">Now, to see what Frida is exporting and its respective address:</span></p>
+<pre class="lang:default decode:true">memory list exports Frida-agent-32.so</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-5QK8BZKHMwo/X9tCq1R-xZI/AAAAAAAAr1I/HJTinWs0j7wq95bjruDnB_n0dJOIgHAUgCLcBGAsYHQ/s16000/Screenshot_33.png"/></span></p>
+<p><span style="color: #000000;">Similarly, we can also search a particular string in the memory and even write over it. To search a string we type:</span></p>
+<pre class="lang:default decode:true">memory search 4141 –string</pre>
+<p><span style="color: #000000;">And we’d see objection has returned the memory address of the memory block containing the defined string. </span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-p-d3G7cS3nQ/X9uAvbk2rmI/AAAAAAAAr1g/_F641IvsObgjVrKhXsnSf8TgxIruUi33gCLcBGAsYHQ/s16000/Screenshot_34.png"/></p>
+<p><span style="color: #000000;">To write over the memory we have the following command:</span></p>
+<pre class="lang:default decode:true">memory write &lt;address&gt; &lt;string&gt; --string</pre>
+<p><span style="color: #000000;">I’ll not be writing into the memory right now and in-depth coverage of memory-related tasks would be covered in detail in an upcoming article.</span></p>
+<h3><span style="color: #800000;"><strong>Conclusion</strong></span></h3>
+<p><span style="color: #000000;">In this article, we saw a handy tool objection that automates various tasks while doing static and dynamic APK analysis. We also got acquainted with SSLPinning bypass and android hooking. Hope you liked the article.</span></p>
+<p><span style="color: #000000;"><strong>Author: Harshit Rajpal </strong>is an InfoSec researcher and left and right brain thinker. Contact</span><strong> <a class="broken_link" href="https://in.linkedin.com/in/harshit-rajpal-79bb43103">here</a></strong></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">
+<!-- YARPP Thumbnails -->
+<h3>Related posts:</h3>
+<div class="yarpp-thumbnails-horizontal">
+<a class="yarpp-thumbnail" rel="norewrite" href="https://www.hackingarticles.in/a-detailed-guide-on-wfuzz/" title="A Detailed Guide on Wfuzz">
+<span class="yarpp-thumbnail-default"><img src="https://www.hackingarticles.in/wp-content/plugins/yet-another-related-posts-plugin/images/default.png" alt="Default Thumbnail" data-pin-nopin="true"/></span><span class="yarpp-thumbnail-title">A Detailed Guide on Wfuzz</span></a>
+<a class="yarpp-thumbnail" rel="norewrite" href="https://www.hackingarticles.in/containers-vulnerability-scanner-trivy/" title="Containers Vulnerability Scanner: Trivy">
+<span class="yarpp-thumbnail-default"><img src="https://www.hackingarticles.in/wp-content/plugins/yet-another-related-posts-plugin/images/default.png" alt="Default Thumbnail" data-pin-nopin="true"/></span><span class="yarpp-thumbnail-title">Containers Vulnerability Scanner: Trivy</span></a>
+</div>
+</div>
+            </div><!-- .entry-content -->
+            <footer class="post-footer entry-footer">
+                                                
+            </footer><!-- .entry-footer -->
+            
+	<nav class="navigation post-navigation" aria-label="Posts">
+		<h2 class="screen-reader-text">Post navigation</h2>
+		<div class="nav-links"><div class="nav-previous"><a href="https://www.hackingarticles.in/nmap-for-pentester-host-discovery/" rel="prev">Nmap for Pentester: Host Discovery</a></div><div class="nav-next"><a href="https://www.hackingarticles.in/burp-suite-for-pentester-web-scanner-crawler/" rel="next">Burp Suite for Pentester: Web Scanner &amp; Crawler</a></div></div>
+	</nav>        </div>

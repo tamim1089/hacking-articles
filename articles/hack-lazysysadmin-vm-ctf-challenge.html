@@ -1,0 +1,86 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">Hack the Lazysysadmin VM (CTF Challenge)</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/hack-lazysysadmin-vm-ctf-challenge/" rel="bookmark"><time class="entry-date published" datetime="2017-10-17T18:16:20+00:00">October 17, 2017</time><time class="updated" datetime="2025-06-10T20:30:00+00:00">June 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today we are solving the LazySysAdmin: 1 machine from VulnHub. The credit for making this VM machine goes to “Togie Mcdogie” and it is another boot2root challenge where we have to root the server and find the flag to complete the challenge. You can get this VM from <a style="color: #000000;" href="https://www.vulnhub.com/entry/lazysysadmin-1,205/">https://www.vulnhub.com/entry/lazysysadmin-1,205/</a>).</span></p>
+<p><span style="color: #000000;"><strong>Difficulty Level: </strong>Beginner-Intermediate</span></p>
+<h3><span style="color: #800000;"><strong>Table of Content</strong></span></h3>
+<p><span style="color: #000000;"><strong>Scanning</strong> </span></p>
+<ul>
+<li><span style="color: #000000;">Open ports and Running services (Nmap)</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Enumeration </strong></span></p>
+<ul>
+<li><span style="color: #000000;">SMB share folder enumeration</span></li>
+<li><span style="color: #000000;">Credential harvesting</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Exploitation </strong></span></p>
+<ul>
+<li><span style="color: #000000;">Login into WordPress</span></li>
+<li><span style="color: #000000;">WordPress shell upload (Metasploit)</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Privilege Escalation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Sudo rights</span></li>
+</ul>
+<ul>
+<li><span style="color: #000000;">Capture proof.txt</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Let’s Breach!!!</strong></span></p>
+<h3><span style="color: #800000;"><strong>Scanning</strong></span></h3>
+<p><span style="color: #000000;">Let us start form getting to know the IP of VM and as you can see in the screenshot below it is <strong>192.168.1.16.</strong></span></p>
+<pre class="lang:default decode:true">netdiscover</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-ALMj4-4ABb0/XOVVANWqXhI/AAAAAAAAecU/RQHUkgiavyQu-aTGHnm2ALSkEpAkWMfnQCLcBGAs/s1600/1.png"/></span></p>
+<p><span style="color: #000000;">Time to scan the Target’s IP with Nmap. And if you refer the screenshot, we found the host has <strong>Samba</strong>; it has <strong>MySQL</strong>. It even has <strong>InspIRCd</strong> along with the usual <strong>http</strong> and <strong>ssh</strong> services.</span></p>
+<pre class="lang:default decode:true">nmap  -p- -sV 192.168.1.16</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-e_KkcmwEYaw/XOVVBJsGcEI/AAAAAAAAecg/PAITaZOYf6w0zvwLEOw2bclZ1HPiPNBjgCLcBGAs/s1600/2.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Enumeration</strong></span></h3>
+<p><span style="color: #000000;">As we have port <strong>139</strong> and port <strong>445</strong> is open, so we use <strong>smbclient</strong>: smbclient is a client that can ‘talk’ to an SMB/CIFS server) to look for the shared disk. Its operations include things like getting files from the server to the local machine, putting files from the local machine to the server, retrieving directory information from the server and so on.</span></p>
+<p><span style="color: #000000;">As you can observe with the help of smbclient we are able to view the shares of the machine. Moreover, we can use smbclient for sharing the file in the network. Here we are able to login successfully using anonymous login and now we can access the ‘<strong>share$</strong>’ drive.</span></p>
+<p><span style="color: #000000;">In ‘<strong>share$</strong>’ we found WordPress folder as well as three txt files named deets.txt, robots.txt and todolist.txt.   </span></p>
+<pre class="lang:default decode:true">smbclient -L 192.168.1.16
+smbclient  '\\192.168.1.16\share$'
+get deets.txt
+get todolist.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-4kwN6i3dU-I/XOVVBfp49xI/AAAAAAAAeck/_ZFeXkz3Xosz33Gr-99AXhQTmpbHLxRrQCLcBGAs/s1600/3.png"/></span></p>
+<p><span style="color: #000000;">Looking into ‘deets.txt’ we get a <strong>password:12345</strong>. Great! But as of now, we are not sure this password could belong to a user or root.          </span></p>
+<pre class="lang:default decode:true">cat deets.txt
+cat todolist.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-gZtE0dM6akc/XOVVBlh9OeI/AAAAAAAAeco/QSesDV_hcRgmRyASLlkByxKj2M4xl6VPwCLcBGAs/s1600/4.png"/></span></p>
+<p><span style="color: #000000;">Looking further into the ‘WordPress’ folder that we have found earlier, we found the <strong>wp-config.php </strong><strong>file. </strong>Let’s download it.</span></p>
+<pre class="lang:default decode:true">cd wordpress\
+get wp-config.php</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-m67hUF0gtPE/XOVVB57E1iI/AAAAAAAAecs/vcsj3rktWGsHjaBn1LqGuTtpF0rSwJiagCLcBGAs/s1600/5.png"/></span></p>
+<p><span style="color: #000000;">In the <strong>wp-config.php</strong> file, we find the username and password for WordPress login.</span></p>
+<pre class="lang:default decode:true">Username: Admin
+Password: TogieMYSQL12345^^</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-fuEpFN-qnPM/XOVVCaMZZGI/AAAAAAAAecw/OsWDC0kuY08AoGOHnk95g_Z9DZddgRa2gCLcBGAs/s1600/6.png"/></span></p>
+<p><span style="color: #000000;">Now as we already know the WordPress page for admin from the previous list of WordPress content. We access the admin dashboard using the username and password that we found in the wp-config.php file.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-hzF1eLsVah4/XOVVC6fTsxI/AAAAAAAAec0/hwRB1xkE34cl3JDWp7Mv7475W8RxU53UwCLcBGAs/s1600/7.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Exploitation</strong></span></h3>
+<p><span style="color: #000000;">Now that I am successfully logged in, I can upload a payload packaged as a WordPress plugin. The module used here will generate a plugin, pack the payload into it and upload it to server.</span></p>
+<pre class="lang:default decode:true">use exploit/unix/webapp/wp_admin_shell_upload
+set rhosts 192.168.1.16
+set targeturi /wordpress
+set username admin
+set password TogieMYSQL12345^^
+exploit</pre>
+<p><span style="color: #000000;"><strong><img decoding="async" src="https://3.bp.blogspot.com/-UaykFjwxhgo/XOVVC9xAt-I/AAAAAAAAec4/mquA6edA014ZPyKVAdwt2BpB9S5kG995gCLcBGAs/s1600/8.png"/></strong></span></p>
+<p><span style="color: #000000;">Now as you can see as soon as our payload is executed, we get our meterpreter session. But to get a proper shell, we have used the python one-liner to spawn the TTY shell. Now let’s get to the <strong>/etc/passwd</strong> file.</span></p>
+<p><span style="color: #000000;">So, what have we got inside this file here was an entry for user togie and if remembered we had a password:12345 which we have obtained from deet.txt.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-6nD9Au6TncQ/XOVVDOo-xzI/AAAAAAAAec8/G3hkb4KR35oho5VmAOghENfynV7te7mLwCLcBGAs/s1600/9.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Privilege Escalation</strong></span></h3>
+<p><span style="color: #000000;">After logging in as togie by using the password then I checked the sudo rights for him where I found togie has ALL permissions as of root user as you can see in the highlighted text below. Therefore, we try to access root shell by executing the command:</span></p>
+<pre class="lang:default decode:true">sudo -l
+su sudo</pre>
+<p><span style="color: #000000;">\<img decoding="async" src="https://2.bp.blogspot.com/-0W4edJ2GZWQ/XOVVAbIYhiI/AAAAAAAAecY/9UB79il091YreNflM18W7k8CN78VdMdkQCLcBGAs/s1600/10.png"/></span></p>
+<p><span style="color: #000000;">Hereby going inside the root directory and listing its content we found our flag in proof.txt.       </span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-qFzfIX7eA3Y/XOVVAbuFAkI/AAAAAAAAecc/KamPMQ_Uo1YUz5bH2lWAHAnDZVqefaPwACLcBGAs/s1600/11.png"/></span></p>
+<p><span style="color: #000000;"><strong>Author</strong>: Nisha Yadav is trained in Certified Ethical hacking and Bug Bounty Hunter. She is currently working at Ignite Technologies as a Security Analyst. Connect with her <a style="color: #000000;" href="https://www.linkedin.com/in/nisha-yadav-90816120/"><strong>here</strong></a></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

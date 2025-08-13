@@ -1,0 +1,141 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/" rel="category tag">HackTheBox</a></span>            </div>
+            <h1 class="post-title entry-title">Cascade HacktheBox Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/cascade-hackthebox-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2021-01-18T12:38:11+00:00">January 18, 2021</time><time class="updated" datetime="2025-06-23T15:53:45+00:00">June 23, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today, we’re going to solve another Hack the box Challenge called “Cascade” and the machine is part of the retired lab, so you can connect to the machine using your HTB VPN and then start to solve the CTF. This laboratory is of a medium level. Solving this lab is not that tough if have proper basic knowledge of Penetration testing. The credit for making this lab goes to The credit for making this lab goes to VBScrub. Let’s start and learn how to breach it.</span></p>
+<p><span style="color: #000000;"><strong>Level: Medium</strong></span></p>
+<p><span style="color: #000000;"><strong>Task</strong>: find user.txt and root.txt file on the victim’s machine.</span></p>
+<h3><span style="color: #800000;"><strong>Penetration Testing Methodology</strong></span></h3>
+<p><span style="color: #000000;"><strong>Reconnaissance</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Nmap</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Enumeration</strong></span></p>
+<ul>
+<li><span style="color: #000000;">enum4linux for User Enumeration</span></li>
+<li><span style="color: #000000;">Lightweight Directory Access Protocol(LDAP) </span></li>
+<li><span style="color: #000000;">SMB Share</span></li>
+<li><span style="color: #000000;">VNC Registry Password Decryption using  py</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Exploitation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">WinRM Low Privilege Shell</span></li>
+<li><span style="color: #000000;">Enumerating for user flag</span></li>
+<li><span style="color: #000000;">SMB Share Enumeration</span></li>
+<li><span style="color: #000000;">Disassembling .exe and .dll files using dnSpy</span></li>
+<li><span style="color: #000000;">Decrypting AES encrypted hash</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Privilege Escalation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Abusing Active Directory Recycle Bin</span></li>
+<li><span style="color: #000000;">Snugging root.txt</span></li>
+</ul>
+<h3><span style="color: #800000;"><strong>Walkthrough</strong></span></h3>
+<h3><span style="color: #800000;"><strong>Reconnaissance</strong></span></h3>
+<p><span style="color: #000000;">Since these labs are online, therefore they have static IP. The IP of Cascade is 10.129.26.146 so let’s start with nmap port enumeration.</span></p>
+<p><span style="color: #000000;">From the given image below, we can observe that we found ports 53, 88, 135, 139, 389, 445, 636, 3268, 49154, 49155, 49157 and 49158 are open. This means the services like domain, Kerberos-sec , LDAP, multiple RPC ports etc are running in the victim’s network.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -A 10.129.26.146</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-08rk4UpGYtQ/YAVZmxs3pCI/AAAAAAAAtAc/QOCtkPVWXBY-uUunDrlvARZ6cItt8mQPwCLcBGAsYHQ/s16000/1.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Enumeration</strong></span></h3>
+<p><span style="color: #000000;">We saw port 445 (smb) is open which means there may be a shared directory, so to further enumerate this as well as other ports, we tool help of <strong>Enum4Linux</strong> tool. From the result, we got some User details.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">enum4linux 10.129.26.146</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-jELARm_HVmE/YAVi5_Md_3I/AAAAAAAAtAk/Ixq3SWgtL7wwh19OKxp1OxVYD7HprvDMQCLcBGAsYHQ/s16000/2.png"/></span></p>
+<p><span style="color: #000000;">Here is the list of enumerated users we found with help of enum4linux.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Tj8eSzFTF4Y/YAVi-kymcMI/AAAAAAAAtAo/KWj3Au7ZliY2-zFopMS8fkrogaGR9XUtgCLcBGAsYHQ/s16000/3.png"/></span></p>
+<p><span style="color: #000000;">Next, we used ldapsearch to perform LDAP-queries and saved the output in the result.txt file.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ldapsearch -x -b "dc=cascade,dc=local" -H ldap://10.129.26.146</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-5GAKTLBr4CI/YAVjE8d9qJI/AAAAAAAAtAs/rxLI1C4AghEam0Rrd1EJ5Ks_7B9Rf9_QACLcBGAsYHQ/s16000/4.png"/></span></p>
+<p><span style="color: #000000;">The result of the above query gave us a user named Ryan Thompson and also we found base64 encoded string “clk0bjVldmE=”.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-gm2wfeP2i9c/YAVjKE9UJYI/AAAAAAAAtAw/A22RxjEqQKYsR9X1r6f78T4GbcgrZMchQCLcBGAsYHQ/s16000/5.png"/></span></p>
+<p><span style="color: #000000;">Now our next task is to decode the string which we found above in ldapsearch. And we found a password “rY4n5eva”.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">echo "clk0bjVldmE=" | base64 –d</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-wcEL1GRUZyU/YAVjQOw9PFI/AAAAAAAAtA4/roLMFqW3QBIz7qSBZlJfA86WGqpxXANfACLcBGAsYHQ/s16000/6.png"/></span></p>
+<p><span style="color: #000000;">Now our next target focused around TCP Port 139 which was an open NetBIOS-ssn. Since we found a user named Ryan Thompson and the password “rY4n5eva”. So we decided to use smbclient to enumerate any SMB Shared folders.</span></p>
+<p><span style="color: #000000;">Now we went inside the Data share and found a directory named <strong>IT</strong>. Further, we dived inside the directory named <strong>IT </strong>and found a directory named Email. Archives. Now let’s go inside Email. Archives and found file with .html extension named Meeting_Notes_June_2018.html and which we download to our kali system using get command.</span></p>
+<p><span style="color: #000000;">And now again we went back to a directory named <strong>IT </strong>and found another directory named <strong>Temp </strong>and now its time to dive inside Temp directory and we found another directory named <strong>s.smith </strong>which can also be a user. After going inside s.smith we found a file with .reg extension which we download to our kali system using get command.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">smbclient \\\\10.129.26.146\\Data -U r.thompson
+ls
+cd IT
+ls
+cd "Email.Archives"
+ls
+get Meeting_Notes_June_2018.html
+cd ..
+ls
+cd Temp
+ls
+cd s.smith
+ls
+get "VNC Install.reg"</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-_ZiCDypy2-I/YAVjWQDYX-I/AAAAAAAAtA8/FKyrTQ7jeA0APkoxkHbaGd9wqXLJ68SAQCLcBGAsYHQ/s16000/7.png"/></span></p>
+<p><span style="color: #000000;">We looked into the content of html file named Meeting_Notes_June_2018.html and found that the meeting notes talks about TempAdmin user which has the same password as an Administrator account.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-6YtAIIiORtI/YAVjdBKWStI/AAAAAAAAtBE/TW932YGoPws37Dyv5Qj9PhDTqpWANPxxgCLcBGAsYHQ/s16000/8.1.png"/></span></p>
+<p><span style="color: #000000;">Now let’s look inside the content of the file named VNC Install.reg which we found in user s.smith named directory using cat command. Boom we found hex password string.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-kZvl5C0kgEU/YAVjpqiSv9I/AAAAAAAAtBM/ig4ApL034NIcRTuDy6KatFSLhkdmoX5sACLcBGAsYHQ/s16000/8.png"/></span></p>
+<p><span style="color: #000000;">Next task in our hands is to decode the hex password string which we found in VNC Install.reg. We will decode this hex string using this amazing tool named <strong>vncpasswd.py </strong>which is easily available on GitHub.  Here’s the link to download the tool <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://github.com/trinitronx/vncpasswd.py">link</a></strong></span>.</span></p>
+<p><span style="color: #000000;">Then, let’s install the tool and crack the password. Voila, we found our password for user s.smith “<strong>sT333ve2</strong>”.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">./vncpasswd.py -d -H 6bcf2a4b6e5aca0f</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-GZu475CJlBo/YAVjwjn973I/AAAAAAAAtBU/O405np_c89gw6H_WAoOl8ckymvx4DWJGACLcBGAsYHQ/s16000/9.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Exploitation</strong></span></h3>
+<p><span style="color: #000000;">Till now we have found login credentials of User named <strong>s.smith </strong>. So now by using Evil-WinRM we try to access remote machine shell of target machine. As a result, it will give the access of victim shell by providing its Powershell as given below.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">evil-winrm -u s.smith -p sT333ve2 -i 10.129.26.146</pre>
+<p><span style="color: #000000;">After logging in we traversed to the Desktop of the user to read the user.txt flag.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">*Evil-WinRM* PS C:\Users\s.smith\Documents&gt; cd ..
+*Evil-WinRM* PS C:\Users\s.smith\Documents&gt; cd Desktop
+*Evil-WinRM* PS C:\Users\s.smith\Documents&gt; ls
+*Evil-WinRM* PS C:\Users\s.smith\Documents&gt; cat user.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-L1nSsjMcn3g/YAVj-0lphDI/AAAAAAAAtBc/SwRI2qxWqhM87YWQfpr-4gAU8Crbw6HMwCLcBGAsYHQ/s16000/10.png"/></span></p>
+<p><span style="color: #000000;">Now again our next target focused around TCP Port 139 which was an open NetBIOS-ssn. Since we found a user named <strong>s.smith</strong> and the password “<strong>sT333ve2</strong>”. So we decided to use smbclient to enumerate any SMB Shared folders.</span></p>
+<p><span style="color: #000000;">Then, we went inside the Audit share and found two files with <strong>CascAudit.exe</strong> and <strong>CascCrypto.dll</strong> extension and a directory named <strong>DB. </strong>We download the files to our kali system using get command. And next we went inside the directory named DB and found a file with .db extension named <strong>Audit.db</strong> and we download to our kali system using get command.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">smbclient //10.129.26.146/Audit$ -U s.smith
+ls
+get CascAudit.exe
+get CascCrypto.dll
+cd DB
+ls
+get Audit.db</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-yvw1UUfvKyc/YAVkEtsiLfI/AAAAAAAAtBk/rg0r2zAzLCMlBblBFHOtY-ckQmgttixagCLcBGAsYHQ/s16000/11.png"/></span></p>
+<p><span style="color: #000000;">As you can see in the above screenshot that we found <strong>Audit.db</strong> in DB folder which turns out to be SQLite3 file. Now let’s read the content of Database it tells that it contains four tables that are DeletedUserAudit, Ldap, Misc and sqlite_sequence. Here table <strong>LDAP</strong> is useful for us.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-CYvvfzoz2KE/YAVkiQaEpWI/AAAAAAAAtB4/HsJLn6_cAkE306x3mADn28zDeLHngTzGQCLcBGAsYHQ/s16000/12.png"/></span></p>
+<p><span style="color: #000000;">We will use the select command in Ldap table and boom we found another user <strong>ArkSvc</strong> whose password was is in encrypted form and it seems like that it is an AES algorithm. And to decrypt this password we need two different keys.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-8gS6PAmu2Sw/YAVkp0DjL_I/AAAAAAAAtCA/VrejrSQIGwwSwBDY2AABNyHmWMz00tLLACLcBGAsYHQ/s16000/13.png"/></span></p>
+<p><span style="color: #000000;">Now next task in our hand is to disassemble exe and dll files we found in smb share of User s.smith. Here we used a tool named dnSpy. Here is the <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://github.com/dnSpy/dnSpy/releases">link</a> </strong></span>to download the tool <strong>dnSpy</strong> .</span></p>
+<p><span style="color: #000000;">Using dnSpy we disassembled the exe named CascAudit.exe file and tried to extract the information. Now let’s analyse the structure of the program. In class casc.the audit we found MainModule in which we found are decrypt string. Here’s our secret key in clear text in the call to the function Decrypt-String. “c4scadek3y654321”.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-lviPM-9mxCk/YAVk18jY--I/AAAAAAAAtCM/og7RlfWva8Mk5fThgi-M_8P3KpMUJ9GLQCLcBGAsYHQ/s16000/14.png"/></span></p>
+<p><span style="color: #000000;">Let’s move ahead and disassemble the dll file named CascCrypto.dll. Now let’s analyse this module here on clicking the class <strong>CascAudit </strong>here we found that class used <strong>AES algorithm </strong>and we got are  Decrypt-string. Voila, we found our key which is symmetric AES encryption vector IV “1tdyjCbY1Ix49842”.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-fsK64zMvW4I/YAVk8mzzT7I/AAAAAAAAtCQ/chJiUa92Ed4yVJHQbq4MKdRvrqzGgTuLACLcBGAsYHQ/s16000/15.png"/></span></p>
+<p><span style="color: #000000;">Now we have all the required material to decrypt ArkSvc password. Next, we will use an online tool to decrypt the password. To do so here’s the <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.devglan.com/online-tools/aes-encryption-decryption">link</a></strong></span>. Here we will supply the hash in entering text which we found in Audit.db and select CBC mode and enter AES IV found in CascCrypto.dll and then enter the secret key found CascAudit.exe.</span></p>
+<p><span style="color: #000000;">Boom we got our password for user ArkSvc “<strong>w3lc0meFr31nd</strong>”.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Ch-buZyNO88/YAVlDFQyf4I/AAAAAAAAtCY/wpRnPZRTDAwezC6SNGdk__grdkjlHwVCwCLcBGAsYHQ/s16000/17.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Privilege Escalation</strong></span></h3>
+<p><span style="color: #000000;">Now it’s time to escalate privileges on the lab. Since we have found login credentials of user ArkSvc. So now by using Evil-WinRM we try to access a remote machine shell of target machine. As a result, it will give access to victim shell by providing its Powershell as given below.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">evil-winrm -u ArkSvc -p w3lc0meFr31nd -i 10.129.26.146</pre>
+<p><span style="color: #000000;">We navigated to lots of folders but we didn’t found anything useful. So we navigated to documents folder of ArkSvc and used net user command to see the account information and found that the user is in AD Recycle Bin group.</span></p>
+<p><span style="color: #000000;">Now if we go back to Notes file we discovered during smb login we got to know that there was user TempAdmin which has the same password as Administrator and was moved to Recycle Bin.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-XpKwJYrqdYA/YAVlKPu33iI/AAAAAAAAtCg/RESXQ3zgcTM9jsnfHl98ODOptXIomTPdQCLcBGAsYHQ/s16000/18.png"/></span></p>
+<p><span style="color: #000000;">Then, we want to view the content of recycle bin and the procedure to view the content of recycle bin requires the use of Powershell. So we will use this amazing Powershell query which will return all of the deleted objects on our domain. To do so execute the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Get-ADObjectfilter 'isDeleted -eq $true -and name -ne "Deleted Objects"' -includeDeletedObjects</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-QtLjm76cLys/YAVlPO-2rJI/AAAAAAAAtCk/xToCcO2nbaYySdil01gUvftGzZE9IxsRgCLcBGAsYHQ/s16000/19.png"/></span></p>
+<p><span style="color: #000000;">And from the above image, we saw that <strong>TempAdmin </strong>is present in deleted objects. So our next task was to expand our search to include its properties and read them. To do so execute the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Get-ADObject -filter 'isdeleted -eq $true -and name -ne "Deleted Objects"' -includeDeletedObjects -property *</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-nNzTuC7g7XY/YAVlUspDKTI/AAAAAAAAtCs/2Rbj0jmZZSgPBSM4-rCRMA9F85BCbFzWQCLcBGAsYHQ/s16000/20.png"/></span></p>
+<p><span style="color: #000000;">Then let’s take a look at the Deleted Objects. Boom we found the Legacy password for TempAdmin user which is base64 string.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-HEY7jc0oIjU/YAVlbDJuXZI/AAAAAAAAtCw/AkqDvWGbNRow9zvNzvzmQHbwwouWeRI0wCLcBGAsYHQ/s16000/21.png"/></span></p>
+<p><span style="color: #000000;">Now next job in our hands was to decrypt the legacy password of TempAdmin for which we used echo command. After decoding it we found our password for TempAdmin which is same for Administrator as well and the decrypted password is “<strong>baCT3r1aN00dles</strong>”</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-moxxl_SccvE/YAVlf9reRbI/AAAAAAAAtC4/0SpHjV2Jv-YbqELgmpmJyEvZxkCZbNNlgCLcBGAsYHQ/s16000/22.png"/></span></p>
+<p><span style="color: #000000;">Since we have found login credentials of  Administrator. So now by using Evil-WinRM we try to access a remote machine shell of the target machine. As a result, it will give access of victim shell by providing its Powershell as given below. We now enumerate the system, inside “PS C:\Users\ administrator\Documents&gt;” we find a file called “root.txt”. We take a look at the content of the file and find the final flag.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">evil-winrm -u Administrator -p baCT3r1aN00dles -i 10.129.26.146
+cd..
+cd Desktop
+ls
+cat root.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-bxbuMxM3fn8/YAVlnNo9ogI/AAAAAAAAtDA/ml5vohjPGFMk6Pa3ikaDRHwB5gf4C5O1wCLcBGAsYHQ/s16000/23.png"/></span></p>
+<p><span style="color: #000000;">Thank you for giving your precious time to read this walkthrough. If you want to read more HTB Write-ups. Follow this</span> <strong><a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/">Link.</a></strong> <span style="color: #000000;">Happy Hacking!</span></p>
+<p><span style="color: #000000;"><strong>Author: Japneet Kaur Gandhi </strong>is a Technical Writer, Researcher and Penetration Tester.<strong> Contact <span style="color: #0000ff;"><a style="color: #0000ff;" href="https://www.linkedin.com/in/japneet-gandhi/">Here</a></span></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

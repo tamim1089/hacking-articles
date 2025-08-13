@@ -1,0 +1,370 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/nmap/" rel="category tag">Nmap</a></span>            </div>
+            <h1 class="post-title entry-title">Forensic Investigation of Nmap Scan using Wireshark</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/forensic-investigation-of-nmap-scan-using-wireshark/" rel="bookmark"><time class="entry-date published" datetime="2018-01-17T10:31:53+00:00">January 17, 2018</time><time class="updated" datetime="2025-05-28T12:48:51+00:00">May 28, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p class="ai-optimize-6 ai-optimize-introduction"><span style="color: #000000;">Today we are discussing how to read hexadecimal bytes from an IP Packet that helps a network admin to identify various types of NMAP scanning. But before moving ahead please read our previous both articles “<a style="color: #000000;" href="http://www.hackingarticles.in/network-packet-forensic-using-wireshark/"><strong>Network packet forensic</strong></a>” and “<a style="color: #000000;" href="http://www.hackingarticles.in/understanding-nmap-scan-wireshark/"><strong>NMAP scanning with Wireshark</strong></a>” it will help you in a better understanding of this article.</span></p>
+<p class="ai-optimize-7"><span style="color: #000000;"><strong>Requirement</strong></span></p>
+<p class="ai-optimize-8"><span style="color: #000000;"><strong>Attacking Tool</strong>: Nmap</span></p>
+<p class="ai-optimize-9"><span style="color: #000000;"><strong>Analysis Tool</strong>: Wireshark</span></p>
+<p class="ai-optimize-10"><span style="color: #000000;">We are going to calculate hexadecimal bytes of Wireshark using given below table and as we know Wireshark capture network packet mainly of 4 layers which are described below in table as per OSI layer model and TCP/IP layer model.</span></p>
+<p class="ai-optimize-11"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-diTrzrEqvCg/Wl8A25MtJiI/AAAAAAAATWE/5o7srzyP_QwnqREsxdm0SRSbxK77ZdkMwCEwYBhgL/s1600/0.png"/></span></p>
+<h3 class="ai-optimize-12"><span style="color: #000000;"> <span style="color: #800000;">Nmap ARP Scanning</span></span></h3>
+<p class="ai-optimize-13"><span style="color: #000000;"><strong>Let ’s start!!</strong></span></p>
+<p class="ai-optimize-14"><span style="color: #000000;">Hopefully, the reader must be aware of basic NMAP scanning techniques if not then read it from <span style="color: #0000ff;"><a style="color: #0000ff;" href="http://www.hackingarticles.in/network-scanning-using-nmap-beginner-guide/">here</a></span>, now open the terminal and execute given below command which known as “HOST SCAN” to identify a live host in the network.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -sn 192.168.1.100</pre>
+<p class="ai-optimize-15"><span style="color: #000000;">Nmap uses the –sP/-sn flag for host scans and broadcasts ARP request packet to identify which IP is allocated to the particular host machine. From given below image you can observe that “1 host up” message.</span></p>
+<p class="ai-optimize-16"><span style="color: #000000;">Working of ARP Scan for Live Host</span></p>
+<ol>
+<li class="ai-optimize-17"><span style="color: #000000;">Send ARP request for MAC address</span></li>
+<li class="ai-optimize-18"><span style="color: #000000;">Receive MAC address through ARP Reply packet</span></li>
+</ol>
+<p class="ai-optimize-19"><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-2cf9AAnR_Yg/Wl8A2trUCiI/AAAAAAAATWg/4lcJ4ssFfsc76JWYe5ypMARsLB_t-JJSACEwYBhgL/s1600/1.png"/></span></p>
+<h4 class="ai-optimize-20"><span style="color: #000000;">Step to Identify Nmap ARP Scan</span></h4>
+<ul>
+<li class="ai-optimize-21"><span style="color: #000000;"><strong>Collect Ethernet Header details</strong></span></li>
+</ul>
+<p class="ai-optimize-22"><span style="color: #000000;">Here we used Wireshark to capture the network packet coming from victim’s network and in order to analysis only ARP packet we have applied filter “<strong>ip.addr == VICTIM IP || arp</strong>” as shown in given below image. Here you will find 2 arp packets, basically, the 1st arp packet is broadcasting IP for asking MAC address of that network and the 2nd packet is unicast contains Answer of IP query.</span></p>
+<p class="ai-optimize-23"><span style="color: #000000;">Now let’s read Hex value of Ethernet header for identifying source and destination Mac addresses along with that we can also enumerate the bytes used for an encapsulated packet, in order to identify Ether type is being used here.</span></p>
+<p class="ai-optimize-24"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-7doGYeYMtc4/Wl8A2tP098I/AAAAAAAATWQ/8SlyxV25uj0Sl1QfRRf4vkqaMd5qbXSyQCEwYBhgL/s1600/2.1.png"/></span></p>
+<p class="ai-optimize-25"><span style="color: #000000;">Hence from Ethernet header, we can conclude it as ARP broadcast packet asking for destination Mac address. There shouldn’t be any uncertainty in concern with source Mac address who is responsible for sending packet but if we talk about Destination Mac address then we got ff:ff:ff:ff:ff:ff:ff which means exact Destination is the machine is not available here. Further moving ahead we found <strong>Ether</strong> <strong>type 0x0806</strong> highlighted in yellow colour is used for ARP protocol.</span></p>
+<p class="ai-optimize-26"><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-FZNtG2P7_1E/Wl8A3S-74qI/AAAAAAAATWo/SW8wIjQILe8PxuuI_IG_jDw-fRGIyWhDwCEwYBhgL/s1600/2.png"/></span></p>
+<h4 class="ai-optimize-27"><span style="color: #000000;">Collect ARP Header (Request/Reply)</span></h4>
+<p class="ai-optimize-28"><span style="color: #000000;">In order to identify ARP scan, you need to investigate some important parameters which could help a network admin to make a correct assumption in concern of ARP scan.</span></p>
+<p class="ai-optimize-29"><span style="color: #000000;">Try to collect the following details as given below:</span></p>
+<ul>
+<li class="ai-optimize-30"><span style="color: #000000;">Opcode (Request/Reply)</span></li>
+<li class="ai-optimize-31"><span style="color: #000000;">Source Mac</span></li>
+<li class="ai-optimize-32"><span style="color: #000000;">Source IP</span></li>
+<li class="ai-optimize-33"><span style="color: #000000;">Destination MAC</span></li>
+<li class="ai-optimize-34"><span style="color: #000000;">Destination IP</span></li>
+</ul>
+<p class="ai-optimize-35"><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-S1L3reG27Ek/Wl8A6P9tFSI/AAAAAAAATWc/viwbHB81iFQUs53cY1_d0_So5a3TH_1yQCEwYBhgL/s1600/3.png"/></span></p>
+<p class="ai-optimize-36"><span style="color: #000000;">Now with help of the following table, you can read the hex value highlighted in above and below image for ARP Request and Reply packets respectively.</span></p>
+<p class="ai-optimize-37"><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-VSs5NEOw1gE/Wl8A_BDZkaI/AAAAAAAATWI/TcfPOF2WjxkN_45Okasi1UKjsnoWWVAhACEwYBhgL/s1600/4.1.png"/></span></p>
+<p class="ai-optimize-38"><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-1cFncVnuXu0/Wl8A_XWheLI/AAAAAAAATWo/Xb7Bwr-gS2cxFxrDVDFr48QtBhhhtYrgACEwYBhgL/s1600/4.2.png"/></span></p>
+<h3 class="ai-optimize-39"><span style="color: #800000;">Nmap</span><span style="color: #800000;"> ICMP Scanning</span></h3>
+<p class="ai-optimize-40"><span style="color: #000000;">Now execute given below command which known as “HOST SCAN” to identify a live host in a network by sending <strong>Ping request</strong> with the help of ICMP packet.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -sn 192.168.1.100 –disable-arp-ping</pre>
+<p class="ai-optimize-41"><span style="color: #000000;">Now above command will send ICMP request packet instead of ARP request for identifying the live host in a network.</span></p>
+<p class="ai-optimize-42"><span style="color: #000000;">Working of NMAP ICMP Ping when a host is live:</span></p>
+<ol>
+<li class="ai-optimize-43"><span style="color: #000000;">Send ICMP echo <strong>reques</strong>t packet.</span></li>
+<li class="ai-optimize-44"><span style="color: #000000;">Receive ICMP echo <strong>reply.</strong></span></li>
+</ol>
+<p class="ai-optimize-6"><span style="color: #000000;">Send <strong>TCP SYN</strong> packet on any TCP port (this port must be rarely blocked by network admin).</span></p>
+<p class="ai-optimize-7"><span style="color: #000000;">Receive <strong>TCP RST-ACK</strong> from target’s Network.</span></p>
+<p class="ai-optimize-47"><span style="color: #000000;">As a result, NMAP gives “HOST UP” message as shown in given below image.</span></p>
+<p class="ai-optimize-48"><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-e5fHgiRPNgM/Wl8A_QiAzrI/AAAAAAAATWc/zOd3CNRzodgASIl1SdcqxaJ5gk7skImMACEwYBhgL/s1600/4.png"/></span></p>
+<h4 class="ai-optimize-49"><span style="color: #000000;">Step to Identify NMAP ICMP Scan</span></h4>
+<ul>
+<li class="ai-optimize-50"><span style="color: #000000;"><strong>Collect IP Header Details for Protocol version</strong></span></li>
+</ul>
+<p class="ai-optimize-51"><span style="color: #000000;">For reading data of Ethernet head visit to our previous article “<a style="color: #000000;" href="http://www.hackingarticles.in/network-packet-forensic-using-wireshark/">Network packet forensic</a>”.</span></p>
+<p class="ai-optimize-52"><span style="color: #000000;"><strong>NOTE: Ether type for IPv4 is 0x0800</strong></span></p>
+<p class="ai-optimize-53"><span style="color: #000000;">Since we know ICMP is Layer 3 protocol according to the OSI model, therefore, we need to focus on following details for ICMP forensic with help of IP Header of a packet.</span></p>
+<p class="ai-optimize-54"><span style="color: #000000;">Try to collect the following details as given below:</span></p>
+<ol>
+<li class="ai-optimize-55"><span style="color: #000000;">Ip header length 20 Bytes (5bits*4=20 bytes)</span></li>
+<li class="ai-optimize-56"><span style="color: #000000;">Protocol (01 for ICMP)</span></li>
+<li class="ai-optimize-57"><span style="color: #000000;">Source IP</span></li>
+<li class="ai-optimize-58"><span style="color: #000000;">Destination IP</span></li>
+</ol>
+<p class="ai-optimize-59"><span style="color: #000000;">From given below image you can observe Hexadecimal information of IP header field and using the given table you can study these value to obtain their original value.</span></p>
+<p class="ai-optimize-60"><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-mVJDbOKKNEE/Wl8A3xfRNQI/AAAAAAAATWg/VnBHkUs338UA7BWcuc7TFGRJ0TrAf3AbgCEwYBhgL/s1600/23.png"/></span></p>
+<p class="ai-optimize-61"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-U_2K8jLmoUs/Wl8A4PuWESI/AAAAAAAATWM/E3aBH4fpnPILxw2Wrs269-6T5HJagDVHwCEwYBhgL/s1600/24.png"/></span></p>
+<p class="ai-optimize-62"><span style="color: #000000;">The IP header length is always given in form of the bit and here it is 5 bit which is also minimum IP header length and to make it 20 bytes multiple 5 with 4 i.e. 5*4 bytes =20 bytes.</span></p>
+<h4 class="ai-optimize-63"><span style="color: #000000;">Identify ICMP Message type  (Request /Reply)</span></h4>
+<p class="ai-optimize-64"><span style="color: #000000;">Now we had discussed above according to Nmap ICMP scanning technique the <strong>1st packet</strong> is should be <strong>ICMP echo request</strong> packet and <strong>a 2nd packet</strong> is should be of <strong>ICMP echo reply</strong> packet.</span></p>
+<p class="ai-optimize-65"><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-Y7Q9oK2TWRY/Wl8A4OcQuKI/AAAAAAAATWI/1vE-Ax_OQrwCBQEuZqMXE6hFSOJ9KijnwCEwYBhgL/s1600/25.png"/></span></p>
+<p class="ai-optimize-66"><span style="color: #000000;">Now with help of the following table, you can read hex value highlighted in above and below image for ICMP Request and Reply packets respectively.</span></p>
+<p class="ai-optimize-67"><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-92bCZbOCKTw/Wl8A4R7dZtI/AAAAAAAATWg/jyo-J6dL-8kRP-7jC2xux23ixrXRFJQzgCEwYBhgL/s1600/26.1.png"/></span></p>
+<p class="ai-optimize-68"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-3iqSwi7esvM/Wl8A4-lhDqI/AAAAAAAATWM/b4Vy17xH65owL3zO_t2BvASaSVpd2VimACEwYBhgL/s1600/26.png"/></span></p>
+<h4 class="ai-optimize-69"><span style="color: #000000;">Identify TCP Flags </span></h4>
+<p class="ai-optimize-70"><span style="color: #000000;">AS discussed above after ICMP reply, the <strong>3rd packet</strong> should be <strong>of TCP-SYN</strong> packet and <strong>4<sup>th</sup> </strong>should be of <strong>TCP-RST/ACK</strong>.  We had seen in our previous article the hex value of all TCP-Flags are different from each other, so if we are talking for TCP-SYN flag then its Hex value should 0x02.</span></p>
+<p class="ai-optimize-71"><span style="color: #000000;">From given below table you can observe the sequence of TCP flag and how bits of these flags are set for sending the packet to the destination port.</span></p>
+<p class="ai-optimize-72"><span style="color: #000000;">For example, if you found TCP SYN packet then the bit for <strong>SYN flag </strong>is set<strong> 1</strong> for which the binary value will be <strong>000000010 </strong>and its hexadecimal will be <strong>0x02.</strong></span></p>
+<table>
+<tbody>
+<tr>
+<td width="37"><span style="color: #000000;">NS</span></td>
+<td width="38"><span style="color: #000000;">CWR</span></td>
+<td width="37"><span style="color: #000000;">ECE</span></td>
+<td width="37"><span style="color: #000000;">URG</span></td>
+<td width="37"><span style="color: #000000;">ACK</span></td>
+<td width="37"><span style="color: #000000;">PSH</span></td>
+<td width="37"><span style="color: #000000;">RST</span></td>
+<td width="37"><span style="color: #000000;"><strong>SYN</strong></span></td>
+<td width="37"><span style="color: #000000;">FIN</span></td>
+</tr>
+<tr>
+<td width="37"><span style="color: #000000;">0</span></td>
+<td width="38"><span style="color: #000000;">0</span></td>
+<td width="37"><span style="color: #000000;">0</span></td>
+<td width="37"><span style="color: #000000;">0</span></td>
+<td width="37"><span style="color: #000000;">0</span></td>
+<td width="37"><span style="color: #000000;">0</span></td>
+<td width="37"><span style="color: #000000;">0</span></td>
+<td width="37"><span style="color: #000000;"><strong>1</strong></span></td>
+<td width="37"><span style="color: #000000;">0</span></td>
+</tr>
+</tbody>
+</table>
+<p class="ai-optimize-73"><span style="color: #000000;">Sometime you will get the combination of two or more flag in TCP header, so in that scenario take the help of the following table to read the Hex value of such packet to identify TCP flags bits are being set 1.</span></p>
+<p class="ai-optimize-74"><span style="color: #000000;">For example, if you found <strong>TCP SYN/ACK</strong> packets then indicates that SYN &amp; ACK flags are set 1 for which the binary value will be <strong>000010010</strong> and its hexadecimal will be<strong> 0x12</strong></span></p>
+<table>
+<tbody>
+<tr>
+<td width="35"><span style="color: #000000;">NS</span></td>
+<td width="35"><span style="color: #000000;">CWR</span></td>
+<td width="35"><span style="color: #000000;">ECE</span></td>
+<td width="35"><span style="color: #000000;">URG</span></td>
+<td width="35"><span style="color: #000000;"><strong>ACK</strong></span></td>
+<td width="35"><span style="color: #000000;">PSH</span></td>
+<td width="35"><span style="color: #000000;">RST</span></td>
+<td width="35"><span style="color: #000000;"><strong>SYN</strong></span></td>
+<td width="35"><span style="color: #000000;">FIN</span></td>
+</tr>
+<tr>
+<td width="35"><span style="color: #000000;">0</span></td>
+<td width="35"><span style="color: #000000;">0</span></td>
+<td width="35"><span style="color: #000000;">0</span></td>
+<td width="35"><span style="color: #000000;">0</span></td>
+<td width="35"><span style="color: #000000;"><strong>1</strong></span></td>
+<td width="35"><span style="color: #000000;">0</span></td>
+<td width="35"><span style="color: #000000;">0</span></td>
+<td width="35"><span style="color: #000000;"><strong>1</strong></span></td>
+<td width="35"><span style="color: #000000;">0</span></td>
+</tr>
+</tbody>
+</table>
+<p class="ai-optimize-75"><span style="color: #000000;">Therefore I design below table to let you know more about of Hex value when two or more than two flags are set 1.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-Qye0UTNPFYU/Wl8A4076TtI/AAAAAAAATWQ/AtvZeu21Bxo-vK-Jt-tBydm-B2sj8dtPACEwYBhgL/s1600/27.1.png"/></span><br/>
+<span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-UnJGbNyUMEw/Wl8A5emRgyI/AAAAAAAATWY/GEr2EAswF-k-2NizIy30n-EnEqVjDDfJQCEwYBhgL/s1600/27.png"/></span></p>
+<p class="ai-optimize-76"><span style="color: #000000;">The image given above contains the hex value of <strong>TCP-SYN</strong> packets and the image given below contains the hex value of <strong>TCP-RST/ACK</strong> packet from which we can calculate the source port and the destination port of the packet respectively like one given below.</span></p>
+<h5 class="ai-optimize-77"><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-S9yJpAr4FJs/Wl8A5rwdkOI/AAAAAAAATWM/RlWU9XgZtjcDZOlg5YCQB_5FdLyiP4_0ACEwYBhgL/s1600/28.1.png"/></span><br/>
+<span style="color: #000000;"><strong>Conclusion</strong></span></h5>
+<p class="ai-optimize-77"><span style="color: #000000;">So as stated above regarding the working of NMAP ICMP scan, we had obtained the hex value for every packet in the same sequence. Obtaining the hex value for every packet in such sequence gives the indication to the Penetration tester that Someone has Choose NMAP ICMP scan for Network enumeration.</span></p>
+<p class="ai-optimize-78"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-g5Y5HXeEHQQ/Wl8A5t0bRUI/AAAAAAAATWg/jmHd2Ge_2SYOMnDwPZIfMWQiEo93PHd5wCEwYBhgL/s1600/28.png"/></span></p>
+<h3 class="ai-optimize-79"><span style="color: #800000;">Default NMAP Scan (Stealth Scan)</span></h3>
+<p class="ai-optimize-80"><span style="color: #000000;">Here we are going  with the default scan method to enumerate the “open” state of any specific port</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -p80 192.168.1.100</pre>
+<p class="ai-optimize-81"><span style="color: #000000;">Working of Default Scan for open port:</span></p>
+<ol>
+<li class="ai-optimize-82"><span style="color: #000000;">Send TCP-SYN packet</span></li>
+<li class="ai-optimize-83"><span style="color: #000000;">Receive TCP-SYN/ACK</span></li>
+<li class="ai-optimize-84"><span style="color: #000000;">Send TCP-RST packet</span></li>
+</ol>
+<p class="ai-optimize-85"><span style="color: #000000;">It is also known as half Open TCP Scan as it does not send ACK packet after receive SYN/ACK packet.</span></p>
+<p class="ai-optimize-86"><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-wepooyGYuRw/Wl8A5zzxJlI/AAAAAAAATWo/NEd3tZ2hlMMXw5z3-IPHluxzWhaMyHJ7wCEwYBhgL/s1600/29.png"/></span></p>
+<h4 class="ai-optimize-87"><span style="color: #000000;">Step to Identify NMAP Default Scan (Stealth Scan) </span></h4>
+<ul>
+<li class="ai-optimize-88"><span style="color: #000000;"><strong>Collect IP Header Details for Protocol Version</strong></span></li>
+</ul>
+<p class="ai-optimize-89"><span style="color: #000000;">For reading data of Ethernet head visit to our previous article “<a style="color: #000000;" href="http://www.hackingarticles.in/network-packet-forensic-using-wireshark/">Network packet forensic</a>”.</span></p>
+<p class="ai-optimize-90"><span style="color: #000000;"><strong>NOTE: Ether type for IPv4 is 0x0800.</strong></span></p>
+<p class="ai-optimize-91"><span style="color: #000000;">Try to collect the following details as given below:</span></p>
+<ol>
+<li class="ai-optimize-92"><span style="color: #000000;">Ip header length 20 Bytes (5bits*4=20 bytes)</span></li>
+<li class="ai-optimize-93"><span style="color: #000000;">Protocol (6 for TCP)</span></li>
+<li class="ai-optimize-94"><span style="color: #000000;">Source IP</span></li>
+<li class="ai-optimize-95"><span style="color: #000000;">Destination IP</span></li>
+</ol>
+<p><img decoding="async" src="https://i0.wp.com/4.bp.blogspot.com/-xAsEuMBBY3s/Wl8A8gZiy8I/AAAAAAAATWE/Z8DUfca5xEQTDMgkxVEKymLU-rCr7zPqACEwYBhgL/s1600/35.1.png?w=687&amp;ssl=1"/></p>
+<p class="ai-optimize-96"><span style="color: #000000;">From given below image you can observe Hexadecimal information of the IP header field and using the given table you can study these value to obtain their original value.</span></p>
+<p><img decoding="async" src="https://i2.wp.com/3.bp.blogspot.com/--PZecq4pvRY/Wl8A8sxxplI/AAAAAAAATWE/mtMg6wvSnP84Um2FDUZgX0xpGPO7q_C8wCEwYBhgL/s1600/35.png?w=687&amp;ssl=1"/></p>
+<h4 class="ai-optimize-97"><span style="color: #000000;">Analysis TCP Header Details</span></h4>
+<p class="ai-optimize-98"><span style="color: #000000;">Since from the above image we had to obtain Source and Destination IP and protocol used for communication i.e. TCP, now we need to identify the source and Destination port and TCP Flag used for establishing the connection between two systems.</span></p>
+<p class="ai-optimize-99"><span style="color: #000000;">In the image we have highlighted source port in “Light brown” colour and destination port in “yellow colour”, you can use given below table to read the hex value of the given image.</span></p>
+<p class="ai-optimize-100"><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-YST0ZcnZEok/Wl8A62HHtjI/AAAAAAAATWI/2s_RES9qxUoZi5svqgvFaTDPHWq0B1PmACEwYBhgL/s1600/31.1.png"/></span><br/>
+<span style="color: #000000;">So we come to know that here <strong>TCP-SYN </strong>packet is used for sending connection request on Port 80.</span></p>
+<p class="ai-optimize-101"><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-3exrOcyeRQs/Wl8A7Jn4DuI/AAAAAAAATWk/xWzKZE_ojMULMkLNrFrprQTm-C-b1rWAwCEwYBhgL/s1600/31.png"/></span></p>
+<p class="ai-optimize-102"><span style="color: #000000;">Again we read next packet then here we found <strong>hex value 12</strong> indicates that <strong>TCP-SYN/ACK</strong> has been sending from port 80.</span></p>
+<p class="ai-optimize-103"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-QJ5f2nblaBg/Wl8A7eCHmYI/AAAAAAAATWQ/pREOEpqVjZgh-Y-2qBIBd8fWmm3cIvnnwCEwYBhgL/s1600/32.1.png"/></span></p>
+<p class="ai-optimize-104"><span style="color: #000000;">Take the help given above table to read the hex value of the given image. Hex value 12 for TCP flag is used for SYN + ACK as explained above,  and we get <strong>0x12 </strong>by adding Hex value “ 0x02 of SYN” and “0x10 of ACK”. </span></p>
+<p class="ai-optimize-105"><span style="color: #000000;"><img decoding="async" class="" src="https://3.bp.blogspot.com/-5g3dTpPf-Yg/Wl8A7loafkI/AAAAAAAATWQ/UsYwFVrmqRkUQl8UxkniykB_7WoP4fhnACEwYBhgL/s1600/32.png"/></span></p>
+<p class="ai-optimize-106"><span style="color: #000000;">In the image given below, we come to know that <strong>TCP-RST</strong> packet is used for sending Reset connection to Port 80.</span></p>
+<p class="ai-optimize-107"><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-myB8Js8BuMs/Wl8A7zLCqVI/AAAAAAAATWY/M6_ePeWt5i0ouY8m1G_JV1cgoJsU7kEAgCEwYBhgL/s1600/33.1.png"/></span><br/>
+<span style="color: #000000;"><strong>Conclusion!</strong> So as declared above regarding the working of NMAP default scan or NMAP stealth scan we had to obtain the hex value for every packet in the same sequence. Obtaining the hex value for every packet in such sequence gives an indication to the Penetration tester that Someone has Choose NMAP Default scan for Network enumeration.</span></p>
+<p class="ai-optimize-108"><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-FdIXF_DwT4Q/Wl8A8FOoHrI/AAAAAAAATWk/AzRh6cKPA_8yTU6eNzAlY5m-ueDITjNoACEwYBhgL/s1600/33.png"/></span></p>
+<h3 class="ai-optimize-109"><span style="color: #800000;">Nmap</span><span style="color: #800000;"> TCP Scan </span></h3>
+<p class="ai-optimize-110"><span style="color: #000000;">Here we are going  with TCP scan to enumerate state of any specific port</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -sT -p80 192.168.1.100</pre>
+<p class="ai-optimize-111"><span style="color: #000000;">Working of Default Scan for open port:</span></p>
+<ol>
+<li class="ai-optimize-112"><span style="color: #000000;">Send TCP-SYN packet</span></li>
+<li class="ai-optimize-113"><span style="color: #000000;">Receive TCP-SYN/ACK</span></li>
+</ol>
+<ol>
+<li class="ai-optimize-114"><span style="color: #000000;">Send TCP-ACK packet</span></li>
+<li class="ai-optimize-115"><span style="color: #000000;">Send TCP-RST/ACK packet</span></li>
+</ol>
+<p class="ai-optimize-116"><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-0A_5HnPac0k/Wl8A8BS0Z3I/AAAAAAAATWY/2LF_blvx3BoRTSqvOUsBmFILH657ApXoQCEwYBhgL/s1600/34.png"/></span></p>
+<h4 class="ai-optimize-117"><span style="color: #000000;">Step to Identify NMAP TCP Scan  </span></h4>
+<ul>
+<li class="ai-optimize-118"><span style="color: #000000;"><strong>Collect IP Header Details for Protocol Version</strong></span></li>
+</ul>
+<p class="ai-optimize-119"><span style="color: #000000;">For reading data of Ethernet head visit to our previous article “<a style="color: #000000;" href="http://www.hackingarticles.in/network-packet-forensic-using-wireshark/">Network packet forensic</a>”.</span></p>
+<p class="ai-optimize-120"><span style="color: #000000;"><strong>NOTE: Ether type for IPv4 is 0x0800</strong>.</span></p>
+<p class="ai-optimize-121"><span style="color: #000000;">Try to collect the following details as given below:</span></p>
+<ol>
+<li class="ai-optimize-122"><span style="color: #000000;">Ip header length 20 bytes (5bits*4=20 bytes)</span></li>
+<li class="ai-optimize-123"><span style="color: #000000;">Protocol (06 for TCP)</span></li>
+<li class="ai-optimize-124"><span style="color: #000000;">Source IP</span></li>
+<li class="ai-optimize-125"><span style="color: #000000;">Destination IP</span></li>
+</ol>
+<p class="ai-optimize-126"><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-xAsEuMBBY3s/Wl8A8gZiy8I/AAAAAAAATWE/Z8DUfca5xEQTDMgkxVEKymLU-rCr7zPqACEwYBhgL/s1600/35.1.png"/></span></p>
+<p class="ai-optimize-127"><span style="color: #000000;">It is quite similar to NMAP stealth Scan and using a given table you can study these values to obtain their original value.</span></p>
+<p class="ai-optimize-128"><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/--PZecq4pvRY/Wl8A8sxxplI/AAAAAAAATWE/mtMg6wvSnP84Um2FDUZgX0xpGPO7q_C8wCEwYBhgL/s1600/35.png"/></span></p>
+<ul>
+<li class="ai-optimize-129"><span style="color: #000000;"><strong>Analysis TCP Header  Details</strong></span></li>
+</ul>
+<p class="ai-optimize-130"><span style="color: #000000;">NMAP TCP Scan follows <strong>3-way handshake of TCP</strong> connection for enumeration open port. Identifying source and destination port along with Flag hex value (<strong>TCP-SYN</strong>) are similar as above.</span></p>
+<p class="ai-optimize-131"><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-whmgZqLbCoU/Wl8A8h-Ma5I/AAAAAAAATWE/p_-V6fTv2OozE3eQY1Id4G7eZmBtrMWxACEwYBhgL/s1600/36.1.png"/></span></p>
+<p class="ai-optimize-132"><span style="color: #000000;">So we come to know that here <strong>TCP-SYN </strong>packet is used for sending connection request on Port 80.</span><br/>
+<span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-osxv0yIfvtw/Wl8A9ZWgwKI/AAAAAAAATWY/wSWfcxQr0zgn6aQJVx-vz1-Ms1TpIjQBQCEwYBhgL/s1600/36.png"/></span></p>
+<p class="ai-optimize-133"><span style="color: #000000;">Again we read next packet then here we found hex value 12 indicates that <strong>TCP-SYN/ACK</strong> has been sent via port 80.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-pKQpReRo8-s/Wl8A95li5yI/AAAAAAAATWE/a3jk0pBrQOYW6WYu7VaDkhmyr5RUYEDJwCEwYBhgL/s1600/37.1.png"/></span><br/>
+<span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-bSmlB_0zbGI/Wl8A-I2d37I/AAAAAAAATWY/qCR771fLUkMY5vuDe-pt7Z0dMMUfv9RrwCEwYBhgL/s1600/37.png"/></span></p>
+<p class="ai-optimize-134"><span style="color: #000000;">The only difference between Stealth Scan and TCP scan is that here a packet of ACK flag is sent by source machine who initiate the TCP communication.  Again we read next packet then here we found hex value 0x10 indicates that <strong>TCP- ACK</strong> has been sent via port 80.</span></p>
+<p class="ai-optimize-135"><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-WUDpp5yv41k/Wl8A-HEBvQI/AAAAAAAATWk/7aL9wbyTQC4t1gByvUFBBXmTUcKKO1LcwCEwYBhgL/s1600/38.1.png"/></span><br/>
+<span style="color: #000000;"><strong>Conclusion!</strong> So as stated above regarding the working of NMAP TCP scan, we had obtained the hex value for every packet in the same sequence. Obtaining the hex value for every packet in such sequence gives an indication to the Penetration tester that Someone has Choose NMAP Default scan for Network enumeration.</span></p>
+<p class="ai-optimize-136"><span style="color: #000000;"><strong>NOTE:  For  packet TCP-RST/ACK the hex value will be “ 0x14” send by the attacker machine</strong></span></p>
+<p class="ai-optimize-137"><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-osNENlZkUSg/Wl8A-Q1a6PI/AAAAAAAATWg/rCckSFcKZxsp85-yid20Cl0KL5NmpPVgACEwYBhgL/s1600/38.png"/></span></p>
+<h3 class="ai-optimize-138"><span style="color: #800000;"><strong>Nmap</strong></span><span style="color: #800000;"><strong> FIN Scan </strong></span></h3>
+<p class="ai-optimize-139"><span style="color: #000000;">Here we are going with TCP-FIN scan to enumerate “OPEN” state of a particular port in any Linux based system, therefore, execute given below command.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -sF -p22 192.168.1.104</pre>
+<p class="ai-optimize-140"><span style="color: #000000;">Working of FIN Scan for open port: Send  2 packets of TCP-FIN on a specific port</span></p>
+<p class="ai-optimize-141"><span style="color: #000000;">FIN is part TCP flag and NMAP used FIN flag to initiate TCP communication instead of following three-way handshake communication.</span></p>
+<p class="ai-optimize-142"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-CwA5QQC4AVs/Wl8A-9f5D9I/AAAAAAAATWk/fQeum7jk7_AzCOKMfcEbVCjFPecny-sKACEwYBhgL/s1600/39.png"/></span></p>
+<h4 class="ai-optimize-143"><span style="color: #000000;">Step to Identify NMAP FIN Scan  </span></h4>
+<ul>
+<li class="ai-optimize-144"><span style="color: #000000;"><strong>Collect IP Header Details for Protocol Version</strong></span></li>
+</ul>
+<p class="ai-optimize-145"><span style="color: #000000;">For reading data of Ethernet head visit to our previous article “<a style="color: #000000;" href="http://www.hackingarticles.in/network-packet-forensic-using-wireshark/">Network packet forensic</a>”.</span></p>
+<p class="ai-optimize-146"><span style="color: #000000;"><strong>NOTE: Ether type for IPv4 is 0x0800</strong></span></p>
+<p class="ai-optimize-147"><span style="color: #000000;">Try to collect the following details as given below:</span></p>
+<ol>
+<li class="ai-optimize-148"><span style="color: #000000;">Ip header length 20 Bytes (5 bits*4=20 bytes)</span></li>
+<li class="ai-optimize-149"><span style="color: #000000;">Protocol (06 for TCP)</span></li>
+<li class="ai-optimize-150"><span style="color: #000000;">Source IP</span></li>
+<li class="ai-optimize-151"><span style="color: #000000;">Destination IP</span></li>
+</ol>
+<p class="ai-optimize-152"><span style="color: #000000;">It is quite similar to NMAP above Scan and using given below table you can study these values to obtain their original value.</span></p>
+<p class="ai-optimize-153"><span style="color: #000000;"><strong><img decoding="async" src="https://3.bp.blogspot.com/-pbAk9zm2sm8/Wl8A_rUUxGI/AAAAAAAATWg/FdtsHkNQUP8BJni9E1c0Lma0Qz6n_jj7QCEwYBhgL/s1600/40.1.png"/></strong><img decoding="async" src="https://3.bp.blogspot.com/-h-hRs0_ZRxI/Wl8A_1h74sI/AAAAAAAATWM/rnNxR-zA8qIwoEVlN4ouyoaTaqs40j8DwCEwYBhgL/s1600/40.png"/></span></p>
+<ul>
+<li class="ai-optimize-154"><span style="color: #000000;"><strong>Analysis TCP Header  Details</strong></span></li>
+</ul>
+<p class="ai-optimize-155"><span style="color: #000000;">Now lets Identifying the source and destination port along with Flag hex value (<strong>TCP-FIN</strong>) is similar as above.</span></p>
+<p class="ai-optimize-156"><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-8NJ8ODDhvJU/Wl8BAA-jhgI/AAAAAAAATWk/OJ5sLVZvIcc4K8RKYpsPJDbCzqGcmnCHgCEwYBhgL/s1600/41.1.png"/></span></p>
+<p class="ai-optimize-157"><span style="color: #000000;">So, through the given below image and with the help of a table, we learned that the TCP-FIN packet sends a connection request on Port 22.</span></p>
+<p class="ai-optimize-158"><span style="color: #000000;"><strong>Conclusion:</strong> So as declared above regarding the working of NMAP FIN scan, we had obtained the hex value for every packet in the same sequence.</span></p>
+<p class="ai-optimize-159"><span style="color: #000000;">Obtaining the hex value for every packet in such sequence gives an indication to the Penetration tester that Someone has Choose NMAP FIN scan for Network enumeration.</span></p>
+<p class="ai-optimize-160"><span style="color: #000000;"><strong>NOTE: If you found 1st FIN packet (0x01) and 2<sup>nd</sup> RST packet (0x04) then indicates “Closed Port” on the targeted network.</strong></span></p>
+<p class="ai-optimize-161"><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-gXbEajzwZjc/Wl8BAXlfB1I/AAAAAAAATWU/O6zJpVIop84CSZf-poTYS4E1RY_-_HsSACEwYBhgL/s1600/41.png"/></span></p>
+<h3 class="ai-optimize-162"><span style="color: #800000;"><strong>Nmap</strong></span><span style="color: #800000;"><strong> NULL Scan </strong></span></h3>
+<p class="ai-optimize-163"><span style="color: #000000;">Here we are going with TCP Null scan to enumerate “OPEN” state of any specific port in any Linux based system.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -sN -p22 192.168.1.104</pre>
+<p class="ai-optimize-164"><span style="color: #000000;">Working of Null Scan for open port: Send  2 packets of TCP-NONE on a specific port</span></p>
+<p class="ai-optimize-165"><span style="color: #000000;">Here NMAP uses the NONE flag (No flag) to initiate TCP communication, setting the bit of each flag to “0” instead of following three-way handshake communication.</span></p>
+<p class="ai-optimize-166"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-UGA2G90nHiA/Wl8BAnBNwsI/AAAAAAAATWg/qfXwWcDUgW0XKbNkK1haRzu6uCXeHVaMQCEwYBhgL/s1600/42.png"/></span></p>
+<p class="ai-optimize-167"><span style="color: #000000;"><strong>Step </strong><strong>to Identify NMAP Null Scan  </strong></span></p>
+<ul>
+<li class="ai-optimize-168"><span style="color: #000000;"><strong>Collect IP Header Details for Protocol Version</strong></span></li>
+</ul>
+<p class="ai-optimize-169"><span style="color: #000000;">For reading data of Ethernet head visit to our previous article “<a style="color: #000000;" href="http://www.hackingarticles.in/network-packet-forensic-using-wireshark/">Network packet forensic</a>”.</span></p>
+<p class="ai-optimize-170"><span style="color: #000000;"><strong>NOTE: Ether type for IPv4 is 0x0800</strong></span></p>
+<p class="ai-optimize-171"><span style="color: #000000;">Try to collect the following details as given below:</span></p>
+<ol>
+<li class="ai-optimize-172"><span style="color: #000000;">Ip header length 20 Bytes (5bits*4=20 bytes)</span></li>
+<li class="ai-optimize-173"><span style="color: #000000;">Protocol (06 for TCP)</span></li>
+<li class="ai-optimize-174"><span style="color: #000000;">Source IP</span></li>
+<li class="ai-optimize-175"><span style="color: #000000;">Destination IP</span></li>
+</ol>
+<p class="ai-optimize-176"><span style="color: #000000;">It is quite similar to NMAP above Scan and using the given table you can study these values to obtain their original value.</span></p>
+<p class="ai-optimize-177"><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-xDWdgvvqabQ/Wl8BA1jCvCI/AAAAAAAATWg/-pJNoNK6geof9utYZx1cI_elAuSiuSDQwCEwYBhgL/s1600/43.1.png"/></span></p>
+<p><span style="color: #000000;"><strong><br/>
+</strong><img decoding="async" src="https://2.bp.blogspot.com/-9ZbwvCws8Xw/Wl8BBPfKTJI/AAAAAAAATWU/FICJS917mgEu1SQS8T6CTRum781jzR1cACEwYBhgL/s1600/43.png"/></span></p>
+<ul>
+<li class="ai-optimize-178"><span style="color: #000000;"><strong>Analysis TCP Header  Details</strong></span></li>
+</ul>
+<p class="ai-optimize-179"><span style="color: #000000;">Now lets Identifying the source and destination port along with Flag hex value (<strong>TCP-NONE</strong>) is similar as above.</span></p>
+<p class="ai-optimize-180"><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-nmmLIyom8Gk/Wl8BBUJ4YGI/AAAAAAAATWQ/Zf3Mp_M9o6Md-3iazftg29npVtoaOfuXQCEwYBhgL/s1600/44.1.png"/></span></p>
+<p class="ai-optimize-181"><span style="color: #000000;">So through given below image and with help of a table, we come to know that here TCP-NONE packet is used for sending connection request on Port 22.</span></p>
+<p class="ai-optimize-182"><span style="color: #000000;"><strong>Conclusion:</strong> So as stated above regarding the working of NMAP NONE scan. We had obtained the hex value for every packet in the same sequence.</span></p>
+<p class="ai-optimize-183"><span style="color: #000000;">Obtaining the hex value for every packet in such sequence gives an indication to the Penetration tester that someone has Chosen NMAP NONE scan for Network enumeration.</span></p>
+<p class="ai-optimize-184"><span style="color: #000000;"><strong>NOTE: If you found 1st NONE packet (0x00) and 2<sup>nd</sup> RST packet (0x04) then indicates “Closed Port” on the target network.</strong></span></p>
+<p class="ai-optimize-185"><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-yCab7wlfQRo/Wl8BBcKmpoI/AAAAAAAATWY/J1pVlpQI_nAdctQ7MGWM3T2me1hLTdNxQCEwYBhgL/s1600/44.png"/></span></p>
+<h3 class="ai-optimize-186"><span style="color: #800000;"><strong>Nmap </strong></span><span style="color: #800000;"><strong>XMAS Scan </strong></span></h3>
+<p class="ai-optimize-187"><span style="color: #000000;">Here we are going with XMAS scan to enumerate “OPEN” state of any specific port in any Linux based system</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -sX -p22 192.168.1.104</pre>
+<p class="ai-optimize-188"><span style="color: #000000;">Working of XMAS Scan for open port: Send <strong>2 packets of TCP</strong> Flags in a combination of <strong>FIN, PSH, URG</strong> on the specific port.</span></p>
+<p class="ai-optimize-189"><span style="color: #000000;">Here NMAP used 3 TCP flags (FIN, PSH, and URG) to initiate TCP communication and bit of each flag is set “1” instead of following three-way handshake communications.</span></p>
+<p class="ai-optimize-190"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-rGRkGCvw-lI/Wl8BBkkTw2I/AAAAAAAATWc/uOJAeOEZM-kMTNpuljoWqNJ9cVAqRBebgCEwYBhgL/s1600/45.png"/></span></p>
+<p class="ai-optimize-191"><span style="color: #000000;"><strong>Step </strong><strong>to Identify NMAP XMAS Scan  </strong></span></p>
+<ul>
+<li class="ai-optimize-192"><span style="color: #000000;"><strong>Collect IP Header Details for Protocol Version</strong></span></li>
+</ul>
+<p class="ai-optimize-193"><span style="color: #000000;">For reading data of Ethernet head visit to our previous article “<a style="color: #000000;" href="http://www.hackingarticles.in/network-packet-forensic-using-wireshark/">Network packet forensic</a>”.</span></p>
+<p class="ai-optimize-194"><span style="color: #000000;"><strong>NOTE: Ether type for IPv4 is 0x0800</strong></span></p>
+<p class="ai-optimize-195"><span style="color: #000000;">Try to collect the following details as given below:</span></p>
+<ol>
+<li class="ai-optimize-196"><span style="color: #000000;">Ip header length 20 Bytes (5bits*4=20 bytes)</span></li>
+<li class="ai-optimize-197"><span style="color: #000000;">Protocol (06 for TCP)</span></li>
+<li class="ai-optimize-198"><span style="color: #000000;">Source IP</span></li>
+<li class="ai-optimize-199"><span style="color: #000000;">Destination IP</span></li>
+</ol>
+<p class="ai-optimize-200"><span style="color: #000000;">It is quite similar to NMAP above Scan and using the given table you can study these values to obtain their original value.</span></p>
+<p class="ai-optimize-201"><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-2x3Z4c_Ll5Y/Wl8BB9uWsyI/AAAAAAAATWc/4hZuEa8L9tgzDlfXPEs5RMRPP3KZ4ZjmgCEwYBhgL/s1600/46.1.png"/></span></p>
+<p><span style="color: #000000;"><strong><br/>
+</strong><img decoding="async" src="https://3.bp.blogspot.com/-bR_jRooIfoM/Wl8BCBRDt0I/AAAAAAAATWY/Cd9wzsZrFA4c_ieTLLLnxyLBsV4PHLKoQCEwYBhgL/s1600/46.png"/></span></p>
+<ul>
+<li class="ai-optimize-202"><span style="color: #000000;"><strong>Analysis TCP Header  Details</strong></span></li>
+</ul>
+<p class="ai-optimize-203"><span style="color: #000000;">Now lets Identifying the source and destination port along with Flag hex value (<strong>TCP-XMAS</strong>) is similar as above.</span></p>
+<p class="ai-optimize-204"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-LVr8Y9HRGAM/Wl8BCYFNI0I/AAAAAAAATWo/WFkyq9BJ-scDXK_aKdb9g28TRVZMC9sLQCEwYBhgL/s1600/47.1.png"/></span></p>
+<p class="ai-optimize-205"><span style="color: #000000;">So through the given image and with the help of the table. We see that the TCP flags {FIN, PSH, URG} packet sends a connection request on Port 22.</span></p>
+<p class="ai-optimize-206"><span style="color: #000000;"><strong>Conclusion!</strong> So as stated above regarding the working of NMAP XMAS scan. We had obtained the hex value for every packet in the same sequence.</span></p>
+<p class="ai-optimize-207"><span style="color: #000000;">Obtaining the hex value for every packet in such sequence gives the indication to the Penetration tester that someone has Choose NMAP XMAS scanned for Network enumeration.</span></p>
+<p class="ai-optimize-208"><span style="color: #000000;"><strong>NOTE:  </strong></span></p>
+<ul>
+<li class="ai-optimize-209"><span style="color: #000000;">If you found 1st {FIN, PSH, URG} packet (0x29) and 2nd RST packet (0x04) then indicate “Closed Port” on targeted network.</span></li>
+<li class="ai-optimize-210"><span style="color: #000000;">NMAP FIN, NMAP NULL, and NMAP XMAS scan are only applicable on Linux based system</span></li>
+</ul>
+<p class="ai-optimize-211"><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-TO57xmR-0K0/Wl8BCey7MGI/AAAAAAAATWg/TFDVENo_FBUw9mqf8npoQIsh49_3YhmAACEwYBhgL/s1600/47.png"/></span></p>
+<h3 class="ai-optimize-212"><span style="color: #800000;"><strong>Nmap UDP Scan </strong></span></h3>
+<p class="ai-optimize-213"><span style="color: #000000;">Here we are going  with XMAS scan to enumerate state of any specific port in any Linux based system</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -sU -p68 192.168.1.104</pre>
+<p class="ai-optimize-214"><span style="color: #000000;">Working of XMAS Scan for open port: Send  <strong>2 packets of UDP</strong> on a specific port</span></p>
+<p class="ai-optimize-215"><span style="color: #000000;">The TCP communication process is quite different because no Flag establishes a connection or initiates a connection request with the target’s network here.</span></p>
+<p class="ai-optimize-216"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Ima2Z8-RkQA/Wl8BCoP77JI/AAAAAAAATWk/qADyDQRn7I0GDaeoMWgIE8Ljhkh351S_ACEwYBhgL/s1600/48.png"/></span></p>
+<p class="ai-optimize-217"><span style="color: #000000;"><strong>Step </strong><strong>to Identify NMAP UDP Scan  </strong></span></p>
+<ul>
+<li class="ai-optimize-218"><span style="color: #000000;"><strong>Collect IP Header Details for Protocol Version</strong></span></li>
+</ul>
+<p class="ai-optimize-219"><span style="color: #000000;">For reading data of Ethernet head visit to our previous article “<a style="color: #000000;" href="http://www.hackingarticles.in/network-packet-forensic-using-wireshark/">Network packet forensic</a>”.</span></p>
+<p class="ai-optimize-220"><span style="color: #000000;"><strong>NOTE: Ether type for IPv4 is 0x0800</strong></span></p>
+<p class="ai-optimize-221"><span style="color: #000000;">Try to collect the following details as given below:</span></p>
+<ol>
+<li class="ai-optimize-222"><span style="color: #000000;">Ip header length 20 Bytes (5 bits*4=20 bytes)</span></li>
+<li class="ai-optimize-223"><span style="color: #000000;">Protocol (11 for UDP)</span></li>
+<li class="ai-optimize-224"><span style="color: #000000;">Source IP</span></li>
+<li class="ai-optimize-225"><span style="color: #000000;">Destination IP</span></li>
+</ol>
+<p class="ai-optimize-226"><span style="color: #000000;">It is quite similar as NMAP above Scan as “IP header” and “Ethernet header” information will be same either is TCP communication or UDP communication. And you can examine these values to determine their initial value by utilizing the provided table.</span></p>
+<p class="ai-optimize-227"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Wn5s2WOVOQY/Wl8BC-16fWI/AAAAAAAATWg/_FHXJxCulVM0Z53qHiDymOP2sJ0WEoKBACEwYBhgL/s1600/49.1.png"/></span></p>
+<p class="ai-optimize-228"><span style="color: #000000;">Basically, 11 is hex value use for UDP protocol which is quite useful in identify NMAP UDP scan from remanding scanning method.</span></p>
+<p class="ai-optimize-229"><span style="color: #000000;"><img decoding="async" class="" src="https://3.bp.blogspot.com/-DiJyyVjT38U/Wl8BDAROIGI/AAAAAAAATWg/-csBrj1Qy-ADiiKMBMZaxsHj5nXdT7ArQCEwYBhgL/s1600/49.png"/></span></p>
+<h5 class="ai-optimize-237"><span style="color: #000000;"><strong>Analysis UDP Header  Details</strong></span></h5>
+<p class="ai-optimize-231"><span style="color: #000000;">Now lets Identifying the source and destination port an as done above in TCP Scanning.</span></p>
+<p class="ai-optimize-232"><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-J4H5llaLe9s/Wl8BDdyHBSI/AAAAAAAATWk/2R5U5WAKf6QQdZP4vfyi6BqLVfrZ3KwYgCEwYBhgL/s1600/50.1.png"/></span></p>
+<p class="ai-optimize-233"><span style="color: #000000;"><strong>Conclusion!</strong> Obtaining the hex value for every packet in such sequence gives the indication to the Penetration tester that Someone has Choose NMAP UDP scan for Network enumeration.</span></p>
+<p class="ai-optimize-234"><span style="color: #000000;"><strong>NOTE: If you found 1st UDP packet and 2<sup>nd</sup> UDP with ICMP Message Port is unreachable then indicates “Closed Port” on the target network.</strong></span></p>
+<p class="ai-optimize-235"><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-0-VcmT243Fk/Wl8BDkO7WRI/AAAAAAAATWo/Qh5AaHFRFswhRjZEjGk2HAdXs8qUqbWDQCEwYBhgL/s1600/50.png"/></span></p>
+<p class="ai-optimize-236"><strong>Author</strong>: <strong>Yashika Dhir</strong> is a passionate Researcher and Technical Writer at Hacking Articles. She is a hacking enthusiast. contact <strong><a class="broken_link" href="https://www.linkedin.com/in/yashika-dhir/">here</a></strong></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

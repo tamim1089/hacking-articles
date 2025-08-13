@@ -1,0 +1,100 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">Zion: 1.1 Vulnhub Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/zion-1-1-vulnhub-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2020-05-27T22:12:39+00:00">May 27, 2020</time><time class="updated" datetime="2025-06-10T20:10:32+00:00">June 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today, I am going to share a writeup for the boot2root challenge of the Vulnhub machine “Zion: 1.1”. It was actually an intermediate box based on the Linux machine. The goal for this machine is to read the flag.txt file.</span></p>
+<h3><span style="color: #800000;"><strong>Penetration Testing Methodology</strong></span></h3>
+<ul>
+<li><span style="color: #000000;"><strong>Network Scanning</strong></span>
+<ul>
+<li><span style="color: #000000;">Netdiscover scan</span></li>
+<li><span style="color: #000000;">Nmap Scan</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Enumeration</strong></span>
+<ul>
+<li><span style="color: #000000;">Enumerating HTTP service on Browser</span></li>
+<li><span style="color: #000000;">Inspecting the Login Panel using BurpSuite</span></li>
+<li><span style="color: #000000;">Decoding Base64 and Base62 messages</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Exploitation</strong></span>
+<ul>
+<li><span style="color: #000000;">Crafting the Dictionary using Cewl</span></li>
+<li><span style="color: #000000;">Bruteforcing using BurpSuite</span></li>
+<li><span style="color: #000000;">Enumerating the Web Application</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Post Exploitation</strong></span>
+<ul>
+<li><span style="color: #000000;">Connecting using SSH</span></li>
+<li><span style="color: #000000;">Enumerating for Sudo Rights</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Privilege Escalation</strong></span>
+<ul>
+<li><span style="color: #000000;">Abusing Sudo Rights on cp</span></li>
+</ul>
+</li>
+</ul>
+<p><span style="color: #000000;"><strong>Walkthrough</strong></span></p>
+<h3><span style="color: #800000;"><strong>Network Scanning</strong></span></h3>
+<p><span style="color: #000000;">We begin by scanning our network for the target machine using Netdiscover. The target machine is active on 192.168.1.109. Let’s scan it and see which services are running and which ports are open.</span></p>
+<p><span style="color: #000000;">We do an aggressive scan on the target using nmap.</span></p>
+<pre class="lang:default decode:true">nmap -p- -A 192.168.1.109</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-pqfEf2Z-Nmw/Xs7jmL47rUI/AAAAAAAAkWc/vJH42zS9rcInp3cysxRfdIbN1DMfBKTUwCLcBGAsYHQ/s1600/1.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Enumeration</strong></span></h3>
+<p><span style="color: #000000;">The scan gives us a lot of good and useful information, but what stands out the most is that port 22 and 80 are open, let’s explore port 80 first and see what we can find there.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-0NnZvEdRapE/Xs7jqXQyrPI/AAAAAAAAkW8/JxUpmQDHbPIrczK-zx_0hi4ga5S6PeRVwCLcBGAsYHQ/s1600/2.png"/></span></p>
+<p><span style="color: #000000;">Here we see that we have 2 buttons, The “Truth” and “Illusion”. We are given the choice for the Red Pill and Blue Pill similar situation as Neo faced in the Matrix Trilogy by Morpheus. Clicking on the Truth button, we get to a login page.</span></p>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://1.bp.blogspot.com/-mr4QRpMu1CY/Xs7jq2vlXhI/AAAAAAAAkXE/waSBsSPc60YdpBpGGpFRWA1V4ljEsK6vACLcBGAsYHQ/s1600/3.png"/></strong></span></p>
+<p><span style="color: #000000;">After looking around the login panel for some time, I decided to inspect the panel through the BurpSuite. I captured the request in the BurpSuite. Sent the request to the Repeater. Here, upon checking the response of the request, we see that there are some odd parameters containing values that seem to be encrypted.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-iDX4utewSk4/Xs7jrYvXshI/AAAAAAAAkXI/C9ArVsJ3kAEtD4keYTdCccRExjUnIYgIgCLcBGAsYHQ/s1600/4.png"/></span></p>
+<p><span style="color: #000000;">Guessing that the encryption might be Base64, I decided to decode the banner value using the Decoder. This gave us a message that tells us to “Open our mind”. Also it tells us to avoid some characters.</span></p>
+<p><span style="color: #000000;"><strong><img decoding="async" src="https://1.bp.blogspot.com/-JJK1hb30Ikk/Xs7jrhyZBYI/AAAAAAAAkXM/cgFdYZ_lW5YGix8mCH83yuR6YMlIMtl1wCLcBGAsYHQ/s1600/7.png"/></strong></span></p>
+<p><span style="color: #000000;">This means that the message that was left to us is not exactly Base64. If we avoid the characters mentioned in the message we get the encryption that is Base62. So, let’s try to decrypt the message using a Base62 decrypter. You can find one online.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-NWYFIg3CYLE/Xs7jrx_pDdI/AAAAAAAAkXQ/TJvXgEuqYQk9HUFMHskOCj__r-HIm6bwwCLcBGAsYHQ/s1600/9.png"/></span></p>
+<p><span style="color: #000000;">The message that was decoded was that it is giving us the hints for the credentials for the “Zion’s Systems”. It tells us to look at the choice page that we were on few moments before. Also, it gives us the username for the user “morpheus.thematrix”. It also tells us that the user likes to keep simple passwords.</span></p>
+<h3><span style="color: #800000;"><strong>Exploitation</strong></span></h3>
+<p><span style="color: #000000;">There are multiple methods as to how we can try to get the passwords. We can try manually but when we have an arsenal of tools that can do this for us why waste the time. I decided to create a dictionary that can be used to bruteforce the login using cewl. Using cewl is quite simple, we need to provide the URL and the output file path. Cewl will run and create a dictionary for  all the words that are on the webpage.</span></p>
+<pre class="lang:default decode:true">cewl http://192.168.1.109/ -w dict.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-9jwbz4jNV5E/Xs7jmdRfgrI/AAAAAAAAkWU/6AVePId9N_0UBT3Lb9Kbc-RUxltBhPLWQCLcBGAsYHQ/s1600/10.png"/></span></p>
+<p><span style="color: #000000;">Now for the brute force, we decide to use the BurpSuite’s Intruder Module. To use Intruder, we need capture the request at the “Login” button with some sample text inside the password box.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-hjDNyoBU6HQ/Xs7jmWYkkCI/AAAAAAAAkWY/BmanZMPvv4EgVl1sJ_z-wI4cex-_QwmngCLcBGAsYHQ/s1600/11.png"/></span></p>
+<p><span style="color: #000000;">Now that we have the request, we can use it to brute force the login using the Intruder. I gave the sample text as “test”. We can send the request to Intruder using the shortcut “Ctrl + I”.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-AQq8NnBOWuk/Xs7jnXasNVI/AAAAAAAAkWg/nfpoIxnab4Y1mjdPZM9t-PWyBHEJIb9KACLcBGAsYHQ/s1600/12.png"/></span></p>
+<p><span style="color: #000000;">After sending the request to Intruder, we go to the Positions Tab. Here we select the Attack type as Sniper. After setting the Attack type we need to specify the Payload Positions. This is the particular text that is going to be brute-forced. Here we want to brute force the password parameter. So we select the “test” as a place holder. Add the “§” symbol around the text as shown in the image given below by clicking the “Add §” button.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-L6uUoiE2YHg/Xs7jnzN5MfI/AAAAAAAAkWk/OmRiFoKtaBQXc3VTWVKTKMsMGTXXcx-AgCLcBGAsYHQ/s1600/13.png"/></span></p>
+<p><span style="color: #000000;">Next, we moved onto the Payloads Tab. Here we have multiple sections to provide the type of payload we want to provide for the bruteforce. Payload here means the dictionary that we created using Cewl previously. We need to provide the Simple list in the Payload type option under the Payload Sets section. Next, we need to add the contents of the dictionary we created. For this we will use the Load button in the Payload Options section. This will open up a window where we can browse the dictionary we created. After doing the above steps we click on the Start attack button.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-vcX2mQ_QThw/Xs7joMzXXyI/AAAAAAAAkWo/hkMykxqofQwQ9GY-IAxSRHDFBEYuC3LygCLcBGAsYHQ/s1600/14.png"/></span></p>
+<p><span style="color: #000000;">Clicking on the Start attack button opens up a yet other windows where we can see the Burp Suite try multiple requests from the dictionary. We see that we get a redirection from the password interpreted. This could mean that this is the password. Time to check it out.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-PGP0hJGlnJE/Xs7joozaWJI/AAAAAAAAkWs/-ASJvoKk0ZUzLEo8Z1dqnbmvfNwbTpDSACLcBGAsYHQ/s1600/15.png"/></span></p>
+<p><span style="color: #000000;">We go back to the Login Panel, and try the following credentials to login.</span></p>
+<pre class="lang:default decode:true">Username: morpheus.thematrix
+Password: interpreted</pre>
+<p><span style="color: #000000;">This opens up the Zion’s System. Here we see some information about the user w.rabbit . It tells that the user w.rabbit has forgotten his password. So, the Administrator has disabled its logins using the password. But he did something related to the movies. Matrix, I suppose. Also, I see that there is a link for Private key in the top right sections as shown in the image given below.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-KBSq6NqmMQI/Xs7jpIb2TAI/AAAAAAAAkWw/eelCancy1MQg5yeqq2vlC6J7JBOCCaPTwCLcBGAsYHQ/s1600/16.png"/></span></p>
+<p><span style="color: #000000;">The link leads us to a page called rabbit-hole/rsa_priv_key_for_w.rabbit.txt. This is a private key for the user w.rabbit. This means we can login into SSH using this user.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-zqYvHNoERnI/Xs7jpmjSxKI/AAAAAAAAkW0/CyxTQlJL0IYXp8alG8352Cz6B22-KGJYgCLcBGAsYHQ/s1600/17.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Post Exploitation</strong></span></h3>
+<p><span style="color: #000000;">I copied the contents of the key and saved it into a empty file and save it as “key”. Now, since we have the port 22 open on the Target Machine, we will try to login on SSH using this key.  From some enumeration we find the warning.txt file. Here we see that we have to find the flag in the path mentioned. We are given the freedom to choose any method or technique we want. Enumerating further into the mail directory, I found the credentials for the user w.rabbit. We are already logged in as w.rabbit user but with the password we can run process as user w.rabbit. To find out what services we can run with elevated permissions. We can see that cp command can be run with elevated privileges as user dozer.</span></p>
+<pre class="lang:default decode:true">ssh -i key w.rabbit@192.168.1.109
+cat warning.txt
+cat w.rabbit.txt
+sudo -l</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://1.bp.blogspot.com/-KbqO2Ldi6qI/Xs7jpia5QwI/AAAAAAAAkW4/ywV4sfg344cA2ec9KOr34XJDbNJRXKjiQCLcBGAsYHQ/s1600/19.png"/></strong></span></p>
+<p><span style="color: #000000;">This means that we can run the cp command without any password or other verification.</span></p>
+<h3><span style="color: #800000;"><strong>Privilege Escalation</strong></span></h3>
+<p><span style="color: #000000;">In the above step we got the that we can access /bin/cp as sudo for both w.rabbit and dozer and in the process of enumeration we got the sudo password for the w.rabbit. So, let’s try to use the /bin/cp file to escalate to the dozer using /bin/sudo. We tried to copy flag in /tmp directory but unfortunately, we were not able to read the copied flag thus we took help from <a href="https://stackoverflow.com/questions/34326484/how-to-copy-files-and-give-them-permission-of-destination-directory"><strong>here</strong> </a>for the copy command to copy the flag.txt in the tmp folder to display the flag.txt using below command.</span></p>
+<pre class="lang:default decode:true">/bin/sudo -u dozer /bin/cp --no-preserve=mode,ownership /home/dozer/flag.txt /tmp/flag.txt
+cat flag.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-hPgWv_JBHgc/Xs7jqvxLxoI/AAAAAAAAkXA/w_ZwevioAn09vmxUhQ_dm0ObV3xqGX5wwCLcBGAsYHQ/s1600/20.png"/></span></p>
+<p><span style="color: #000000;">Here we got our /home/dozer/flag.txt. So that’s for now. See you next time.</span></p>
+<p><span style="color: #000000;"><strong>Author</strong>: Sushma Ahuja is a Technical Writer, Researcher, and Penetration Tester. Can be Contacted on <a style="color: #000000;" href="https://www.linkedin.com/in/sushma-ahuja-284907157/"><strong>LinkedIn</strong></a></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

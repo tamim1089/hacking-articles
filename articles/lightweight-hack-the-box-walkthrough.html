@@ -1,0 +1,91 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/" rel="category tag">HackTheBox</a></span>            </div>
+            <h1 class="post-title entry-title">Lightweight HacktheBox Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/lightweight-hack-the-box-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2019-05-26T13:46:42+00:00">May 26, 2019</time><time class="updated" datetime="2025-06-27T13:14:33+00:00">June 27, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today we are going to solve another CTF challenge “lightweight”. It is a retired vulnerable lab presented by Hack the Box for helping pentesters to perform online penetration testing according to your experience level; they have a collection of vulnerable labs as challenges, from beginners to Expert level.</span></p>
+<p><span style="color: #000000;"><strong>Level</strong>: Intermediate</span></p>
+<p><span style="color: #000000;"><strong>Task</strong>: To find user.txt and root.txt file</span></p>
+<p><span style="color: #000000;">Note: Since these labs are online available, therefore, they have a static IP. The IP of lightweight is 10.10.10.119</span></p>
+<h3><span style="color: #800000;">Penetration Methodologies</span></h3>
+<p><span style="color: #000000;"><strong>Scanning </strong></span></p>
+<ul>
+<li><span style="color: #000000;">Network Scanning (Nmap)</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Enumeration</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Ldap database Enumerate (Nmap NSE-script)</span></li>
+<li><span style="color: #000000;">HTTP surfing</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Exploiting</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Connect to SSH</span></li>
+<li><span style="color: #000000;">Identify capability folder</span></li>
+<li><span style="color: #000000;">Sniffing password via tcpdump</span></li>
+<li><span style="color: #000000;">Obtain user.txt</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Privilege Escalation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Extracting backup.7z</span></li>
+<li><span style="color: #000000;">Identify another user’s credential</span></li>
+<li><span style="color: #000000;">Exploit openssl capability</span></li>
+<li><span style="color: #000000;">Obtain root.xt</span></li>
+</ul>
+<h3><span style="color: #800000;">Walkthrough</span></h3>
+<h3><span style="color: #800000;">Scanning</span></h3>
+<p><span style="color: #000000;">Let’s start off with our basic Nmap command to find out the open ports and services.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -A 10.10.10.119</pre>
+<p><span style="color: #000000;">As you can observe that it has shown port 389 is open for LDAP services and 22 &amp; 80 are available for ssh and http respectively.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="//1.bp.blogspot.com/-footh6gm82U/XOqWeufAiEI/AAAAAAAAehI/e4Th4VydBxQsAwZeQEyWPwauGLeIaVZpwCLcBGAs/s1600/1.png"/></span></p>
+<h3><span style="color: #000000;"><span style="color: #800000;">Enumeration</span> </span></h3>
+<p><span style="color: #000000;">Therefore, with the help of nmap NSE script we go for LDAP enumeration:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -Pn -p 389 --script ldap-search 10.10.10.119</pre>
+<p><span style="color: #000000;"><img decoding="async" src="//1.bp.blogspot.com/-EemDv0nLZIc/XOqWgslzmAI/AAAAAAAAehg/0YUeeTL5SDowpQe_LHUkKMTjsJPVpGdnwCLcBGAs/s1600/2.png"/></span></p>
+<p><span style="color: #000000;">Luckily! Nmap listed two ldapuser1, ldapuser2 usernames along with a hash of their password from the result of nmap scan, yet we did not crack them.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="//1.bp.blogspot.com/-2pPs2vsXdLE/XOqWg5Z1G9I/AAAAAAAAehk/mNd4Wtg9XAg4YB39wYLIqLhwdhgdVGoKACLcBGAs/s1600/3.png"/></span></p>
+<p><span style="color: #000000;">Since we know that http service was running on port 80 therefore, we navigate to a web browser and browse target IP and welcome by following page where we saw “<em>This site is protected by against brute forcing</em> ” that mean fail2ban could be running inside VM moreover we found <em>three hyperlinks</em>.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="//1.bp.blogspot.com/-OvM1jZbDtbw/XOqWhas_wQI/AAAAAAAAeho/UcglyUlG70M3MJkIbGwNQ-hbnnauXstSgCLcBGAs/s1600/4.png"/></span></p>
+<p><span style="color: #000000;">When I opened the user.php hyperlink I read the highlighted text and according to this text, a user in the machine has been automatically added for us.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="//1.bp.blogspot.com/-L3mGehrcbZg/XOqWhl3HMxI/AAAAAAAAehs/IsIDElFza6YLiF54qO0pfholmcZMlHOLgCLcBGAs/s1600/5.png"/></span></p>
+<h3><span style="color: #800000;">Exploiting</span></h3>
+<p><span style="color: #000000;">Therefore, I try to connect with SSH by using 10.10.14.10:10.10.14.10 as login credential. At this point, I was not sure what should be done to extract hidden flag, therefore, I thought to identify the binary capability files with the help of getcap and saw the fruitful result.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ssh 10.10.14.10@10.10.10.119
+getcap -r / 2&gt;/dev/null</pre>
+<p><span style="color: #000000;"><img decoding="async" src="//1.bp.blogspot.com/-W6zbkLOWUa8/XOqWhshG0bI/AAAAAAAAehw/gDqK8DzM5KsYoVsCwMf2R0vOv0U-JwC2QCLcBGAs/s1600/6.png"/></span></p>
+<p><span style="color: #000000;">As we have seen in the above image that tcpdump has the capabilities to capture all network traffic even in low-privileged access, therefore I trigger the following command to inspect LDAP connection traffic if possible.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">tcpdump -i any -X port ldap</pre>
+<p><span style="color: #000000;">And then navigate to the browser to activate authentication via status.php, since the loading takes time. There’s something behind the action has to happen.</span></p>
+<p><span style="color: #000000;">As result, we observe the following traffic, as predicted, where I found the ldapuser2 password in plaintext.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="//1.bp.blogspot.com/-R-jus0GwhEo/XOqWieRok9I/AAAAAAAAeh0/-QIOgQtEFZ088DYlpOQuwE0SsZ41PD1MACLcBGAs/s1600/7.png"/></span></p>
+<p><span style="color: #000000;">Then we switch the user with the following credential and obtain our first flag user.txt</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Username: ldapuser2
+Password: 8bc8251332abe1d7f105d3e53ad39ac2</pre>
+<p><span style="color: #000000;"><img decoding="async" src="//1.bp.blogspot.com/-cuHdsjpOVjc/XOqWiooYTLI/AAAAAAAAeh4/Ny2xCp7JuWgEYlzN6Ba2b5HCLDjp7SFNQCLcBGAs/s1600/8.png"/></span></p>
+<h3><span style="color: #000000;"><span style="color: #800000;">Privilege Escalation</span> </span></h3>
+<p><span style="color: #000000;">Inside the directory /ldapuser2, I found an archive as <strong>backup.7z</strong> and for its inspection, we need to transfer this file mine in our local machine.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cat backuo.7z | base64</pre>
+<p><span style="color: #000000;"><img decoding="async" src="//1.bp.blogspot.com/-jmCU7SXppWY/XOqWjF8xKdI/AAAAAAAAeh8/_Nx1s7freEM15T5zRw8CB4ef3DyYLPHQACLcBGAs/s1600/9.png"/></span></p>
+<p><span style="color: #000000;">So, I copied it in our machine and try to extract the file, but it was password protected.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="//1.bp.blogspot.com/-emOgBzB6Lnw/XOqWeScozWI/AAAAAAAAehE/39eH0B3CVqoqhTUsYVCqo-eE02x2lIzhwCLcBGAs/s1600/10.png"/></span></p>
+<p><span style="color: #000000;">Then, by using an online link “lostmyoass.com,” I try to break the password key and then find out the cracked password: delete as in the image below.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="//1.bp.blogspot.com/-h2daLT07Eis/XOqWeiyo7DI/AAAAAAAAehM/FFpxcET_cyImDJSHKpr1SdiIybwpQJjHwCLcBGAs/s1600/11.png"/></span></p>
+<p><span style="color: #000000;">And use the “delete” password to extract the directory. I found some php files here and we looked for a status.php file among those files.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="//1.bp.blogspot.com/-ugylHv4K3x8/XOqWfgC0m2I/AAAAAAAAehQ/FH1uGDfiFps3j8RhMRylP9zSDOrjmp7CACLcBGAs/s1600/12.png"/></span></p>
+<p><span style="color: #000000;">The status.php file reveals the password of ldapuser1 as shown in the image.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="//1.bp.blogspot.com/-2QGScy1Q9kI/XOqWfjMFWfI/AAAAAAAAehU/9xClo1F6Sk4xXpq7KvddFGfT5X3ze3sPgCLcBGAs/s1600/13.png"/></span></p>
+<p><span style="color: #000000;">Thus, we switched to ldapuser1 and navigate inside the directory of ldapuser1</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">su ldapuser1
+password: f3ca9d298a553da117442deeb6fa932d</pre>
+<p><span style="color: #000000;"><img decoding="async" src="//1.bp.blogspot.com/-mraoihJIV2A/XOqWf8MTSnI/AAAAAAAAehY/PBBbuNFQoHk7c0aLwCp9Jjw5srgtdzSQACLcBGAs/s1600/14.png"/></span></p>
+<p><span style="color: #000000;">This time once again I checked for file capacity where I saw OpenSSL has all privileges to read a file that owned root user and therefore we decided to grab root.txt directly through OpenSSL.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">getcap -r / 2&gt;/dev/null
+./openssl base64 -a -in /root/root.txt | base64 -d</pre>
+<p><span style="color: #000000;"><img decoding="async" src="//1.bp.blogspot.com/--4a2EFneQGI/XOqWgVza9EI/AAAAAAAAehc/Jih22zc1O5YgzYWBoNqZGH-8ZfEJa6GLwCLcBGAs/s1600/15.png"/></span></p>
+<p><span style="color: #000000;">Thank you for giving your precious time to read this walkthrough. If you want to read more HTB Write-ups. Follow this</span> <strong><a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/">Link.</a></strong> <span style="color: #000000;">Happy Hacking!</span></p>
+<p><span style="color: #000000;"><strong>Author:</strong> Amina Aggarwal is a Technical Writer at Hacking Articles an Information Security Enthusiast and Security Researcher. Contact <strong><a href="https://www.linkedin.com/in/aminaagg/">here</a></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

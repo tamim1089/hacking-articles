@@ -1,0 +1,124 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/red-teaming/" rel="category tag">Red Teaming</a></span>            </div>
+            <h1 class="post-title entry-title">Evil SSDP: Spoofing the SSDP and UPnP Devices</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/evil-ssdp-spoofing-the-ssdp-and-upnp-devices/" rel="bookmark"><time class="entry-date published" datetime="2020-02-17T16:14:17+00:00">February 17, 2020</time><time class="updated" datetime="2025-06-02T13:54:06+00:00">June 2, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p class="ai-optimize-7 ai-optimize-introduction">Spoof SSDP replies and create fake UPnP devices to phish for credentials and NetNTLM challenge/response.</p>
+<h3 class="ai-optimize-9"><span style="color: #800000;">Table of Content</span></h3>
+<ul>
+<li class="ai-optimize-10"><strong>Introduction</strong>
+<ul>
+<li class="ai-optimize-11">What is SSDP?</li>
+<li class="ai-optimize-12">What are UPnP devices?</li>
+</ul>
+</li>
+<li class="ai-optimize-13"><strong>Installation </strong></li>
+<li class="ai-optimize-14"><strong>Spoofing Scanner SSDP</strong>
+<ul>
+<li class="ai-optimize-15">Template Configuration</li>
+<li class="ai-optimize-16">Manipulating User</li>
+<li class="ai-optimize-17">Grabbing the Credentials</li>
+</ul>
+</li>
+<li class="ai-optimize-18"><strong>Spoofing Office365 SSDP</strong>
+<ul>
+<li class="ai-optimize-19">Template Configuration</li>
+<li class="ai-optimize-20">Manipulating User</li>
+<li class="ai-optimize-21">Grabbing the Credentials</li>
+</ul>
+</li>
+<li class="ai-optimize-22"><strong>Spoofing Password Vault SSDP</strong>
+<ul>
+<li class="ai-optimize-23">Template Configuration</li>
+<li class="ai-optimize-24">Manipulating User</li>
+<li class="ai-optimize-25">Grabbing the Credentials</li>
+</ul>
+</li>
+<li class="ai-optimize-26"><strong>Spoofing Microsoft Azure SSDP</strong>
+<ul>
+<li class="ai-optimize-27">Template Configuration</li>
+<li class="ai-optimize-28">Manipulating User</li>
+</ul>
+</li>
+<li class="ai-optimize-29"><strong>Mitigation</strong></li>
+</ul>
+<h3 class="ai-optimize-30"><span style="color: #800000;">Introduction</span></h3>
+<h4 class="ai-optimize-31">What is SSDP?</h4>
+<p class="ai-optimize-32">SSDP, or Simple Service Discovery Protocol, a network protocol, enables the advertisement and discovery of network services. Notably, it can operate without any DHCP or DNS configuration, which makes it particularly useful in dynamic environments. Originally, developers designed it for use in residential or small office settings. Furthermore, it uses UDP as the underlying transport protocol, specifically on port 1900. In operation, it utilizes the HTTP method NOTIFY to announce the establishment or withdrawal of services to a multicast group. Ultimately, it serves as the foundation of the discovery protocol known as UPnP.</p>
+<h4 class="ai-optimize-33">What are UPnP devices?</h4>
+<p class="ai-optimize-34">UPnP or Universal Plug and Play is a set of networking protocols that allows networked devices, such as personal computers, printers, Internet gateways, Wi-Fi access points, and mobile devices to discover each other’s availability on the network and establish network services for communications, data sharing, and entertainment. The UPnP architecture supports zero-configuration networking. A UPnP compatible device from any vendor can dynamically join a network, obtain an IP address, announce its name, advertise or convey its capabilities upon request, and learn about the presence and capabilities of other devices.</p>
+<p class="ai-optimize-35">Now that we understand the basic functions of SSDP or UPnP, let’s use it to manipulate the target user in order to steal their credentials.</p>
+<h4 class="ai-optimize-36">Installation</h4>
+<p class="ai-optimize-37">The Evil SSDP was developed by <a href="https://twitter.com/init_string">initstring</a>. This tool is hosted on GitHub. We will be using the git clone command to clone all the contents of the git onto our attacker machine. The git clone command will create a directory with the same name as on GitHub. Since developers created the tool in Python version 3, we will have to use python3 followed by the name of the .py file in order to run the program. Here we can see a basic help screen of the tool.</p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">git clone https://github.com/initstring/evil-ssdp.git
+cd evil-ssdp/
+ls
+python3 evil_ssdp.py --help</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-O6lddDvxqts/Xkq5PHqeE_I/AAAAAAAAisQ/FKOCxVwT9cMy54lLy0SsYcKoM5Q95K5mQCLcBGAsYHQ/s1600/1.png"/></p>
+<p class="ai-optimize-38">In the cloned directory, we will find a directory named templates. The pre-compiled templates can be used to phish the target user.</p>
+<h3 class="ai-optimize-39"><span style="color: #800000;">Spoofing Scanner SSDP</span></h3>
+<p class="ai-optimize-40">Then, That we ran the tool without any issues, let’s use it to gain some sweet credentials. In this first Practical, we will be spoofing a Scanner as a reliable UPnP device. To begin, we will have to configure the template.</p>
+<h4 class="ai-optimize-41">Template Configuration</h4>
+<p class="ai-optimize-42">To use the tool, we will have to provide the network interface. Here, on our attacker machine, we have the “eth0” as our interface, you can find your interface using the “ifconfig” command.</p>
+<p class="ai-optimize-43">After providing the interface, we will use the “–template” parameter to pass a template that we found earlier in the templates directory. To spoof a scanner, we will be running the following command. As we can see that the tool has done its job and hosted multiple template files on our attacker machine at port 8888. We also have the SMB pointer hosted as well.</p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ls templates/
+python3 evil_ssdp.py eth0 --template scanner</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-kg05jQ03Fnw/Xkq5Qing_qI/AAAAAAAAisk/GYK8MuCKqKUalqh3DHGWVRoyDlAQaxUrwCLcBGAsYHQ/s1600/2.png"/></p>
+<h4 class="ai-optimize-44"><span style="color: #000000;">Manipulating User</span></h4>
+<p class="ai-optimize-45">The next logical step is to manipulate the user to click on the application. Being on the same network as the target will show our fake scanner on its explorer. This is where the UPnP is in works. The Evil SSDP tool creates this genuine-looking scanner on the system on the target without any kind of forced interaction with the target.</p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-_05xXp10Buk/Xkq5Qz4yosI/AAAAAAAAiso/HdHr0qJ59rkR2ur_UYcrHMdf93uqMhXUwCLcBGAsYHQ/s1600/3.png"/></p>
+<p class="ai-optimize-46">When we click the icon inside the Explorer, the default Web Browser will redirect us, opening our hosted link. The templates that we used come into play here. The user now realizes that he/she is indeed connecting to a genuine scanner or a fake UPnP device that we generated. An unaware target, having no clue, enters the valid credentials on this template as shown in the image given below.</p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-lp2DBNRl12A/Xkq5RBtGvgI/AAAAAAAAiss/G9jSOVdBO4wnRKixpXlbj6BJeCTBWz7cACLcBGAsYHQ/s1600/4.png"/></p>
+<h4 class="ai-optimize-47"><span style="color: #000000;">Grabbing the Credentials</span></h4>
+<p class="ai-optimize-48">As soon as the target user enters the credentials, we check our terminal on the attacker machine to find that we have the credentials entered by the user. Since no conversation is required for each target device, every user in the network can see our fake scanner. This means the scope of this kind of attack is limitless.</p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-RAI02igc4F4/Xkq5RSJ3j2I/AAAAAAAAisw/p47jd_jyyAE3RQIpms6nd-TzsPygD4CXQCLcBGAsYHQ/s1600/5.png"/></p>
+<h3 class="ai-optimize-49"><span style="color: #800000;">Spoofing Office365 SSDP</span></h3>
+<p class="ai-optimize-50">In the previous practical, we spoofed the scanner to the target user. Now, ongoing through the template directory, we found the Office365 template. Let’s use it.</p>
+<h4 class="ai-optimize-51">Template Configuration</h4>
+<p class="ai-optimize-52">As we did previously, let’s begin with the configuration of the template as well as the tool. We are going to use Python3 to run the tool followed by the name of the python file. Then providing the network interface which indeed will be followed by the template parameter with the Office 365.</p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python3 evil_ssdp.py eth0 --template office365</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-8GWxmKPDkIo/Xkq5RmgF8_I/AAAAAAAAis0/bxVTcd4aBCUZBEDuUIg3-G39aMu7l5YCgCLcBGAsYHQ/s1600/6.png"/></p>
+<p class="ai-optimize-53">As we can see that the tool has done its job and hosted multiple template files on our attacker machine at port 8888.</p>
+<h4 class="ai-optimize-54">Manipulating User</h4>
+<p class="ai-optimize-55">As soon as we run the tool, we have a UPnP device named Office365 Backups. This was done by the tool without having to send any file, payload or any other type of interaction to the target user. All that’s left is the user to click on the icon.</p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-txqBOw02D6w/Xkq5RgolUcI/AAAAAAAAis4/wkQTzYBmtdU_Nbq9X1qI47FlJtdqHvIjQCLcBGAsYHQ/s1600/7.png"/></p>
+<p class="ai-optimize-56">Upon being clicked by the user, the target user is redirected to our fake template page through their default browser. This is a very genuine looking Microsoft webpage. The clueless user enters their valid credentials onto this page.</p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-69Tf3PRpvhM/Xkq5RziDXzI/AAAAAAAAis8/vjejKgh0XigRHFC2Ib8QCpPlzx_RAu4eACLcBGAsYHQ/s1600/8.png"/></p>
+<h4 class="ai-optimize-57">Grabbing the Credentials</h4>
+<p class="ai-optimize-58">As soon as the user enters the credentials and they get passed as the post request to the server, which is our target machine, we see that on our terminal, we have the credentials.</p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-3KXN6DKT_E0/Xkq5SEwhKHI/AAAAAAAAitA/a2gTi5UwNE0JsMH-XQEW33MchkxgjPGSwCLcBGAsYHQ/s1600/9.png"/></p>
+<h3 class="ai-optimize-59"><span style="color: #800000;">Diverting User to a Password Vault SSDP</span></h3>
+<p class="ai-optimize-60">Until now, we successfully spoofed the target user to gain some scanner credentials and some Office365 backup credentials. But now we go for the most important thing that is used as a UPnP, The Password Vault.</p>
+<h4 class="ai-optimize-61">Template Configuration</h4>
+<p class="ai-optimize-62">As we did in our previous practices, we will have to set up the template for the password-vault. In no time, the tool hosts the password-vault template onto the port 8888.</p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python3 evil_ssdp.py eth0 --template password-vault</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-YPQirClmWN4/Xkq5O5WFgoI/AAAAAAAAisI/4_i4ogVRWE0C_ez3p6EkL8YdJ0ot48DmwCLcBGAsYHQ/s1600/10.png"/></p>
+<h4 class="ai-optimize-63">Manipulating User</h4>
+<p class="ai-optimize-64">Moving onto the target machine, we see that the Password Vault UPnP is visible in the Explorer. Now the user clicks on the device and gets trapped in our attack. Seeing something like Password Vault, the user will be tempted to click on the icon.</p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-3oMPYaCZ46k/Xkq5PB4zQ_I/AAAAAAAAisM/i5C8qZVB8RYWBwAkiKCZbdptIbsnk4CUwCLcBGAsYHQ/s1600/11.png"/></p>
+<p class="ai-optimize-65">As the clueless user thinks that he/she has achieved far most important stuff with the fake keys and passwords. This works as a distraction for the user, as this will lead the user to try this exhaustive list of credentials with no success.</p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-SrCMlWIUxCM/Xkq5Pg_IznI/AAAAAAAAisU/L_ZIvQKfltkyk9iUCrEGyXCojx5b86uFgCLcBGAsYHQ/s1600/12.png"/></p>
+<h3 class="ai-optimize-66"><span style="color: #800000;">Spoofing Microsoft Azure SSDP</span></h3>
+<p class="ai-optimize-67">While working with Spoofing, one of the most important tasks is to not let the target user know that he/she has been a victim of Spoofing.  We can achieve this by redirecting the user after we grab the credentials or cookies or anything that the attacker wanted to acquire. The evil_ssdp tool has a parameter (-u) which redirects the targeted user to any URL of the attacker’s choice. Let’s take a look at the working of this parameter in action.</p>
+<p class="ai-optimize-68">To start, we will use python3 for loading the tool. We mention the Network Interface that we should use. Then, for this practical, we will be using the Microsoft Azure Storage Template. After selecting the template, we put the (-u) parameter and then mention any URL where we want to redirect the user. Here we are using the official Microsoft link. But this can be any malicious site.</p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python3 evil_ssdp.py eth0 --template microsoft-azure -u https://malicous-site.com</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-ReHCqgFazX0/Xkq5QBiQ7jI/AAAAAAAAisY/_DFdnzBpSGY1iDP1YJxeVTHF3iS5PZnqwCLcBGAsYHQ/s1600/13.png"/></p>
+<h4 class="ai-optimize-69">Manipulating User</h4>
+<p class="ai-optimize-70">Now that we have started the tool, it will create a UPnP device on the Target Machine as shown in the image given below. For the attack to be successful, the target needs to click on the device.</p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-rROTfEGP3z8/Xkq5QBn46dI/AAAAAAAAisc/7RDv7fI3BPYt1XmrKVRKOEHurkGY1xeogCLcBGAsYHQ/s1600/14.png"/></p>
+<p class="ai-optimize-71">After clicking the icon, we see that the Microsoft Official Page redirects the user. This can be whatever the attacker wants it to be.</p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-gU36s2kyIbg/Xkq5QVRh61I/AAAAAAAAisg/hN3uVMTPh-suDiH5ID3-mWcQiNvDVYeJACLcBGAsYHQ/s1600/15.png"/></p>
+<p class="ai-optimize-72">This concludes our practical of this awesome spoofing tool.</p>
+<h3 class="ai-optimize-73"><span style="color: #800000;">Mitigation</span></h3>
+<ul>
+<li class="ai-optimize-74">Disable UPnP devices.</li>
+<li class="ai-optimize-75">Educate Users to Prevent Phishing Attacks</li>
+<li class="ai-optimize-76">Monitor the network for the password traveling in cleartext.</li>
+</ul>
+<p class="ai-optimize-77"><span style="color: #000000;"><strong>Author</strong>: Kavish Tyagi is a Cybersecurity enthusiast and Researcher in the field of WebApp Penetration testing. Contact</span> <a href="https://www.linkedin.com/in/kavish-tyagi-844239125/"><strong>here</strong></a></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

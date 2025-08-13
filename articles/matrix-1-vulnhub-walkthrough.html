@@ -1,0 +1,87 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">Matrix: 1 Vulnhub Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/matrix-1-vulnhub-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2018-11-10T17:54:48+00:00">November 10, 2018</time><time class="updated" datetime="2025-06-10T20:11:59+00:00">June 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Hello friends! Today we are going to take another boot2root challenge known as Matrix. The credit for making this VM machine goes to “Ajay Verma” and it is another boot2root challenge in which our goal is to get root access to complete the challenge. You can download this VM <span style="color: #0000ff;"><a style="color: #0000ff;" href="https://www.vulnhub.com/entry/matrix-1,259/#download">here</a></span>.</span></p>
+<p><span style="color: #000000;"><strong>Security Level</strong>: Intermediate</span></p>
+<p><span style="color: #000000;"><strong>Flags</strong>: There is one flag (flag.txt).</span></p>
+<h3><span style="color: #000000;"><strong><span style="color: #800000;">Table of Contents:</span> </strong></span></h3>
+<ul>
+<li><span style="color: #000000;">Port scanning and IP discovery.</span></li>
+<li><span style="color: #000000;">Hitting on port 80</span></li>
+<li><span style="color: #000000;">Hitting on port 31337 and finding base64 encoded string</span></li>
+<li><span style="color: #000000;">Decode base64 encoded string</span></li>
+<li><span style="color: #000000;">Finding and downloading Bin file</span></li>
+<li><span style="color: #000000;">Decoding brainfuck encoded string</span></li>
+<li><span style="color: #000000;">Creating a dictionary using crunch</span></li>
+<li><span style="color: #000000;">SSH login brute force using hydra</span></li>
+<li><span style="color: #000000;">Finding rbash</span></li>
+<li><span style="color: #000000;">Escaping a restricted shell environment</span></li>
+<li><span style="color: #000000;">Exporting environment variables</span></li>
+<li><span style="color: #000000;">Getting root access.</span></li>
+<li><span style="color: #000000;">Reading the flags.</span></li>
+</ul>
+<p><span style="color: #000000;"><strong><u>Walkthrough</u></strong></span></p>
+<p><span style="color: #000000;">Let’s start off with scanning the network to find our target.</span></p>
+<pre class="lang:default decode:true">netdiscover</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-vuCiPeYyp0U/W-cZQrnF6QI/AAAAAAAAbAw/QY6asCpCLHwSwLxdAhxjtJCYlhZig8FHgCLcBGAs/s1600/1.png"/></span></p>
+<p><span style="color: #000000;">We found our target –&gt; 192.168.1.18</span></p>
+<p><span style="color: #000000;">Our next step is to scan our target with nmap.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-2hssyidNkKU/W-cZSu7o5VI/AAAAAAAAbBI/nvfz3OpjibEA8nLvjuOELtp99D-pImGqACLcBGAs/s1600/2.png"/></span></p>
+<p><span style="color: #000000;">The NMAP output shows us that there are 4 ports open: 22(SSH), 80(HTTP), 31337(HTTP)</span></p>
+<p><span style="color: #000000;">We find that port 80 is running http, so we open the IP in our browser.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-CqvSN6j9D2w/W-cZS0PfCVI/AAAAAAAAbBM/VzqX-joO6EEUa0-iMldAPmsdEbvSy4ZUQCLcBGAs/s1600/3.png"/></span></p>
+<p><span style="color: #000000;">We don’t find anything on the web service running on port 80. So we start enumerating the web service running on port 31337.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-H5VjJmez4r4/W-cZTfGroCI/AAAAAAAAbBQ/XnXGy0nVSSAVP7msYwVXwV7ANjaOLtoPwCLcBGAs/s1600/4.png"/></span></p>
+<p><span style="color: #000000;">We take a look at the source code of the web service running on port 31337 and find a base64 encoded string.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-8CLRoFvj7T0/W-cZTqUm2fI/AAAAAAAAbBU/Y-0T_3sFsrAXSkwRS6hd_Fp2ZCFS6tregCLcBGAs/s1600/5.png"/></span></p>
+<p><span style="color: #000000;">We decode the base64 encoded string and find a hint to that is related “Cypher.matrix”.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-RNUusa1NJ0o/W-cZTkSdzMI/AAAAAAAAbBY/x90lSy2f6lcAGhRhOGj4PZEtNw0bqBLIACLcBGAs/s1600/6.png"/></span></p>
+<p><span style="color: #000000;">We open “Cypher.matrix” on the web service running on port 31337 and find that it starts downloading a BIN file.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-HA33Qo_gDW0/W-cZUfN6hHI/AAAAAAAAbBg/ROIwZbQWrcIgh1dohqUaZCb3_nkIbqyjgCLcBGAs/s1600/7.png"/></span></p>
+<p><span style="color: #000000;">We take a look at the content of the file and find “brainfuck” encoded string.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-YlUaQqbI8rA/W-cZUKMWuuI/AAAAAAAAbBc/1otuTlg4XR4StIxCZjyEcNRQI_Zdw1zhgCLcBGAs/s1600/8.png"/></span></p>
+<p><span style="color: #000000;">We decode the brainfuck encoded a string using this site <span style="color: #0000ff;"><a style="color: #0000ff;" href="https://www.colasoft.com/packet_builder/">here</a> </span>and find an incomplete password for the user “<strong>guest</strong>”.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-Q9Vv-jzFj4Q/W-cZUycUUlI/AAAAAAAAbBk/qXhKvzXQRBoGwuwi_XGybnzEGccXp4D6QCLcBGAs/s1600/9.png"/></span></p>
+<p><span style="color: #000000;">As the last 2 characters are missing we create a wordlist using crunch so that we can brute force SSH login.</span></p>
+<pre class="lang:default decode:true">crunch 8 8 -t k1ll0r%@ -o dict.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-UW3IxQlvKqw/W-cZQq2xXXI/AAAAAAAAbA0/1FwX_KfD1-MU9LmQ1XZa_506Gehqh-CaQCLcBGAs/s1600/10.png"/></span></p>
+<p><span style="color: #000000;">We use hydra to brute force ssh login using the dictionary we created earlier and find the password to be “k1ll0r7n”.</span></p>
+<pre class="lang:default decode:true">hydra -l guest -P dict.txt 192.168.1.18 ssh</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-rWbjc2NPtuI/W-cZQ2dVJuI/AAAAAAAAbA4/NqCkQ3J6ZFgJ2JiCyYAixYx26bBjPQfFQCLcBGAs/s1600/11.png"/></span></p>
+<p><span style="color: #000000;">Now that we know the password we login through SSH using credentials “<strong>guest:k1ll0r7n</strong>”</span></p>
+<pre class="lang:default decode:true">ssh guest@192.168.1.18</pre>
+<p><span style="color: #000000;">After logging in we try to run the “<strong>ls</strong>” command but are unable to run it as we have a <strong>rbash</strong> shell.</span></p>
+<pre class="lang:default decode:true">ls</pre>
+<p><span style="color: #000000;">We check the <strong>PATH</strong> environment variable and find the path to be “<strong>/home/guest/prog</strong>”.</span></p>
+<pre class="lang:default decode:true">$PATH</pre>
+<p><span style="color: #000000;">Now as we cannot run “<strong>ls</strong>” command we try to find commands that can run. After trying a few commands we find that we can run “<strong>echo</strong>” command. We use the “<strong>echo</strong>” command to find the executables inside “<strong>/home/guest/prog</strong>” and find “<strong>vi</strong>” is available.</span></p>
+<pre class="lang:default decode:true">echo /home/guest/prog/*</pre>
+<p><span style="color: #000000;">Now we check <strong>the SHELL</strong> environment variable and find we have an only rbash shell.</span></p>
+<pre class="lang:default decode:true">echo $SHELL</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-jJAOx4yktDI/W-cZRs8WYpI/AAAAAAAAbBA/oPVndgqDH6EVMm2ABNMR_O3e2h7uHqw4QCLcBGAs/s1600/13.png"/></span></p>
+<p><span style="color: #000000;">We run <strong>vi</strong> so that we can spawn <strong>/bin/bash </strong>and escape the restricted shell environment.</span></p>
+<pre class="lang:default decode:true">!/bin/bash</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-bbwfdPYqNgc/W-cZRgED6JI/AAAAAAAAbA8/_l3lfrjlZxYGHfK7vYlWuVOLiD-JeDZ6QCLcBGAs/s1600/14.png"/></span></p>
+<p><span style="color: #000000;">After escaping the restricted shell environment, we export <strong>/bin/bash</strong> to <strong>SHELL</strong> environment variable and “<strong>/usr/bin</strong>” directory to <strong>PATH</strong> environment variable so that we can run Linux command properly.</span></p>
+<pre class="lang:default decode:true">export SHELL=/bin/bash:$SHELL
+export PATH=/usr/bin:$PATH</pre>
+<p><span style="color: #000000;">After exporting into the environment variables, we check the sudoers list and find we can directly get the root shell as we have all the rights.</span></p>
+<pre class="lang:default decode:true">sudo -l
+sudo su</pre>
+<p><span style="color: #000000;">We are unable to execute “<strong>su</strong>” command as we haven’t exported “<strong>/bin</strong>” directory into <strong>PATH </strong>environment. We exported “<strong>/bin</strong>” directory into <strong>a PATH</strong> environment variable and again ran the command to login as root using the password we find earlier.</span></p>
+<pre class="lang:default decode:true">export PATH=/bin:$PATH
+sudo su</pre>
+<p><span style="color: #000000;">After logging in we go to the root directory and find a file called flag.txt. We take a look at the content of the file and find the congratulatory message.</span></p>
+<pre class="lang:default decode:true ">cd /root
+ls
+cat flag.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-qLbNWNnpnRM/W-cZR9zSpJI/AAAAAAAAbBE/_YKzAtaeFjYv0I2qkE5ZmAViKjm-Ma5LwCLcBGAs/s1600/15.png"/></span></p>
+<p><span style="color: #000000;"><strong>Author</strong>: Sayantan Bera is a technical writer at hacking articles and cybersecurity enthusiast. Contact <a style="color: #000000;" href="https://www.linkedin.com/in/sayantan-bera-2098a613b/"><strong>Here</strong></a></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

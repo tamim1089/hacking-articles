@@ -1,0 +1,80 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">Tomato: 1 Vulnhub Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/tomato-1-vulnhub-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2020-09-18T08:25:53+00:00">September 18, 2020</time><time class="updated" datetime="2025-07-10T18:53:49+00:00">July 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today we are going to solve another boot2root challenge called “<strong>Tomato: 1</strong>“.  It’s available at VulnHub for penetration testing and you can download it from <strong><a style="color: #000000;" href="https://www.vulnhub.com/entry/tomato-1,557/">here</a></strong>. </span><span style="color: #000000;">This lab is created by  <strong>SunCSR Team</strong>. Let’s start and learn how to break it down successfully.</span></p>
+<p><span style="color: #000000;">Level: <strong>Intermediate</strong></span></p>
+<h3><span style="color: #800000;">Penetration Testing Methodology</span></h3>
+<p><span style="color: #000000;"><strong>Reconnaissance</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Netdiscover</span></li>
+<li><span style="color: #000000;">Nmap</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Enumeration</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Dirsearch</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Exploiting</strong></span></p>
+<ul>
+<li><span style="color: #000000;">RCE with LFI and SSH Log Poisoning</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Privilege Escalation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Abuse kernel exploit CVE-2017-16995</span></li>
+<li><span style="color: #000000;">Capture the flag</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Walkthrough</strong></span></p>
+<h3><span style="color: #800000;">Reconnaissance</span></h3>
+<p><span style="color: #000000;">To identify the target IP address, we will run the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">netdiscover -i ethX</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-2uXBYRHIBsc/X2RqNLSfpnI/AAAAAAAAoio/lm4rDBeRYo8XtMxsKGXnq7E5p27l2ihCwCLcBGAsYHQ/s16000/1.png"/></span></p>
+<p><span style="color: #000000;">We will now run a network scan using nmap to figure out which ports are open and which service they run. Nmap is one of the best tools for network scanning as it gives us all the information regarding ports, operating system, services, etc.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -A –p- 192.168.10.179</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-ldnpze4jG9g/X2RqZtuIpRI/AAAAAAAAois/FmFqCfmGKaMyZ6dbUuBOoThNYEdb7DJoQCLcBGAsYHQ/s16000/2.png"/></span></p>
+<h3><span style="color: #800000;">Enumeration</span></h3>
+<p><span style="color: #000000;">Through nmap we know that port 21, 80, 2211, 8888 are open with the services of FTP, HTTP, SSH, and HTTP respectively. We access the <strong>port 80 web service</strong> and find a single page with an image of a tomato. After checking the image with several stenographical tools, we did not find anything that could be useful. We even had no luck in the source code.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-wOwV7JCWV8U/X2RqjcJcdFI/AAAAAAAAoi0/ZlbnbyyNkO83wiAYXbApfB_JON_kfMGNgCLcBGAsYHQ/s16000/3.png"/></span></p>
+<p><span style="color: #000000;">When we accessed the port 888, we found an <strong>Nginx</strong> server that was protected with a username and password.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-RoKa2RCsXW0/X2RqrpocsaI/AAAAAAAAoi8/CxYlarXJFY4jNZO0hv7sSqrIUve0FBuWQCLcBGAsYHQ/s16000/4.png"/></span></p>
+<p><span style="color: #000000;">Here, we used <strong>dirsearch</strong> with the “<strong>common</strong>” dictionary and specify the most typical extensions. </span><span style="color: #000000;">We found the directory “<strong>/antibot_image/</strong>“.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-qGFbWUyqkcA/X2Rq6VZlTuI/AAAAAAAAojE/jTRKyZVNPs4nUVwieYImzpvHDcI9vNLeACLcBGAsYHQ/s16000/5.png"/></span></p>
+<p><span style="color: #000000;">We checked the directory and found a “<strong>Directory listing</strong>”:</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/--TRDIIa6rkg/X2RrCc5By4I/AAAAAAAAojM/Lrk5bAsQvNsFdxuiJ8Mfcp7fteCRkJbwgCLcBGAsYHQ/s16000/6.png"/></span></p>
+<p><span style="color: #000000;">Upon checking the files, we foundan “<strong>info.php</strong>“, besides showing us the system information, version, etc. It also includes a gift inside. (Possibly, this is the most complicated part of the box).</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-hZNRP1tMsSs/X2RrLETKQHI/AAAAAAAAojU/bCfscIC6WlwdtL3UTwWQ3p50n8UDjH4pACLcBGAsYHQ/s16000/7.png"/></span></p>
+<p><span style="color: #000000;">This bug will allow us to upload files via the URL. Let’s do a proof of concept.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-R5mG9BxQvjA/X2RrTxN224I/AAAAAAAAojc/Gv9Zw2pwWDctTCfIcQfdY4j0Jk6kX3LSQCLcBGAsYHQ/s16000/8.png"/></span></p>
+<p><span style="color: #000000;">Indeed! The site is vulnerable to <strong>LFI</strong> (Local File Inclusion).</span></p>
+<h3><span style="color: #800000;">Exploiting</span></h3>
+<p><span style="color: #000000;">Since we can load files, let’s try to <u>load log files</u>, for example, that of the <strong>SSH</strong> service.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-jihyZyi4CT4/X2RrfNWxbWI/AAAAAAAAojk/FVvnEP-yN0IikbRmORFaOdiRuMQ4OeesQCLcBGAsYHQ/s16000/9.png"/></span></p>
+<p><span style="color: #000000;">Now, let’s login by <strong>SSH</strong>, After that we will change the user by <u>PHP code</u> that will allow us to execute commands.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-yEKN_keYCW0/X2RrsQIPQiI/AAAAAAAAojs/eCHviwkazTMULfiiTWO8RBMgfK2QfEsTACLcBGAsYHQ/s16000/10.png"/></span></p>
+<p><span style="color: #000000;">Perfect! Let’s do a proof of concept by sending a system command to check that it actually commands.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-55LfkQXsYs4/X2Rr2DAynnI/AAAAAAAAoj0/qeIbDvn0I0IwAo3pfwwaUJHRw_uLuJwEACLcBGAsYHQ/s16000/11.png"/></span></p>
+<p><span style="color: #000000;">We see that by <strong>executing commands</strong>, we repeat the steps, but this time we will insert a <strong>reverse shell</strong> to access the interior of the machine.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-sMmJ_1INCtc/X2Rr--yc_TI/AAAAAAAAoj8/aYQd19_oCmUHqNGjyIYsl4hOQWr92MCrwCLcBGAsYHQ/s16000/12.png"/></span></p>
+<p><span style="color: #000000;">The command in “plain text” will not work, so we must encode it in “<strong>URL-encode all characters</strong>” with <strong>Burp</strong>, being as follows.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-vwNTjholQio/X2RsHUgw4VI/AAAAAAAAokE/LILVHKEHLxsMQ8qVZQqQxD55LHWuJiQngCLcBGAsYHQ/s16000/13.png"/></span></p>
+<p><span style="color: #000000;">We put a listening <strong>netcat</strong> to port 443 and send the request from <strong>Burp</strong>.</span></p>
+<p><span style="color: #000000;">We will be inside the box, we will execute a couple of commands to have an interactive shell.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-rfNPSnHXnCY/X2RsTUBNy0I/AAAAAAAAokM/s2-pjMmo5g8AetoCu26Zx3XMYy4VNnmHgCLcBGAsYHQ/s16000/14.png"/></span></p>
+<p><span style="color: #000000;">If we remember previously, in the <strong>8888 </strong>service we were asked to authenticate the site by means of a <strong>.htpasswd</strong>.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-sag5lGho8Rc/X2RsgI_L6TI/AAAAAAAAokU/1a2mRrtHe5MvzshgzZC8_qBm4Tkt8_NJgCLcBGAsYHQ/s16000/15.png"/></span></p>
+<p><span style="color: #000000;">We crack hash with John and the kaonashi dictionary, we get the password, but this one will not be useful for any of the two users.</span></p>
+<h3><span style="color: #000000;"><strong> <img decoding="async" src="https://1.bp.blogspot.com/-0tJRv5ORfho/X2Rss-jNQlI/AAAAAAAAokc/7v1Dwh6OYZgIVoYzcyljL20MzXhdCVlrgCLcBGAsYHQ/s16000/16.png"/></strong></span></h3>
+<h3><span style="color: #800000;">Privilege Escalation (root)</span></h3>
+<p><span style="color: #000000;">This time, we will not try to scale the user first, we have the advantage that the system is not updated and the <strong>kernel is vulnerable</strong>.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-oczYH5mAiY8/X2Rs2VICrcI/AAAAAAAAokk/AAcjguPGc3QJar1R2-xiAF93jQXn7iI2gCLcBGAsYHQ/s16000/17.png"/></span></p>
+<p><span style="color: #000000;">We will use the following exploit that will allow us a privileged scale as <strong>root</strong>.</span></p>
+<p><span style="color: #000000;"><strong>Exploit</strong>: <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.exploit-db.com/exploits/45010">https://www.exploit-db.com/exploits/45010</a></strong></span></span></p>
+<p><span style="color: #000000;">We download the exploit to our machine, compile it, and download it to the victim machine. </span><span style="color: #000000;">Now we will give it execution permissions and execute it, this will return a prompt as root and we will read the file “<strong>proof.txt</strong>“.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-BndTRrrgjqE/X2Rs8vl1M1I/AAAAAAAAoks/TlmMjfU8fc4UkzLV2BbCgKVMx9_FZvTUwCLcBGAsYHQ/s16000/18.png"/></span></p>
+<p><span style="color: #000000;"><strong>Author</strong>: <strong>David Utón</strong> is Penetration Tester and security auditor for Web applications, perimeter networks, internal and industrial corporate infrastructures, and wireless networks. Contacted on <span style="color: #0000ff;"><strong>LinkedIn</strong> </span>and <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://twitter.com/David_Uton">Twitter</a></strong></span>.</span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

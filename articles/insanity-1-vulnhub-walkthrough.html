@@ -1,0 +1,133 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">Insanity: 1 Vulnhub Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/insanity-1-vulnhub-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2020-10-08T09:25:55+00:00">October 8, 2020</time><time class="updated" datetime="2025-07-10T16:29:41+00:00">July 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today we are going to solve another boot2root challenge called “<strong>Insanity: 1</strong>“.  It’s available at VulnHub for penetration testing and you can download it from <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="http://vulnhub.com/entry/insanity-1,536/">here</a></strong></span>.</span></p>
+<p><span style="color: #000000;">The merit of making this lab is due to <strong>Thomas Williams</strong>. Let’s start and learn how to break it down successfully.</span></p>
+<p><span style="color: #000000;">Level: <strong>Hard</strong></span></p>
+<h3><span style="color: #800000;">Penetration Testing Methodology</span></h3>
+<p><span style="color: #000000;"><strong>Reconnaissance</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Netdiscover</span></li>
+<li><span style="color: #000000;">Nmap</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Enumeration</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Dirsearch</span></li>
+<li><span style="color: #000000;">Wireshark</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Exploiting</strong></span></p>
+<ul>
+<li><span style="color: #000000;">SQL Injection through e-mails</span></li>
+<li><span style="color: #000000;">Password theft in database</span></li>
+<li><span style="color: #000000;">Weak hash cracking</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Privilege Escalation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Cracking to passwords stored in Firefox</span></li>
+<li><span style="color: #000000;">Capture the flag</span></li>
+</ul>
+<h3><span style="color: #800000;">Walkthrough</span></h3>
+<h3><span style="color: #800000;">Reconnaissance</span></h3>
+<p><span style="color: #000000;">We are looking for the machine with netdiscover</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">netdiscover -i ethX</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-z4kcjq22tAg/X37Tn89RMfI/AAAAAAAApRY/EGt2aWa8yRcQZrAGPjXeLQXx7EizxYmKgCLcBGAsYHQ/s16000/1.png"/></span></p>
+<p><span style="color: #000000;">So, we put the IP address in our “<strong>/etc/hosts</strong>” file and start by running the map of all the ports with operating system detection, software versions, scripts and traceroute.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -A –p- insanity.vh</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-p7NjuIQIFiI/X37T2CnhmxI/AAAAAAAApRc/_TAg5F--wHEYg-RMpaM_MoVariCbw-ngACLcBGAsYHQ/s16000/2.png"/></span></p>
+<h3><span style="color: #800000;">Enumeration</span></h3>
+<p><span style="color: #000000;">The recognition and enumeration of vulnerable services have been the hardest part of this machine. Since it had many services to which they managed to entangle you, turning out to be all of them (except one) rabbit holes.</span></p>
+<p><span style="color: #000000;"><strong><u>Some evidence of these services (rabbit hole):</u></strong></span></p>
+<h5><span style="color: #000000;"><strong><u>FTP:</u></strong></span></h5>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-I7M-PfQaALc/X37UAcdoMJI/AAAAAAAApRk/FVhNlCrd5GgHpK-AUVb9jdb_vfkTQtXKgCLcBGAsYHQ/s16000/3.png"/></span></p>
+<p><span style="color: #000000;"><strong><u>Bludit (From here we will list the user “Otis”.):</u></strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-bLiJ8CVyAhw/X37UJYHz8UI/AAAAAAAApRs/RRABDFjkKzwdQjna6liOQfEemR1AIjzaQCLcBGAsYHQ/s16000/4.png"/></span></p>
+<h5><span style="color: #000000;"><strong><u>phpMyAdmin:</u></strong></span></h5>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-0PD4Ie4RwDk/X37UOSUG6vI/AAAAAAAApRw/220hCxN6u8YtXcSeUU1eDUqRzGNG9EqrgCLcBGAsYHQ/s16000/5.png"/></span></p>
+<p><span style="color: #000000;">Having seen the above, we will go directly to the correct and vulnerable services. </span><span style="color: #000000;">We start with the organization’s web service, a hosting service.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-jvJMwPHsUaY/X37UbmcTruI/AAAAAAAApR8/ivhvZD_a4xkfeFHJRlDf5LG5Zr3TBpWrwCLcBGAsYHQ/s16000/6.png"/></span></p>
+<p><span style="color: #000000;">We puzzled with <strong>dirsearch</strong> and found several directories, but we will focus only on two “<strong>/monitoring/</strong>” and “<strong>/webmail/</strong>“.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-L-a175hJWeY/X37UhRcudKI/AAAAAAAApSA/oOjqxk74HJMxX_l7aRY3L4PJOuEjpPN5wCLcBGAsYHQ/s16000/7.png"/></span></p>
+<p><span style="color: #000000;">Well, we used the user “<strong>otis</strong>” and the password “<strong>123456</strong>” (I took it out with guessing).</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-e5h8BOXO3KI/X37UqJG_PgI/AAAAAAAApSE/yIVx6N-dmxMj1RDo7udVUPHQlQ4POwquQCLcBGAsYHQ/s16000/8.png"/></span></p>
+<p><span style="color: #000000;">We will enter a panel are monitoring the internal server, we see that we can <u>add new servers</u>.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-j5iDwIqpKDs/X37UzEzFRFI/AAAAAAAApSQ/lOMiDJSE1DwMiRGBpGkm_xbdbZx3bcp7QCLcBGAsYHQ/s16000/9.png"/></span></p>
+<p><span style="color: #000000;">We insert our IP (it can be another one that is operative) and we see that it marks us “<strong>Status: UP</strong>“. What does this tell us? Well, the application below is running a ping to our machine to check if it is on.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Uqh-eAJPWrg/X37U8pNEvII/AAAAAAAApSY/zN7KTMf-OyI6q8Mfl_-z2D2PPckpzHkdACLcBGAsYHQ/s16000/10.png"/></span></p>
+<p><span style="color: #000000;">We use <strong>dirsearch</strong> again, this time we will fuze the content of “<strong>/monitoring/</strong>”.</span></p>
+<p><span style="color: #000000;">Then, we go through the directories obtained until we reach the directory “<strong>/monitoring/class/</strong>“.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-uYIo_0M3_cg/X37VJeHVyvI/AAAAAAAApSg/0NlZkE3m-mkCYZ_-ny5TD6ONbk3Nws6BQCLcBGAsYHQ/s16000/11.png"/></span></p>
+<p><span style="color: #000000;">We access the directory and we find what we already imagined, a “<strong>ping.php</strong>” file.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-SgE10Bs0j-w/X37VSQaSEqI/AAAAAAAApSo/V_D0iVOU0GgiJfoBW__AHafYofipeVqrwCLcBGAsYHQ/s16000/12.png"/></span></p>
+<p><span style="color: #000000;">We open Wireshark and see that the machine does indeed <strong>execute a ping</strong>. Do you think the same as me? Of course, we do! A <strong>command injection</strong>!</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-bFVxeh4K0Ts/X37V4R7rZmI/AAAAAAAApTE/SzdN0GtzNN8rMLR2WpcXt8fz3Ur13YsXgCLcBGAsYHQ/s16000/13.png"/></span></p>
+<h5><span style="color: #000000;">Let’s do as usual, a <strong>proof of concept</strong>.</span></h5>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-AL87TNG4AvI/X37V-twSUJI/AAAAAAAApTI/8A4_c9tvgzk4e-BPU-Wnr5VcqNyovpILwCLcBGAsYHQ/s16000/14.png"/></span></p>
+<p><span style="color: #000000;">We wait for it to run, but we see that it does not work (<strong>Status: DOWN</strong>). We contrast this information with Wireshark and see that it does not move either, so we are in another “<strong>rabbit hole</strong>“.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-WNQQPJ8Xjkk/X37WEYMwkmI/AAAAAAAApTQ/3QkkqicKfyM5DaBaf131PIh2pu6VNGg1gCLcBGAsYHQ/s16000/15.png"/></span></p>
+<p><span style="color: #000000;">Well, nothing, we continue with the other service. Now we have a “<strong>SquirrelMail</strong>” in version <strong>1.4.22</strong>, if you look for exploit you will find that it is vulnerable to remote code execution (RCE), but I already advance you that it will <strong>not work</strong> either xD.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-HLnnjVaaDb0/X37WM-009uI/AAAAAAAApTU/-k4XWtgJ1XM_Skdq77fL9FpFMd3xKlsfQCLcBGAsYHQ/s16000/16.png"/></span></p>
+<p><span style="color: #000000;">We use the same credentials, access the “<strong>Inbox</strong>” and see that emails with errors are arriving. <strong><em>Attention! These emails only appear if the server is “DOWN”</em></strong>.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-xJ7UPMNOD-Y/X37WS_S-HCI/AAAAAAAApTc/HSLMradhGoQOpRK5rFE-wfpmF0XZpntVgCLcBGAsYHQ/s16000/17.png"/></span></p>
+<p><span style="color: #000000;">We read one of them, if we look at it, it is structured in 4 columns… This is something that called my attention a lot, since it seems to be loading this information through a database.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-DXpC_dLCmCA/X37WYzZxmbI/AAAAAAAApTk/hE1LRae-0mIMAvebrsuFP00v5oG-kv9NgCLcBGAsYHQ/s16000/18.png"/></span></p>
+<p><span style="color: #000000;">Seeing this, I lost my mind and came up with the crazy idea of launching a payload list of <strong>SQL Injection</strong> (/usr/share/wfuzz/wordlist/vulns/sql_inj.txt).</span></p>
+<h5><span style="color: #000000;"><strong><u>Configuration Attack:</u></strong></span></h5>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-JplBFrG7eLA/X37Whz0Z2GI/AAAAAAAApTs/_3jZ8ZHQmqEJqJWUjerH3ZC3QDI70IO6ACLcBGAsYHQ/s16000/19.png"/></span></p>
+<p><span style="color: #000000;"><strong><u>Executed attack:</u></strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-6qQR8TDgH8E/X37Wnx284nI/AAAAAAAApT0/l3iKHCT-DEQ5rw_jXJUkEdcxzWuCD4p0gCLcBGAsYHQ/s16000/20.png"/></span></p>
+<p><span style="color: #000000;">We are checking all the emails that we receive, we find this one that shows “<strong>Localhost</strong>“, therefore, the site is <u>vulnerable to SQL Injection</u>.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-1vAXLaKnA74/X37WtihPoBI/AAAAAAAApT8/ekQ0xRDitZcaVMywbXLQCxNGWTRBEzvYgCLcBGAsYHQ/s16000/21.png"/></span></p>
+<p><span style="color: #000000;">We do another test, this time we list the <strong>hostname</strong> and version of <strong>MariaDB</strong>.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Y3mQUlbcIVY/X37W4Ss4InI/AAAAAAAApUE/Uj9xW4MuoZIT6ZiJo7ivaHERPNIx-e0rQCLcBGAsYHQ/s16000/22.png"/></span></p>
+<h3><span style="color: #800000;">Exploiting</span></h3>
+<p><span style="color: #000000;">We continue to exploit the vulnerability, although this would be faster by posting only 3 photos, I think it is worth seeing all these images, which will help us learn how to exploit SQL injection without any tools.</span></p>
+<ul>
+<li><span style="color: #000000;"><strong>Obtain user and database:</strong></span></li>
+</ul>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-qzUn80CSi8o/X37XAydIM9I/AAAAAAAApUM/ra3SrjR9yxcJFyBVvQLCnMW_-VUSr9rMwCLcBGAsYHQ/s16000/23.png"/></span></p>
+<ul>
+<li><span style="color: #000000;"><strong>Obtain all databases:</strong></span></li>
+</ul>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-vjTdWgVuNik/X37XH6oLkiI/AAAAAAAApUU/cE5RqZiu_54sP5c9lhaY_WsB3b3zSBXdgCLcBGAsYHQ/s16000/24.png"/></span></p>
+<ul>
+<li><span style="color: #000000;"><strong>Obtain all tables:</strong></span></li>
+</ul>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-U63BQhdU0Zk/X37XOg9pC9I/AAAAAAAApUY/v67W754hJS07YnQCTDFcXOx39VgQyJBdACLcBGAsYHQ/s16000/25.png"/></span></p>
+<ul>
+<li><span style="color: #000000;"><strong>Obtain all the columns in a table:</strong></span></li>
+</ul>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-vD8T0TYqsWo/X37XYn5PjNI/AAAAAAAApUk/6m6DQ3EY2UMpA1Y6pCHhGLo82Yd8BmWKgCLcBGAsYHQ/s16000/26.png"/></span></p>
+<ul>
+<li><span style="color: #000000;"><strong>Dump users, passwords and emails:</strong></span></li>
+</ul>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-KVlax2-0Xx4/X37XfcLhOxI/AAAAAAAApUs/L_ZANEGxpokPsFjIMhBNSdAak3Ctn2bwgCLcBGAsYHQ/s16000/27.png"/></span></p>
+<p><span style="color: #000000;">After trying to crack the hashes of the <strong>two</strong> (hidden) <strong>users</strong>, it is not possible to obtain it even with JTR, Hascat or other online tools. Everything looks like another “<strong>rabbit hole</strong>“.</span></p>
+<p><span style="color: #000000;">We continue to list and find these two hashes in the “<strong>mysql</strong>” database.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-yZNKKDDpKJM/X37Xled-9nI/AAAAAAAApUw/BnJQtydkU2ITC_s4n_NUGsWpHQHAK-AqACLcBGAsYHQ/s16000/28.png"/></span></p>
+<p><span style="color: #000000;">The <strong>2nd hash</strong> does not correspond to that of a <strong>MySQL</strong>, we use the online tool “<strong>hashes.com</strong>” and obtain the password in plain text.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-IAfXr3tskZc/X37XsrHeUCI/AAAAAAAApU0/5C2-LrLEC4IRloNH6BE76Yu3MoBaKcf-gCLcBGAsYHQ/s16000/29.png"/></span></p>
+<p><span style="color: #000000;">We logged in through <strong>SSH</strong> and great! We are in!</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-XTu-5ZIjpog/X37X2EYf8ZI/AAAAAAAApU8/cHdb6XqQZTsQjc-T5vw79ed-r8NldcZaQCLcBGAsYHQ/s16000/30.png"/></span></p>
+<h3><span style="color: #800000;">Privilege Escalation (root)</span></h3>
+<p><span style="color: #000000;">We do an “<strong>ls -lna</strong>” and see that we have a “<strong>Mozilla Firefox</strong>” folder, very very rare.</span></p>
+<p><span style="color: #000000;">Whenever you see software folders, check it out, because it’s not normal.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-4FTnmYwjfeY/X37X7v860SI/AAAAAAAApVA/BpfflpE6NMY8ZNYPoyEh_7zR55wWgIKNQCLcBGAsYHQ/s16000/31.png"/></span></p>
+<p><span style="color: #000000;">We check if the browser has been storing user passwords. How to check this? As simple as listing these <strong>4 files</strong>.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-bBRhNDp_OiU/X37YBKJ76oI/AAAAAAAApVI/txjgvHIq3kYoWqeQOq7_lENeGkCligQwQCLcBGAsYHQ/s16000/32.png"/></span></p>
+<p><span style="color: #000000;">If these files exist, it means that they contain passwords and we can use a tool “<strong><a style="color: #000000;" href="https://github.com/unode/firefox_decrypt">Firefox_Decrypt</a></strong>” to obtain the passwords in plain.</span></p>
+<p><span style="color: #000000;">We download the tool, choose the <strong>2nd option</strong> and we will NOT give you a password when you ask for the “Master Password”.</span></p>
+<p><span style="color: #000000;">We will get some <u>credentials</u> in the “<strong>root</strong>” user plane.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-hemGq9UUYTY/X37YMiIkJEI/AAAAAAAApVQ/zr6lHyk9Crc_ukRC0jksaX33PiN22q-0gCLcBGAsYHQ/s16000/33.png"/></span></p>
+<p><span style="color: #000000;">Then we try to authenticate with the user “<strong>root</strong>” and the password obtained and…. Yes! we are root!</span></p>
+<p><span style="color: #000000;">We read the flag and have a good coffee.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-HKGoGsWMVjE/X37YTUkG6wI/AAAAAAAApVY/0_IsJY_6r14EjHadSRZ98cT8he6LLNHGACLcBGAsYHQ/s16000/34.png"/></span></p>
+<p><span style="color: #000000;">Thank you for giving your precious time to read this walkthrough. If you want to read more VulnHub Write-ups. Follow this</span> <strong><a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/">Link.</a></strong> <span style="color: #000000;">Happy Hacking!</span></p>
+<p><span style="color: #000000;"><strong>Author</strong>: <strong>David Utón</strong> is Penetration Tester and security auditor for Web applications, perimeter networks, internal and industrial corporate infrastructures, and wireless networks. Contacted on <span style="color: #0000ff;"><strong>LinkedIn</strong> </span>and <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://twitter.com/David_Uton">Twitter</a></strong></span>.</span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

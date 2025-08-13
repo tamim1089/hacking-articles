@@ -1,0 +1,94 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/" rel="category tag">HackTheBox</a></span>            </div>
+            <h1 class="post-title entry-title">HacktheBox Mischief Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/hack-the-box-mischief-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2019-01-06T14:33:27+00:00">January 6, 2019</time><time class="updated" datetime="2025-06-29T19:57:22+00:00">June 29, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today we are going to solve another CTF challenge “Mischief”. Mischief is a retired vulnerable lab presented by Hack the Box for helping pentester’s to perform online penetration testing according to their experience; they have a collection of vulnerable labs as challenges, from beginners to Expert level.</span></p>
+<p><span style="color: #000000;"><strong>Level</strong>: Easy</span></p>
+<p><span style="color: #000000;"><strong>Task</strong>: To find user.txt and root.txt file</span></p>
+<h3><span style="color: #800000;">Penetration Methodologies</span></h3>
+<p><span style="color: #000000;"><strong>Scanning Network</strong></span></p>
+<ul>
+<li><span style="color: #000000;">TCP and UDP ports scanning (Nmap)</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Enumeration</strong></span></p>
+<ul>
+<li><span style="color: #000000;">SNMP Service Enumeration (Nmap Script)</span></li>
+<li><span style="color: #000000;">Obtain credential for port 3366 login</span></li>
+<li><span style="color: #000000;">Identify IPv6 address (ENYX)</span></li>
+<li><span style="color: #000000;">Scanning Ipv6 (Nmap)</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Access Victim’s Shell</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Abusing web server through the Command Execution Panel</span></li>
+<li><span style="color: #000000;">Obtain reverse Shell via ncat</span></li>
+<li><span style="color: #000000;">Get user.txt flag</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Privilege Escalation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Obtain root password from bash_history</span></li>
+<li><span style="color: #000000;">Find root.txt flag</span></li>
+</ul>
+<h3><span style="color: #800000;">Scanning Network</span></h3>
+<p><span style="color: #000000;">Note: Since these labs are online available therefore they have a static IP. The IP of this lab is 10.10.10.92</span></p>
+<p><span style="color: #000000;">Let’s start off with our nmap Aggressive scan to find out the open ports and services.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -A 10.10.10.92</pre>
+<p><span style="color: #000000;"><img decoding="async" src="//2.bp.blogspot.com/-UlTNM7OWbp4/XDIQDt_2ezI/AAAAAAAAb7I/fMUQ-mVPtSQb_nSPmdjtINJjznjiJoYRwCLcBGAs/s1600/1.png"/></span></p>
+<p><span style="color: #000000;">But as you can observe that here we didn’t obtain much information, therefore further I scan for UDP port and from its result we got port 161 is open for SNMP.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -sU 10.10.10.92</pre>
+<h3><span style="color: #800000;">Enumeration</span></h3>
+<p><span style="color: #000000;">Because we were knowing SNMP service is enable in the network, therefore I run nmap script command for SNMP enumeration.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -p161 –sC –sV –sU 10.10.10.92</pre>
+<p><span style="color: #000000;"><img decoding="async" src="//3.bp.blogspot.com/-YEW9teGlKDk/XDIQGK5Q3SI/AAAAAAAAb7c/l51C-EPVezMxBXfEwuq0UHJ7g9Y73A1TwCLcBGAs/s1600/3.png"/></span></p>
+<p><span style="color: #000000;">Hmmm!! So here I found something very interesting and it looks like the login credential to be used as authentication to connect port 3366.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="//2.bp.blogspot.com/-vO9vAEfaHjo/XDIQGIJBpII/AAAAAAAAb7g/umiV4Q7AiLkFJJ5kbvPNkuikQ2jbF_NqACLcBGAs/s1600/4.png"/></span></p>
+<p><span style="color: #000000;">Let’s navigate to port 3366 in the web browser and enter the following credential.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Username: loki 
+Password: godofmischiefisloki</pre>
+<p><span style="color: #000000;"><img decoding="async" src="//1.bp.blogspot.com/-kKg5CWc6fZs/XDIQGeglY6I/AAAAAAAAb7k/RP4efPmcOBs6cQ2QFavFYZ8V6Sv_08s3QCLcBGAs/s1600/5.png"/></span></p>
+<p><span style="color: #000000;">Here, we were welcomed by following web page where it was holding another credential. Let’s dig out another way to utilize this credential for login.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="//2.bp.blogspot.com/-XZgiNPvGE4o/XDIQIp867qI/AAAAAAAAb7s/OKj3WelZHPgSH_T0thFVWHGX4yw99m3HACLcBGAs/s1600/6.png"/></span></p>
+<p><span style="color: #000000;">We use a python script called <strong>Enyx</strong> to find the ipv6 address of the target machine. You can get the script from this <span style="color: #3366ff;"><a style="color: #3366ff;" href="//github.com/trickster0/Enyx">link</a></span>.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">git clone //github.com/trickster0/Enyx.git
+python enyx.py 2c public 10.10.10.92</pre>
+<p><span style="color: #000000;">So as you can observe that we have enumerated IPv6 address of victim’s machine and further scan it using nmap command given below:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -6 &lt;target IPV6&gt;</pre>
+<p><span style="color: #000000;">Hmmm!! So along with Port 22, this time it has also shown port 80 for HTTP services.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="//4.bp.blogspot.com/-xIi-yTUzB8Q/XDIQIch6BDI/AAAAAAAAb7o/pP3bDCQVgvMcGqmZrQ-IFI9MuH6wIkZTACLcBGAs/s1600/7.png"/></span></p>
+<p><span style="color: #000000;">So we navigate to the web browser and explore Target IPv6 address in the URL, it put a login page for command execution panel. Now we try to login this page with the credential we found earlier but that wasn’t the valid credential.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="//2.bp.blogspot.com/-nWjkwktwn1g/XDIQIqIJufI/AAAAAAAAb7w/nJQ4TE-P9n4tA93Dop0znA29556W0llxACLcBGAs/s1600/8.png"/></span></p>
+<h3><span style="color: #800000;">Access Victim’s Shell</span></h3>
+<p><span style="color: #000000;">Further, I try brute force for username and successfully get login with the following combination:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Username: administrator
+Password: trickeryanddeceit</pre>
+<p><span style="color: #000000;">Since it was Command Execution Panel where we can run arbitrary system commands, hence this was RCE which could be easily exploited and we can own reverse shell of the target machine.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="//1.bp.blogspot.com/-M_616FNYz2o/XDIQJQtjf5I/AAAAAAAAb70/2VlYCjw-7asM5KX0Zywfc3zThhifGuYlgCLcBGAs/s1600/9.png"/></span></p>
+<p><span style="color: #000000;">But before that, you must know Ipv6 address of your local machine for addressing your IP as listening IP.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="//3.bp.blogspot.com/-UJgW05SVqZ4/XDIQDvSXu7I/AAAAAAAAb7E/lYEcreWdpNQIjQjWhtgoTdTNdgZa6sKkQCLcBGAs/s1600/10.1.png"/></span></p>
+<p><span style="color: #000000;">For the reverse shell, I use python reverse shellcode from <span style="color: #3366ff;">pentestmonkey</span>, and modify lhost IP from our IPv6 address. Since both nodes belong to IPv6, therefore we need a listener which can establish a reverse connection such as <strong>ncat</strong>, therefore we started ncat as the listener on port 1234.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ncat -6- -lvp 1234</pre>
+<p><span style="color: #000000;"><img decoding="async" src="//3.bp.blogspot.com/-88YxdRkjUmk/XDIQDWFuAtI/AAAAAAAAb7A/3eqxaCmBaHkx1bGp15ec6Q455vzp0ma3wCLcBGAs/s1600/10.png"/></span></p>
+<p><span style="color: #000000;">As soon we will execute the malicious python code, we will get a reverse connection via ncat.</span></p>
+<p><span style="color: #000000;">Great!! You can observe that we have access to remote terminal and let’s try to find out user.txt file to complete our first task. We found the user.txt file in the /home/loki but unable to read it. Although, there was another interesting file “credentials” and here we found another credential.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="//4.bp.blogspot.com/-JQEixRiOueQ/XDIQEe9YF_I/AAAAAAAAb7M/Ee_4SmO-sG0cwK3ldGr5Sb-w78-IQyXNQCLcBGAs/s1600/11.png"/></span></p>
+<p><span style="color: #000000;">As port 22 was running, therefore we connect to the remote machine through ssh using the following credential.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Username: loki 
+Password: lokiisthebestnorsegod
+ssh loki@10.10.10.92</pre>
+<p><span style="color: #000000;">And successfully found user.txt file this time as shown below.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="//3.bp.blogspot.com/-UrqdPd2Eem0/XDIQEzHVBjI/AAAAAAAAb7Q/_MkmX6VuO-8zu5vAbPcRdnQXOEarsXYhgCLcBGAs/s1600/13.png"/></span></p>
+<h3><span style="color: #800000;">Privilege Escalation</span></h3>
+<p><span style="color: #000000;">While exploring more, I found .bash_history file where I found one more credential for root user but loki doesn’t have permission to execute switch user command.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="//2.bp.blogspot.com/-pLmy2PuukHI/XDIQE-89SVI/AAAAAAAAb7U/yRsqR3p6szE-vzAmA4JAf9RarnZohmG-QCLcBGAs/s1600/14.png"/></span></p>
+<p><span style="color: #000000;">Therefore, we move back to www-data user shell to run switch user command and enter the above-found password for root login, then try to find out root.txt file inside the root directory but there wasn’t any flag. Therefore with the help of find command, we try to enumerate the path of root.txt.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">find / -name root.txt</pre>
+<p><span style="color: #000000;">Booom!! We got the path of the root.txt file and as you can observe that we have successfully captured the last flag and finished this challenge.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="//1.bp.blogspot.com/-0YF7PkuOjRE/XDIQFTmsedI/AAAAAAAAb7Y/0PNEjDlql5ciT79gl7RRS1WquSziHVqWwCLcBGAs/s1600/15.png"/></span></p>
+<p><span style="color: #000000;">Thank you for giving your precious time to read this walkthrough. If you want to read more HTB Write-ups. Follow this</span> <strong><a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/">Link.</a></strong> <span style="color: #000000;">Happy Hacking!</span></p>
+<p><strong>Author</strong>: Amina Aggarwal is a Technical Writer at Hacking Articles an Information Security Enthusiast and Security Researcher . Contact <strong>here</strong></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

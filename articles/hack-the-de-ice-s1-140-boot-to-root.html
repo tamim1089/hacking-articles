@@ -1,0 +1,116 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">Hack the De-ICE: S1.140 (Boot to Root)</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/hack-the-de-ice-s1-140-boot-to-root/" rel="bookmark"><time class="entry-date published" datetime="2016-06-17T06:59:57+00:00">June 17, 2016</time><time class="updated" datetime="2025-06-10T20:13:20+00:00">June 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Hello friends!! Today we are going to solve De-ICE: S1.140 CTF challenge presented by vulnhub for penetration practice. This lab is proposal for OSCP practice and mode of difficulty level is medium. You can download it from this Link: https://www.vulnhub.com/entry/de-ice-s1140,57/</span></p>
+<p><span style="color: #000000;"><strong>Penetrating Methodlogies:</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Network Scaning (Nmap)</span></li>
+<li><span style="color: #000000;">HTTP Directory brute-force (Dirb)</span></li>
+<li><span style="color: #000000;">Obtain Auth log</span></li>
+<li><span style="color: #000000;">HTTPS Directory brute-force (Dirb)</span></li>
+<li><span style="color: #000000;">Login in phpmyadmin</span></li>
+<li><span style="color: #000000;">Steal database credential</span></li>
+<li><span style="color: #000000;">FTP login to get tar file</span></li>
+<li><span style="color: #000000;">SSH login to get backup.sh</span></li>
+<li><span style="color: #000000;">Extracting tar file to get shadow file</span></li>
+<li><span style="color: #000000;">Crack hashes (John the ripper)</span></li>
+<li><span style="color: #000000;">Sudo privilege escaltion</span></li>
+<li><span style="color: #000000;">Get secret.jpg</span></li>
+</ul>
+<p><span style="color: #000000;">Let’s Begin!!</span></p>
+<p><span style="color: #000000;">You will get target VM machine IP at the time of boot-up so let’s start with nmap port enumeration and execute following command in our terminal.</span></p>
+<pre class="lang:default decode:true">nmap -sV 192.168.1.110</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-P6-4w2660qk/W2lBQC10nEI/AAAAAAAAZac/0tjyOoQo8xgunaqwIq9j8pBR8c0vjFC5gCEwYBhgL/s1600/2.png"/></span></p>
+<p><span style="color: #000000;">Since port 80 was opened; so I explored target IP in the web browser and where we need to mark the lines to get the hint. Then at last you will following text shown as in the below image.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-gV-_nIZCxeM/W2lBRufSnoI/AAAAAAAAZa0/AtXU1G8LFTYQ9bULMe2dQ7iKdlIfI0aWACEwYBhgL/s1600/3.png"/></span></p>
+<p><span style="color: #000000;">Even after reading above hint, I didn’t get any remarkable clue for further step therefore I use dirb for directory brute-force attack on HTTP.</span></p>
+<pre class="lang:default decode:true">dirb http://192.168.1.110</pre>
+<p><span style="color: #000000;">From its result I found so many web directories but /forum and its relative directories looks more interesting to me.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-4pUc_iX6_UI/W2lBRjP6rkI/AAAAAAAAZa4/GAG67YXEWtwenY1W8Y-WLAJbmJm6-k92wCEwYBhgL/s1600/4.png"/></span></p>
+<p><span style="color: #000000;">Then we navigate to <strong>/forum</strong> and observe following web page.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-JWUiAwfKlQs/W2lBSKZehwI/AAAAAAAAZa8/Uzi0SeXlABMa23nocVhSNRGseVwwJI5LQCEwYBhgL/s1600/5.png"/></span></p>
+<p><span style="color: #000000;">Further we explored <strong><em>/forum/index.php</em></strong> and notice the following web page which was an auth log for ssh login Looking at the log again, I noticed that there was only one successful login, which was from user <strong>mbrown</strong>. So I copied this log into a text file and named as file.txt</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-jj3a-QqJ3oo/W2lBSSQLSII/AAAAAAAAZbA/mb1X1RmXqAAIj1xrPwBA5QNER1nFipLeQCEwYBhgL/s1600/6.png"/></span></p>
+<p><span style="color: #000000;">Then with help of following command we try to grep all invalid user entry who tried to login and opened session for ssh.</span></p>
+<pre class="lang:default decode:true">cat file.txt | grep “Invalid user” | awk ‘{print $8}’
+cat file.txt | grep “open”</pre>
+<p><span style="color: #000000;">One of the user names we have grabbed in the file.txt was <strong>!DFiuoTkbxtdk0!</strong> appeared to be the password for <strong>mbrown</strong> .</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-dqDCmpXQb0E/W2lBSp5MPrI/AAAAAAAAZbE/2gVpPDsXFFg6s96cR1oSpPXpt_h2H41mACEwYBhgL/s1600/7.png"/></span></p>
+<p><span style="color: #000000;">I tried to login into the forum as <strong>mbrown</strong> with the password I found above, and get successfully logged in and found mbrown’s email address on his profile page as shown:</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-QUeeUX52f10/W2lBSuVvqDI/AAAAAAAAZbI/WZ1S8HwNikw4oB9oZZd-WIkL6noHbNX9wCEwYBhgL/s1600/8.png"/></span></p>
+<p><span style="color: #000000;">After that I run dirb on port 443 and notice some exclusive directories such /webmail and /phpmyadmin is also available.</span></p>
+<pre class="lang:default decode:true">dirb https://192.168.1.110/</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-o53FsfUIVUo/W2lBTOy2sqI/AAAAAAAAZbM/610FXQc5JcA2do_B4nabuSypEFNT_TsFACEwYBhgL/s1600/9.png"/></span></p>
+<p><span style="color: #000000;">When I explored https://192.168.1.110/webmail, I got sqirrelmail login page where I submit MBrown credential for login.</span></p>
+<p><span style="color: #000000;">Name: mb@lazyadmin.corp</span></p>
+<p><span style="color: #000000;">Password: !DFiuoTkbxtdk0!</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-pvHugW92abQ/W2lBOB5kBCI/AAAAAAAAZZ0/LHjSFI7V9KgdbS0lP-F7h8cD9EL2KN5kACEwYBhgL/s1600/10.png"/></span></p>
+<p><span style="color: #000000;">In his mailbox I found mysql login information:</span></p>
+<p><span style="color: #000000;">username: root</span></p>
+<p><span style="color: #000000;">Password: S4!y.dk)j/_d1pKtX1</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-UiFDeMB7cwE/W2lBOSdNEiI/AAAAAAAAZZ4/wvEJb0DMqbgIGfJZlcDsdhblCAvWImCbgCEwYBhgL/s1600/11.png"/></span></p>
+<p><span style="color: #000000;">As we have enumerated that /phpmyadmin is also available so I explore it and submit above found mysql login information.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-r8N2gsUDL84/W2lBOU2-DDI/AAAAAAAAZZ8/iBNdkX7jjAgP3bmC5MfDyxhdrCrE3m_KgCEwYBhgL/s1600/12.png"/></span></p>
+<p><span style="color: #000000;">I successfully logged into database and with little more efforts I found all username and their encrypted password which I copied for decryption.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-e6ZIUK9u8bA/W2lBOyNpwEI/AAAAAAAAZaA/M3ldGgzwggQuEX9GvDdBV2mIyWr5n0M8wCEwYBhgL/s1600/13.png"/></span></p>
+<p><span style="color: #000000;">With help of online MD-5 decryption we got 2 hash values.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-bRTyj8KGxsY/W2lBO8rYLsI/AAAAAAAAZaE/LNHR-Hhd2UMKvRWCtI5lc4pcXR35wc1cwCEwYBhgL/s1600/14.png"/></span></p>
+<p><span style="color: #000000;">So now we have following credential</span></p>
+<p><span style="color: #000000;">Rhedley: tum-ti-tum</span></p>
+<p><span style="color: #000000;">Swillard: Austin-Willard</span></p>
+<p><span style="color: #000000;">Now let’s try to connect with FTP with the following:</span></p>
+<pre class="lang:default decode:true">ftp 192.168.1.110</pre>
+<p><span style="color: #000000;">I was able to view the contents of the incoming directory which have a file <em>backup_webhost_130111.tar.gz.enc</em> that I downloaded with help of get command.</span></p>
+<pre class="lang:default decode:true">get backup_webhost_130111.tar.gz.enc</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-K51mKV1JkiY/W2lBO4KO8wI/AAAAAAAAZaI/RzzEkYgQFZsJF3vK9LgDCi4bRJ5JKt7PQCEwYBhgL/s1600/15.png"/></span></p>
+<p><span style="color: #000000;">Then I explore more and found .ssh directory where I get ssh key “downloadkey” for user MBrown. I downloaded this also.</span></p>
+<pre class="lang:default decode:true">get downloadkey</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-V_DNIFR8OoE/W2lBPSIQDdI/AAAAAAAAZaM/0wXalM6L11A_aubtrX--Ad3QWTYiKnLXwCEwYBhgL/s1600/16.png"/></span></p>
+<p><span style="color: #000000;">Now let’s try to login into ssh with help of key enumerated above.</span></p>
+<pre class="lang:default decode:true">ssh -i downloadkey mbrown192.168.1.110</pre>
+<p><span style="color: #000000;">Bravo!! Successfully spawned victim’s machine, then I switch to user: rhedley where I found a script <strong><em>backup.sh</em></strong> which holds the command and password used to encrypt the <em>backup_webhost_130111.tar.gz.enc</em> I downloaded earlier.</span></p>
+<pre class="lang:default decode:true">su rhedley
+cd /opt
+ls
+cat backup.sh</pre>
+<p><span style="color: #000000;">And found encryption is <em>aes-256-cbc</em> and password <strong>8a1bae9881bfbfc68880d1e23d6a095e80db27b7c43e56ccc1</strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-MjV9upPlMG4/W2lBP5lfz3I/AAAAAAAAZaU/9YCijJnNH5Iea73sfRzc3nJxinx1dW3PACEwYBhgL/s1600/18.png"/></span></p>
+<p><span style="color: #000000;">Now let’s try to decrypt <em>backup_webhost_130111.tar.gz.enc</em> with help of below command:</span></p>
+<pre class="lang:default decode:true">openssl aes-256-cbc -d -md md5 -in backup_webhost_130111.tar.gz.enc -out file.tar.gz -pass pass:wpaR9V616xrDTy98L7Uje2DDU5hWtWhs
+tar -xvf file.tar.gz</pre>
+<p><span style="color: #000000;">Great!! It was a compress file of /etc directory and after extracting this tar file we have owned all valuable files of /etc directory of victim’s machine.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-EzDQO8IvqkI/W2lBP5W-J2I/AAAAAAAAZaY/wAYEhyFxX0cv693NC0RrLogqld_N6bhYwCEwYBhgL/s1600/19.png"/></span></p>
+<p><span style="color: #000000;">This gave me shadow file and I try to open it with help of cat command.</span></p>
+<pre class="lang:default decode:true">cd etc
+cat shadow</pre>
+<p><span style="color: #000000;">And as you can see, I found hashes of three users, let’s try to crack it. Here I have saved all three entries into a text file and named it cracked.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-OCFTUINLSiM/W2lBQQuO80I/AAAAAAAAZag/V103hs5vsjgfIxKsrB0dxa-i-w7U1VfzgCEwYBhgL/s1600/20.png"/></span></p>
+<p><span style="color: #000000;">Then used the following command to crack the hashes of shadow file but fail to crack the hashes for third user: sraines</span></p>
+<pre class="lang:default decode:true">unshadow passwd shadow &gt; cracked</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-lG_F4sSsc2g/W2lBQkvjoNI/AAAAAAAAZao/hfwZYjPIas4pEWdVt_CwvHdysl6gdm_VACEwYBhgL/s1600/21.png"/></span></p>
+<p><span style="color: #000000;">Then used darkcode.txt wordlist for password cracking and it took so much time to get the password for sraines who is renamed as swillard.</span></p>
+<pre class="lang:default decode:true">john cracked --wordlist=/root/darkcode.txt</pre>
+<p><span style="color: #000000;">So we got following credential:</span></p>
+<p><span style="color: #000000;"><strong>User:</strong> sraines</span></p>
+<p><span style="color: #000000;"><strong>Password:</strong> brillantissimo</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-1cqlyOE5u50/W2lBQqitJ8I/AAAAAAAAZak/agh3q4IjPWsJEsm9_vTf5fj-PTklwPfWwCEwYBhgL/s1600/22.png"/></span></p>
+<p><span style="color: #000000;">So when I try to login with swillard: brillantissimo (password of sraines), it worked and I successfully login as swillard. Then I check sudo right and found this user has <strong>ALL privilege</strong>, which means he has root privilege.</span></p>
+<pre class="lang:default decode:true">su swillard
+sudo -l
+sudo su
+cd /root
+ls</pre>
+<p><span style="color: #000000;">Inside /root directory I found an image <strong>secret.jpg</strong> which I move into web directory.</span></p>
+<pre class="lang:default decode:true ">mv secret.jpg /var/www/forum/templates_c/secret.jpg</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-rtbfOHjInYs/W2lBQyEcwAI/AAAAAAAAZas/IEOh6tD7lnQW5eUFz17Ta34nMuZ8_n_kQCEwYBhgL/s1600/25.png"/></span></p>
+<p><span style="color: #000000;">So when I explored above path I got the image of a Birthday Cake!! J</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/--6BWZJB9RjM/W2lBRUlO13I/AAAAAAAAZaw/VuR1edj1wIEqUNrs8CQiKFksfubCmrxswCEwYBhgL/s1600/26.png"/></span></p>
+<p><span style="color: #000000;"><strong>Author</strong>: Sayantan Bera is a technical writer at hacking articles and cyber security enthusiast. Contact <strong><a style="color: #000000;" href="https://www.linkedin.com/in/sayantan-bera-2098a613b/">Here</a></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

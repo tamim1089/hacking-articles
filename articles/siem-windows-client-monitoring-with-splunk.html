@@ -1,0 +1,180 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/red-teaming/" rel="category tag">Red Teaming</a></span>            </div>
+            <h1 class="post-title entry-title">SIEM: Windows Client Monitoring with Splunk</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/siem-windows-client-monitoring-with-splunk/" rel="bookmark"><time class="entry-date published" datetime="2020-09-08T15:37:02+00:00">September 8, 2020</time><time class="updated" datetime="2025-05-10T20:54:24+00:00">May 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;"><span class="relative -mx-px my-[-0.2rem] rounded px-px py-[0.2rem] transition-colors duration-100 ease-in-out">In this guide on <strong data-start="17" data-end="63">SIEM Windows Client Monitoring with Splunk</strong>, we focus on setting up a Splunk Universal Forwarder on a Windows machine.</span> <span class="relative -mx-px my-[-0.2rem] rounded px-px py-[0.2rem] transition-colors duration-100 ease-in-out">This setup enables the collection and analysis of Windows logs, providing insights into system activities and potential security events.</span> <span class="relative -mx-px my-[-0.2rem] rounded px-px py-[0.2rem] transition-colors duration-100 ease-in-out">By forwarding these logs to Splunk Enterprise, organizations can enhance their security posture and ensure comprehensive monitoring of their Windows clients.</span></span></p>
+<p><span style="color: #000000;">In our previous article, we have covered with Splunk master server setup with a brief demonstration of Dashboard setup or Log monitoring you can visit that article from here. Once done with a complete server setup we need to focus on how to bring the logs from the network environment into Splunk for indexing. We are going to import data from the client machine or a network of 100 or 1000’s of pc into the Splunk server that we set up previously and what else needs to be indexed.</span></p>
+<p><span style="color: #000000;">Now let us see how to forward the logs or Data from client-server to Splunk Enterprise.</span></p>
+<h3><strong><a href="https://www.hackingarticles.in/siem-log-monitoring-lab-setup-with-splunk/" rel="bookmark">SIEM: Log Monitoring Lab Setup with Splunk</a></strong></h3>
+<h3><span style="color: #800000;">Table of Content</span></h3>
+<ul>
+<li><span style="color: #000000;">Prerequisites</span></li>
+<li><span style="color: #000000;">Configure a receiving on Splunk Enterprise</span></li>
+<li><span style="color: #000000;">Configure the receiver using the command line</span></li>
+<li><span style="color: #000000;">Configure receiver using a configuration file</span></li>
+<li><span style="color: #000000;">Environment</span></li>
+<li><span style="color: #000000;">Download and install Universal Forwarder</span></li>
+<li><span style="color: #000000;">Configure Universal Forwarder to send data Splunk Enterprise</span></li>
+<li><span style="color: #000000;">Windows Log Monitoring</span></li>
+<li><span style="color: #000000;">Threat monitoring</span></li>
+</ul>
+<h3><span style="color: #800000;">Prerequisites</span></h3>
+<p><span style="color: #000000;">To configure Splunk universal Forwarder on your client-server, there are some prerequisites required for installation.</span></p>
+<ul>
+<li><span style="color: #000000;">Windows, Linux systems, or cloud servers with admin access.</span></li>
+<li><span style="color: #000000;">Splunk Universal forwarder</span></li>
+<li><span style="color: #000000;">Attacker: Kali Linux</span></li>
+</ul>
+<h3><span style="color: #800000;">Configure a Receiving on Splunk Enterprise</span></h3>
+<p><span style="color: #000000;">On your Splunk Dashboard, you must configure an indexer to receive data before you can send data to it. If you did not do this, then your data not going anywhere.</span></p>
+<p><span style="color: #000000;">Use the Splunk web interface to configure a receiver for Splunk-to-Splunk (S2S) communication. To do this follow the below steps</span></p>
+<ul>
+<li><span style="color: #000000;">Log into Splunk web using your credentials</span></li>
+<li><span style="color: #000000;">On Splunk web go to <strong>Settings &gt; Forwarding and Receiving</strong></span></li>
+</ul>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-BejL0fkOo-E/X1efNl0GeAI/AAAAAAAAoPo/pJqv-xTBXpMpfoppHbhuDqGTG8TVZ2dRwCLcBGAsYHQ/s1600/0.1.png"/></span></p>
+<p><span style="color: #000000;">Select “configure Receiving”.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-ScU8EfIUbGQ/X1efRHnvBXI/AAAAAAAAoPs/YmQKd2b-aXIbcKJJLUfhowcZGVNcRGfgQCLcBGAsYHQ/s1600/0.2.png"/></span></p>
+<p><span style="color: #000000;">Verify the existing ports are open or not. If there are no ports available, then add a port also you cannot create a duplicate receiver port. The most suitable receiver port on indexers is <strong>port 9997</strong>.</span></p>
+<p><span style="color: #000000;">Select “New receiving port.”</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-RBQTlh8DylI/X1efV2fkAEI/AAAAAAAAoPw/Nu9qNlyGM3IUqvNoEG0hdRqIAHSUbaUkACLcBGAsYHQ/s1600/0.3.png"/></span></p>
+<ul>
+<li><span style="color: #000000;">Add a port number and save and do not forget to verify that port is available or not reserved to any other service or instance.</span></li>
+</ul>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-aMtJzw9rbug/X1efYlmP0FI/AAAAAAAAoP0/moTgeJx5SGYm5DFHFUno7aIy51pwV6BNgCLcBGAsYHQ/s1600/0.4.png"/></span></p>
+<p><span style="color: #000000;">Check the status for receiving port, it should enable for listening to the traffic.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-_BfVUqgwyQw/X1efbvhjNbI/AAAAAAAAoP4/D37GqxwLsGsMlp0tYhy5tH7KV8GLIWN0ACLcBGAsYHQ/s1600/0.5.png"/></span></p>
+<h3><span style="color: #800000;">Configure a receiver using the command line</span></h3>
+<p><span style="color: #000000;">Use the command-line interface with Admin privilege in windows 10 or terminal with root user to configure a receiver for S2S communications. To do this follow the steps as described below.</span></p>
+<ul>
+<li><span style="color: #000000;">Open a shell with admin rights or the terminal with root user</span></li>
+<li><span style="color: #000000;">Change the path to $SPLUNK_HOME/bin</span></li>
+<li><span style="color: #000000;">(For Linux) Type:</span></li>
+</ul>
+<p><span style="color: #000000;">./splunk enable listen 9997 -auth admin:password</span></p>
+<ul>
+<li><span style="color: #000000;">(For windows) Type:</span></li>
+</ul>
+<p><span style="color: #000000;">Splunk enables listen 9997 -auth admin: password</span></p>
+<ul>
+<li><span style="color: #000000;">Restart Splunk for the changes to take effect by going into Splunk web interface <strong>setting &gt; server control &gt; restart Splunk.</strong></span></li>
+</ul>
+<p><span style="color: #000000;"><strong>or</strong></span></p>
+<h3><span style="color: #000000;"><span style="color: #800000;">Configure a receiver using a Configuration file</span> </span></h3>
+<p><span style="color: #000000;"><strong>For windows </strong></span></p>
+<p><span style="color: #000000;">Configure inputs<strong>.conf</strong> file for S2S communication:</span></p>
+<ul>
+<li><span style="color: #000000;">Open a shell prompt</span></li>
+<li><span style="color: #000000;">Change the path to $SPLUNK_HOME/etc/system/local</span></li>
+<li><span style="color: #000000;">Edit the <strong>conf</strong> file.</span></li>
+<li><span style="color: #000000;">Edit the input.conf file with [ splunktcp ]stanza and define the receiving port. Example:</span></li>
+</ul>
+<p><span style="color: #000000;">[splunktcp://9997]</span></p>
+<p><span style="color: #000000;">disabled = 0</span></p>
+<ul>
+<li><span style="color: #000000;">Save the file.</span></li>
+<li><span style="color: #000000;">Restart Splunk to take effect of the saved changes.</span></li>
+</ul>
+<h4><span style="color: #000000;">For Linux Environment</span></h4>
+<p><span style="color: #000000;">Open the Splunk forwarder directory wherever it installs and locate the file named <strong>input.conf </strong>and make changes as described above or as per your requirements.</span></p>
+<p><span style="color: #000000;">In this blog, we will target to install a <strong>Splunk Universal Forwarder</strong> on a <strong>Windows Machine</strong> or server. You can download Splunk forwarder by following the below link.</span></p>
+<p><span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.splunk.com/en_us/download/universal-forwarder.html">https://www.splunk.com/en_us/download/universal-forwarder.html</a></strong></span></p>
+<h5><span style="color: #000000;"><strong>Choose your installation package</strong></span></h5>
+<ul>
+<li><span style="color: #000000;">Create a Splunk Account and download Splunk universal forwarder for Windows version by the given above link.</span></li>
+<li><span style="color: #000000;">We choose <strong>Windows 10 64 bit .msi </strong>Package for the installation in windows. You can choose it as per your system requirements.</span></li>
+</ul>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-yI4okwdJhWM/X1effG02tJI/AAAAAAAAoQA/gra5nQnM0HIUgWt8WC-eMBZCDp-5e15XACLcBGAsYHQ/s1600/1.png"/></span></p>
+<p><span style="color: #000000;">Or also for <strong>Linux systems</strong>, you can go with the options are available to download on the Splunk website by drop down the option Linux then select and download package as per your choice as shown below.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-uw-g5kfALeg/X1efiLHZOZI/AAAAAAAAoQI/ewVhNMwHrww9iRLiZOdDy_Q1Iuw0CU_rACLcBGAsYHQ/s1600/2.png"/></span></p>
+<h3><span style="color: #800000;">Install Splunk Universal Forwarder on Windows 10</span></h3>
+<p><span style="color: #000000;">To install Universal forwarder into your operating systems, follow the steps as described below:</span></p>
+<p><span style="color: #000000;">Visit the Splunk official website and select and download universal forwarder for <strong>Windows 10 .msi file.</strong> It will download a Zip file into your downloads as shown below.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-jIbswTqKnD8/X1eflapFmII/AAAAAAAAoQM/gOMxzZtBmEINpDQj3fimxHpatg3kuH9bQCLcBGAsYHQ/s1600/3.png"/></span></p>
+<p> </p>
+<p><span style="color: #000000;">When it gets downloaded open it and start the installation process and accept the license agreement then go to <strong>customize options</strong> as shown below:</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-vXbHNqP4b1c/X1efosAJe-I/AAAAAAAAoQQ/m16rUELL63cRmwOvzleGIdn8AfgAucnBQCLcBGAsYHQ/s1600/4.png"/></span></p>
+<p> </p>
+<p><span style="color: #000000;">Further, select the installation directory wherever you want to install it as shown below</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-WYUiIVLt4AU/X1efr-C4HJI/AAAAAAAAoQY/kdaSMNJ8U30ohZePAou6bN-hRWFCKYpaQCLcBGAsYHQ/s1600/5.png"/></span></p>
+<p><span style="color: #000000;">Further, it will ask you to for an SSL certificate for the encryption with your encryption key if you do not have the SSL certificate then don’t worry forwarded Splunk data will still be encrypted with the default Splunk certificate all you need to do is go with<strong> Next</strong> option.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-ai38kiWRrXw/X1efuyJYjBI/AAAAAAAAoQg/s2Bbiuf9jnEx0bVXSmoPJ4NPf6Nfw1YlwCLcBGAsYHQ/s1600/6.png"/></span></p>
+<h5><span style="color: #000000;"><strong>On the next dialogue you will have two options:</strong></span></h5>
+<ul>
+<li><span style="color: #000000;">Local System. If you specify the Local System user during the installation process, the universal forwarder can access all your data on that is available on your local system or forwarded to this machine.</span></li>
+<li><span style="color: #000000;">Domain account. This option installs the forwarder as the Windows user specifies this lets you collect logs and metrics from remote machines as well as local and forwarded data. You can set the permissions of account in the next dialogue, as a local administrator or a reduced privilege user It does not collect data from resources that the Windows user does not have access to.</span></li>
+</ul>
+<p><span style="color: #000000;">So, we go with the option <strong>Local Systems</strong> and Install the forwarder as a Local account to do any of the following:</span></p>
+<ul>
+<li><span style="color: #000000;">Read Event Logs remotely</span></li>
+<li><span style="color: #000000;">It Collects all your system performance counters remotely</span></li>
+<li><span style="color: #000000;">Read network shares for log files</span></li>
+<li><span style="color: #000000;">It can Access the Active Directory schema, using <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="http://docs.splunk.com/Documentation/Splunk/8.0.6/Data/MonitorActiveDirectory">Active Directory monitoring</a> </strong></span>if you select it</span></li>
+</ul>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-ujJhDtSoNa4/X1efz6KdiTI/AAAAAAAAoQo/mRqw9M9LnBoW9ynWfD6a2Wp21hPUsjyuwCLcBGAsYHQ/s1600/7.png"/></span></p>
+<p><span style="color: #000000;">Then, it will ask you to select the applications or log files that you want to forward to Splunk Enterprise or receiver and then proceed with the next option as shown below.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Nsw39Q9qzK0/X1ef2zGLi6I/AAAAAAAAoQw/CmxPJSnS10AyKQvH4jDZ0ryQh4trR3LIgCLcBGAsYHQ/s1600/8.png"/></span></p>
+<p><span style="color: #000000;">In the next dialogue, it will ask you to create credentials for the administrator account to encrypt all your files on Splunk Enterprise.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-QdqF1FaFUdc/X1ef53HB3gI/AAAAAAAAoQ0/BklgYAJbe7IQAuDMhbMbmt4xiiB7Q2TpQCLcBGAsYHQ/s1600/9.png"/></span></p>
+<h5><strong><span style="color: #000000;">Configure your forwarder as a deployment server</span></strong></h5>
+<p><span style="color: #000000;">On the next dialogue, it will be (optional) to configure your forwarder as a deployment server if you choose it then enter the hostname or IP address and management port for your deployment server and click next</span></p>
+<p><span style="color: #000000;">In my case, I will leave it blank and prefer to go with the next option.</span></p>
+<p><span style="color: #000000;">On the next dialogue setup Receiving indexer by entering the Hostname or IP and port as shown below</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-eNWOjiQGw-o/X1ef8q5BS5I/AAAAAAAAoQ4/uyoxCuy-IWgX9ROSupQbSS685mNBB-inACLcBGAsYHQ/s1600/10.png"/></span></p>
+<p><span style="color: #000000;">And then finally select option Install it will install Splunk forwarder in your windows environment</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-bOb9nKRuo74/X1ef_kX6dVI/AAAAAAAAoRA/XFrppFuvsGEWdQLD-x7rGGKfWh8hgMbWgCLcBGAsYHQ/s1600/11.png"/></span></p>
+<p><span style="color: #000000;">After that finish, the installation process.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-wfNGIKJqlaI/X1egDbpHz1I/AAAAAAAAoRE/RwO1YQEu5CkcXERnStTaMYZ79xZJU0pHQCLcBGAsYHQ/s1600/12.png"/></span></p>
+<p><span style="color: #000000;">Let’s verify the output.conf file to check is it forwarded to the Receiver or not.</span></p>
+<p><span style="color: #000000;">To do this follow the steps as described below.</span></p>
+<p><span style="color: #000000;">Go to file manager and open the directory where Splunk Universal forwarder installed.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-HoJcFQB_z-w/X1egGKOP3PI/AAAAAAAAoRI/xqQzgvqiY0kZ-DWT2E_Ha6x85TDwBSsgQCLcBGAsYHQ/s1600/13.png"/></span></p>
+<p><span style="color: #000000;">Open the file SplunkUniversalForwarder file and then open the output.conf file it will be found in under <strong>etc &gt; system &gt; local</strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-7VqCYYOjjDo/X1egJQVL-kI/AAAAAAAAoRQ/1YEdeN9bx9IPyPeI4spWFsYiKLcavXF9gCLcBGAsYHQ/s1600/14.png"/></span></p>
+<p><span style="color: #000000;">By opening it we can verify it either it is redirected to the correct IP or not as entered during the installation process if not you can make changes by editing it.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-iDUgPPtR1PI/X1egMecw65I/AAAAAAAAoRU/tb0uvGIoSjk6JCHdU-CbuOb8joEfvABlACLcBGAsYHQ/s1600/15.png"/></span></p>
+<h5><span style="color: #000000;"><strong>Configure Universal Forwarder to Send Data to Splunk Enterprise</strong></span></h5>
+<p><span style="color: #000000;">Open CMD as Admin privilege and follow the steps described below:</span></p>
+<pre class="lang:default decode:true">cd c:\Program Files\SplunkUniversalForwarder
+cd bin
+splunk add-forward-server 192.168.0.196:9997
+splunk enable eventlog system
+splunk restart</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-96aNaUW-sfs/X1egPXafqII/AAAAAAAAoRc/krsi3BhivWc6ZZh_30dZf1_S8b8BFQ_pACLcBGAsYHQ/s1600/16.png"/></span></p>
+<p><span style="color: #000000;">Congratulations! You have successfully added Windows as a client</span></p>
+<p><span style="color: #000000;">Let’s check what happens to the Splunk GUI interface is it added or not</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-61Qj9AGnumI/X1egR6VPu5I/AAAAAAAAoRk/BU1dq9-YVaAQJG1FPk6bBx0w1_f3y-o9QCLcBGAsYHQ/s1600/17.png"/></span></p>
+<p><span style="color: #000000;">As you can see our client is successfully added</span></p>
+<p><span style="color: #000000;">Now search your client into Search and reporting application by simply running a query index=”main”</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Dwv3FVWZIeI/X1eggTaRRVI/AAAAAAAAoR4/fAPW8Jv_9mQJv_TnKwVxEmJLCwc0wslvwCLcBGAsYHQ/s1600/18.png"/></span></p>
+<h3><span style="color: #800000;">Windows Log Monitoring</span></h3>
+<p><span style="color: #000000;">Let’s check it shows or not suspicious activity happened on our client end</span></p>
+<p><span style="color: #000000;">To do this I m going take RDP session of my client</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-2CePbCIFlpo/X1egjww_1BI/AAAAAAAAoSA/AgqTqvUOPm0sBGA_iL-w71Iwzt8lCZP4ACLcBGAsYHQ/s1600/19.png"/></span></p>
+<p><span style="color: #000000;">Now I have an RDP session of my Client let’s check what happens on Splunk web</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-oOB_lj_121M/X1egmXuQgKI/AAAAAAAAoSI/Gzz1T6qexb85LUEppzebhd3NgT-4SvphwCLcBGAsYHQ/s1600/20.png"/></span></p>
+<p><span style="color: #000000;">Whoa! It works 😊</span></p>
+<p><span style="color: #000000;">Great!</span></p>
+<p><span style="color: #000000;">Now you can Dig down deeper it with running search Queries.</span></p>
+<h3><span style="color: #800000;">Threat Monitoring</span></h3>
+<p><span style="color: #000000;">Let’s monitor what illegal or suspicious activity happens on your client end or server</span></p>
+<p><span style="color: #000000;">To do this I m going to perform a brute-force attack with the help of an Attacker machine: Kali Linux</span></p>
+<p><span style="color: #000000;">To perform this attack run the following command below.</span></p>
+<pre class="lang:default decode:true">hydra -L user.txt -P pass.txt 192.168.0.196 ssh</pre>
+<p><span style="color: #000000;">where 192.168.0.196 is my client-server IP</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-arG3vap5pfQ/X1egp78gRfI/AAAAAAAAoSM/7ZQs_dxYyNgg5YdujybwPk7mRPW2loM8gCLcBGAsYHQ/s1600/21.png"/></span></p>
+<p><span style="color: #000000;">Let’s check what happens to Splunk web</span></p>
+<p><span style="color: #000000;">hold tight! It’s gonna a little bit special</span></p>
+<p><span style="color: #000000;">Run a Query in the Application search and Reporting “sshd: session” and then see</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-T5o5KrZkOYY/X1egtCuH-jI/AAAAAAAAoSQ/4Ir8VrN6Omww8qAiq7EfOvU-DLD3pDmnwCLcBGAsYHQ/s1600/22.png"/></span></p>
+<p><span style="color: #000000;">Owsm! AS we can see it have multiple invalid logins Attempts of invalid user</span></p>
+<p><span style="color: #000000;"> Now you can monitor your whole Environment by using these steps.</span></p>
+<p><span style="color: #000000;">Let’s end here.</span></p>
+<p><span style="color: #000000;"><strong>Author</strong> – Vijay is a Certified Ethical Hacker, Technical writer and Penetration Tester at Hacking Articles. Technology and Gadget freak. Contact <span style="color: #0000ff;"><a style="color: #0000ff;" href="https://www.linkedin.com/in/vijay-igcbr/"><strong>Here</strong></a></span></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

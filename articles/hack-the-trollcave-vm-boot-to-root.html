@@ -1,0 +1,96 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">Hack the Trollcave VM (Boot to Root)</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/hack-the-trollcave-vm-boot-to-root/" rel="bookmark"><time class="entry-date published" datetime="2018-05-20T14:10:35+00:00">May 20, 2018</time><time class="updated" datetime="2025-06-10T20:12:21+00:00">June 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today we are going to take one another CTF challenge known as <strong>Trollcave</strong>. The credit for making this VM machine goes to “David Yates” and it is another boot to root challenge in which our goal is to gain root access and capture the flag to complete the challenge. You can download this VM from <a href="https://www.vulnhub.com/entry/trollcave-12,230/">here.</a></span></p>
+<p><strong>Penetrating Methodology</strong></p>
+<ul>
+<li><span style="color: #000000;">Network Scanning (Nmap, netdiscover)</span></li>
+<li><span style="color: #000000;">Information gathering:</span></li>
+<li><span style="color: #000000;">Examining the Web Application  framework (Ruby on Rails)</span></li>
+<li><span style="color: #000000;">Mutable User IDs from 1 to 17 to confirm King’s page for super admin’s Account</span></li>
+<li><span style="color: #000000;">Abusing Rails default directory for password reset (Google)</span></li>
+<li><span style="color: #000000;">Exploiting IDOR  to reset Password for King’s Account</span></li>
+<li><span style="color: #000000;">Login into super admin console (King’s account)</span></li>
+<li><span style="color: #000000;">Explore the file manager tab  and enable the uploading option</span></li>
+<li><span style="color: #000000;">Generate SSH RSA key without password</span></li>
+<li><span style="color: #000000;">Upload RSA key</span></li>
+<li><span style="color: #000000;">Pwn tty shell by ssh login</span></li>
+<li><span style="color: #000000;">Kernel privilege escalation (searchsploit)</span></li>
+<li><span style="color: #000000;">Encode exploit with base64</span></li>
+<li><span style="color: #000000;">Transfer in the victim’s machine and decode it.</span></li>
+<li><span style="color: #000000;">Run the kernel exploits and Gain root access</span></li>
+<li><span style="color: #000000;">Capture the flag and Finished the challenge</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Let’s Breach!!!</strong></span></p>
+<p><span style="color: #000000;">Let’s start with getting to know the IP of VM (Here, I have it at 192.168.1.124 but you will have to find your own)</span></p>
+<pre class="lang:default decode:true">netdiscover</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-v6P19o5i44U/WwF_cGiPxEI/AAAAAAAAW7g/2Bn37xFvWkkIFYwkDqJVR-zXSogEm73jwCLcBGAs/s1600/1.png"/></span></p>
+<p><span style="color: #000000;">Now let’s move towards enumeration in context to identify running services and open of victim’s machine by using the most popular tool Nmap.</span></p>
+<pre class="lang:default decode:true">nmap -A 192.168.1.124</pre>
+<p><span style="color: #000000;"><strong>Awesome!!</strong> Nmap has dumped the details of services running on open port 22 and 80.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-Slr-OJctIyU/WwF_d-_iwRI/AAAAAAAAW74/B1fLf7wz74crkPKYzHt7TpzeS3ywTgNXwCLcBGAs/s1600/2.png"/></span></p>
+<p><span style="color: #000000;">Knowing that port 80 is open in the victim’s network I preferred to explore his IP in a browser. At first glance, we saw three tabs Home, login and Register.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-gXnx-57Hecw/WwF_faIfB4I/AAAAAAAAW8M/MWCGHzZYaVc8Dy9ScpkH6CKJw2gNNM_dACLcBGAs/s1600/3.png"/></span></p>
+<p><span style="color: #000000;">Then we will scroll down the page and look at Ruby gem and found that this site is based on Ruby on rails. And on the right side, we saw two categories i.e. <strong>0nline users</strong> and <strong>Newest users</strong>, when we click on “xer” a new web page gets opened.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-D8JqUioywck/WwF_frhkFjI/AAAAAAAAW8Q/FoYgkDxv7iMhLF-7iRA2lLmeF-dmwX9QwCLcBGAs/s1600/4.png"/></span></p>
+<p><span style="color: #000000;">From its URL we perceived that user <strong>xer has user ID 17 </strong>and hence there must be any user between user ID 1 to 17.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-VJQMYm164LE/WwF_f3yw59I/AAAAAAAAW8U/TYzuv1qfwfkIIpCRj5vtkNjIfA8LwdoegCLcBGAs/s1600/5.png"/></span></p>
+<p><span style="color: #000000;">So we manually replace id 17 from id 1 and found King’s page which was for a superadmin account.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-UBXVwftyRow/WwF_gST4f6I/AAAAAAAAW8Y/MEPCvsT3FJso0g_ORqHmsAldHrvNj7iWQCLcBGAs/s1600/6.png"/></span></p>
+<p><span style="color: #000000;">At its home page, we read the post password reset by coderguy, represented by ruby gem for rail password reset and from Google we found default directory for password reset for reset. So we explored <em>http://192.168.1.124/password_resets/new</em> and obtained the password reset form.  Very first we tried to reset superadmin password but unfortunately got failed, But successfully got the link for xer password reset.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-NF2VNR6NATU/WwF_b_VYc6I/AAAAAAAAW7c/FjsLvZL2R3YQTtgYAWprwkaT6rtkdQ45QCLcBGAs/s1600/14.png"/></span></p>
+<p><span style="color: #000000;">Yeah!! It was Pretty Good to see a link for xer password reset, then we have copied that link.  </span></p>
+<pre class="lang:default decode:true">http://192.168.1.124/password_resets/edit.dphWuziPVk6ELBIQ0P-poQ?name=xer</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-F_O0It3ry_8/WwF_brIwaCI/AAAAAAAAW7Y/esoplGPZv4UMK8s3PpiUNcUr6a096JnwACLcBGAs/s1600/15.png"/></span></p>
+<p> </p>
+<p><span style="color: #000000;">And paste the copied link in URL, then <strong>swap name=xer from the king</strong> as given below, later we entered a new password for superadmin (king), it is known as IDOR.</span></p>
+<pre class="lang:default decode:true">http://192.168.1.124/password_resets/edit.dphWuziPVk6ELBIQ0P-poQ?name=king</pre>
+<p><span style="color: #000000;">Well!!! On executing URL; it gives a message “password reset successfully” and then we logged in superadmin account.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-EY5UjwG4Deg/WwF_cqjyORI/AAAAAAAAW7o/CvA9yauc3mwXs4mIXw6Pwwc00pBoNk26wCLcBGAs/s1600/16.png"/></span></p>
+<p><span style="color: #000000;">Yippee!!! Finally, we logged in as superadmin and access the admin console, we saw many tabs and apparently click on the file manager.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-sdZAK_SdG48/WwF_chMxdFI/AAAAAAAAW7k/RzFpaHBQXOkxiTYk0wEQhzkhyUOJg4fJQCLcBGAs/s1600/17.1.png"/></span></p>
+<p> </p>
+<p><span style="color: #000000;">Here we saw enable file upload option, and we enabled it so that we can upload any backdoor whenever we need to upload that.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-a0AfMgOY6tU/WwF_cmKzVVI/AAAAAAAAW7s/IRN221f2M-UszCC4XRXbrJZXrzdW7VvPgCLcBGAs/s1600/17.png"/></span></p>
+<p><span style="color: #000000;">Thus we started from uploading PHP backdoor but failed to upload, similarly, we tried so many backdoors such as ruby, C shell and many more but got failed each time. After so many attempts we successfully uploaded ssh RSA file.</span></p>
+<p><span style="color: #000000;">To do so follow the below steps:</span></p>
+<pre class="lang:default decode:true">ssh-keygen -f rails
+mv rails.pub authorized_keys
+chmod 600 rails</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-cYL7SMoa8D8/WwF_dd3g2qI/AAAAAAAAW7w/GMPcSzh9uPgl3eqh9bGhzIw_l0UQH3ReQCLcBGAs/s1600/18.png"/></span></p>
+<p><span style="color: #000000;"> Here we have generated ssh RSA key file by the name of rails without a password and transferred rails.pub into authorized_keys and gave permission 600 for proper authentication.</span></p>
+<p><span style="color: #000000;">Then upload the <strong>authorized_keys</strong> and add <strong>../../../../../../home/rails/.ssh/authorized_keys</strong> path manually.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-qQbCA_UyEnM/WwF_d0qHp8I/AAAAAAAAW70/r-t_n2Tg268Vc9TYn5r2KF83pXS9i853gCLcBGAs/s1600/19.png"/></span></p>
+<p><span style="color: #000000;">So after uploading the SSH key, it was time to connect the target machine through ssh key.</span></p>
+<pre class="lang:default decode:true">ssh -i rails rails@192.168.1.124</pre>
+<p><span style="color: #000000;">Awesome!! From the below image, you can observe the target machine’s tty shell.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-8QZ7BZ3_atw/WwF_d23IiFI/AAAAAAAAW78/ul-x0Eket6UA9-nfsjJ4Ml8T5r2ly2G4gCLcBGAs/s1600/20.png"/></span></p>
+<p><span style="color: #000000;">Then we will execute <strong>lsb_release -a</strong> command to know the version of the kernel and found 16.04. After then with the help of searchsploit found <strong>kernel exploit 44298.c</strong> for local privilege escalation.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-qzYVzdLXdBo/WwF_ejZAW6I/AAAAAAAAW8A/O2-qn1AXXTo3xBHBqRHh1qXQpNVn0-dDgCLcBGAs/s1600/22.png"/></span></p>
+<p><span style="color: #000000;">At that time we copied this exploit to Desktop and compiled it, so it was impossible to transfer the exploit using a simple compiled file, so we need to encode it in base64. You use the command below to follow the same steps.</span></p>
+<pre class="lang:default decode:true">cd Desktop
+cp /usr/share/exploitdb/exploits/linux/local/44298.c .
+gcc 44298.c -o kernel
+base64 kernel</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-fE8svOoOshI/WwF_e-JX_cI/AAAAAAAAW8E/Qefw5ae-vuktTRIcT8SpmZKYitheRhAbgCLcBGAs/s1600/23.png"/></span></p>
+<p><span style="color: #000000;">We copied the base64 encoded value and then moved to the target terminal, where we created an empty exploit.base64 file with the help of the nano editor and pasted the copied encoding code above</span>.</p>
+<pre class="lang:default decode:true">nano exploit.base64</pre>
+<p><span style="color: #000000;">Far ahead, we decoded it as rootshell in a new file and gave all permissions to the decoded file. Finally, we run the rootshell file to get root privilege.</span></p>
+<pre class="lang:default decode:true ">cat exploit.base64 |base64 -d &gt; rootshell
+chmod u+x rootshell
+./rootshell
+id
+cd /root
+cat flag.txt
+</pre>
+<p><img decoding="async" style="color: #000000;" src="https://4.bp.blogspot.com/-O-GUw4M7Uss/WwF_fKKzyEI/AAAAAAAAW8I/L8ujmou6tzEUfyP431IY8VyTrHipdmI-gCLcBGAs/s1600/27.png"/></p>
+<p><span style="color: #000000;">BINGO!!!! We got the root flag!!!</span></p>
+<p><span style="color: #000000;"><strong>Author: </strong>AArti Singh is a Researcher and Technical Writer at Hacking Articles an Information Security Consultant Social Media Lover and Gadgets. Contact<strong><a style="color: #000000;" href="https://www.linkedin.com/in/aarti--singh/"> here</a></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

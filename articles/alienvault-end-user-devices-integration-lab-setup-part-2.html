@@ -1,0 +1,185 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/pentest-lab-setup/" rel="category tag">Pentest Lab Setup</a>, <a href="https://www.hackingarticles.in/category/red-teaming/" rel="category tag">Red Teaming</a></span>            </div>
+            <h1 class="post-title entry-title">AlienVault: End user Devices Integration-Lab Setup (Part 2)</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/alienvault-end-user-devices-integration-lab-setup-part-2/" rel="bookmark"><time class="entry-date published" datetime="2020-10-13T16:31:01+00:00">October 13, 2020</time><time class="updated" datetime="2025-05-13T09:00:04+00:00">May 13, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p class="" data-start="646" data-end="996"><span style="color: #000000;">In this part of our lab series, we continue exploring <strong data-start="700" data-end="743">AlienVault End User Devices Integration</strong> by setting up Windows and Linux endpoints for centralized monitoring. By integrating these devices with AlienVault OSSIM, you can collect logs, detect threats in real-time, and enhance the visibility of your network activity across the lab environment.</span></p>
+<p><span style="color: #000000;">As logs never lie, it’s very important to aggregate and analyze the internal and external network logs constantly so that you can prevent a breach or perform incident response on time. In the <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.hackingarticles.in/siem-lab-setup-alienvault/">previous article</a></strong></span>, we looked at the configuration and installation of AlienVault OSSIM.</span></p>
+<p><span style="color: #000000;">The operating-system integration for AlienVault is based on window-centric for a Linux platform.</span></p>
+<p><span style="color: #000000;">Let’s take a look at the involved process for gathering logs from Linux servers using AlienVault.</span></p>
+<p><span style="color: #000000;">You can access the previous article from here: – <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.hackingarticles.in/siem-lab-setup-alienvault/">AlienVault Lab setup</a></strong></span></span></p>
+<p><span style="color: #000000;">in this article, we will discuss how to send Ubuntu RSYS logs to the AlienVault server and the Manual configuration and installation of the SSH plugin.</span></p>
+<p><span style="color: #000000;">So, without much theory let’s begin the integration process.</span></p>
+<h3><span style="color: #800000;">Table of Content</span></h3>
+<ul>
+<li><span style="color: #000000;">Prerequisites</span></li>
+<li><span style="color: #000000;">credentials</span></li>
+<li><span style="color: #000000;">Integration of Rsyslog and SSH plugin to AlienVault OSSIM</span></li>
+</ul>
+<h3><span style="color: #800000;">Prerequisites</span></h3>
+<p><span style="color: #000000;">For the integration of Rsyslog and SSH plugin to AlienVault OSSIM, there are some minimum requirements as listed below.</span></p>
+<ul>
+<li><span style="color: #000000;">Ubuntu 20.04 or later</span></li>
+<li><span style="color: #000000;">Root privileges</span></li>
+</ul>
+<h3><span style="color: #800000;">Credentials</span></h3>
+<ul>
+<li><span style="color: #000000;">Ubuntu 20.04 IP: 192.168.1.8</span></li>
+<li><span style="color: #000000;">AlienVault OSSIM IP: 192.168.1.70</span></li>
+<li><span style="color: #000000;">OSSIM (CLI) user: root</span></li>
+<li><span style="color: #000000;">OSSIM password: Designated by you on the time of server setup</span></li>
+</ul>
+<h3><span style="color: #800000;">Integration of Rsyslog and SSH plugin to AlienVault OSSIM</span></h3>
+<h4><span style="color: #800000;">Ubuntu 20.04</span></h4>
+<p><span style="color: #000000;">Rsyslog is a software that is used for forwarding log messages in an IP network. It implements basic Syslog protocol and extends it with content-based filtering capabilities. It also supports different module outputs, flexible configuration options and adds features such as TCP for transport.</span></p>
+<p><span style="color: #000000;">Make sure the Port 514 (UDP protocol) is both on the ubuntu 20.04 server-side and AlienVault OSSIM server is open so that the logs can be forwarded via UDP on port 514</span></p>
+<p><span style="color: #000000;">Open rsyslog.conf file and check whether it is including all configuration file or not</span></p>
+<p><span style="color: #000000;">To do this enter the following command</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd /etc 
+nano rsyslog.conf</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-lhMnvqkEEa0/X4W4sE_nonI/AAAAAAAApg8/rk9IX2CwAKoKxBEngO8elmOqF6SI7zIjwCLcBGAsYHQ/s16000/22.png"/></span></p>
+<p><span style="color: #000000;">Uncomment the following line to include all configuration files.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">$IncludeConfig /etc/rsyslog.d/*.conf</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-noPdEf3syp0/X4XOECAR4pI/AAAAAAAAphE/QIvZkCi9UbYzyfl_N605L-8r8vFgQBhOgCLcBGAsYHQ/s16000/23.png"/></span></p>
+<p><span style="color: #000000;">If this line by default is uncommented, then save and exit.</span></p>
+<p><span style="color: #000000;">Now we forward the rsyslog logs to the AlienVault OSSIM server.</span></p>
+<p><span style="color: #000000;">Create a new configuration file named alienvault.conf and add the following line as shown below:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nano alienvault.conf 
+cat alienvault.conf
+*.* @192.168.1.70</pre>
+<p><span style="color: #000000;">Where 192.168.1.70 is OSSIM server IP.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-ZCHFRyPXlj0/X4XOJmUkXQI/AAAAAAAAphI/Y6K03aHQjtkDPa6HOwG-q_jkqrGbB6OWwCLcBGAsYHQ/s16000/24.png"/></span></p>
+<p><span style="color: #000000;">To make the changes effective restart rsyslog service by the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">/etc/init.d/rsyslog restart</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-TBy7QNIkX4M/X4XOUYtSznI/AAAAAAAAphQ/mxBTKVQmklkAyvA7LDvLNGxp-FjHpEtSACLcBGAsYHQ/s16000/25.png"/></span></p>
+<h4><span style="color: #800000;">OSSIM Server</span></h4>
+<p><span style="color: #000000;">Login to the OSSIM server Jailbreak the server to CLI as shown below</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-tieXplUfX1M/X4XObOqIeqI/AAAAAAAAphY/nJ0tPF9R7a8_d6CODJLXasIYkJF0I1cTwCLcBGAsYHQ/s16000/26.png"/></span></p>
+<p><span style="color: #000000;">On the next prompt, it will ask you for permission to access the full command line select yes and continue.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-yvE5V63Jxbo/X4XOiO3c8zI/AAAAAAAAphc/fUNZRWzkYZEgHUHwdsiMGJGiC5FPXMhuACLcBGAsYHQ/s16000/27.png"/></span></p>
+<p><span style="color: #000000;">Here we’re using tcpdump on the OSSIM server to see log communications between Ubuntu 20.04 and OSSIM by running tcpdump to capture the logs with the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">tcpdump -i eth0 udp port 514</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-ywcUBajnuAU/X4XOma0kP2I/AAAAAAAAphg/m5tcpcwarSUTgcLztVuFrDAsVw39uWYxgCLcBGAsYHQ/s16000/28.png"/></span></p>
+<p><span style="color: #000000;">Let’s verify whether it is receiving logs from Ubuntu 20.04 server or not</span></p>
+<h4><span style="color: #800000;">Ubuntu 20.04</span></h4>
+<p><span style="color: #000000;">In the ubuntu machine, I m switching users by running the following command, and then after we will see the logs of switching users are reflected on the OSSIM server or not.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">sudo su</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-4EmFAhKOceY/X4XOsSk8t1I/AAAAAAAApho/0NN1FvAjhhwUKGXBO-CgWrXKtZMGQ5cjACLcBGAsYHQ/s16000/29.png"/></span></p>
+<p><span style="color: #000000;">Come back to the OSSIM server</span></p>
+<h4><span style="color: #000000;"><span style="color: #800000;">OSSIM Server</span> </span></h4>
+<p><span style="color: #000000;">Let’s check what happens here …</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-ZCKDeAZ8uW4/X4XOzCUCMdI/AAAAAAAAphw/DNbDB_ffTdMz3RlPT_DYqYo7pEVkLpq9QCLcBGAsYHQ/s16000/30.png"/></span></p>
+<p><span style="color: #000000;">Hurrah !!! as we can see the log from the Ubuntu server has entered into the OSSIM server, then now we will redirect the logs sent to OSSIM into a file.</span></p>
+<h5><span style="color: #000000;"><strong>Configure the Filtration in the Rsyslog.</strong></span></h5>
+<p><span style="color: #000000;">To do this follow the below steps:</span></p>
+<p><span style="color: #000000;">Head towards the <strong>rsyslog.conf</strong> file in the directory <strong>etc.</strong></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd /etc 
+nano rsyslog.conf</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-WVx0thsp9R0/X4XO5d8UukI/AAAAAAAAph4/dwZW7E0kdRMKfuNPsMuQgl5QnO9HtE74wCLcBGAsYHQ/s16000/31.png"/></span></p>
+<p><span style="color: #000000;">In the section GLOBAL DIRECTIVES, the line<strong> “$IncludeConfig /etc/rsyslog.d/*.conf” </strong>by default it includes the whole config file of the system.</span></p>
+<p><span style="color: #000000;"><strong><img decoding="async" src="https://1.bp.blogspot.com/-jzg6Ub4zTds/X4XPBU3H4cI/AAAAAAAApiA/focR2TvQp94rFBnfJTBPJMPG_QI3s8HWgCLcBGAsYHQ/s16000/32.png"/></strong></span></p>
+<p><span style="color: #000000;">To filter specific rsyslog configurations and logs put some specific name  on the place of * to filter it easily as shown below:</span></p>
+<p><span style="color: #000000;">For example:-</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">$IncludeConfig /etc/rsyslog.d/debian.conf</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-zkTMDzmJKDY/X4XPJYcyMJI/AAAAAAAApiM/wkm56ZZmk0sOSm10Ow7kCUCOaYyT39IkgCLcBGAsYHQ/s16000/33.png"/></span></p>
+<p><span style="color: #000000;">Now head towards to directory of rsyslog.d and create a configuration file debian.conf</span></p>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://1.bp.blogspot.com/-3CTuSKsZHOg/X4XPQt7LqXI/AAAAAAAApiQ/qKYNRp3od_ABMCFv-BLW4_RPTlWQLN1XgCLcBGAsYHQ/s16000/34.png"/></strong></span></p>
+<p><span style="color: #000000;">And enter the following rule into it:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">If $fromhost-ip == ‘192.168.1.8’ then -/var/log/auth.log 
+&amp;~</pre>
+<p><span style="color: #000000;">Then save and exit as shown below</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-wa4VcEz86P0/X4XPZLLK_WI/AAAAAAAApic/MZzfpwaWB7suConpSpIRcLpdEa6yoAuFQCLcBGAsYHQ/s16000/35.png"/></span></p>
+<p><span style="color: #000000;">Now we check that the logs of the ubuntu server are inserted correctly in auth.log or not.</span></p>
+<p><span style="color: #000000;">Before we do rsyslog restart and then follow the below steps:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd /var/log 
+/etc/init.d/rsyslog restart 
+tail -f auth.log</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-9SUE6hiNP3c/X4XPeXtNREI/AAAAAAAApig/-xMu6RA39gQE68WhpBSEQobYPd2iJe7EwCLcBGAsYHQ/s16000/36.png"/></span></p>
+<p><span style="color: #000000;">As we can see logs are started coming from the ubuntu server 😉</span></p>
+<p><span style="color: #000000;">Now we move on to the AlienVault part</span></p>
+<p><span style="color: #000000;">OSSIM needs a plug-in t to connect any data source to the server. Plugins have XML based configuration.</span></p>
+<p><span style="color: #000000;">The plugins have two elements: <strong>cfg and SQL</strong></span></p>
+<p><span style="color: #000000;">Let’s go to configure <strong>cfg</strong></span></p>
+<h4><span style="color: #000000;">Configure cfg</span></h4>
+<p><span style="color: #000000;">To do this head towards the directory /etc/ossim/agent/plugins</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd /etc/ossim 
+cd agent/ 
+cd plugins/</pre>
+<p><span style="color: #000000;">in the directory of plugins, there are lots of plugins available that can be activated in OSSIM</span></p>
+<p><span style="color: #000000;">we went on to modify one by hand <strong>for example SSH</strong></span></p>
+<p><span style="color: #000000;">To do this run the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cp ssh.cfg debianssh.cfg</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-fw_fXBUBVBk/X4XPjct_YhI/AAAAAAAApio/Bm7ObZFVMMEkGqxrWRgCoptrU0ylmleEACLcBGAsYHQ/s16000/37.png"/></span></p>
+<p><span style="color: #000000;">Then after open the debianssh.cfg configuration file.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nano debiannssh.cfg</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/--edIpwd6cLY/X4XPozDn7_I/AAAAAAAApiw/RsYdlWAI2QQY7L91ZMz2tywVOIdBkGXcgCLcBGAsYHQ/s16000/38.png"/></span></p>
+<p><span style="color: #000000;">And change the plugin id with your desired no. to make it identifiable for the further process.</span></p>
+<p><span style="color: #000000;">Here I’m replacing plugin id 4003 to 9001 as shown below:</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-K8XqIoaAQQE/X4XPuZAGiHI/AAAAAAAApi0/R6PWnGRSYMQnuwY8NJrNJ3Qc5iIuY4SfQCLcBGAsYHQ/s16000/39.png"/></span></p>
+<p><span style="color: #000000;">Now we can activate the plugin</span></p>
+<p><span style="color: #000000;">Come back to AlienVault setup by entering the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">alienvault-setup</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-zEY9dkc_Vlg/X4XP2giSUqI/AAAAAAAApi8/KQA6XzrbYlUWLRqQMF1ffaIr65H0nBfFwCLcBGAsYHQ/s16000/40.png"/></span></p>
+<p><span style="color: #000000;">And then configure the sensor by the below steps:</span></p>
+<p><span style="color: #000000;">Steps: Select Configure Sensor &gt; Configure Data Source Plugins &gt; debianssh</span></p>
+<p><span style="color: #000000;">Firslty, Select Configure senso</span><span style="color: #000000;">r</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-kiy9--eeaCc/X4XP_xpmILI/AAAAAAAApjI/p2jdM6g1ygUnlBnwFow4oL6cXWbYj1zWgCLcBGAsYHQ/s16000/41.png"/></span></p>
+<p><span style="color: #000000;">Then, Select Configure Data Source Plugins</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-2d-2OuvVb3w/X4XQExXr2RI/AAAAAAAApjM/DDCHeV53gy0Mi3FzfLjoAI3QYW7Uc_FfACLcBGAsYHQ/s16000/42.png"/></span></p>
+<p><span style="color: #000000;">In the previous steps, we modified an SSH plugin into <strong>debianssh</strong> plugin. Select it in the list of plugins by pressing spacebar as shown below</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/--8rYj_1JVEQ/X4XQJlHZWeI/AAAAAAAApjU/cPyk5n4J6ugD-nHZHq6dD1RiUVcgNNUdACLcBGAsYHQ/s16000/43.png"/></span></p>
+<p><span style="color: #000000;">And then come back to AlienVault Setup by selecting back option and then <strong>Apply All Changes</strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-5zZ5EvdnyIw/X4XQP1DyBAI/AAAAAAAApjY/EMDUTx2LUx0yFYd0_h8U6FqpjkVKIHebACLcBGAsYHQ/s16000/44.png"/></span></p>
+<p><span style="color: #000000;">At last, it will ask for your permission to apply all changes</span></p>
+<p><span style="color: #000000;">Select<strong> yes</strong> and then <strong>continue</strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Z4k38VTk4sk/X4XQWBEOFVI/AAAAAAAApjg/1pMIcnZXctMThju0UeUNsCPUdpcAFIKDgCLcBGAsYHQ/s16000/45.png"/></span></p>
+<p><span style="color: #000000;">On the next prompt, it will show you changes applied</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-UiZ8fQZPip8/X4XQdqGZXjI/AAAAAAAApjo/4jjAAxzc4eIdXtJw47WSP9nkqlWTX8bGQCLcBGAsYHQ/s16000/46.png"/></span></p>
+<h4><span style="color: #000000;">Configure SQL</span></h4>
+<p><span style="color: #000000;">Let’s go to configure the SQL part of the plugin.</span></p>
+<p><span style="color: #000000;">Head towards to the directory of /usr/share/doc/ossim-mysql/contrib/plugins by entering the following command</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd /usr/share 
+cd /doc 
+cd /ossim-mysql 
+cd /contrib 
+cd /plugins</pre>
+<p><span style="color: #000000;">by running command ls you can see the examples of sql plugins</span></p>
+<p><span style="color: #000000;">we’re going to copy the ssh.sql to debianssh.sql by running the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cp ssh.sql debianssh.sql</pre>
+<p><span style="color: #000000;"><strong><img decoding="async" src="https://1.bp.blogspot.com/-qAN3xJ0NxVw/X4XQlV9cZlI/AAAAAAAApjw/KSHiWp00YnIon8jvRfYr1Y65o_jXNPmZwCLcBGAsYHQ/s16000/47.png"/></strong></span></p>
+<p><span style="color: #000000;">Open the debianssh.sql file</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nano debianssh.sql</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-2jJP9IpGG50/X4XQtxyZRtI/AAAAAAAApj8/bm79mK0TwYgR1to1udaKvotwhSb6d5TBgCLcBGAsYHQ/s16000/48.png"/></span></p>
+<p><span style="color: #000000;">Let’s do some modifications in the configuration file so that it can match the plugin.cfg to the SQL database.</span></p>
+<p><span style="color: #000000;">The configuration looks like similar as shown below</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-lvKZafrPW_c/X4XQykptkWI/AAAAAAAApkA/G-60EB4FkosDNTwy55SMK0niWOJaUZkhwCLcBGAsYHQ/s16000/49.png"/></span></p>
+<p><span style="color: #000000;">Change the plugin id 4001 to 9001 or somewhat the value of no. that you designated in the upper section as shown below:</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-zsn98gFgxDQ/X4XQ4gSKIWI/AAAAAAAApkI/TSr6dXp8msUy3CqLIFX_7K0dJWCb9IvrwCLcBGAsYHQ/s16000/50.png"/></span></p>
+<p><span style="color: #000000;">As you can see this configuration file contains a predefined database of SSH logs so that if any suspicious SSH activity or request comes to the Ubuntu server it can match with that request.</span></p>
+<p><span style="color: #000000;">And then Save and exit from the file.</span></p>
+<p><span style="color: #000000;">Let’s put it into the action and activate the database be reconfiguring it.</span></p>
+<p><span style="color: #000000;">To do this enter the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ossim-db &lt; debianssh.sql 
+ossim-db 
+select * from plugin where id = 9001; 
+quit</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-z9vQCUpyOhQ/X4XRAM4I0RI/AAAAAAAApkM/mipFkZcubmUdWF_W0JUDFftOmHaAlXEUQCLcBGAsYHQ/s16000/51.png"/></span></p>
+<p><span style="color: #000000;">And at last reconfig the AlienVault OSSIM server by entering the following command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">alienvault-reconfig</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-pyzcplvpz3I/X4XRHWzcSiI/AAAAAAAApkU/5GVcbXKMgcsy3seoDOhgIaz2DWwy8g2MACLcBGAsYHQ/s16000/52.png"/></span></p>
+<p><span style="color: #000000;">On the next screen, it will start reconfiguring the server</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-v6ngYszJ-mY/X4XRNE5tRpI/AAAAAAAApkc/S5Wa0Q84bIwaANxmz4xpyT8a-LZNpw2rQCLcBGAsYHQ/s16000/53.png"/></span></p>
+<p><span style="color: #000000;">If you are seeing this then congratulations…!!!</span></p>
+<p><span style="color: #000000;">You successfully integrated Rsyslog and SSH plugin to the AlienVault OSSIM server.</span></p>
+<p><span style="color: #000000;">Hold tight! this is not enough…..</span></p>
+<p><span style="color: #000000;">Have patience 😉</span></p>
+<p><span style="color: #000000;">In this article, we explained the integration and configuration process of Rsyslog and SSH plugin to  AlienVault OSSIM.</span></p>
+<p><span style="color: #000000;">In the next article, our focus will be on the configuration and installation of OSSEC Agents that send logs to <strong>AlienVault Server.</strong></span></p>
+<p><span style="color: #000000;">OSSEC is an open-source Host Intrusion Detection System (HIDS) that runs across multiple OS platforms such as Windows, Linux, Solaris. Mac …etc.</span></p>
+<p><span style="color: #000000;"><strong>Author – Vijay</strong> is a Certified Ethical Hacker, Technical writer and Penetration Tester at Hacking Articles. Technology and Gadget freak. Contact <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.linkedin.com/in/vijay-igcbr/">Here</a></strong></span></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

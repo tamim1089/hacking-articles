@@ -1,0 +1,97 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">PowerGrid: 1.0.1 Vulnhub Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/powergrid-1-0-1-vulnhub-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2020-10-03T14:17:14+00:00">October 3, 2020</time><time class="updated" datetime="2025-07-10T16:53:43+00:00">July 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today we are going to solve another boot2root challenge called “<strong>PowerGrid: 1.0.1</strong>“.  It’s available at VulnHub for penetration testing and you can download it from <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="http://vulnhub.com/entry/powergrid-101,485/">here</a></strong></span>.</span></p>
+<p><span style="color: #000000;">The merit of making this lab is due to <strong>Thomas Williams</strong>. Let’s start and learn how to break it down successfully.</span></p>
+<p><span style="color: #000000;">Level: <strong>Hard</strong></span></p>
+<h3><span style="color: #800000;">Penetration Testing Methodology</span></h3>
+<p><span style="color: #000000;"><strong>Reconnaissance</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Netdiscover</span></li>
+<li><span style="color: #000000;">Nmap</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Enumeration</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Dirsearch</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Exploiting</strong></span></p>
+<ul>
+<li><span style="color: #000000;">HTTP Basic Authentication Brute Force</span></li>
+<li><span style="color: #000000;">Execute remote code (RCE) Roundcube exploit</span></li>
+<li><span style="color: #000000;">Decrypt key PGP and abuse for SSH</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Privilege Escalation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Abuse of sudo Rsync</span></li>
+<li><span style="color: #000000;">Abuse of pivoting SSH</span></li>
+<li><span style="color: #000000;">Capture the flag</span></li>
+</ul>
+<h3><span style="color: #800000;">Walkthrough</span></h3>
+<h3><span style="color: #800000;">Reconnaissance</span></h3>
+<p><span style="color: #000000;">We are looking for the machine with netdiscover</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">netdiscover -i ethX</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-JmRiOpnKz50/X3iBoV-VlLI/AAAAAAAApEE/NGyLC2E8GuEmPYMzx0RyVpJoZXjIBtFpQCLcBGAsYHQ/s16000/1.png"/></span></p>
+<p><span style="color: #000000;">So, we put the IP address in our “<strong>/etc/hosts</strong>” file and start by running the map of all the ports with operating system detection, software versions, scripts and traceroute.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -A –p- powergrid.vh</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-ES9u5oIRCCg/X3iBxNiSJyI/AAAAAAAApEI/D233sR1NEtMlDW3xnZPxUQ02dVUL9Zh1gCLcBGAsYHQ/s16000/2.png"/></span></p>
+<h3><span style="color: #800000;">Enumeration</span></h3>
+<p><span style="color: #000000;">The game begins and the burden since we will only have <strong>3 hours</strong> to solve the challenge and thus save the critical infrastructure.</span></p>
+<p><span style="color: #000000;">We access the web service, we see the time, but we also list three users: <strong>deez1</strong>, <strong>p48</strong> and <strong>all2</strong>.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-V-JbhN7Hcf4/X3iB8gpD7vI/AAAAAAAApEQ/pLN2hsL-TY0u-34oOzq47m295u7f1AWkACLcBGAsYHQ/s16000/3.png"/></span></p>
+<p><span style="color: #000000;">We use dirsearch and list a directory protected with <strong>HTTP Authentication Basic</strong>.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-tVDRpsnqp9s/X3iCDRotvhI/AAAAAAAApEY/GXUFtqRfTnoYBZLScB-jbtnJrcIYLb6dQCLcBGAsYHQ/s16000/4.png"/></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-FkdKM-DfFWY/X3iCNLyejjI/AAAAAAAApEg/O3NT5u1Ut58q7pWl418U3KGiNxm83Oq7QCLcBGAsYHQ/s16000/5.png"/></span></p>
+<p><span style="color: #000000;">With what we found and knowing 3 users, we will make a brute force attack with the <strong>Hydra</strong> tool and the <strong>rockyou</strong> dictionary.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-OSc9vXs9_3U/X3iCTCyq_TI/AAAAAAAApEo/Bt6ne_P7D4wmT2Ztr4QjNsYrrcWgOZxlACLcBGAsYHQ/s16000/6.png"/></span></p>
+<p><span style="color: #000000;">We managed to access with the credentials obtained and listed webmail with <strong>Roundcube</strong>.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-jlIFZFXD90g/X3iCca08FGI/AAAAAAAApEs/R_SoVNv51NY3fYYkNz-tdN_U-DiPXxcBgCLcBGAsYHQ/s16000/7.png"/></span></p>
+<p><span style="color: #000000;">We use the same credentials and can read a single email, in it we have an <strong>encrypted message in PGP</strong>, but to be able to read its content in plain, we need the <u>private key and the password</u>. It is very likely that it is the same password since this user has reused the same password for several services.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-fUeaAKJvfXE/X3iCmd-_zDI/AAAAAAAApE0/XBb4xXaog6wQm18QQhobn1l3ph1lN4zNgCLcBGAsYHQ/s16000/8.png"/></span></p>
+<h3><span style="color: #800000;">Exploiting</span></h3>
+<p><span style="color: #000000;">We listed the version of Roundcube and looked for exploits, we found that it has a version vulnerable to RCE (Remote Code Execution)</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-dDtbY2PqZV4/X3iCvKen4LI/AAAAAAAApE8/tm4vT4g7MmYbRBnJxfI9MYFJGJwtTpmLQCLcBGAsYHQ/s16000/9.png"/></span></p>
+<p><span style="color: #000000;"><strong>Exploit</strong>:<span style="color: #0000ff;"><strong> <a style="color: #0000ff;" href="https://www.exploit-db.com/exploits/40892">https://www.exploit-db.com/exploits/40892</a></strong></span></span></p>
+<p><span style="color: #000000;">As always, we will review what the exploitation consists of and make a proof of concept, this proof will create an <strong>info.php</strong> file.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-icIKqUDJiIw/X3iC5B16GzI/AAAAAAAApFE/724K7GUWI_wipGokyMdcXkN_uEnvArUigCLcBGAsYHQ/s16000/10.png"/></span></p>
+<p><span style="color: #000000;"><strong><u>Legitimate request:</u></strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-55VpJ31NMx0/X3iDF6vAZCI/AAAAAAAApFM/8jxLtX0vHyQ2Ix6PnXsQ0qhFAT3auERYACLcBGAsYHQ/s16000/11.png"/></span></p>
+<p><span style="color: #000000;"><strong><u>Malicious request:</u></strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-czSmAQ8zv5A/X3iDWUioRTI/AAAAAAAApFc/VU0XjglT0Mgrn3vVU8Pg2BjhPWCzNp5qwCLcBGAsYHQ/s16000/12.png"/></span></p>
+<p><span style="color: #000000;">We run the file and see that the site is indeed vulnerable.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-jpTA2EBFjPY/X3iDdu9aHII/AAAAAAAApFk/QLv4cNwMaYUTfavzhkpcC6UGhocMEoU6gCLcBGAsYHQ/s16000/13.png"/></span></p>
+<p><span style="color: #000000;">Now we will create a php file that allows us to <strong>execute arbitrary commands</strong>.</span></p>
+<p><span style="color: #000000;"><strong>Payload URL-encode:</strong> &lt;?php passthru($_GET[‘cmd’]); ?&gt;</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-eVyp6uurUFc/X3iDkNkevbI/AAAAAAAApFo/MTCTTcFzFQgqHoHfxitNtGp82ADvB4tBwCLcBGAsYHQ/s16000/14.png"/></span></p>
+<p><span style="color: #000000;">We check that our file works:</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-A0e8MyHnZcw/X3iDwXfaw1I/AAAAAAAApF0/IRSMC9F68gcPBFs0K-hY_9Z-uCmfs4qbgCLcBGAsYHQ/s16000/15.png"/></span></p>
+<p><span style="color: #000000;">Perfect! Now we’ll put a <strong>netcat</strong> on the wire and run a <span style="color: #0000ff;"><strong><u>reverse shell</u></strong></span>. (remember to encode it in <strong>URL-encode</strong> all characters)</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-hCaWt0NQSU8/X3iD2gRh2zI/AAAAAAAApF8/nKxGBHEiFiwr0VFvQNntkgxfbkqdkyxdACLcBGAsYHQ/s16000/16.png"/></span></p>
+<p><span style="color: #000000;">Great! Now we will use our two favourite commands to get an interactive shell.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-bl2BBKMNSvw/X3iD-qfY5LI/AAAAAAAApGA/SipX7_iPSY43Vc6K7rX9GI_35GCBprZGwCLcBGAsYHQ/s16000/17.png"/></span></p>
+<p><span style="color: #000000;">We will go through files and directories recursively, we will stumble upon the <strong>first</strong> <strong>flag</strong> and the <strong>first hint</strong>.</span></p>
+<p><span style="color: #000000;"><strong><img decoding="async" src="https://1.bp.blogspot.com/-65QG-ASz9-Y/X3iEKa3bAJI/AAAAAAAApGI/W_ced9KF7XgsxuojjUzcIEBO3t5hLTM7QCLcBGAsYHQ/s16000/18.png"/></strong></span></p>
+<p><span style="color: #000000;">So let’s start, we identify ourselves with the user “<strong>p48</strong>” reusing the same credentials and we find in his folder “<strong>/home/</strong>” the <strong><u>gpg private key</u></strong> (remember that it was the only one we were missing to be able to decipher the text).</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/--U2fIjoq7pM/X3iEQ_zZNYI/AAAAAAAApGQ/OYRpkeUwbZICmlPrkdp9o7M3towo14qiQCLcBGAsYHQ/s16000/19.png"/></span></p>
+<p><span style="color: #000000;">For a strange reason, the native “<strong>gpg</strong>” tool didn’t work for me, so I had to use this online tool and we get a <strong>SSH private key</strong>.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-DtYb4nzZo3I/X3iEW_qqupI/AAAAAAAApGU/U4C4BMYWRDwsY4J_FfBwdCV9r7qHdQc0wCLcBGAsYHQ/s16000/20.png"/></span></p>
+<p><span style="color: #000000;">The machine we have committed to had no SSH service open, we remembered the “<strong>pivot</strong>” track, checked the connections and found a service that works by “<strong>docker</strong>“.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-v7c5SXtw1zc/X3iEi7_Fg5I/AAAAAAAApGc/FTm4EYCjePgahlWOn3Lh9QeDbZ8EBxSYgCLcBGAsYHQ/s16000/21.png"/></span></p>
+<p><span style="color: #000000;">We give 600 permissions to the private key and use it to connect via SSH to the docker and read the <strong>2nd flag</strong> and the <strong>next hint</strong>.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-71JODSj4Tig/X3iEqk7tZfI/AAAAAAAApGk/5ravNU7En7k0JJ4n-tSjGqYl5SwKXt3vQCLcBGAsYHQ/s16000/22.png"/></span></p>
+<p><span style="color: #000000;">The next hint leads me to run “<strong>sudo -l</strong>” and check that you can run the <strong>rsync</strong> binary as <strong>root</strong>.  We execute the following command to escalate privileges as root abusing this advantage.</span></p>
+<p><span style="color: #000000;">And once being root, we access its folder and read the <strong>3rd flag</strong> and the <strong>next hint</strong>.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-ez3nDf_sLkI/X3iE03UYDSI/AAAAAAAApGs/ZfuY7KRd-UkP2Q1FM1-wxiOXuG_jJNXigCLcBGAsYHQ/s16000/23.png"/></span></p>
+<h3><span style="color: #800000;">Privilege Escalation (root)</span></h3>
+<p><span style="color: #000000;">“backwards? pivoting?” Let’s repeat the SSH move, but this time we will do it from the compromised docker-machine.</span></p>
+<p><span style="color: #000000;">Great! We have permissions as root and we can read the last flag.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-eSpu345fuiE/X3iE9pqakgI/AAAAAAAApG0/8zdBlHJWYFMFQcjNDIo4uFSkEl6jbNqnQCLcBGAsYHQ/s16000/24.png"/></span></p>
+<p><span style="color: #000000;">Thank you for giving your precious time to read this walkthrough. If you want to read more VulnHub Write-ups. Follow this </span><strong><a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/">Link.</a></strong> <span style="color: #000000;">Happy Hacking</span>!</p>
+<p><span style="color: #000000;"><strong>Author</strong>: <strong>David Utón</strong> is Penetration Tester and security auditor for Web applications, perimeter networks, internal and industrial corporate infrastructures, and wireless networks. Contacted on <strong>LinkedIn</strong> and <strong><a style="color: #000000;" href="https://twitter.com/David_Uton">Twitter</a></strong>.</span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

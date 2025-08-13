@@ -1,0 +1,150 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">Hack the ROP Primer: 1.0.1 (CTF Challenge)</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/hack-the-rop-primer-1-0-1-ctf-challenge/" rel="bookmark"><time class="entry-date published" datetime="2018-09-19T15:35:37+00:00">September 19, 2018</time><time class="updated" datetime="2025-06-10T20:29:36+00:00">June 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Hello friends! Today we are going to take another CTF challenge known as ROP Primer. The credit for making this VM machine goes to “Bas” and it is another capture the flag challenge in which our goal is to capture all the flags to complete the challenge. You can download this VM <strong><a href="https://www.vulnhub.com/entry/rop-primer-02,114/"><span style="color: #0000ff;">here</span></a></strong>.</span></p>
+<p><span style="color: #000000;">We have 3 levels available here and we are given the login credentials of all of 3 machines which are as follow:</span></p>
+<table>
+<tbody>
+<tr>
+<td width="200"><span style="color: #000000;"><strong><em>Levels</em></strong></span></td>
+<td width="200"><span style="color: #000000;"><strong><em>Username</em></strong></span></td>
+<td width="200"><span style="color: #000000;"><strong><em>Password</em></strong></span></td>
+</tr>
+<tr>
+<td width="200"><span style="color: #000000;"><em>Level 0</em></span></td>
+<td width="200"><span style="color: #000000;">level0</span></td>
+<td width="200"><span style="color: #000000;">warmup</span></td>
+</tr>
+<tr>
+<td width="200"><span style="color: #000000;"><em>Level 1</em></span></td>
+<td width="200"><span style="color: #000000;">level1</span></td>
+<td width="200"><span style="color: #000000;">shodan</span></td>
+</tr>
+<tr>
+<td width="200"><span style="color: #000000;"><em>Level 2</em></span></td>
+<td width="200"><span style="color: #000000;">level2</span></td>
+<td width="200"><span style="color: #000000;">try harder</span></td>
+</tr>
+</tbody>
+</table>
+<p><span style="color: #000000;">We had one binary per level, which we have to exploit each one to successfully extract flags from them.</span></p>
+<p><span style="color: #000000;">You can download all the exploit used from <strong><span style="color: #0000ff;"><a style="color: #0000ff;" href="https://github.com/Sayantan5/ROP-primer">here</a></span></strong>.</span></p>
+<p><span style="color: #000000;">Let’s Breach!!!</span></p>
+<p><span style="color: #000000;">Let us start form getting to know the IP of VM (Here, I have it at 192.168.199.139 but you will have to find your own</span></p>
+<pre class="lang:default decode:true">netdiscover</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-BpiOHDH_pDc/W6JoYa9jGSI/AAAAAAAAaVA/ursxVfHG9CoHIsnYTMV6-zQnND5VVYD-QCLcBGAs/s1600/1.png"/></span></p>
+<h3><span style="color: #800000;">LEVEL 0:</span></h3>
+<p><span style="color: #000000;">Now we use the given credentials to login through ssh as user level0. After logging in we find 2 files one executable file called level0 and another file called flag. Both files are owned by the level1 user, but the binary file has suid bit set so we can execute it. When we run it we find that it takes a string as input and then outputs a message along with the string.</span></p>
+<pre class="lang:default decode:true">ssh level0@192.168.199.139</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-W7PdtELJOf4/W6JoabFi_AI/AAAAAAAAaVg/yloNG07IedUuRmQ8ra9XIiqp2ZUNCANjwCEwYBhgL/s1600/2.png"/></span></p>
+<p><span style="color: #000000;">GDB-peda is provided by the author in the lab so we can directly analyze the binary in the target machine itself. Opening the binary in gdb we find that there is a gets function. Now gets is vulnerable to buffer overflow so we try to exploit it.</span></p>
+<pre class="lang:default decode:true">set disassembly-flavor intel
+disas main</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-TNK6hNyLTFU/W6JocIMF-aI/AAAAAAAAaWE/MPp_Iw2fmMEgXoLrLjNdKwolBzeH79WMACEwYBhgL/s1600/3.png"/></span></p>
+<p><span style="color: #000000;">We created a 500 bytes long pattern using gdb-peda and used it as input for the binary.</span></p>
+<pre class="lang:default decode:true">pattern create 500</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-oDof1nsQFns/W6JodkWXTkI/AAAAAAAAaWg/rfqyNjvJSd4qCJOCq7xijUUpV9-qY4UIgCEwYBhgL/s1600/4.png"/></span></p>
+<p><span style="color: #000000;">As soon as we passed the string we get a segmentation fault error, we use pattern offset function of gdb-peda to find the EIP offset and find that after 44 bytes we can completely overwrite EIP register.</span></p>
+<pre class="lang:default decode:true">pattern offset 0x41414641</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-wL-oWszuzyM/W6JodirnI3I/AAAAAAAAaWk/O-mqjoNuKs8ZMvi3Gaj1jzPJXPiVaQHUQCEwYBhgL/s1600/5.png"/></span></p>
+<p><span style="color: #000000;">Now we check for security and find that there is no ASLR but NX is enabled so we cannot execute shellcode on the stack.</span></p>
+<pre class="lang:default decode:true">checksec</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-eebBs7YIiRo/W6JodvwGWBI/AAAAAAAAaWo/X0YvYiok9rEtesUkfxqM-3cfxxU-zDqOwCEwYBhgL/s1600/6.1.png"/></span></p>
+<p><span style="color: #000000;">As NX is enabled we can still use the ret2libc attack to spawn a shell. But when we try to print the memory address of the system we find that there is no system so we cannot execute /bin/sh to spawn a shell.</span></p>
+<p><span style="color: #000000;">In the description, we are given a hint that we can use mprotect to solve this problem.</span></p>
+<pre class="lang:default decode:true">p system
+p mprotect</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-cNafaSdxYbY/W6JoeH6VzJI/AAAAAAAAaWs/K1Vdlg-pmWMhYtcDPsniCo3c0tnhy7ZAgCEwYBhgL/s1600/6.png"/></span></p>
+<p><span style="color: #000000;">When we take a look at the man page for mprotect we find that it used to change the protection of portions of memory by making it readable, writeable and executable. We also find it takes 3 parameters address, length of the memory that needs to be changes and protection level.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-DYUuZoqvATU/W6JoeZZ1CGI/AAAAAAAAaXM/dTkl_jSAUfQM2RGaRjYFsrv0oFX15lZ1QCEwYBhgL/s1600/7.1.png"/></span></p>
+<p><span style="color: #000000;">As we can make portions of memory readable, writeable and executable, we are going to use the memcpy function to insert our shellcode into the block of memory.</span></p>
+<pre class="lang:default decode:true">p memcpy</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-4XMpHtkEjt0/W6JoetmuqPI/AAAAAAAAaXU/58bGFEIQTUsrQWL-tSd1JGuN9CdzcqStACEwYBhgL/s1600/7.2.png"/></span></p>
+<p><span style="color: #000000;">Now need to select which section of the memory we are going to change, so we use gdb to see how the memory is mapped.</span></p>
+<pre class="lang:default decode:true">vmmap</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-72my2EptZ48/W6JofN6JX8I/AAAAAAAAaXU/BY5qT_OPsocE8wyqIYB2n6dlG8384KV_gCEwYBhgL/s1600/8.png"/></span></p>
+<p><span style="color: #000000;">We are going to take 0x080ca000 as target memory and we are going to mark 4KB of memory starting from 0x080ca000 as readable, writeable and executable. We create an exploit to this for us.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-x9BHUamf5cI/W6Joe2a_wkI/AAAAAAAAaXY/UvJULbBBpQgmRpc-II4p7xmJr6PLrQAYwCEwYBhgL/s1600/9.png"/></span></p>
+<p><span style="color: #000000;">We save the output of this program in a file called input, we are going to use this as our input for the binary file.</span></p>
+<pre class="lang:default decode:true">python exp.py &gt; input</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-NWh1ja1edyI/W6JoYXDHd2I/AAAAAAAAaXQ/OSq6KUwc8XgI4Ten2G_dN0nCGeG23B4BQCEwYBhgL/s1600/10.png"/></span></p>
+<p><span style="color: #000000;">When running the binary in gdb with using the input from our exploit, we take a look at the mapped memory and find that the memory block we selected was marked as readable, writeable and executable.</span></p>
+<pre class="lang:default decode:true">vmmap</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-dKQVCj3BcQg/W6JoY22TY-I/AAAAAAAAaXQ/eRqbuH5odwkG8nuAgvx-zq82FJGjsuCxgCEwYBhgL/s1600/11.png"/></span></p>
+<p><span style="color: #000000;">Now we need to remove mprotect’s parameter from the stack so that we can redirect the flow of execution, the mprotect function uses 3 parameters so we need to pop 3 values off the stack so we use ropgadget function in gdb and find a gadget pop3ret at 0x8048882.</span></p>
+<pre class="lang:default decode:true">ropgadget</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-osUtvbBrR-4/W6JoYxnCrSI/AAAAAAAAaXU/rljHZTvByyYitvIE5gdlON0ttfPiTIVKQCEwYBhgL/s1600/12.png"/></span></p>
+<p><span style="color: #000000;">Now we create the exploit to get an elevated shell. We use cat to keep the shell alive, we run the exploit and now we can access the flag. We take a look at the content of the file and find our first flag.</span></p>
+<pre class="lang:default decode:true">(python /tmp/exp.py; cat) | ./level0</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-VKX8jgY92X0/W6JoZBedXzI/AAAAAAAAaXI/fBiw9a8sQ-kixg05TPiRxxdnk3IbIHuJwCEwYBhgL/s1600/15.png"/></span></p>
+<h3><span style="color: #800000;"><strong>LEVEL 1:</strong></span></h3>
+<p><span style="color: #000000;">After completing level0, we log in as level1 using the given credentials. We find a file called flag, blah and a binary file called level1 with suid bit set. When we run the binary it says that error binding.</span></p>
+<pre class="lang:default decode:true">ssh level1@192.168.199.139</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-FQ9IohM5jm4/W6JoZytj2FI/AAAAAAAAaXE/nGbAVhIH9jQFPklF9FyWEc3axfT9ZMX_QCEwYBhgL/s1600/16.png"/></span></p>
+<p><span style="color: #000000;">We check the listening ports on the target machine and find that port 8888 is open. We check processes with uid 1002 and find it is level1.</span></p>
+<pre class="lang:default decode:true">netstat -aepn | grep 8888
+ps -aux | grep 1002</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-ZGRLQIp97IE/W6JoZmRoVxI/AAAAAAAAaXI/w1wl9CpMT9AGZxnVb0hBASXRRZPwKYtUwCEwYBhgL/s1600/17.png"/></span></p>
+<p><span style="color: #000000;">We connect it and find it is an application that can be used to store and read files.</span></p>
+<pre class="lang:default decode:true">nc 192.168.199.139 8888</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-pPuqxF4N2Ow/W6JoZyPhSPI/AAAAAAAAaXI/Oj-6czFUsIsLu-ccWHlJYCXT-YK1uod0wCEwYBhgL/s1600/18.png"/></span></p>
+<p><span style="color: #000000;">We open the binary in gdb and take a look at the assembly code for further analysis.</span></p>
+<pre class="lang:default decode:true">gdb -q level1
+set disassembly-flavor intel
+disas main</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-fxDcR8qoqf0/W6JoaDE7YqI/AAAAAAAAaXA/A0OszAfJ4Fkkz0zBeDTxPjKEWKZTe3MqACEwYBhgL/s1600/19.png"/></span></p>
+<p><span style="color: #000000;">We set up a breakpoint on the main function. At main+115 we found that port 8888 is stored on the stack. We changed the value stored in the memory address to port 8889 so that we can run the program.</span></p>
+<pre class="lang:default decode:true">set {int}0xbffff6b0 = 8889</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-5qSRkLL7Zkk/W6Joaem0aJI/AAAAAAAAaXQ/gV585bUMU8gIrxLt6ctVw7PbTJnGnb6JgCEwYBhgL/s1600/21.png"/></span></p>
+<p><span style="color: #000000;">We create a 128 bytes long pattern using pattern_create.rb script in our system. So that we can pass the string as the name of the file.</span></p>
+<pre class="lang:default decode:true">./pattern_create -l 128</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-dxSMPYYARzQ/W6JoanBCg9I/AAAAAAAAaXE/IN93vLez7vwGuIvqDK-CZ6g-owuqE7S1QCEwYBhgL/s1600/23.png"/></span></p>
+<p><span style="color: #000000;">After changing the port number, we connected to it and stored a file with 128-byte size.</span></p>
+<p><span style="color: #000000;">After mentioning the size of the file, it asks for the file name. We passed the 128 bytes long pattern as the file name.</span></p>
+<pre class="lang:default decode:true">nc 192.168.199.139 8889</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-j8R6mbYIz_Y/W6Joa0cPk1I/AAAAAAAAaXI/VDLWcoD-zFQX9tthD6nBwN0EKDxTwRHdgCEwYBhgL/s1600/24.png"/></span></p>
+<p><span style="color: #000000;">When we switch to gdb we find that we get a segmentation fault.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-tSaqmUxMLoI/W6JobCb17XI/AAAAAAAAaXU/UoBL4eJNVdEVwSIbjBkpIcH8tEhIxtVvQCEwYBhgL/s1600/25.png"/></span></p>
+<p><span style="color: #000000;">We now use patten_offset.rb script to find the EIP offset.</span></p>
+<pre class="lang:default decode:true">./pattern_offset.rb -q 0x63413163</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-CA6FqGzw0jE/W6JobB8QLII/AAAAAAAAaXE/sSP0J_MtqjI9gYr5wrV_lnWuBrWZni3kACEwYBhgL/s1600/26.png"/></span></p>
+<p><span style="color: #000000;">We are given a hint in the description of this challenge that we can use read, write and open function to open the flag and read it.</span></p>
+<pre class="lang:default decode:true">p read
+p write
+p open</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-RwaU16W3pg8/W6JobcrhLhI/AAAAAAAAaXU/JmYd-lvO3ToyeZcPqN_yNsePbpFxkMsDgCEwYBhgL/s1600/27.png"/></span></p>
+<p><span style="color: #000000;">We are now going to need ropgadget, we need pop2ret for a gadget for open function and pop3ret gadget for reading function.</span></p>
+<pre class="lang:default decode:true">ropgadget</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-CCPcslxxm54/W6Jobxu-k1I/AAAAAAAAaXY/AJBIngLOwmwiK3kbH2kLgHYEq2fpcl6qQCEwYBhgL/s1600/28.png"/></span></p>
+<p><span style="color: #000000;">Now if we can get the address of the ‘flag’ string, then we can just read the flag and output it to the connected socket.</span></p>
+<pre class="lang:default decode:true">find flag</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-BaU9j6yKM4o/W6Jobif_PBI/AAAAAAAAaXQ/-mQQLbUsFc4ah4F4R5ilQMr3anV4Kf6ugCEwYBhgL/s1600/29.png"/></span></p>
+<p><span style="color: #000000;">We create an exploit to get the flag. We run it and find the flag.</span></p>
+<pre class="lang:default decode:true">python level1.py</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-udkCgB_PL5g/W6JocGzAfxI/AAAAAAAAaXE/qdeGc02itWwUim3CJS3ZHj2FcA2I0rtNQCEwYBhgL/s1600/30.png"/></span></p>
+<h3><span style="color: #800000;">LEVEL 2:</span></h3>
+<p><span style="color: #000000;">After completing level1, we log in as level2 using the given credentials. We find a file called flag and a binary file called level2 with suid bit set. When we run the binary, we find that it takes a string as an argument and then prints it.</span></p>
+<pre class="lang:default decode:true">ssh level2@192.168.199.139</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-4aqwt9gaVC4/W6JocZj3_7I/AAAAAAAAaXQ/RYIIqCniun4VfN3di9xe-rMROS8b7O8zQCEwYBhgL/s1600/31.png"/></span></p>
+<p><span style="color: #000000;">We open the file in gdb for further analysis and find that at main+46 it calls the strcpy function. As the strcpy function is vulnerable to buffer overflow we exploit it.</span></p>
+<pre class="lang:default decode:true">gdb -q level2
+set disassembly-flavor intel
+disas main</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-IlORsrbX6XU/W6Joc10UICI/AAAAAAAAaXQ/wv_iVqPqPjMiBclE4VR69CSJvUDOjMw_ACEwYBhgL/s1600/32.png"/></span></p>
+<p><span style="color: #000000;">On further analysis we find that it is similar to level0 binary file, we create a 500 bytes string and pass its argument and find the EIP offset to be 44 bytes.</span></p>
+<pre class="lang:default decode:true ">pattern offset 0x41414641</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-ZSvQaqxmNqs/W6JoclxB0zI/AAAAAAAAaXQ/Wrd1KojM2mEJTRL16FYidsdq49gzBrQ-wCEwYBhgL/s1600/32.1.png"/></span></p>
+<p><span style="color: #000000;">This binary file has a strcpy function instead of gets we cannot use “\x00”. So we use gadgets to do our work. We use ropshell.com to find all the gadgets used in this exploit.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-t-O3Gj5od9c/W6JocyTm9hI/AAAAAAAAaXM/NOFXkJT4CkEgU1ffuTtdUfcn9zVk5RChgCEwYBhgL/s1600/33.png"/></span></p>
+<p><span style="color: #000000;">We modified the exploit we created for level0 and inserted our gadgets. We use read function instead of the memcpy function in this exploit. (Gadgets are explained in the exploit code).</span></p>
+<p><span style="color: #000000;">As soon as we run our exploit we spawn a shell as the root user. We open the flag file and get our final flag.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-loqXlRTn_1M/W6JodFJkArI/AAAAAAAAaXI/ClHXVNARs1Mz6DKDGz1soE5-XOZY3RYQACEwYBhgL/s1600/35.png"/></span></p>
+<p><span style="color: #000000;"><strong>Author</strong>: Sayantan Bera is a technical writer at hacking articles and cybersecurity enthusiast. Contact <a style="color: #000000;" href="https://www.linkedin.com/in/sayantan-bera-2098a613b/"><strong>Here</strong></a></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

